@@ -78,19 +78,6 @@
   (log:debug "Internal receive: " msg)
   nil)
 
-;; conditions
-
-(define-condition stop-condition (error)
-  ()
-  (:documentation
-   "Stop condition may be raised in message processing to stop the processing thread and the actor."))
-  
-;; utility functions
-
-(defun unwrap-message (message)
-  "If message is a list it takes car otherwise just the message."
-  (if (listp message) (car message) message))
-
 ;; test receive handler
 (defun test-receive (msg)
   (log:debug "received: " msg)

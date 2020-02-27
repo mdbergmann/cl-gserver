@@ -2,9 +2,7 @@
   (:use :cl :lparallel :lparallel.queue :log4cl)
   (:export #:set-threadpool-size
            #:set-receive-fun
-           #:send
-           #:stop)
-  )
+           #:send))
 
 (in-package :cl-actors2)
 
@@ -47,10 +45,6 @@
     (log:debug "pushing ~a to mailbox" message)
     (let ((result (submit-to-mailbox actor message)))
       (log:debug "Message process result:" result))))
-
-(defun stop (actor)
-  "Stops the message processing thread."
-  (send actor 'stop))
 
 ;; internal functions
 

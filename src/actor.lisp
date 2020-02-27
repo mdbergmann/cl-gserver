@@ -18,7 +18,8 @@
          :initform (concatenate 'string "Actor-" (princ-to-string (random 100000)))
          :accessor name
          :documentation "Well, the name of the actor. If no name is specified a default one is applied.")
-   (mailbox :initform (make-queue))
+   (mailbox :initform (make-channel)
+            :accessor mailbox)
    (receive-fun :initarg :receive-fun
                 :initform (error ":receive-fun must be specified!")
                 :accessor receive-fun
@@ -30,73 +31,52 @@
    ))
 
 (defmethod initialize-instance :after ((self actor) &key)
-  :documentation "This automatically starts the message consumer loop."
-  (start-mailbox-loop self))
+  :documentation "Not sure yet what this does.")
 
-(defmethod start-mailbox-loop ((self actor))
-  (let ((channel (make-channel)))
-    (log:debug "Starting looper on channel...")
-    (submit-task channel (lambda ()
-                           (handler-case
-                               (loop-process-mailbox self)
-                             (t (c)
-                               (log:debug "Unknown condition received: " c)))))))
+;; public functions
 
-(defmethod loop-process-mailbox ((self actor))
-  "Loops over message queue endlessly."
-  (with-slots (mailbox internal-state) self
-    (with-slots (running) internal-state
-      (iter:iter (iter:while running)
-        (log:debug "Checking for message in queue...")
-        (let ((message (pop-queue mailbox)))
-          (handler-case
-              (process-message self message)
-            (stop-condition ()
-              (log:debug "Stop condition received. Stopping mailbox processing.")
-              (setf running nil))
-            (t (c)
-              (log:warn "Caught error on message processing: " c)
-              (log:warn "Message will not be handled again: " message))))))))
-
-(defmethod process-message ((self actor) &rest message)
-  (log:debug "Handling message: " message)
-  (when message
-    (let ((msg (unwrap-message message)))
-      ; First process internally
-      (when (not (internal-receive-fun msg))
-        (with-slots (receive-fun) self
-          ; then externally
-          (let ((user-receive-fun-result (funcall receive-fun msg)))
-            (cond
-              (user-receive-fun-result (log:debug "Message handled by user."))
-              (t (log:debug "Message not handled.")))))))))
-
-(defun internal-receive-fun (msg)
-  (cond
-    ((eq msg 'stop) (progn
-                      (log:debug "STOP message received.")
-                      (error 'stop-condition)))))
-
-;; public methods
-
-(defmethod set-receive-fun ((self actor) &rest new-receive-fun)
+(defun set-receive-fun (actor new-receive-fun)
   "Set the receive handler function on an actor."
   (when new-receive-fun
-    (with-slots (receive-fun) self
-      (setf receive-fun (car new-receive-fun)))))
+    (with-slots (receive-fun) actor
+      (setf receive-fun new-receive-fun))))
 
-(defmethod send ((self actor) &rest message)
+(defun send (actor message)
   "Send a message to an actor"
-  (with-slots (internal-state mailbox) self
-    (with-slots (running) internal-state
-      (if (not running) (log:info "Actor is stopped!"))
-      (when (and message running)
-        (log:debug "pushing ~a to queue" message)
-        (push-queue (unwrap-message message) mailbox)))))
+  (when message
+    (log:debug "pushing ~a to mailbox" message)
+    (let ((result (submit-to-mailbox actor message)))
+      (log:debug "Message process result:" result))))
 
-(defmethod stop ((self actor))
+(defun stop (actor)
   "Stops the message processing thread."
-  (send self 'stop))
+  (send actor 'stop))
+
+;; internal functions
+
+(defun submit-to-mailbox (actor message)
+  "Pushes the message to the mailbox channel"
+  (let ((*task-category* (concatenate 'string (name actor) "-task")))
+    (submit-task (mailbox actor) (lambda () (process-message actor (unwrap-message message))))
+    (receive-result (mailbox actor))))
+
+(defun process-message (actor message)
+  (log:debug "Handling message: " message)
+  (when message
+    (handler-case (progn
+                    ;; First process internally
+                    (when (not (internal-receive-fun message))
+                      ;; then externally
+                      (let ((user-receive-fun-result (funcall (receive-fun actor) message)))
+                        (cond
+                          (user-receive-fun-result (log:debug "Message handled by user."))
+                          (t (log:debug "Message not handled."))))))
+      (t (c) (log:warn "Error condition was raised on message processing: " c)
+        nil))))
+
+(defun internal-receive-fun (msg)
+  (log:debug "Internal receive: " msg)
+  nil)
 
 ;; conditions
 
@@ -127,6 +107,6 @@
 ;; TODO:
 ;; OK - do loop while, until 'stop-condition
 ;; OK - add internal state for if we are running or not. When STOP was sent we should go to stopped state.
-;; => - actor can be started again and state can be set again to running.
+;; - add actor mgr that can spawn new actors.
 ;; - add state
 ;; - add error handling

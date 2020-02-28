@@ -1,8 +1,8 @@
 (defpackage :cl-gserver
   (:use :cl :lparallel :lparallel.queue :log4cl)
-  (:export #:set-threadpool-size
-           #:set-receive-fun
-           #:send))
+  (:export #:init-threadpool
+           #:handle-call
+           #:call))
 
 (in-package :cl-gserver)
 

@@ -1,4 +1,4 @@
-(defsystem "cl-actors2"
+(defsystem "cl-gserver"
   :version "0.1.0"
   :author "Manfred Bergmann"
   :license ""
@@ -8,17 +8,17 @@
                "trivia")
   :components ((:module "src"
                 :components
-                ((:file "actor"))))
+                ((:file "gserver"))))
   :description ""
-  :in-order-to ((test-op (test-op "cl-actors2/tests"))))
+  :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 
-(defsystem "cl-actors2/tests"
+(defsystem "cl-gserver/tests"
   :author "Manfred Bergmann"
   :license ""
-  :depends-on ("cl-actors2"
+  :depends-on ("cl-gserver"
                "fiveam")
   :components ((:module "tests"
                 :components
-                ((:file "actor-test"))))
-  :description "Test system for cl-actors2"
+                ((:file "gserver-test"))))
+  :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run c)))

@@ -7,8 +7,10 @@
                "iterate"
                "trivia")
   :components ((:module "src"
+                :serial t
                 :components
-                ((:file "gserver"))))
+                ((:file "utils")
+                 (:file "gserver"))))
   :description ""
   :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 
@@ -19,6 +21,16 @@
                "fiveam")
   :components ((:module "tests"
                 :components
-                ((:file "gserver-test"))))
+                ((:file "all-test")
+                 (:file "utils-test"))))
   :description "Test system for cl-gserver"
-  :perform (test-op (op c) (symbol-call :fiveam :run c)))
+  :perform (test-op (op c) (symbol-call :fiveam :run! 'cl-gserver.tests)))
+
+;; add to asdf:*central-registry* is not done
+;; (push #P"~/Development/MySources/cl-gserver/" asdf:*central-registry*)
+;;
+;; load system
+;; (asdf:load-system "cl-gserver")
+;;
+;; test system
+;; (asdf:test-system "cl-gserver/tests")

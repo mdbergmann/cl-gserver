@@ -1,27 +1,30 @@
 (defpackage :cl-gserver
-  (:use :cl :lparallel :lparallel.queue :log4cl)
+  (:use :cl :cl-gserver.utils :lparallel :lparallel.queue :log4cl)
   (:export #:init-threadpool
            #:handle-call
+           #:gserver
+           #:name
            #:call))
 
 (in-package :cl-gserver)
 
 (defun init-threadpool (size)
+  (log:debug "Initializing threadpool with " size " threads")
   (setf *kernel* (make-kernel size)))
 
-(defstruct actor-state (running t :type boolean))
+(defstruct gserver-state (running t :type boolean))
 
 (defclass gserver()
   ((name :initarg :name
-         :initform (concatenate 'string "Server-" (princ-to-string (random 100000)))
+         :initform (mkstr "Server-" (random 100000))
          :accessor name
-         :documentation "Well, the name of the actor. If no name is specified a default one is applied.")
+         :documentation "Well, the name of the gserver. If no name is specified a default one is applied.")
    (mailbox :initform (make-channel)
             :accessor mailbox
             :documentation "The channel for submitting calls.")
    (internal-state :initarg :internal-state
-                   :initform (make-actor-state)
-                   :documentation "The internal state of the actor.")
+                   :initform (make-gserver-state)
+                   :documentation "The internal state of the server.")
    ))
 
 (defmethod initialize-instance :after ((self gserver) &key)
@@ -97,7 +100,8 @@ A result can be returned which is forwarded to the caller."))
 ;; TODO:
 ;; OK - do loop while, until 'stop-condition
 ;; OK - add internal state for if we are running or not. When STOP was sent we should go to stopped state.
-;; - how to let 'destroy' a channel for cleanup?
+;; => - return error cons 
 ;; - add state
+;; - how to let 'destroy' a channel for cleanup?
 ;; - add gserver mgr that can spawn new actors.
 ;; - add error handling

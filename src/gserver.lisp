@@ -34,7 +34,7 @@
 
 (defgeneric handle-call (gserver message)
   (:documentation
-  "Handles calls to the server. Must be implemented by subclasses.
+"Handles calls to the server. Must be implemented by subclasses.
 A result can be returned which is forwarded to the caller."))
 
 (defun call (gserver message)
@@ -70,29 +70,15 @@ A result can be returned which is forwarded to the caller."))
                 (t
                  (progn
                    (log:debug "Message not handled.")
-                   nil))))))
+                   (cons :unhandled "")))))))
       (t (c)
         (log:warn "Error condition was raised on message processing: " c)
-        nil))))
+        (cons :handler-error c)))))
 
 (defun handle-call-internal (msg)
   (log:debug "Internal handle-call: " msg)
   nil)
 
-
-;; dummy test gserver
-(defclass mygserver (gserver) ())
-(defmethod handle-call ((self mygserver) message)
-  (log:debug "handle-call from mygserver: " message)
-  (cond
-    ((equal message "Foo") 
-     (progn
-       (sleep 3)
-       (log:debug "Message handled: Foo")
-       t))
-    (t nil)))
-
-;; test receive handler
 
 ;;(defun error-receive (msg)
 ;;  (throw 'foo 1))

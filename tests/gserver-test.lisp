@@ -45,12 +45,15 @@
     (is (eq :ok (car result)))
     (is (= 999 (cdr result))))
 
-  (is-false (add-test "Foo"))
+  (let ((result (add-test "Foo")))
+    (is (eq :unhandled (car result)))
+    (is (string= (cdr result) "")))
 
-  ;; test for dealing with error raised in handle-call
-  (is-false (add-test '(:err)))
+  ;; provoke raising an error in handle-call
+  (let ((result (add-test '(:err))))
+    (is (eq :handler-error (car result)))
+    (is (not (null (typep (cdr result) 'division-by-zero)))))
   )
-
 
 (run! 'get-server-name)
 (run! 'simple-add-server)

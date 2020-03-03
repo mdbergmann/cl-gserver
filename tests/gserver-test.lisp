@@ -13,7 +13,7 @@
 
 (log:config :info)
 
-;; your test code here
+(init-threadpool 1)
 
 (test get-server-name
   "Just retrieves the name of the server"
@@ -21,39 +21,51 @@
   (let ((server (make-instance 'gserver)))
     (is (= 0 (search "Server-" (name server))))))
 
-(test simple-add-server
-  "Creates a simple server which adds just a 1 to the number that is being sent."
-
-  (init-threadpool 1)
+(test handle-call
+  "Simple add-server handle-call test."
 
   (defclass add-server (gserver) ())
-  (defmethod handle-call ((server add-server) message)
+  (defmethod handle-call ((server add-server) message current-state)
     (match message
-      ((list :add n) (cons :ok (1+ n)))
-      ((list :sub n) (cons :ok (1- n)))
+      ((list :add n)
+       (let ((new-state (+ current-state n)))
+         (cons new-state new-state)))
+      ((list :sub n)
+       (let ((new-state (- current-state n)))
+         (cons new-state new-state)))
       ((list :err) (/ 5 0))))  ; division by 0
 
-  (defun add-test (message)
-    (let ((cut (make-instance 'add-server)))
-      (call cut message)))
+  (let ((cut (make-instance 'add-server :state 0)))
+    (is (= 1000 (call cut '(:add 1000))))
+    (is (= 500 (call cut '(:sub 500))))
+    (is (eq :unhandled (call cut "Foo")))))
 
-  (let ((result (add-test '(:add 1000))))
-    (is (eq :ok (car result)))
-    (is (= 1001 (cdr result))))
+(test error-in-handler
+  
+  (defclass err-server (gserver) ())
+  (defmethod handle-call ((server err-server) message current-state)
+    (match message
+      ((list :err) (/ 5 0))))  ; division by 0
 
-  (let ((result (add-test '(:sub 1000))))
-    (is (eq :ok (car result)))
-    (is (= 999 (cdr result))))
-
-  (let ((result (add-test "Foo")))
-    (is (eq :unhandled (car result)))
-    (is (string= (cdr result) "")))
-
-  ;; provoke raising an error in handle-call
-  (let ((result (add-test '(:err))))
+  (let* ((cut (make-instance 'err-server :state 0))
+         (result (call cut '(:err))))
     (is (eq :handler-error (car result)))
-    (is (not (null (typep (cdr result) 'division-by-zero)))))
+    (is (not (null (typep (cdr result) 'division-by-zero))))))
+
+(test stack-server
+
+  (defclass stack-server (gserver) ())
+  (defmethod handle-call ((server stack-server) message current-state)
+    (match message
+      (:pop (cons (car current-state) (cdr current-state)))))
+
+  (let ((cut (make-instance 'stack-server :state '())))
+    (is (null (call cut :pop))))
+
+  ;; TODO: Expand on this
   )
 
 (run! 'get-server-name)
-(run! 'simple-add-server)
+(run! 'handle-call)
+(run! 'error-in-handler)
+(run! 'stack-server)

@@ -19,6 +19,9 @@
          :initform (mkstr "Server-" (random 100000))
          :accessor name
          :documentation "Well, the name of the gserver. If no name is specified a default one is applied.")
+   (state :initarg :state
+          :initform nil
+          :documentation "The encapsulated state.")
    (mailbox :initform (make-channel)
             :accessor mailbox
             :documentation "The channel for submitting calls.")
@@ -32,10 +35,11 @@
 
 ;; public functions
 
-(defgeneric handle-call (gserver message)
+(defgeneric handle-call (gserver message current-state)
   (:documentation
 "Handles calls to the server. Must be implemented by subclasses.
-A result can be returned which is forwarded to the caller."))
+The convention here is to return a cons with values to be returned to caller as car,
+and the new state as cdr."))
 
 (defun call (gserver message)
   "Send a message to a gserver instance."
@@ -49,35 +53,54 @@ A result can be returned which is forwarded to the caller."))
 
 (defun submit-to-mailbox (gserver message)
   "Pushes the message to the mailbox channel"
-  (let ((*task-category* (concatenate 'string (name gserver) "-task")))
-    (submit-task (mailbox gserver) (lambda () (process-message gserver message)))
+  (let ((*task-category* (mkstr (name gserver) "-task")))
+    (submit-task (mailbox gserver) (lambda () (handle-message gserver message)))
     (receive-result (mailbox gserver))))
 
-(defun process-message (gserver message)
+(defun handle-message (gserver message)
   (log:debug "Handling message: " message)
   (when message
     (handler-case
-        (progn
-          ;; First process internally
-          (unless (handle-call-internal message)
-            ;; then externally
-            (let ((handle-call-result (handle-call gserver message)))
-              (cond
-                (handle-call-result
-                 (progn
-                   (log:debug "Message handled by handle-call.")
-                   handle-call-result))
-                (t
-                 (progn
-                   (log:debug "Message not handled.")
-                   (cons :unhandled "")))))))
+        (unless (handle-message-internal message)
+          (handle-message-user gserver message))
       (t (c)
         (log:warn "Error condition was raised on message processing: " c)
         (cons :handler-error c)))))
 
-(defun handle-call-internal (msg)
+(defun handle-message-internal (msg)
+  "Returns nil in order to make user handler being invoked."
   (log:debug "Internal handle-call: " msg)
   nil)
+
+(defun handle-message-user (gserver message)
+  "This will call the method 'handle-call' with the message."  
+  (let* ((current-state (slot-value gserver 'state))
+         (handle-call-result (handle-call gserver message current-state)))
+    (log:debug "Current-state: " (slot-value gserver 'state))
+    (cond
+      (handle-call-result
+       (progn
+         (log:debug "Message handled by handle-call. result: " handle-call-result)
+         (cond
+           ((consp handle-call-result)
+            (progn
+              (update-state gserver handle-call-result)
+              (reply-value handle-call-result)))
+           (t
+            (progn
+              (log:info "handle-call result is no cons.")
+              (cons :handler-error "handle-call result is no cons!"))))))
+      (t
+       (progn
+         (log:debug "Message not handled.")
+         :unhandled)))))
+
+(defun update-state (gserver cons-result)
+  (log:info "Updating state to: " (cdr cons-result))
+  (setf (slot-value gserver 'state) (cdr cons-result)))
+
+(defun reply-value (cons-result)
+  (car cons-result))
 
 
 ;;(defun error-receive (msg)
@@ -86,8 +109,10 @@ A result can be returned which is forwarded to the caller."))
 ;; TODO:
 ;; OK - do loop while, until 'stop-condition
 ;; OK - add internal state for if we are running or not. When STOP was sent we should go to stopped state.
-;; => - return error cons 
-;; - add state
+;; OK - return error cons
+;; OK - add state
+;; - add macro to conveniently create gserver
+;; => - add cast, fire-and-forget
 ;; - how to let 'destroy' a channel for cleanup?
 ;; - add gserver mgr that can spawn new actors.
 ;; - add error handling

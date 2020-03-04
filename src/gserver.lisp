@@ -1,10 +1,11 @@
-(defpackage :cl-gserver
++(defpackage :cl-gserver
   (:use :cl :cl-gserver.utils :lparallel :lparallel.queue :log4cl)
   (:export #:init-threadpool
            #:handle-call
            #:gserver
            #:name
-           #:call))
+           #:call
+           #:cast))
 
 (in-package :cl-gserver)
 
@@ -42,20 +43,34 @@ The convention here is to return a cons with values to be returned to caller as 
 and the new state as cdr."))
 
 (defun call (gserver message)
-  "Send a message to a gserver instance."
+"Send a message to a gserver instance and wait for a result.
+The result is a of different types.
+Success result: <returned-state>
+Unhandled result: :unhandled
+Error result: (cons :handler-error <error-description-as-string>)
+"
   (when message
     (log:debug "pushing ~a to mailbox" message)
-    (let ((result (submit-to-mailbox gserver message)))
+    (let ((result (submit-message-with-reply gserver message)))
       (log:debug "Message process result:" result)
       result)))
 
+(defun cast (gserver message)
+  (when message
+    (log:debug "casting message: " message)
+    (submit-message-without-reply gserver message)))
+
 ;; internal functions
 
-(defun submit-to-mailbox (gserver message)
+(defun submit-message-with-reply (gserver message)
   "Pushes the message to the mailbox channel"
-  (let ((*task-category* (mkstr (name gserver) "-task")))
-    (submit-task (mailbox gserver) (lambda () (handle-message gserver message)))
-    (receive-result (mailbox gserver))))
+  (let ((*task-category* (mkstr (name gserver) "-task"))
+        (mailbox (mailbox gserver)))
+    (submit-task mailbox (lambda () (handle-message gserver message)))
+    (receive-result mailbox)))
+
+(defun submit-message-without-reply (gserver message)
+  (future (handle-message gserver message)))
 
 (defun handle-message (gserver message)
   (log:debug "Handling message: " message)
@@ -111,8 +126,9 @@ and the new state as cdr."))
 ;; OK - add internal state for if we are running or not. When STOP was sent we should go to stopped state.
 ;; OK - return error cons
 ;; OK - add state
+;; OK - add cast, fire-and-forget
+;; - future just uses any worker to update the state, not sure if good
 ;; - add macro to conveniently create gserver
-;; => - add cast, fire-and-forget
 ;; - how to let 'destroy' a channel for cleanup?
 ;; - add gserver mgr that can spawn new actors.
 ;; - add error handling

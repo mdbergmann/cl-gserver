@@ -22,6 +22,7 @@
   :components ((:module "tests"
                 :components
                 ((:file "all-test")
+                 (:file "gserver-test")
                  (:file "utils-test"))))
   :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run! 'cl-gserver.tests)))

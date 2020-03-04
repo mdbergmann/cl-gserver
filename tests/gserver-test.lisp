@@ -32,8 +32,7 @@
          (cons new-state new-state)))
       ((list :sub n)
        (let ((new-state (- current-state n)))
-         (cons new-state new-state)))
-      ((list :err) (/ 5 0))))  ; division by 0
+         (cons new-state new-state)))))
 
   (let ((cut (make-instance 'add-server :state 0)))
     (is (= 1000 (call cut '(:add 1000))))
@@ -41,26 +40,47 @@
     (is (eq :unhandled (call cut "Foo")))))
 
 (test error-in-handler
+  "testing error handling"
   
   (defclass err-server (gserver) ())
   (defmethod handle-call ((server err-server) message current-state)
     (match message
       ((list :err) (/ 5 0))))  ; division by 0
 
-  (let* ((cut (make-instance 'err-server :state 0))
+  (let* ((cut (make-instance 'err-server))
          (result (call cut '(:err))))
-    (is (eq :handler-error (car result)))
-    (is (not (null (typep (cdr result) 'division-by-zero))))))
+    (format t "Got result : ~a~%" result)
+    (is (not (null (cdr result))))
+    (is (eq (car result) :handler-error))))
 
 (test stack-server
+  "a gserver as stack."
 
   (defclass stack-server (gserver) ())
   (defmethod handle-call ((server stack-server) message current-state)
+    (log:debug "current-state: " current-state)
     (match message
-      (:pop (cons (car current-state) (cdr current-state)))))
+      (:pop
+       (cons
+        (car current-state)
+        (cdr current-state)))
+      ((cons :push value)
+       (let ((new-state (append current-state (list value))))
+         (cons new-state new-state)))))
 
-  (let ((cut (make-instance 'stack-server :state '())))
-    (is (null (call cut :pop))))
+  (let ((cut (make-instance 'stack-server :state '(5))))
+    (cast cut (cons :push 4))
+    (cast cut (cons :push 3))
+    (cast cut (cons :push 2))
+    (cast cut (cons :push 1))
+    (sleep 0.5)
+    (is (= 5 (call cut :pop)))
+    (is (= 4 (call cut :pop)))
+    (is (= 3 (call cut :pop)))
+    (is (= 2 (call cut :pop)))
+    (is (= 1 (call cut :pop)))
+    (is (null (call cut :pop)))
+    )
 
   ;; TODO: Expand on this
   )

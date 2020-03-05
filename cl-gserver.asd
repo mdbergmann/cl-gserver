@@ -2,7 +2,9 @@
   :version "0.1.0"
   :author "Manfred Bergmann"
   :license ""
-  :depends-on ("lparallel"
+  :depends-on ("closer-mop"
+               "lparallel"
+               "stmx"
                "log4cl"
                "iterate"
                "trivia")

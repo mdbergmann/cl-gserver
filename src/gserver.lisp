@@ -1,5 +1,5 @@
-+(defpackage :cl-gserver
-  (:use :cl :cl-gserver.utils :lparallel :lparallel.queue :log4cl)
+(defpackage :cl-gserver
+  (:use :closer-common-lisp :cl-gserver.utils :lparallel :stmx :log4cl)
   (:export #:init-threadpool
            #:handle-call
            #:handle-cast
@@ -17,20 +17,25 @@
 (defstruct gserver-state (running t :type boolean))
 
 (defclass gserver()
-  ((name :initarg :name
-         :initform (mkstr "Server-" (random 100000))
-         :accessor name
-         :documentation "Well, the name of the gserver. If no name is specified a default one is applied.")
+   ((name :initarg :name
+          :initform (mkstr "Server-" (random 100000))
+          :accessor name
+          :documentation "Well, the name of the gserver. If no name is specified a default one is applied.")
    (state :initarg :state
           :initform nil
           :documentation "The encapsulated state.")
-   (mailbox :initform (make-channel)
-            :accessor mailbox
-            :documentation "The channel for submitting calls.")
    (internal-state :initarg :internal-state
                    :initform (make-gserver-state)
-                   :documentation "The internal state of the server.")
-   ))
+                   :documentation "The internal state of the server."))
+  (:documentation
+"GServer is an Erlang inspired GenServer.
+It is meant to encapsulate state, but also to execute async operations.
+State can be changed by calling into the server via 'call' or 'cast'.
+Where 'call' is waiting for a result and 'cast' does not.
+For each 'call' and 'cast' handlers must be implemented by subclasses.
+
+The difference to the Erlang GenServer is that GServer doesn't have it's own
+process. Instead it is more a facade over a combination of the lparallel workers and stmx transactional memory to make sure the state is handled properly in an asynchronous manner."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
   :documentation "Not sure yet what this does.")
@@ -40,13 +45,12 @@
 (defgeneric handle-call (gserver message current-state)
   (:documentation
 "Handles calls to the server. Must be implemented by subclasses.
-The convention here is to return a cons with values to be returned to caller as car,
-and the new state as cdr."))
+The convention here is to return a cons with values to be returned to caller as car, and the new state as cdr."))
 
 (defgeneric handle-cast (gserver message current-state)
   (:documentation
 "Handles casts to the server. Must be implemented by subclasses.
-Same convention as for 'handle-call' except that no return is sent to the caller."))
+Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
 
 (defun call (gserver message)
 "Send a message to a gserver instance and wait for a result.
@@ -56,8 +60,8 @@ Unhandled result: :unhandled
 Error result: (cons :handler-error <error-description-as-string>)
 "
   (when message
-    (log:debug "pushing ~a to mailbox" message)
-    (let ((result (submit-message-synchronous gserver message)))
+    (log:debug "pushing ~a to channel" message)
+    (let ((result (submit-message-sync gserver message)))
       (log:debug "Message process result:" result)
       result)))
 
@@ -66,18 +70,17 @@ Error result: (cons :handler-error <error-description-as-string>)
 No result."
   (when message
     (log:debug "casting message: " message)
-    (submit-message-asynchronous gserver message)))
+    (submit-message-async gserver message)))
 
 ;; internal functions
 
-(defun submit-message-synchronous (gserver message)
-  "Pushes the message to the mailbox channel"
+(defun submit-message-sync (gserver message)
   (let ((*task-category* (mkstr (name gserver) "-task"))
-        (mailbox (mailbox gserver)))
-    (submit-task mailbox (lambda () (handle-message gserver message nil)))
-    (receive-result mailbox)))
+        (channel (make-channel)))
+    (submit-task channel (lambda () (handle-message gserver message nil)))
+    (receive-result channel)))
 
-(defun submit-message-asynchronous (gserver message)
+(defun submit-message-async (gserver message)
   (future (handle-message gserver message t)))
 
 (defun handle-message (gserver message async-p)
@@ -126,8 +129,10 @@ No result."
   :unhandled)
 
 (defun update-state (gserver cons-result)
-  (log:info "Updating state to: " (cdr cons-result))
-  (setf (slot-value gserver 'state) (cdr cons-result)))
+  (let ((new-state (cdr cons-result)))
+    (log:info "Updating state to: " new-state)
+;    (atomic
+     (setf (slot-value gserver 'state) new-state)))
 
 (defun reply-value (cons-result)
   (car cons-result))
@@ -142,8 +147,7 @@ No result."
 ;; OK - return error cons
 ;; OK - add state
 ;; OK - add cast, fire-and-forget
-;; - future just uses any worker to update the state, not sure if good
+;; OK - add error handling
+;; => - implement stmx to wrap updating the state
 ;; - add macro to conveniently create gserver
-;; - how to let 'destroy' a channel for cleanup?
 ;; - add gserver mgr that can spawn new actors.
-;; - add error handling

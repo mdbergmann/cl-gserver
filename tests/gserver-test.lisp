@@ -3,6 +3,7 @@
   (:export #:run!
            #:all-tests
            #:nil))
+
 (in-package :cl-gserver.gserver-test)
 
 (def-suite gserver-tests
@@ -20,6 +21,7 @@
 
   (let ((server (make-instance 'gserver)))
     (is (= 0 (search "Server-" (name server))))))
+
 
 (test handle-call
   "Simple add-server handle-call test."
@@ -39,6 +41,7 @@
     (is (= 500 (call cut '(:sub 500))))
     (is (eq :unhandled (call cut "Foo")))))
 
+
 (test error-in-handler
   "testing error handling"
   
@@ -52,6 +55,7 @@
     (format t "Got result : ~a~%" result)
     (is (not (null (cdr result))))
     (is (eq (car result) :handler-error))))
+
 
 (test stack-server
   "a gserver as stack."

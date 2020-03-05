@@ -64,15 +64,25 @@
        (cons
         (car current-state)
         (cdr current-state)))
+      (:get
+       (cons current-state current-state))))
+  (defmethod handle-cast ((server stack-server) message current-state)
+    (log:debug "current-state: " current-state)
+    (match message
       ((cons :push value)
        (let ((new-state (append current-state (list value))))
          (cons new-state new-state)))))
 
   (let ((cut (make-instance 'stack-server :state '(5))))
+    (is (equalp '(5) (call cut :get)))
     (cast cut (cons :push 4))
+    (is (equalp '(5 4) (call cut :get)))
     (cast cut (cons :push 3))
+    (is (equalp '(5 4 3) (call cut :get)))
     (cast cut (cons :push 2))
+    (is (equalp '(5 4 3 2) (call cut :get)))
     (cast cut (cons :push 1))
+    (is (equalp '(5 4 3 2 1) (call cut :get)))
     (sleep 0.5)
     (is (= 5 (call cut :pop)))
     (is (= 4 (call cut :pop)))
@@ -80,10 +90,7 @@
     (is (= 2 (call cut :pop)))
     (is (= 1 (call cut :pop)))
     (is (null (call cut :pop)))
-    )
-
-  ;; TODO: Expand on this
-  )
+    ))
 
 (run! 'get-server-name)
 (run! 'handle-call)

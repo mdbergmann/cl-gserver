@@ -21,7 +21,7 @@ Then initialize a threadpool. This will initialite a threadpool with 1 worker th
 It depends a bit how you plan to use it.
 I/O should use more threads, if the threads have more CPU intensive work to do then the number of threads should match the number of CPU cores on your hardware.
 
-```
+```lisp
 (init-threadpool 1)
 ```
 
@@ -31,13 +31,14 @@ Let's create a stack gserver:
 
 First create a new subclass:
 
-```
+```lisp
 (defclass stack-server (gserver) ())
 ```
 
-Then implement `handle-call` method which is used to pop or get values since `call`ing a gserver waits for result:
+Then implement `handle-call` method which is used to pop or get values since `call`ing a gserver waits for result.
+Both `handle-call` and `handle-cast` provide three parameters. That is the 'server' instance, the 'message' that was sent, and the 'current-state' of the gserver:
 
-```
+```lisp
 (defmethod handle-call ((server stack-server) message current-state)
   (log:debug "current-state: " current-state)
   (match message
@@ -50,13 +51,13 @@ Then implement `handle-call` method which is used to pop or get values since `ca
 ```
 
 This implements two message handlers using pattern matching of `trivia` library.  
-The convention of `handle-call` is to always return a `cons` of the value to be returned and the new state value.
+The convention of `handle-call` is to always return a `cons` of the `car` value to be returned and the new state value as `cdr`.
 
 So `:pop` takes the current `car` of the backing list which will be returned to the caller and `cdr` of the current state will get the new state.
 
-Now we still need to push values. This will be done by `cast`ing to the server.
+Now we also want to push values. This will be done by `cast`ing to the server.
 
-```
+```lisp
 (defmethod handle-cast ((server stack-server) message current-state)
   (log:debug "current-state: " current-state)
   (match message
@@ -74,13 +75,13 @@ Disclaimer: this is a completely naive implementaion of a stack just using a lis
 
 Now we can make a new server instance with a predefined stack of one entry: 5:
 
-```
+```lisp
 (defparameter *stack-server* (make-instance 'stack-server :state '(5)))
 ```
 
 Let's push new values:
 
-```
+```lisp
 (cast *stack-server* (cons :push 4))
 (cast *stack-server* (cons :push 3))
 (cast *stack-server* (cons :push 2))
@@ -88,14 +89,14 @@ Let's push new values:
 
 When we check the state, we get:
 
-```
+```lisp
 (call *stack-server* :get)
 => returns '(5 4 3 2)
 ```
 
 We can also pop the stack: 
 
-```
+```lisp
 (call *stack-server* :pop)
 => returns 5
 (call *stack-server* :pop)

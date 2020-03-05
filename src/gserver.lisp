@@ -1,5 +1,5 @@
 (defpackage :cl-gserver
-  (:use :closer-common-lisp :cl-gserver.utils :lparallel :stmx :log4cl)
+  (:use :cl :cl-gserver.utils :lparallel :stmx :log4cl)
   (:export #:init-threadpool
            #:handle-call
            #:handle-cast
@@ -34,8 +34,7 @@ State can be changed by calling into the server via 'call' or 'cast'.
 Where 'call' is waiting for a result and 'cast' does not.
 For each 'call' and 'cast' handlers must be implemented by subclasses.
 
-The difference to the Erlang GenServer is that GServer doesn't have it's own
-process. Instead it is more a facade over a combination of the lparallel workers and stmx transactional memory to make sure the state is handled properly in an asynchronous manner."))
+The difference to the Erlang GenServer is that GServer doesn't have it's own process. Instead it is more a facade over a combination of the lparallel workers and stmx transactional memory to make sure the state is handled properly in an asynchronous manner."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
   :documentation "Not sure yet what this does.")
@@ -148,6 +147,6 @@ No result."
 ;; OK - add state
 ;; OK - add cast, fire-and-forget
 ;; OK - add error handling
-;; => - implement stmx to wrap updating the state
-;; - add macro to conveniently create gserver
+;; - implement stmx to wrap updating the state
+;; => - add macro to conveniently create gserver
 ;; - add gserver mgr that can spawn new actors.

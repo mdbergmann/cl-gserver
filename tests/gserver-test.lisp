@@ -14,8 +14,6 @@
 
 (log:config :info)
 
-(init-threadpool 1)
-
 (test get-server-name
   "Just retrieves the name of the server"
 

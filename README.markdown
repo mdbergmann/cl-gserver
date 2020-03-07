@@ -7,22 +7,19 @@ State can be changed and maintained by calling into the server via 'call' or 'ca
 Where 'call' is waiting for a result and 'cast' does not.
 For each 'call' and 'cast' handlers must be implemented by subclasses.
 
-The difference to the Erlang GenServer is that GServer doesn't have it's own process. Instead it is more a facade over a combination of the lparallel workers and stmx transactional memory to make sure the state is handled properly in an asynchronous manner.
-
-WIP: stmx raises internal error
+A GServer runs a 'mailbox'-queue in it's own thread so that the order is which messages arrive at the GServer are handled are preserved.
 
 ## Usage
 
-#### Thread pool
+#### Dispatcher thread pool
 
 It's quite simple. First `:use :cl-gserver`.
 
-Then initialize a threadpool. This will initialite a threadpool with 1 worker thread. How many threads should the pool have?  
-It depends a bit how you plan to use it.
-I/O should use more threads, if the threads have more CPU intensive work to do then the number of threads should match the number of CPU cores on your hardware.
+Initialize a dispatcher threadpool. The dispatcher threadpool should be used to execute long running tasks in the implemented handlers `handle-call` and `handle-cast`.
+Short lived I/O tasks can use more threads in the pool, if the threads have more CPU intensive work to do then the number of threads should match the number of CPU cores on your hardware.
 
 ```lisp
-(init-threadpool 1)
+(init-dispatcher-threadpool 4)
 ```
 
 #### Creating a custom gserver
@@ -70,6 +67,8 @@ Now we also want to push values. This will be done by `cast`ing to the server.
 We still have to returns a `cons`. However, the `car` of the cons is kind of irrelevant, because it's not returned to the caller. The `cdr` is important as it will get the new state.
 
 Disclaimer: this is a completely naive implementaion of a stack just using a list structure.
+
+Attention: `handle-call` and `handle-cast` are executed by 'mailbox' handling thread of the GServer. For long running tasks make sure you wrap your code into a `lparallel:future`.
 
 #### `call`ing and `cast`ing
 

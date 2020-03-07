@@ -10,8 +10,8 @@
 
 (in-package :cl-gserver)
 
-(defun init-threadpool (size)
-  (log:debug "Initializing threadpool with " size " threads")
+(defun init-dispatcher-threadpool (size)
+  (log:debug "Initializing dispatcher threadpool with " size " threads")
   (setf *kernel* (make-kernel size)))
 
 (defstruct gserver-state (running t :type boolean))
@@ -20,47 +20,62 @@
    ((name :initarg :name
           :initform (mkstr "Server-" (random 100000))
           :accessor name
-          :documentation "Well, the name of the gserver. If no name is specified a default one is applied.")
-   (state :initarg :state
-          :initform nil
-          :documentation "The encapsulated state.")
-   (internal-state :initarg :internal-state
-                   :initform (make-gserver-state)
-                   :documentation "The internal state of the server."))
+          :documentation
+          "Well, the name of the gserver. If no name is specified a default one is applied.")
+    (state :initarg :state
+           :initform nil
+           :documentation
+           "The encapsulated state.")
+    (kernel :initform (make-kernel 1)
+            :documentation
+            "The kernel with 1 worker for handling the mailbox.")
+    (channel :initform nil
+             :documentation
+             "Our single kernel bound channel for submitting messages.")
+    (internal-state :initarg :internal-state
+                    :initform (make-gserver-state)
+                    :documentation
+                    "The internal state of the server."))
   (:documentation
 "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.
-State can be changed by calling into the server via 'call' or 'cast'.
-Where 'call' is waiting for a result and 'cast' does not.
-For each 'call' and 'cast' handlers must be implemented by subclasses.
+State can be changed by calling into the server via `call' or `cast'.
+Where `call' is waiting for a result and `cast' does not.
+For each `call' and `cast' handlers must be implemented by subclasses.
 
-The difference to the Erlang GenServer is that GServer doesn't have it's own process. Instead it is more a facade over a combination of the lparallel workers and stmx transactional memory to make sure the state is handled properly in an asynchronous manner."))
+A GServer runs it's own thread to handle the incomming messages."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
-  :documentation "Not sure yet what this does.")
+  :documentation "Initializes the instance."
+  (let ((*kernel* (slot-value self 'kernel)))
+    (setf (slot-value self 'channel) (make-channel))))
 
 ;; public functions
 
 (defgeneric handle-call (gserver message current-state)
   (:documentation
 "Handles calls to the server. Must be implemented by subclasses.
-The convention here is to return a cons with values to be returned to caller as car, and the new state as cdr."))
+The convention here is to return a `cons' with values to be returned to caller as `car', and the new state as `cdr'.
+Attention, when implementing this make sure you wrap long running tasks in a `future'
+ as otherwise the message handling is blocked."))
 
 (defgeneric handle-cast (gserver message current-state)
   (:documentation
 "Handles casts to the server. Must be implemented by subclasses.
-Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
+Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately.
+Attention, when implementing this make sure you wrap long running tasks in a `future'
+ as otherwise the message handling is blocked."))
 
 (defun call (gserver message)
 "Send a message to a gserver instance and wait for a result.
-The result is a of different types.
+The result can be of different types.
 Success result: <returned-state>
 Unhandled result: :unhandled
 Error result: (cons :handler-error <error-description-as-string>)
 "
   (when message
     (log:debug "pushing ~a to channel" message)
-    (let ((result (submit-message-sync gserver message)))
+    (let ((result (submit-message gserver message nil)))
       (log:debug "Message process result:" result)
       result)))
 
@@ -69,18 +84,17 @@ Error result: (cons :handler-error <error-description-as-string>)
 No result."
   (when message
     (log:debug "casting message: " message)
-    (submit-message-async gserver message)))
+    (submit-message gserver message t)))
 
 ;; internal functions
 
-(defun submit-message-sync (gserver message)
-  (let ((*task-category* (mkstr (name gserver) "-task"))
-        (channel (make-channel)))
-    (submit-task channel (lambda () (handle-message gserver message nil)))
-    (receive-result channel)))
-
-(defun submit-message-async (gserver message)
-  (future (handle-message gserver message t)))
+(defun submit-message (gserver message async-p)
+  (let* ((*task-category* (mkstr (name gserver) "-task"))
+         (channel (slot-value gserver 'channel)))
+    (submit-task channel (lambda () (handle-message gserver message async-p)))
+    (if async-p
+        (future (receive-result channel))
+        (receive-result channel))))
 
 (defun handle-message (gserver message async-p)
   (log:debug "Handling message: " message)

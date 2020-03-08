@@ -1,6 +1,6 @@
 (defpackage :cl-gserver
-  (:use :cl :cl-gserver.utils :lparallel :stmx :log4cl)
-  (:export #:init-threadpool
+  (:use :cl :cl-gserver.utils :lparallel :log4cl)
+  (:export #:init-dispatcher-threadpool
            #:handle-call
            #:handle-cast
            #:gserver
@@ -21,17 +21,24 @@
           :initform (mkstr "Server-" (random 100000))
           :accessor name
           :documentation
-          "Well, the name of the gserver. If no name is specified a default one is applied.")
+          "The name of the gserver. If no name is specified a default one is applied.")
     (state :initarg :state
            :initform nil
            :documentation
            "The encapsulated state.")
-    (kernel :initform (make-kernel 1)
-            :documentation
-            "The kernel with 1 worker for handling the mailbox.")
-    (channel :initform nil
-             :documentation
-             "Our single kernel bound channel for submitting messages.")
+    (state-kernel :initform nil
+                  :documentation
+                  "The state-kernel with 1 worker for updating the state.")
+    (state-channel :initform nil
+                   :documentation
+                   "The state-channel for the state-kernel. Since we only have 1 worker here it is safe to make an instance channel regarding FIFO.")
+    (dispatch-kernel :initform nil
+                     :documentation
+                     "An optional dispatcher kernel. If none is defined an external lparallel global `*kernel*' is required.")
+    (dispatch-kernel-workers :initarg :dispatch-workers
+                             :initform 0
+                             :documentation
+                             "Number of dispatch workers. 0 default, which does spawnm a separate intwernal kernel but an external `*kernel*' is used.")
     (internal-state :initarg :internal-state
                     :initform (make-gserver-state)
                     :documentation
@@ -43,12 +50,32 @@ State can be changed by calling into the server via `call' or `cast'.
 Where `call' is waiting for a result and `cast' does not.
 For each `call' and `cast' handlers must be implemented by subclasses.
 
-A GServer runs it's own thread to handle the incomming messages."))
+A GServer runs it's own thread, actually a lparallel state-kernel with one worker, to update the state.
+The handlers `handle-call' and `handle-cast' are using a default lparallel global kernel.
+But the state update of the gserver is synchronized to a single worker queue.
+Use `init-dispatcher-threadpool' with > 0 workers."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
   :documentation "Initializes the instance."
-  (let ((*kernel* (slot-value self 'kernel)))
-    (setf (slot-value self 'channel) (make-channel))))
+
+  (with-slots (state-kernel
+               state-channel
+               dispatch-kernel
+               dispatch-kernel-workers
+               name) self
+     (let ((*kernel* (make-kernel 1 :name (mkstr "state-kernel-" name))))
+       (setf state-kernel *kernel*)
+       (setf state-channel (make-channel)))
+    
+    (if (> dispatch-kernel-workers 0)
+        (progn
+          (log:info "Making dispatch kernel with ~a workers" dispatch-kernel-workers)
+          (setf dispatch-kernel (make-kernel
+                                 dispatch-kernel-workers
+                                 :name (mkstr "dispatch-kernel-" name))))
+        (progn
+          (log:info "Using global *kernel* as distapcher.")
+          (setf dispatch-kernel (check-kernel))))))
 
 ;; public functions
 
@@ -56,15 +83,13 @@ A GServer runs it's own thread to handle the incomming messages."))
   (:documentation
 "Handles calls to the server. Must be implemented by subclasses.
 The convention here is to return a `cons' with values to be returned to caller as `car', and the new state as `cdr'.
-Attention, when implementing this make sure you wrap long running tasks in a `future'
- as otherwise the message handling is blocked."))
+`handle-call' is executed in the default dispatcher threadpool. Should the threadpool have only 1 worker a long running task will block the handling of other messages.
+So make sure the threadpool is sufficiently large to do what you intent to."))
 
 (defgeneric handle-cast (gserver message current-state)
   (:documentation
 "Handles casts to the server. Must be implemented by subclasses.
-Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately.
-Attention, when implementing this make sure you wrap long running tasks in a `future'
- as otherwise the message handling is blocked."))
+Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
 
 (defun call (gserver message)
 "Send a message to a gserver instance and wait for a result.
@@ -74,8 +99,7 @@ Unhandled result: :unhandled
 Error result: (cons :handler-error <error-description-as-string>)
 "
   (when message
-    (log:debug "pushing ~a to channel" message)
-    (let ((result (submit-message gserver message nil)))
+    (let ((result (submit-message gserver message t)))
       (log:debug "Message process result:" result)
       result)))
 
@@ -83,25 +107,32 @@ Error result: (cons :handler-error <error-description-as-string>)
 "Sends a message to a gserver asynchronously.
 No result."
   (when message
-    (log:debug "casting message: " message)
-    (submit-message gserver message t)))
+    (let ((result (submit-message gserver message nil)))
+      (log:debug "Message process result:" result)
+      result)))
 
 ;; internal functions
 
-(defun submit-message (gserver message async-p)
+(defun submit-message (gserver message withreply-p)
   (let* ((*task-category* (mkstr (name gserver) "-task"))
-         (channel (slot-value gserver 'channel)))
-    (submit-task channel (lambda () (handle-message gserver message async-p)))
-    (if async-p
-        (future (receive-result channel))
-        (receive-result channel))))
+         (*kernel* (slot-value gserver 'dispatch-kernel))
+         (channel (make-channel))); make separate channel so that we get the result for the submit.
+    (log:debug "Channel: " channel)
+    (log:debug "Kernel:" *kernel*)
+    (log:debug "Pushing ~a to channel" message)
+    (submit-task channel (lambda ()
+                           (log:debug "Foo")
+                           (handle-message gserver message withreply-p)))
+    (if withreply-p
+        (receive-result channel)
+        (future (receive-result channel)))))
 
-(defun handle-message (gserver message async-p)
+(defun handle-message (gserver message withreply-p)
   (log:debug "Handling message: " message)
   (when message
     (handler-case
         (unless (handle-message-internal message)
-          (handle-message-user gserver message async-p))
+          (handle-message-user gserver message withreply-p))
       (t (c)
         (log:warn "Error condition was raised on message processing: " c)
         (cons :handler-error c)))))
@@ -111,13 +142,18 @@ No result."
   (log:debug "Internal handle-call: " msg)
   nil)
 
-(defun handle-message-user (gserver message async-p)
-  "This will call the method 'handle-call' with the message."  
+(defun handle-message-user (gserver message withreply-p)
+  "This will call the method 'handle-call' with the message."
+  (log:debug "User handle message: " message)
   (let* ((current-state (slot-value gserver 'state))
          (handle-result
-           (if async-p
-               (handle-cast gserver message current-state)
-               (handle-call gserver message current-state))))
+           (if withreply-p
+               (progn
+                 (log:debug "Calling handle-call on: " gserver)
+                 (handle-call gserver message current-state))
+               (progn
+                 (log:debug "Calling handle-cast on: " gserver)
+                 (handle-cast gserver message current-state)))))
     (log:debug "Current-state: " (slot-value gserver 'state))
     (cond
       (handle-result
@@ -126,15 +162,17 @@ No result."
        (process-not-handled)))))
 
 (defun process-handle-result (handle-result gserver)
-  (log:debug "Message handled by handle-call. result: " handle-result)
+  (log:info "Message handled by handle-call. result: " handle-result)
   (cond
     ((consp handle-result)
      (progn
+       (log:debug "Updating state...")
        (update-state gserver handle-result)
+       (log:debug "Updating state...done")
        (reply-value handle-result)))
     (t
      (progn
-       (log:info "handle-call result is no cons.")
+       (log:warn "handle-call result is no cons.")
        (cons :handler-error "handle-call result is no cons!")))))
 
 (defun process-not-handled ()
@@ -143,16 +181,16 @@ No result."
 
 (defun update-state (gserver cons-result)
   (let ((new-state (cdr cons-result)))
-    (log:info "Updating state to: " new-state)
-;    (atomic
-     (setf (slot-value gserver 'state) new-state)))
+    (let ((channel (slot-value gserver 'state-channel)))
+      (submit-task channel
+                   (lambda ()
+                     (setf (slot-value gserver 'state) new-state)
+                     (slot-value gserver 'state)))
+      (receive-result channel))))
 
 (defun reply-value (cons-result)
   (car cons-result))
 
-
-;;(defun error-receive (msg)
-;;  (throw 'foo 1))
 
 ;; TODO:
 ;; OK - do loop while, until 'stop-condition
@@ -161,6 +199,7 @@ No result."
 ;; OK - add state
 ;; OK - add cast, fire-and-forget
 ;; OK - add error handling
-;; - implement stmx to wrap updating the state
-;; => - add macro to conveniently create gserver
+;; - add macro to conveniently create gserver
+;; - option to make another state-kernel for cast, call handlers other than *kernel*.
+;; - add shutdown of gserver
 ;; - add gserver mgr that can spawn new actors.

@@ -14,6 +14,8 @@
 
 (log:config :info)
 
+(init-dispatcher-threadpool 1)
+
 (test get-server-name
   "Just retrieves the name of the server"
 
@@ -93,6 +95,7 @@
     (is (= 1 (call cut :pop)))
     (is (null (call cut :pop)))
     ))
+
 
 (run! 'get-server-name)
 (run! 'handle-call)

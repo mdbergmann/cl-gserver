@@ -125,7 +125,9 @@ No result."
                            (handle-message gserver message withreply-p)))
     (if withreply-p
         (receive-result channel)
-        (future (receive-result channel)))))
+        (progn
+          (future (receive-result channel))
+          t)))
 
 (defun handle-message (gserver message withreply-p)
   (log:debug "Handling message: " message)

@@ -76,7 +76,7 @@ Now we also want to push values. This will be done by `cast`ing to the server.
 `cast` is asynchronous and doesn't wait for a result. So we use it to push values to the stack.
 We still have to return a `cons`. However, the `car` of the cons is kind of irrelevant, because it's not returned to the caller. The `cdr` is important as it will get the new state.
 
-Disclaimer: this is a completely naive implementaion of a stack just using a list structure.
+Disclaimer: this is a completely naive implementaion of a stack just using a cons list.
 
 
 #### `call`ing and `cast`ing
@@ -118,9 +118,9 @@ We can also pop the stack:
 => returns 2
 ```
 
-### Performance coonsiderations
+### Performance considerations
 
-Tests show that if the handlers are usd to do quick operations, then a lower number of workers will be faster.
+Tests show that if the handlers are used to do quick operations, then a lower number of workers will be faster.
 
 ```
 --- GLOBAL dispatcher ---

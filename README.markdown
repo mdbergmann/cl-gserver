@@ -8,7 +8,7 @@ Where 'call' is synchronous and waits for a result, 'cast' is asynchronous and r
 For each 'call' and 'cast' handlers must be implemented by subclasses.
 
 GServer runs at least one thread that operates on a queue to update the GServer state.
-Calls (or casts) are dispatched using either a GServer internal threadpool, or a global threadpool.
+Calls (or casts) are dispatched using either a GServer internal threadpool, or can use a global threadpool.
 
 ## Usage
 

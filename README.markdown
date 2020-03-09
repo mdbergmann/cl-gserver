@@ -7,30 +7,16 @@ State can be changed and maintained by calling into the server via 'call' or 'ca
 Where 'call' is synchronous and waits for a result, 'cast' is asynchronous and responds just with `t`.
 For each 'call' and 'cast' handlers must be implemented by subclasses.
 
-GServer runs at least one thread that operates on a queue to update the GServer state.
-Calls (or casts) are dispatched using either a GServer internal threadpool, or can use a global threadpool.
+GServer runs one thread that operates on a queue for a synchronized update of the GServer state.
+`call`s (or `cast`s) are dispatched using either a GServer internal threadpool, or a global threadpool.
 
 ## Usage
 
-### Dispatcher thread pool
+### GServer
+
+#### Creating a custom gserver
 
 First `:use :cl-gserver`.
-
-As said above, the GServer maintains a state synchronization queue.  
-`call`s and `cast`s are dispatched in a different threadpool. GServer supports creating a per server threadpool, or a global threadpool.
-
-To initialize a global threadpool you should first call:
-
-```lisp
-(init-dispatcher-threadpool 4)
-```
-
-You can choose when creating a GServer which threadpool to use.
-
-See below for performance considerations for the number of workers in a pool.
-
-
-### Creating a custom gserver
 
 Let's create a simple stack gserver:
 
@@ -40,8 +26,11 @@ First create a new subclass of `gserver`:
 (defclass stack-server (gserver) ())
 ```
 
+##### Synchronous `call`
+
 Then implement `handle-call` method which is used to pop or get values since `call`ing a `gserver` waits for result.
-Both `handle-call` and `handle-cast` provide three parameters. That is the 'server' instance, the 'message' that was sent, and the 'current-state' of the `gserver`:
+Both `handle-call` and `handle-cast` provide three parameters. That is the 'server' instance ('self' if you want), 
+the 'message' that was sent, and the 'current-state' of the `gserver`:
 
 ```lisp
 (defmethod handle-call ((server stack-server) message current-state)
@@ -55,12 +44,15 @@ Both `handle-call` and `handle-cast` provide three parameters. That is the 'serv
      (cons current-state current-state))))
 ```
 
-This implements two message handlers using pattern matching of `trivia` library.  
+This implements two message handlers using pattern matching with help of `trivia` library.  
 You are free to implement the handlers however you like as long as the return conventions are met.
+An error is raised if no `cons` is returned, in which case the server responds with `(cons :handler-error "<error-message>")` to the `call`.
 
 The convention of `handle-call` is to always return a `cons` where the `car` value is to value to be returned and the new state value as `cdr`.
 
-So `:pop` takes the current `car` of the backing list which will be returned to the caller and `cdr` of the current state will become the new state.
+So `:pop` in the examnple takes the current `car` of the backing list which will be returned to the caller and `cdr` of the current state will become the new state.
+
+##### Asynchronous `cast`
 
 Now we also want to push values. This will be done by `cast`ing to the server.
 
@@ -73,13 +65,15 @@ Now we also want to push values. This will be done by `cast`ing to the server.
        (cons new-state new-state)))))
 ```
 
-`cast` is asynchronous and doesn't wait for a result. So we use it to push values to the stack.
+`cast` is asynchronous and just responds with `t`. So we can use it to push values to the stack.
 We still have to return a `cons`. However, the `car` of the cons is kind of irrelevant, because it's not returned to the caller. The `cdr` is important as it will get the new state.
 
 Disclaimer: this is a completely naive implementaion of a stack just using a cons list.
+Disclaimer2: since `cast` is asynchronous the push might not yet has updated the gserver state when you do a pop immediately after.
+So this is not the best example for a `cast`.
 
 
-#### `call`ing and `cast`ing
+##### Make instance of stack-server
 
 Now we can make a new server instance with a predefined stack of one entry: 5:
 
@@ -87,7 +81,16 @@ Now we can make a new server instance with a predefined stack of one entry: 5:
 (defparameter *stack-server* (make-instance 'stack-server :state '(5)))
 ```
 
-When `:dispatch-workers` initarg is specified with a value > 0, then this instance will create a dedicated threadpool with the specified numbers of workers. If the iniarg is ommited or specified with 0 then a global threadpool will be used that has to be initialized using `init-dispatcher-threadpool`.
+As said above, the GServer maintains a state synchronization queue.  
+`call`s and `cast`s are dispatched in a different threadpool. GServer supports creating a per server threadpool, or a global threadpool.
+
+When `:dispatch-workers` initarg is specified with a value > 0, then this instance will create a dedicated threadpool with the specified numbers of workers. If the initarg is ommited or specified with 0 a global threadpool will be used that has to be initialized using `init-dispatcher-threadpool` like so:
+
+```lisp
+(init-dispatcher-threadpool 4)
+```
+
+(See below for performance considerations for the number of workers in a pool.)
 
 
 Let's push new values:

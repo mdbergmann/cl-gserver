@@ -1,7 +1,8 @@
 # Cl-GServer
 
 GServer is an Erlang inspired GenServer.
-It is meant to encapsulate state, but also to execute async operations.
+It is meant to encapsulate state, but also to execute async operations.  
+Encapsulating state also means that it gives a safe facility to update state within a multi-threaded environment without having you to worry about maintaining access to state.
 
 State can be changed and maintained by calling into the server via 'call' or 'cast'.  
 Where 'call' is synchronous and waits for a result, 'cast' is asynchronous and responds just with `t`.

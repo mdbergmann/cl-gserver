@@ -96,8 +96,26 @@
     (is (null (call cut :pop)))
     ))
 
+(test defgserver-macro
+  "Testing the convenience macro"
+
+  (defgserver macro-server
+    :call-handler (cond
+                    ((eq :foo message)
+                     (print current-state)
+                     (cons :bar nil)))
+    :cast-handler (cond
+                    ((eq :bar message)
+                     (print current-state)
+                     (cons :foo nil))))
+
+  (let ((cut (make-instance 'macro-server :state nil :dispatch-workers 1)))
+    (is (eq :bar (call cut :foo)))
+    (is (eq t (cast cut :bar)))))
+
 
 (run! 'get-server-name)
 (run! 'handle-call)
 (run! 'error-in-handler)
 (run! 'stack-server)
+(run! 'defgserver-macro)

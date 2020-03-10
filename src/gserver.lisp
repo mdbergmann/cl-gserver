@@ -4,6 +4,7 @@
            #:handle-call
            #:handle-cast
            #:gserver
+           #:defgserver
            #:name
            #:call
            #:cast))
@@ -91,6 +92,15 @@ So make sure the threadpool is sufficiently large to do what you intent to."))
 "Handles casts to the server. Must be implemented by subclasses.
 Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
 
+(defmacro defgserver (name &key call-handler cast-handler)
+  "Convenience macro to more easily create a new `gserver' class."
+  `(progn
+     (defclass ,name (gserver) ())
+     (defmethod handle-call ((server ,name) message current-state)
+       ,(if call-handler call-handler nil))
+     (defmethod handle-cast ((server ,name) message current-state)
+       ,(if cast-handler cast-handler nil))))
+
 (defun call (gserver message)
 "Send a message to a gserver instance and wait for a result.
 The result can be of different types.
@@ -121,13 +131,12 @@ No result."
     (log:debug "Kernel:" *kernel*)
     (log:debug "Pushing ~a to channel" message)
     (submit-task channel (lambda ()
-                           (log:debug "Foo")
                            (handle-message gserver message withreply-p)))
     (if withreply-p
         (receive-result channel)
         (progn
           (future (receive-result channel))
-          t)))
+          t))))
 
 (defun handle-message (gserver message withreply-p)
   (log:debug "Handling message: " message)
@@ -164,7 +173,7 @@ No result."
        (process-not-handled)))))
 
 (defun process-handle-result (handle-result gserver)
-  (log:info "Message handled by handle-call. result: " handle-result)
+  (log:info "Message handled, result: " handle-result)
   (cond
     ((consp handle-result)
      (progn
@@ -201,7 +210,6 @@ No result."
 ;; OK - add state
 ;; OK - add cast, fire-and-forget
 ;; OK - add error handling
-;; - add macro to conveniently create gserver
-;; - option to make another state-kernel for cast, call handlers other than *kernel*.
+;; => - add macro to conveniently create gserver
 ;; - add shutdown of gserver
 ;; - add gserver mgr that can spawn new actors.

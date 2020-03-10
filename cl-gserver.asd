@@ -3,7 +3,6 @@
   :author "Manfred Bergmann"
   :license ""
   :depends-on ("lparallel"
-               "stmx"
                "log4cl"
                "iterate"
                "trivia")
@@ -23,8 +22,9 @@
   :components ((:module "tests"
                 :components
                 ((:file "all-test")
+                 (:file "utils-test")
                  (:file "gserver-test")
-                 (:file "utils-test"))))
+                 (:file "gserver-mp-test"))))
   :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run! 'cl-gserver.tests)))
 

@@ -93,7 +93,7 @@ So make sure the threadpool is sufficiently large to do what you intent to."))
 Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
 
 (defmacro defgserver (name &key call-handler cast-handler)
-  "Convenience macro to more easily create a new `gserver' class."
+  "TODO: needs firther testing. Convenience macro to more easily create a new `gserver' class."
   `(progn
      (defclass ,name (gserver) ())
      (defmethod handle-call ((server ,name) message current-state)

@@ -49,7 +49,7 @@ This implements two message handlers using pattern matching with help of `trivia
 You are free to implement the handlers however you like as long as the return conventions are met.
 An error is raised if no `cons` is returned, in which case the server responds with `(cons :handler-error "<error-message>")` to the `call`.
 
-The convention of `handle-call` is to always return a `cons` where the `car` value is to value to be returned and the new state value as `cdr`.
+The convention of `handle-call` is to always return a `cons` where the `car` value is to be returned and the new state value is `cdr`.
 
 So `:pop` in the examnple takes the current `car` of the backing list which will be returned to the caller and `cdr` of the current state will become the new state.
 

@@ -8,8 +8,8 @@ State can be changed and maintained by calling into the server via 'call' or 'ca
 Where 'call' is synchronous and waits for a result, 'cast' is asynchronous and responds just with `t`.
 For each 'call' and 'cast' handlers must be implemented by subclasses.
 
-GServer runs one thread that operates on a queue for a synchronized update of the GServer state.
-`call`s (or `cast`s) are dispatched using either a GServer internal threadpool, or a global threadpool.
+GServer runs one it's own thread that handles the incoming messages and eventually maintaining the state.
+In that regard message handling should be quick. Long operations should be delegated to elsewhere.
 
 ## Usage
 
@@ -82,18 +82,6 @@ Now we can make a new server instance with a predefined stack of one entry: 5:
 (defparameter *stack-server* (make-instance 'stack-server :state '(5)))
 ```
 
-As said above, the GServer maintains a state synchronization queue.  
-`call`s and `cast`s are dispatched in a different threadpool. GServer supports creating a per server threadpool, or a global threadpool.
-
-When `:dispatch-workers` initarg is specified with a value > 0, then this instance will create a dedicated threadpool with the specified numbers of workers. If the initarg is ommited or specified with 0 a global threadpool will be used that has to be initialized using `init-dispatcher-threadpool` like so:
-
-```lisp
-(init-dispatcher-threadpool 4)
-```
-
-(See below for performance considerations for the number of workers in a pool.)
-
-
 Let's push new values:
 
 ```lisp
@@ -124,63 +112,20 @@ We can also pop the stack:
 
 ### Performance considerations
 
-Tests show that if the handlers are used to do quick operations, then a lower number of workers will be faster.
+As in this simple test 100_000 messages were processed in 660ms.
 
 ```
---- GLOBAL dispatcher ---
-
 CL-GSERVER> (log:config :warn)
-CL-GSERVER> (init-dispatcher-threadpool 1)
-CL-GSERVER> (time (iter:iter (iter:repeat 10000)
+CL-GSERVER> (time (iter:iter (iter:repeat 100000)
                     (call *my-server* :foo)))
+
 Evaluation took:
-  0.231 seconds of real time
-  0.302233 seconds of total run time (0.222568 user, 0.079665 system)
-  130.74% CPU
-  735,383,473 processor cycles
-  11,500,384 bytes consed
-
-
-CL-GSERVER> (init-dispatcher-threadpool 8)
-CL-GSERVER> (time (iter:iter (iter:repeat 10000)
-                    (call *my-server* :foo)))
-Evaluation took:
-  0.462 seconds of real time
-  0.302238 seconds of total run time (0.221863 user, 0.080375 system)
-  65.37% CPU
-  1,474,141,478 processor cycles
-  11,500,096 bytes consed
-```
-
-However, you should have more workers if the handlers do longer operations, otherwise the messages will queue up.
-
-For some reason that I didn't research yet, when using a dedicated threadpool for the gserver, then message handling is slower:
-
-```
---- INTERNAL kernel ---
-
-CL-GSERVER> (defparameter *my-server* (make-instance 'my-server :state 0 :dispatch-workers 1))
-*MY-SERVER*
-CL-GSERVER> (time (iter:iter (iter:repeat 10000)
-                    (call *my-server* :foo)))
-Evaluation took:
-  0.590 seconds of real time
-  0.271001 seconds of total run time (0.194842 user, 0.076159 system)
-  45.93% CPU
-  1,883,089,220 processor cycles
-  11,499,968 bytes consed
-
-
-CL-GSERVER> (defparameter *my-server* (make-instance 'my-server :state 0 :dispatch-workers 2))
-*MY-SERVER*
-CL-GSERVER> (time (iter:iter (iter:repeat 10000)
-                    (call *my-server* :foo)))
-Evaluation took:
-  1.390 seconds of real time
-  0.449266 seconds of total run time (0.356600 user, 0.092666 system)
-  32.30% CPU
-  4,437,370,508 processor cycles
-  11,468,128 bytes consed
+  0.660 seconds of real time
+  1.115068 seconds of total run time (0.899642 user, 0.215426 system)
+  [ Run times consist of 0.013 seconds GC time, and 1.103 seconds non-GC time. ]
+  168.94% CPU
+  2,107,197,625 processor cycles
+  80,363,168 bytes consed
 ```
 
 

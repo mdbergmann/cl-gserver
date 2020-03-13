@@ -32,6 +32,7 @@
   (let ((agent (make-agent (lambda () '(5 4 3)))))
     (is (equalp '(5 4 3) (agent-get agent #'identity)))
     (is (eq t (agent-update agent (lambda (state) (mapcar #'1+ state)))))
+    (sleep 0.5)
     (is (equalp '(6 5 4) (agent-get agent #'identity)))))
 
 (run! 'create-agent)

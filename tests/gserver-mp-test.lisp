@@ -15,9 +15,6 @@
 
 (log:config :warn)
 
-;;(init-dispatcher-threadpool 1)
-
-
 (test counter-mp
   "Counter server - multi processors."
 
@@ -34,15 +31,15 @@
          (cons new-state new-state)))
       (:get (cons current-state current-state))))
 
-  (let ((cut (make-instance 'counter-server :state 0 :dispatch-workers 4)))
+  (let ((cut (make-instance 'counter-server :state 0)))
     (time
      (progn 
-       (iter (repeat 1000)
+       (iter (repeat 100000)
          (call cut :add))
        (iter (repeat 500)
          (call cut :sub))))
 
-    (is (= 500 (call cut :get))))
+    (is (= 99500 (call cut :get))))
   )
 
   (run! 'counter-mp)

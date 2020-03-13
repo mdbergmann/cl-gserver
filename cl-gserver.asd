@@ -10,7 +10,8 @@
                 :serial t
                 :components
                 ((:file "utils")
-                 (:file "gserver"))))
+                 (:file "gserver")
+                 (:file "agent"))))
   :description ""
   :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 
@@ -24,7 +25,8 @@
                 ((:file "all-test")
                  (:file "utils-test")
                  (:file "gserver-test")
-                 (:file "gserver-mp-test"))))
+                 (:file "gserver-mp-test")
+                 (:file "agent-test"))))
   :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run! 'cl-gserver.tests)))
 

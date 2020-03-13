@@ -14,8 +14,6 @@
 
 (log:config :info)
 
-(init-dispatcher-threadpool 1)
-
 (test get-server-name
   "Just retrieves the name of the server"
 
@@ -80,14 +78,11 @@
   (let ((cut (make-instance 'stack-server :state '(5))))
     (is (equalp '(5) (call cut :get)))
     (cast cut (cons :push 4))
-    (is (equalp '(5 4) (call cut :get)))
     (cast cut (cons :push 3))
-    (is (equalp '(5 4 3) (call cut :get)))
     (cast cut (cons :push 2))
-    (is (equalp '(5 4 3 2) (call cut :get)))
     (cast cut (cons :push 1))
-    (is (equalp '(5 4 3 2 1) (call cut :get)))
     (sleep 0.5)
+    (is (equalp '(5 4 3 2 1) (call cut :get)))
     (is (= 5 (call cut :pop)))
     (is (= 4 (call cut :pop)))
     (is (= 3 (call cut :pop)))

@@ -27,19 +27,12 @@
            :initform nil
            :documentation
            "The encapsulated state.")
-    (state-kernel :initform nil
-                  :documentation
-                  "The state-kernel with 1 worker for updating the state.")
-    (state-channel :initform nil
-                   :documentation
-                   "The state-channel for the state-kernel. Since we only have 1 worker here it is safe to make an instance channel regarding FIFO.")
-    (dispatch-kernel :initform nil
+    (message-kernel :initform nil
+                    :documentation
+                    "The message-kernel with 1 worker for handling the messages.")
+    (message-channel :initform nil
                      :documentation
-                     "An optional dispatcher kernel. If none is defined an external lparallel global `*kernel*' is required.")
-    (dispatch-kernel-workers :initarg :dispatch-workers
-                             :initform 0
-                             :documentation
-                             "Number of dispatch workers. 0 default, which does spawnm a separate intwernal kernel but an external `*kernel*' is used.")
+                     "The message-channel for the message-kernel. Since we only have 1 worker here it is safe to make an instance channel regarding FIFO.")
     (internal-state :initarg :internal-state
                     :initform (make-gserver-state)
                     :documentation
@@ -51,32 +44,17 @@ State can be changed by calling into the server via `call' or `cast'.
 Where `call' is waiting for a result and `cast' does not.
 For each `call' and `cast' handlers must be implemented by subclasses.
 
-A GServer runs it's own thread, actually a lparallel state-kernel with one worker, to update the state.
-The handlers `handle-call' and `handle-cast' are using a default lparallel global kernel.
-But the state update of the gserver is synchronized to a single worker queue.
-Use `init-dispatcher-threadpool' with > 0 workers."))
+A GServer runs it's own thread, actually a lparallel message-kernel with one worker, to handle the messages which will eventually update the state."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
   :documentation "Initializes the instance."
 
-  (with-slots (state-kernel
-               state-channel
-               dispatch-kernel
-               dispatch-kernel-workers
+  (with-slots (message-kernel
+               message-channel
                name) self
-     (let ((*kernel* (make-kernel 1 :name (mkstr "state-kernel-" name))))
-       (setf state-kernel *kernel*)
-       (setf state-channel (make-channel)))
-    
-    (if (> dispatch-kernel-workers 0)
-        (progn
-          (log:info "Making dispatch kernel with ~a workers" dispatch-kernel-workers)
-          (setf dispatch-kernel (make-kernel
-                                 dispatch-kernel-workers
-                                 :name (mkstr "dispatch-kernel-" name))))
-        (progn
-          (log:info "Using global *kernel* as distapcher.")
-          (setf dispatch-kernel (check-kernel))))))
+     (let ((*kernel* (make-kernel 1 :name (mkstr "message-kernel-" name))))
+       (setf message-kernel *kernel*)
+       (setf message-channel (make-channel)))))
 
 ;; public functions
 
@@ -84,8 +62,7 @@ Use `init-dispatcher-threadpool' with > 0 workers."))
   (:documentation
 "Handles calls to the server. Must be implemented by subclasses.
 The convention here is to return a `cons' with values to be returned to caller as `car', and the new state as `cdr'.
-`handle-call' is executed in the default dispatcher threadpool. Should the threadpool have only 1 worker a long running task will block the handling of other messages.
-So make sure the threadpool is sufficiently large to do what you intent to."))
+`handle-call' is executed in the default message dispatcher thread."))
 
 (defgeneric handle-cast (gserver message current-state)
   (:documentation
@@ -125,10 +102,9 @@ No result."
 
 (defun submit-message (gserver message withreply-p)
   (let* ((*task-category* (mkstr (name gserver) "-task"))
-         (*kernel* (slot-value gserver 'dispatch-kernel))
-         (channel (make-channel))); make separate channel so that we get the result for the submit.
+         (*kernel* (slot-value gserver 'message-kernel))
+         (channel (slot-value gserver 'message-channel)))
     (log:debug "Channel: " channel)
-    (log:debug "Kernel:" *kernel*)
     (log:debug "Pushing ~a to channel" message)
     (submit-task channel (lambda ()
                            (handle-message gserver message withreply-p)))
@@ -192,12 +168,8 @@ No result."
 
 (defun update-state (gserver cons-result)
   (let ((new-state (cdr cons-result)))
-    (let ((channel (slot-value gserver 'state-channel)))
-      (submit-task channel
-                   (lambda ()
-                     (setf (slot-value gserver 'state) new-state)
-                     (slot-value gserver 'state)))
-      (receive-result channel))))
+    (setf (slot-value gserver 'state) new-state)
+    (slot-value gserver 'state)))
 
 (defun reply-value (cons-result)
   (car cons-result))

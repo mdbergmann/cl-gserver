@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.agent
-  (:use :cl :cl-gserver :trivia :cl-gserver.utils :log4cl)
+  (:use :cl :cl-gserver :cl-gserver.utils :log4cl)
   (:export #:make-agent
            #:agent-get
            #:agent-update
@@ -27,7 +27,7 @@
 
 (defun make-agent (state-fun)
   (let ((state (funcall state-fun)))
-    (make-instance 'agent :state state :dispatch-workers 1)))
+    (make-instance 'agent :state state)))
 
 (defun agent-get (agent get-fun)
   (call agent (cons :get get-fun)))

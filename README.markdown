@@ -188,3 +188,5 @@ For example could a facade for the counter above look like this:
 (defun decrement () (agent-update *counter-agent* #'1-))
 (defun counter-value () (agent-get *counter-agent* #'identity))
 ```
+
+Alternatively, one can wrap an agent inside a class and provide methods for simplified access to it.

@@ -8,7 +8,7 @@ State can be changed and maintained by calling into the server via 'call' or 'ca
 Where 'call' is synchronous and waits for a result, 'cast' is asynchronous and responds just with `t`.
 For each 'call' and 'cast' handlers must be implemented by subclasses.
 
-GServer runs one it's own thread that handles the incoming messages and eventually maintaining the state.
+GServer runs one it's own thread that handles the incoming messages and maintaining the state.
 In that regard message handling should be quick. Long operations should be delegated to elsewhere.
 
 ## Usage
@@ -110,7 +110,7 @@ We can also pop the stack:
 => returns 2
 ```
 
-### Performance considerations
+#### Performance considerations
 
 As in this simple test 100_000 messages were processed in 660ms.
 
@@ -128,8 +128,63 @@ Evaluation took:
   80,363,168 bytes consed
 ```
 
+## Agent
 
-## WIP/TODO
+### Usage
 
-- Make convenience macros for creating a server.
-- implement Agent that works with lamdas.
+An `Agent` is a specialized `GServer`. It is meant primarily for maintaining state and comes with some conveniences to do that.
+
+To use an Agent import `cl-gserver.agent` package.
+
+There is no need to subclass an Agent. An Agent provides three functions to use it.
+
+- `make-agent` creates a new agent
+- `agent-get` retrieves the current value of the agent
+- `agent-update` updates the state of the agent
+
+All three take a lambda.  
+The lambda for `make-agent` does not take a parameter. It should return the initial state of the agent.  
+`agent-get` and `agent-update` both take a lambda that must support one parameter. This parameter represents the current state of the agent.
+
+Let's make a simple example:
+
+First create an agent with an initial state of `0`.
+
+```lisp
+(defparameter *my-agent* (make-agent (lambda () 0)))
+```
+
+Now update the state several times (`agent-update` is asynchronous and returns `t` immediately):
+
+```lisp
+(agent-update *my-agent* (lambda (state) (1+ state)))
+```
+
+Finally get the state:
+
+```lisp
+(agent-get *my-agent* #'identity)
+```
+
+This `agent-get` just uses the `identity` function to return the state as is.
+
+So this simple agent represents a counter.
+
+It is important to note that the retrieves state, i.e. with `identity` should not be modified outside the agent.
+
+#### Wrapping an agent
+
+While you can use the agent as in the example above it is usually advised to wrap an agent behind a more simple facade that doesn't work with lambdas.
+
+For example could a facade for the counter above look like this:
+
+```
+(defvar *counter-agent* nil)
+
+(defun init-agent (initial-value)
+  (setf *counter-agent* (make-agent (lambda () initial-value))))
+
+(defun increment () (agent-update *counter-agent* #'1+))
+(defun decrement () (agent-update *counter-agent* #'1-))
+(defun counter-value () (agent-get *counter-agent* #'identity))
+```

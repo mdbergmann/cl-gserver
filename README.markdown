@@ -178,7 +178,7 @@ While you can use the agent as in the example above it is usually advised to wra
 
 For example could a facade for the counter above look like this:
 
-```
+```lisp
 (defvar *counter-agent* nil)
 
 (defun init-agent (initial-value)
@@ -188,3 +188,5 @@ For example could a facade for the counter above look like this:
 (defun decrement () (agent-update *counter-agent* #'1-))
 (defun counter-value () (agent-get *counter-agent* #'identity))
 ```
+
+Alternatively, one can wrap an agent inside a class and provide methods for simplified access to it.

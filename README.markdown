@@ -178,7 +178,7 @@ While you can use the agent as in the example above it is usually advised to wra
 
 For example could a facade for the counter above look like this:
 
-```
+```lisp
 (defvar *counter-agent* nil)
 
 (defun init-agent (initial-value)

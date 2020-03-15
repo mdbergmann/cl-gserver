@@ -1,7 +1,8 @@
 (defsystem "cl-gserver"
   :version "0.1.0"
   :author "Manfred Bergmann"
-  :license ""
+  :license "MIT"
+  :description "Erlang inspired GenServer library with Agent for easy access to state."
   :depends-on ("lparallel"
                "log4cl"
                "iterate"
@@ -12,12 +13,11 @@
                 ((:file "utils")
                  (:file "gserver")
                  (:file "agent"))))
-  :description ""
   :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 
 (defsystem "cl-gserver/tests"
   :author "Manfred Bergmann"
-  :license ""
+  :license "MIT"
   :depends-on ("cl-gserver"
                "fiveam")
   :components ((:module "tests"

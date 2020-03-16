@@ -8,7 +8,7 @@ State can be changed and maintained by calling into the server via 'call' or 'ca
 Where 'call' is synchronous and waits for a result, 'cast' is asynchronous and responds just with `t`.
 For each 'call' and 'cast' handlers must be implemented by subclasses.
 
-GServer runs one it's own thread that handles the incoming messages and maintaining the state.
+GServer runs it's own thread that handles the incoming messages and maintains the state.
 In that regard message handling should be quick. Long operations should be delegated to elsewhere.
 
 ## Usage

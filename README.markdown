@@ -11,6 +11,12 @@ For each 'call' and 'cast' handlers must be implemented by subclasses.
 GServer runs it's own thread that handles the incoming messages and maintains the state.
 In that regard message handling should be quick. Long operations should be delegated to elsewhere.
 
+
+In it's functionality regarding state it is also not unsimilar:
+- to Clojure's [Agent](https://clojure.org/reference/agents) 
+- or [cl-actors](https://github.com/naveensundarg/Common-Lisp-Actors).
+
+
 ## Usage
 
 ### GServer

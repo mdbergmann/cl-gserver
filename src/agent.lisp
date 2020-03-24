@@ -37,13 +37,13 @@ To access state it provides `agent-get' and `agent-update' to update state."))
 
 (defun agent-get (agent get-fun)
 "Gets the current state of the `agent'.
-`get-fun' must accept on parameter. That is the current-state of the `agent'.
+`get-fun' must accept one parameter. That is the current-state of the `agent'.
 To return the current state `get-fun' may be just the `identity' function.
 See `agent-test' for examples."
   (call agent (cons :get get-fun)))
 
 (defun agent-update (agent update-fun)
 "Updates the `agent' state.
-`update-fun' must accept on parameter. That is the current state of the `agent'.
+`update-fun' must accept one parameter. That is the current state of the `agent'.
 The return value of `update-fun' will be taken as the new state of the `agent'."
   (cast agent (cons :update update-fun)))

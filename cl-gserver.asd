@@ -5,8 +5,7 @@
   :description "Erlang inspired GenServer library with Agent for easy access to state."
   :depends-on ("lparallel"
                "log4cl"
-               "iterate"
-               "trivia")
+               "iterate")
   :components ((:module "src"
                 :serial t
                 :components
@@ -19,7 +18,8 @@
   :author "Manfred Bergmann"
   :license "MIT"
   :depends-on ("cl-gserver"
-               "fiveam")
+               "fiveam"
+               "trivia")
   :components ((:module "tests"
                 :components
                 ((:file "all-test")

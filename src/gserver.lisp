@@ -69,15 +69,6 @@ The convention here is to return a `cons' with values to be returned to caller a
 "Handles casts to the server. Must be implemented by subclasses.
 Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
 
-(defmacro defgserver (name &key call-handler cast-handler)
-  "TODO: needs firther testing. Convenience macro to more easily create a new `gserver' class."
-  `(progn
-     (defclass ,name (gserver) ())
-     (defmethod handle-call ((server ,name) message current-state)
-       ,(if call-handler call-handler nil))
-     (defmethod handle-cast ((server ,name) message current-state)
-       ,(if cast-handler cast-handler nil))))
-
 (defun call (gserver message)
 "Send a message to a gserver instance and wait for a result.
 The result can be of different types.

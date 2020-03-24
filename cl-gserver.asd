@@ -1,5 +1,5 @@
 (defsystem "cl-gserver"
-  :version "0.1.0"
+  :version "0.2.0"
   :author "Manfred Bergmann"
   :license "MIT"
   :description "Erlang inspired GenServer library with Agent for easy access to state."
@@ -11,7 +11,8 @@
                 :components
                 ((:file "utils")
                  (:file "gserver")
-                 (:file "agent"))))
+                 (:file "agent")
+                 (:file "actor"))))
   :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 
 (defsystem "cl-gserver/tests"
@@ -26,7 +27,8 @@
                  (:file "utils-test")
                  (:file "gserver-test")
                  (:file "gserver-mp-test")
-                 (:file "agent-test"))))
+                 (:file "agent-test")
+                 (:file "actor-test"))))
   :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run! 'cl-gserver.tests)))
 

@@ -4,7 +4,8 @@
   (:export #:actor
            #:receive
            #:send
-           #:ask))
+           #:ask
+           #:make-actor))
 
 (in-package :cl-gserver.actor)
 
@@ -40,3 +41,21 @@ But the convention persists that the result of `receive' must be a `cons' where
 ;; --------------------
 ;; Simple actor
 ;; --------------------
+(defclass simple-actor (actor)
+  ((receive-fun :initarg :receive-fun
+                :initform nil
+                :documentation "The receive function as specified as slot."))
+  (:documentation
+   "A simplified actor that can be created with just `make-actor'."))
+
+(defmethod receive ((self simple-actor) message current-state)
+  (with-slots (receive-fun) self
+    (when receive-fun
+      (funcall receive-fun self message current-state))))
+
+
+(defun make-actor (name &key state receive-fun)
+  "Makes a new `simple-actor' which allows you to specify a name with `:state' and `:receive-fun'."
+  (make-instance 'simple-actor :name name
+                               :state state
+                               :receive-fun receive-fun))

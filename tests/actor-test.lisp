@@ -30,4 +30,25 @@
     (is (equal 5 (ask cut "bar")))
     (is (equal 5 (ask cut "get")))))
 
+
+(test simple-actor
+  "The simplified actor."
+
+  (let ((cut (make-actor "Foo"
+                         :state 0
+                         :receive-fun
+                         (lambda (self message current-state)
+                           (cond
+                             ((eq message "foo") (cons 1 1))
+                             ((eq message "bar") (cons 5 5))
+                             ((eq message "get") (cons current-state current-state)))))))
+    (is (not (null cut)))
+    (is (eq t (send cut "foo")))
+    (sleep 0.1)
+    (is (equal 1 (ask cut "get")))
+    (is (equal 5 (ask cut "bar")))
+    (is (equal 5 (ask cut "get")))    
+  ))
+
 (run! 'custom-actor)
+(run! 'simple-actor)

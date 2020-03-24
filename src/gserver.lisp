@@ -17,7 +17,7 @@
 
 (defstruct gserver-state (running t :type boolean))
 
-(defclass gserver()
+(defclass gserver ()
    ((name :initarg :name
           :initform (mkstr "Server-" (random 100000))
           :accessor name

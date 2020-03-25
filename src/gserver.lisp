@@ -4,7 +4,6 @@
            #:handle-call
            #:handle-cast
            #:gserver
-           #:defgserver
            #:name
            #:call
            #:cast))
@@ -164,15 +163,3 @@ No result."
 
 (defun reply-value (cons-result)
   (car cons-result))
-
-
-;; TODO:
-;; OK - do loop while, until 'stop-condition
-;; OK - add internal state for if we are running or not. When STOP was sent we should go to stopped state.
-;; OK - return error cons
-;; OK - add state
-;; OK - add cast, fire-and-forget
-;; OK - add error handling
-;; => - add macro to conveniently create gserver
-;; - add shutdown of gserver
-;; - add gserver mgr that can spawn new actors.

@@ -196,3 +196,71 @@ For example could a facade for the counter above look like this:
 ```
 
 Alternatively, one can wrap an agent inside a class and provide methods for simplified access to it.
+
+
+## Actor / Simple-Actor
+
+### Usage
+
+Actors are another abstraction, or use-case of a `GServer` (GenServer). However, actors don't exist in Erlang. Actors are pretty much a `GServer` only that they provider only one method `receive` to handle both `send` (which is like `cast`) and `ask` (which is like `call`).  
+The `cons` return of `receive` is also a convention.
+
+To use actors import the `cl-gserver.actor` package.
+
+You have two choices to implement your actors.
+
+##### 1. Make your own subclass of `actor` and implement `defmethod receive ...` (see the actor-test.lisp for details).
+
+##### 2. Use the `simple-actor` convenience implementation
+
+Let me make a simple ping-pong example here:
+
+(I've added a local package name as `act` for `cl-gserver.actor`).
+
+First create a ping actor:
+
+```lisp
+(defparameter *ping* (act:make-actor "ping" 
+                                     :state 0 
+                                     :receive-fun
+                                     (lambda (self msg state)
+                                       (trivia:match msg
+                                         ((cons :ping sender) (progn
+                                                                (log:info "ping from: " sender)
+                                                                (sleep 1)
+                                                                (when (< state 5)
+                                                                  (act:send sender (cons :pong self))
+                                                                  (cons nil (1+ state)))))))))
+```
+
+The convenience `make-actor` function allows you to create a simple actor by specifying the `receive-fun` inline.
+Of course you may create a `defun` for the receive and specify it for `:receive-fun` like `#'my-receive`.  
+The important thing, it must accept three parameters. That is:
+
+- `self`: for the self instance
+- `message`: the received message
+- `current-state`: for the current state of the actor.
+
+The `receive-fun` also must return a `cons` equal to the `GServer` with value for reply and new state.
+
+Now let's create the pong actor:
+
+```lisp
+(defparameter *pong* (act:make-actor "pong" 
+                                     :receive-fun
+                                     (lambda (self msg state)
+                                     (trivia:match msg
+                                       ((cons :pong sender) (progn
+                                                              (log:info "pong from: " sender)
+                                                              (sleep 1)
+                                                              (act:send sender (cons :ping self))
+                                                              (cons nil nil)))))))
+```
+
+Now we have two actors which can play ping pong.  
+We trigger it my sending a `:ping` to the `*ping*` actor but we also specify the `*pong*` actor as sender.
+
+`(act:send *ping* (cons :ping *pong*))`
+
+As can be seen on the `*ping*` actor definition, it will update it's state by incrementing the received pings. Once they are >= 5 it will stop sending a pong.
+

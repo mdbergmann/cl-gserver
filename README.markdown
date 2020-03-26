@@ -16,6 +16,8 @@ In it's functionality regarding state it is also not unsimilar:
 - to Clojure's [Agent](https://clojure.org/reference/agents) 
 - or [cl-actors](https://github.com/naveensundarg/Common-Lisp-Actors).
 
+But aside from GenServer, based on GenServer (or `Gserver`) two more things are based on it, that is Clojure's `Agent` and `Akka`s Actor. At least in a local form. None of this supports remoting, yet.
+
 
 ## Usage
 

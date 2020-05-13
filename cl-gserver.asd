@@ -40,3 +40,7 @@
 ;;
 ;; test system
 ;; (asdf:test-system "cl-gserver/tests")
+
+;; TODOs:
+;; - test the actor macro
+;; - make actors stop and free resources

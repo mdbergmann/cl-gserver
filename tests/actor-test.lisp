@@ -18,9 +18,9 @@
   (defclass test-actor (actor) ())
   (defmethod receive ((self actor) message current-state)
     (cond
-      ((eq message "foo") (cons 1 1))
-      ((eq message "bar") (cons 5 5))
-      ((eq message "get") (cons current-state current-state))))
+      ((string= message "foo") (cons 1 1))
+      ((string= message "bar") (cons 5 5))
+      ((string= message "get") (cons current-state current-state))))
   
   (let ((cut (make-instance 'test-actor :state 0)))
     (is (not (null cut)))
@@ -39,9 +39,9 @@
                          :receive-fun
                          (lambda (self message current-state)
                            (cond
-                             ((eq message "foo") (cons 1 1))
-                             ((eq message "bar") (cons 5 5))
-                             ((eq message "get") (cons current-state current-state)))))))
+                             ((string= message "foo") (cons 1 1))
+                             ((string= message "bar") (cons 5 5))
+                             ((string= message "get") (cons current-state current-state)))))))
     (is (not (null cut)))
     (is (eq t (send cut "foo")))
     (sleep 0.1)
@@ -50,5 +50,22 @@
     (is (equal 5 (ask cut "get")))    
   ))
 
+;; (test with-actor-macro
+;;   "Test the with-actor macro."
+
+;;   (with-actor
+;;       (receive
+;;        (cond
+;;          ((string= msg "foo") (cons 1 1))
+;;          ((string= msg "bar") (cons 5 5))
+;;          ((string= msg "get") (cons state state))))
+      
+;;       (is (eq t (send self "foo")))
+;;       (sleep 0.1)
+;;       (is (equal 1 (ask self "get")))
+;;       (is (equal 5 (ask self "bar")))
+;;       (is (equal 5 (ask self "get")))))
+
 (run! 'custom-actor)
 (run! 'simple-actor)
+;;(run! 'with-actor-macro)

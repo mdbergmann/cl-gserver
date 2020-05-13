@@ -5,7 +5,9 @@
            #:receive
            #:send
            #:ask
-           #:make-actor))
+           #:make-actor
+           ;;#:with-actor)
+  ))
 
 (in-package :cl-gserver.actor)
 
@@ -16,8 +18,11 @@ There is a different terminology behind `actor'.
 I.e. There is only one `receive' function.
 And there is asynchronous `send' and synchronous `ask'.
 So there is not much difference to a `gserver'.
-It only uses one method `receive'. However both `handle-call' and `handle-cast' og `gserver'
+It only uses one method `receive'. However both `handle-call' and `handle-cast' of `gserver'
 end up in `receive'."))
+
+(defmethod initialize-instance :after ((self actor) &key)
+  (log:debug "Initialize instance: ~a~%" self))
 
 (defgeneric receive (actor message current-state)
   (:documentation
@@ -44,9 +49,21 @@ But the convention persists that the result of `receive' must be a `cons' where
 (defclass simple-actor (actor)
   ((receive-fun :initarg :receive-fun
                 :initform nil
-                :documentation "The receive function as specified as slot."))
+                :documentation "The receive function specified as slot.")
+   (after-init-fun :initarg :after-init-fun
+                    :initform nil
+                    :documentation "Code to be called after actor start."))
   (:documentation
    "A simplified actor that can be created with just `make-actor'."))
+
+(defmethod initialize-instance :after ((self simple-actor) &key)
+  (log:debug "Initialize instance: ~a~%" self)
+  (after-init self (slot-value self 'cl-gserver::state)))
+
+(defmethod after-init ((self simple-actor) state)
+  (with-slots (after-init-fun) self
+    (when after-init-fun
+      (funcall after-init-fun self state))))
 
 (defmethod receive ((self simple-actor) message current-state)
   (with-slots (receive-fun) self
@@ -54,8 +71,24 @@ But the convention persists that the result of `receive' must be a `cons' where
       (funcall receive-fun self message current-state))))
 
 
-(defun make-actor (name &key state receive-fun)
-  "Makes a new `simple-actor' which allows you to specify a name with `:state' and `:receive-fun'."
+(defun make-actor (name &key state receive-fun after-init-fun)
+"Makes a new `simple-actor' which allows you to specify 
+a name with `:state', `:receive-fun' and `:after-init-fun'."
   (make-instance 'simple-actor :name name
                                :state state
-                               :receive-fun receive-fun))
+                               :receive-fun receive-fun
+                               :after-init-fun after-init-fun))
+
+;; (defmacro with-actor (&rest body)
+;;   (format t "body: ~a~%" body)
+;;   (labels ((filter-fun (x) (equal (car x) 'receive)))
+;;     (let ((recv-form (cdr (car (fset:filter #'filter-fun body))))
+;;           (rest-body (remove-if #'filter-fun body)))
+;;       `(make-actor "tmp-actor"
+;;                    :state nil
+;;                    :receive-fun 
+;;                    (lambda (self msg state)
+;;                      ,@recv-form)
+;;                    :after-init-fun
+;;                    (lambda (self state)
+;;                      ,@rest-body)))))

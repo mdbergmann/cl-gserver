@@ -6,7 +6,8 @@
            #:gserver
            #:name
            #:call
-           #:cast))
+           #:cast
+           #:after-init))
 
 (in-package :cl-gserver)
 
@@ -43,11 +44,14 @@ State can be changed by calling into the server via `call' or `cast'.
 Where `call' is waiting for a result and `cast' does not.
 For each `call' and `cast' handlers must be implemented by subclasses.
 
-A GServer runs it's own thread, actually a lparallel message-kernel with one worker, to handle the messages which will eventually update the state."))
+A GServer runs it's own thread, actually a lparallel message-kernel with one worker, 
+to handle the messages which will eventually update the state."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
   :documentation "Initializes the instance."
 
+  (log:debug "Initialize instance: ~a~%" self)
+  
   (with-slots (message-kernel
                message-channel
                name) self
@@ -56,6 +60,10 @@ A GServer runs it's own thread, actually a lparallel message-kernel with one wor
        (setf message-channel (make-channel)))))
 
 ;; public functions
+
+(defgeneric after-init (server state)
+  (:documentation
+"Generic function definition that you may call from `initialize-instance'."))
 
 (defgeneric handle-call (gserver message current-state)
   (:documentation
@@ -72,7 +80,7 @@ Same convention as for 'handle-call' except that no return is sent to the caller
 "Send a message to a gserver instance and wait for a result.
 The result can be of different types.
 Success result: <returned-state>
-Unhandled result: :unhandled
+qUnhandled result: :unhandled
 Error result: (cons :handler-error <error-description-as-string>)
 "
   (when message

@@ -266,3 +266,10 @@ We trigger it my sending a `:ping` to the `*ping*` actor but we also specify the
 
 As can be seen on the `*ping*` actor definition, it will update it's state by incrementing the received pings. Once they are >= 5 it will stop sending a pong.
 
+## Cleaning up resources
+
+A GServer/Actor/Agent can be stopped which will stop the message processing thread.  
+For GServer and Actor you just send a `:stop` message and it will respond with `:stopped`.
+The `:stop` message is queued the same way as ordinary messages.
+
+To stop an Agent you need to call `agent-stop` function. It will also respond with `:stopped`.

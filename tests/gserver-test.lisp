@@ -18,7 +18,8 @@
   "Just retrieves the name of the server"
 
   (let ((server (make-instance 'gserver)))
-    (is (= 0 (search "Server-" (name server))))))
+    (is (= 0 (search "Server-" (name server))))
+    (call server :stop)))
 
 
 (test handle-call
@@ -37,7 +38,8 @@
   (let ((cut (make-instance 'add-server :state 0)))
     (is (= 1000 (call cut '(:add 1000))))
     (is (= 500 (call cut '(:sub 500))))
-    (is (eq :unhandled (call cut "Foo")))))
+    (is (eq :unhandled (call cut "Foo")))
+    (call cut :stop)))
 
 
 (test error-in-handler
@@ -52,7 +54,8 @@
          (result (call cut '(:err))))
     (format t "Got result : ~a~%" result)
     (is (not (null (cdr result))))
-    (is (eq (car result) :handler-error))))
+    (is (eq (car result) :handler-error))
+    (call cut :stop)))
 
 
 (test stack-server
@@ -89,9 +92,20 @@
     (is (= 2 (call cut :pop)))
     (is (= 1 (call cut :pop)))
     (is (null (call cut :pop)))
-    ))
+    (call cut :stop)))
+
+(test stopping-server
+  "Stopping a server stops the message handling and frees resources."
+
+  (defclass stopping-server (gserver) ())
+  (defmethod handle-call ((server stopping-server) message current-state)
+    (cons message current-state))
+
+  (let ((cut (make-instance 'stopping-server)))
+    (is (eq :stopped (call cut :stop)))))
 
 (run! 'get-server-name)
 (run! 'handle-call)
 (run! 'error-in-handler)
 (run! 'stack-server)
+(run! 'stopping-server)

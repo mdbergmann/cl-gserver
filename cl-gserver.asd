@@ -1,5 +1,5 @@
 (defsystem "cl-gserver"
-  :version "0.2.0"
+  :version "0.3.0"
   :author "Manfred Bergmann"
   :license "MIT"
   :description "Erlang inspired GenServer library with Agent for easy access to state."

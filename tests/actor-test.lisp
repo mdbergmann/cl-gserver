@@ -28,7 +28,8 @@
     (sleep 0.1)
     (is (equal 1 (ask cut "get")))
     (is (equal 5 (ask cut "bar")))
-    (is (equal 5 (ask cut "get")))))
+    (is (equal 5 (ask cut "get")))
+    (send cut :stop)))
 
 
 (test simple-actor
@@ -47,8 +48,8 @@
     (sleep 0.1)
     (is (equal 1 (ask cut "get")))
     (is (equal 5 (ask cut "bar")))
-    (is (equal 5 (ask cut "get")))    
-  ))
+    (is (equal 5 (ask cut "get")))
+    (send cut :stop)))
 
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."

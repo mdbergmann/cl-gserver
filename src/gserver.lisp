@@ -45,7 +45,10 @@ Where `call' is waiting for a result and `cast' does not.
 For each `call' and `cast' handlers must be implemented by subclasses.
 
 A GServer runs it's own thread, actually a lparallel message-kernel with one worker, 
-to handle the messages which will eventually update the state."))
+to handle the messages which will eventually update the state.
+
+To stop a Gserver message handling and thread pool you can send the `:stop' message either via `call' (which will respond with `:stopped') or `cast'.
+This is to cleanup thread resources when the Gserver is not needed anymore."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
   :documentation "Initializes the instance."
@@ -98,6 +101,12 @@ No result."
 
 ;; internal functions
 
+(defun stop-server (gserver)
+  (log:debug "Stopping server and message handling!")
+  (with-slots (message-kernel) gserver
+    (let ((*kernel* message-kernel))
+      (end-kernel :wait t))))
+
 (defun submit-message (gserver message withreply-p)
   (let* ((*task-category* (mkstr (name gserver) "-task"))
          (*kernel* (slot-value gserver 'message-kernel))
@@ -106,11 +115,20 @@ No result."
     (log:debug "Pushing ~a to channel" message)
     (submit-task channel (lambda ()
                            (handle-message gserver message withreply-p)))
-    (if withreply-p
-        (receive-result channel)
-        (progn
-          (future (receive-result channel))
-          t))))
+
+    (let ((response (if withreply-p
+                        (receive-result channel)
+                        (progn
+                          (future (receive-result channel))
+                          t))))
+      (after-submit-message gserver message response))))
+
+(defun after-submit-message (gserver message response)
+  (case message
+    (:stop (progn
+             (stop-server gserver)
+             :stopped))
+    (t response)))
 
 (defun handle-message (gserver message withreply-p)
   (log:debug "Handling message: " message)
@@ -123,9 +141,12 @@ No result."
         (cons :handler-error c)))))
 
 (defun handle-message-internal (msg)
-  "Returns nil in order to make user handler being invoked."
+"A `:stop' message will response with `:stopping' and the user handlers are not called.
+Otherwise the result is `nil' to resume user message handling."
   (log:debug "Internal handle-call: " msg)
-  nil)
+  (case msg
+    (:stop :stopping)
+    (t nil)))
 
 (defun handle-message-user (gserver message withreply-p)
   "This will call the method 'handle-call' with the message."

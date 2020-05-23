@@ -3,6 +3,7 @@
   (:export #:make-agent
            #:agent-get
            #:agent-update
+           #:agent-stop
            #:agent))
 
 (in-package :cl-gserver.agent)
@@ -33,7 +34,7 @@ To access state it provides `agent-get' and `agent-update' to update state."))
 "Makes a new `agent' instance.
 `state-fun' is a function that takes no parameter and provides the initial state of the `agent' as return value."
   (let ((state (funcall state-fun)))
-    (make-instance 'agent :state state)))
+    (make-instance 'agent :state state :name (mkstr "Agent" (random 100000)))))
 
 (defun agent-get (agent get-fun)
 "Gets the current state of the `agent'.
@@ -47,3 +48,7 @@ See `agent-test' for examples."
 `update-fun' must accept one parameter. That is the current state of the `agent'.
 The return value of `update-fun' will be taken as the new state of the `agent'."
   (cast agent (cons :update update-fun)))
+
+(defun agent-stop (agent)
+  "Stops the message handling of the agent."
+  (cast agent :stop))

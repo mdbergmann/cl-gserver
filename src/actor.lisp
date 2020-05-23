@@ -5,9 +5,9 @@
            #:receive
            #:send
            #:ask
-           #:make-actor
+           #:make-actor)
            ;;#:with-actor)
-  ))
+  )
 
 (in-package :cl-gserver.actor)
 
@@ -19,7 +19,10 @@ I.e. There is only one `receive' function.
 And there is asynchronous `send' and synchronous `ask'.
 So there is not much difference to a `gserver'.
 It only uses one method `receive'. However both `handle-call' and `handle-cast' of `gserver'
-end up in `receive'."))
+end up in `receive'.
+
+To stop an actors message processing in order to cleanup resouces you should send (either `send' or `ask')
+the `:stop' message. It will respond with `:stopped'."))
 
 (defmethod initialize-instance :after ((self actor) &key)
   (log:debug "Initialize instance: ~a~%" self))
@@ -83,12 +86,18 @@ a name with `:state', `:receive-fun' and `:after-init-fun'."
 ;;   (format t "body: ~a~%" body)
 ;;   (labels ((filter-fun (x) (equal (car x) 'receive)))
 ;;     (let ((recv-form (cdr (car (fset:filter #'filter-fun body))))
-;;           (rest-body (remove-if #'filter-fun body)))
+;;           (rest-body (remove-if #'filter-fun body))
+;;           (actor-sym (gensym))
+;;           (msg-sym (gensym))
+;;           (state-sym (gensym)))
 ;;       `(make-actor "tmp-actor"
 ;;                    :state nil
-;;                    :receive-fun 
-;;                    (lambda (self msg state)
-;;                      ,@recv-form)
-;;                    :after-init-fun
-;;                    (lambda (self state)
-;;                      ,@rest-body)))))
+;;                    :receive-fun (lambda (,actor-sym ,msg-sym ,state-sym)
+;;                                   ,(let ((self actor-sym)
+;;                                          (msg msg-sym)
+;;                                          (state state-sym))
+;;                                      (car recv-form)))
+;;                    :after-init-fun (lambda (,actor-sym ,state-sym)
+;;                                      ,(let ((self actor-sym)
+;;                                             (state state-sym))
+;;                                         (car rest-body)))))))

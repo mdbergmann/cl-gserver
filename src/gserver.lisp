@@ -103,9 +103,10 @@ No result."
 
 (defun stop-server (gserver)
   (log:debug "Stopping server and message handling!")
-  (with-slots (message-kernel) gserver
+  (with-slots (message-kernel internal-state) gserver
     (let ((*kernel* message-kernel))
-      (end-kernel :wait t))))
+      (end-kernel :wait t)
+      (setf internal-state nil))))
 
 (defun submit-message (gserver message withreply-p)
   (let* ((*task-category* (mkstr (name gserver) "-task"))

@@ -12,73 +12,82 @@
 
 (in-suite gserver-tests)
 
-(log:config :info)
+(log:config :warn)
+
+(def-fixture server-fixture (call-fun cast-fun state)
+  (defclass test-server (gserver) ())
+  (defmethod handle-call ((server test-server) message current-state)
+    (funcall call-fun server message current-state))
+  (defmethod handle-cast ((server test-server) message current-state)
+    (funcall cast-fun server message current-state))
+
+  (let ((cut (make-instance 'test-server :state state)))  
+    (&body)
+    (call cut :stop)))
 
 (test get-server-name
   "Just retrieves the name of the server"
 
-  (let ((server (make-instance 'gserver)))
-    (is (= 0 (search "Server-" (name server))))
-    (call server :stop)))
+  (with-fixture server-fixture (nil nil nil)
+    (is (= 0 (search "Server-" (name cut))))))
 
 
 (test handle-call
   "Simple add-server handle-call test."
 
-  (defclass add-server (gserver) ())
-  (defmethod handle-call ((server add-server) message current-state)
-    (match message
-      ((list :add n)
-       (let ((new-state (+ current-state n)))
-         (cons new-state new-state)))
-      ((list :sub n)
-       (let ((new-state (- current-state n)))
-         (cons new-state new-state)))))
-
-  (let ((cut (make-instance 'add-server :state 0)))
+  (with-fixture server-fixture ((lambda (server message current-state)
+                                  (declare (ignore server))
+                                  (match message
+                                    ((list :add n)
+                                     (let ((new-state (+ current-state n)))
+                                       (cons new-state new-state)))
+                                    ((list :sub n)
+                                     (let ((new-state (- current-state n)))
+                                       (cons new-state new-state)))))
+                                nil
+                                0)
     (is (= 1000 (call cut '(:add 1000))))
     (is (= 500 (call cut '(:sub 500))))
-    (is (eq :unhandled (call cut "Foo")))
-    (call cut :stop)))
+    (is (eq :unhandled (call cut "Foo")))))
 
 
 (test error-in-handler
   "testing error handling"
   
-  (defclass err-server (gserver) ())
-  (defmethod handle-call ((server err-server) message current-state)
-    (match message
-      ((list :err) (/ 5 0))))  ; division by 0
-
-  (let* ((cut (make-instance 'err-server))
-         (result (call cut '(:err))))
+  (with-fixture server-fixture (nil
+                                (lambda (server message current-state)
+                                  (declare (ignore server))
+                                  (declare (ignore current-state))
+                                  (match message
+                                    ((list :err) (/ 5 0))))  ; division by 0
+                                nil)
+  (let ((result (call cut '(:err))))
     (format t "Got result : ~a~%" result)
     (is (not (null (cdr result))))
-    (is (eq (car result) :handler-error))
-    (call cut :stop)))
+    (is (eq (car result) :handler-error)))))
 
 
 (test stack-server
   "a gserver as stack."
 
-  (defclass stack-server (gserver) ())
-  (defmethod handle-call ((server stack-server) message current-state)
-    (log:debug "current-state: " current-state)
-    (match message
-      (:pop
-       (cons
-        (car current-state)
-        (cdr current-state)))
-      (:get
-       (cons current-state current-state))))
-  (defmethod handle-cast ((server stack-server) message current-state)
-    (log:debug "current-state: " current-state)
-    (match message
-      ((cons :push value)
-       (let ((new-state (append current-state (list value))))
-         (cons new-state new-state)))))
-
-  (let ((cut (make-instance 'stack-server :state '(5))))
+  (with-fixture server-fixture ((lambda (server message current-state)
+                                  (declare (ignore server))
+                                  (format t "current-state: ~a~%" current-state)
+                                  (match message
+                                    (:pop
+                                     (cons
+                                      (car current-state)
+                                      (cdr current-state)))
+                                    (:get
+                                     (cons current-state current-state))))
+                                (lambda (server message current-state)
+                                  (declare (ignore server))
+                                  (format t "current-state: ~a~%" current-state)
+                                  (match message
+                                    ((cons :push value)
+                                     (let ((new-state (append current-state (list value))))
+                                       (cons new-state new-state)))))
+                                '(5))
     (is (equalp '(5) (call cut :get)))
     (cast cut (cons :push 4))
     (cast cut (cons :push 3))
@@ -91,8 +100,7 @@
     (is (= 3 (call cut :pop)))
     (is (= 2 (call cut :pop)))
     (is (= 1 (call cut :pop)))
-    (is (null (call cut :pop)))
-    (call cut :stop)))
+    (is (null (call cut :pop)))))
 
 (test stopping-server
   "Stopping a server stops the message handling and frees resources."

@@ -39,7 +39,7 @@
        (iter (repeat 500)
          (call cut :sub))))
 
-    (is (= 99500 (call cut :get))))
-  )
+    (is (= 99500 (call cut :get)))
+    (call cut :stop)))
 
   (run! 'counter-mp)

@@ -12,44 +12,57 @@
 
 (in-suite actor-tests)
 
+(def-fixture actor-fixture (receive-fun state)
+  (defclass test-actor (actor) ())
+  (defmethod receive ((actor test-actor) message current-state)
+    (funcall receive-fun actor message current-state))
+
+  (let ((cut (make-instance 'test-actor :state state)))  
+    (&body)
+    (send cut :stop)))
+
+(def-fixture simple-actor-fixture (receive-fun state)
+  (let ((cut (make-actor "Foo"
+                         :state state
+                         :receive-fun (lambda (self message state) (funcall receive-fun self message state)))))
+    (&body)
+    (send cut :stop)))
+
+
 (test custom-actor
   "Test a subclass of actor."
 
-  (defclass test-actor (actor) ())
-  (defmethod receive ((self actor) message current-state)
-    (cond
-      ((string= message "foo") (cons 1 1))
-      ((string= message "bar") (cons 5 5))
-      ((string= message "get") (cons current-state current-state))))
-  
-  (let ((cut (make-instance 'test-actor :state 0)))
+  (with-fixture actor-fixture ((lambda (actor message current-state)
+                                 (declare (ignore actor))
+                                 (cond
+                                   ((string= message "foo") (cons 1 1))
+                                   ((string= message "bar") (cons 5 5))
+                                   ((string= message "get") (cons current-state current-state))))
+                               0)
     (is (not (null cut)))
     (is (eq t (send cut "foo")))
     (sleep 0.1)
     (is (equal 1 (ask cut "get")))
     (is (equal 5 (ask cut "bar")))
-    (is (equal 5 (ask cut "get")))
-    (send cut :stop)))
+    (is (equal 5 (ask cut "get")))))
 
 
 (test simple-actor
   "The simplified actor."
 
-  (let ((cut (make-actor "Foo"
-                         :state 0
-                         :receive-fun
-                         (lambda (self message current-state)
-                           (cond
-                             ((string= message "foo") (cons 1 1))
-                             ((string= message "bar") (cons 5 5))
-                             ((string= message "get") (cons current-state current-state)))))))
-    (is (not (null cut)))
-    (is (eq t (send cut "foo")))
-    (sleep 0.1)
-    (is (equal 1 (ask cut "get")))
-    (is (equal 5 (ask cut "bar")))
-    (is (equal 5 (ask cut "get")))
-    (send cut :stop)))
+  (with-fixture simple-actor-fixture ((lambda (self message current-state)
+                                        (declare (ignore self))
+                                        (cond
+                                          ((string= message "foo") (cons 1 1))
+                                          ((string= message "bar") (cons 5 5))
+                                          ((string= message "get") (cons current-state current-state))))
+                                      0)
+      (is (not (null cut)))
+      (is (eq t (send cut "foo")))
+      (sleep 0.1)
+      (is (equal 1 (ask cut "get")))
+      (is (equal 5 (ask cut "bar")))
+      (is (equal 5 (ask cut "get")))))
 
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."

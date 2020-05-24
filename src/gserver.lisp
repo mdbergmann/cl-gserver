@@ -32,7 +32,7 @@
                     :initform (make-gserver-state)
                     :documentation
                     "The internal state of the server.")
-    (msgbox :initform (make-instance 'mb:message-box :handle-message-fun #'handle-message)))
+    (msgbox :initform (make-instance 'mb:message-box)))
   (:documentation
 "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.
@@ -97,7 +97,10 @@ No result."
 
 (defun submit-message (gserver message withreply-p)
   (let ((response
-          (mb:submit (slot-value gserver 'msgbox) gserver message withreply-p)))
+          (mb:with-submit-handler ((slot-value gserver 'msgbox)
+                                   message
+                                   withreply-p)
+            (handle-message gserver message withreply-p))))
     (after-submit-message gserver message response)))
 
 (defun after-submit-message (gserver message response)

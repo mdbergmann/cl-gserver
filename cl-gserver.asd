@@ -10,6 +10,7 @@
                 :serial t
                 :components
                 ((:file "utils")
+                 (:file "message-box")
                  (:file "gserver")
                  (:file "agent")
                  (:file "actor"))))

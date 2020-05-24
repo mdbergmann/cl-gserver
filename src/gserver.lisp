@@ -1,5 +1,6 @@
 (defpackage :cl-gserver
   (:use :cl :cl-gserver.utils :lparallel :log4cl)
+  (:local-nicknames (:mb :cl-gserver.messageb))
   (:export #:init-dispatcher-threadpool
            #:handle-call
            #:handle-cast
@@ -27,16 +28,11 @@
            :initform nil
            :documentation
            "The encapsulated state.")
-    (message-kernel :initform nil
-                    :documentation
-                    "The message-kernel with 1 worker for handling the messages.")
-    (message-channel :initform nil
-                     :documentation
-                     "The message-channel for the message-kernel. Since we only have 1 worker here it is safe to make an instance channel regarding FIFO.")
     (internal-state :initarg :internal-state
                     :initform (make-gserver-state)
                     :documentation
-                    "The internal state of the server."))
+                    "The internal state of the server.")
+    (msgbox :initform (make-instance 'mb:message-box :handle-message-fun #'handle-message)))
   (:documentation
 "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.
@@ -52,15 +48,7 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
   :documentation "Initializes the instance."
-
-  (log:debug "Initialize instance: ~a~%" self)
-  
-  (with-slots (message-kernel
-               message-channel
-               name) self
-     (let ((*kernel* (make-kernel 1 :name (mkstr "message-kernel-" name))))
-       (setf message-kernel *kernel*)
-       (setf message-channel (make-channel)))))
+  (log:debug "Initialize instance: ~a~%" self))
 
 ;; public functions
 
@@ -103,26 +91,14 @@ No result."
 
 (defun stop-server (gserver)
   (log:debug "Stopping server and message handling!")
-  (with-slots (message-kernel internal-state) gserver
-    (let ((*kernel* message-kernel))
-      (end-kernel :wait t)
-      (setf internal-state nil))))
+  (with-slots (msgbox internal-state) gserver
+    (mb:stop msgbox)
+    (setf internal-state nil)))
 
 (defun submit-message (gserver message withreply-p)
-  (let* ((*task-category* (mkstr (name gserver) "-task"))
-         (*kernel* (slot-value gserver 'message-kernel))
-         (channel (slot-value gserver 'message-channel)))
-    (log:debug "Channel: " channel)
-    (log:debug "Pushing ~a to channel" message)
-    (submit-task channel (lambda ()
-                           (handle-message gserver message withreply-p)))
-
-    (let ((response (if withreply-p
-                        (receive-result channel)
-                        (progn
-                          (future (receive-result channel))
-                          t))))
-      (after-submit-message gserver message response))))
+  (let ((response
+          (mb:submit (slot-value gserver 'msgbox) gserver message withreply-p)))
+    (after-submit-message gserver message response)))
 
 (defun after-submit-message (gserver message response)
   (case message
@@ -131,7 +107,11 @@ No result."
              :stopped))
     (t response)))
 
+;; ------------------------------------------------
+;; --------- message handling ---------------------
+;; ------------------------------------------------
 (defun handle-message (gserver message withreply-p)
+  "This function is called from message-box as a callback."
   (log:debug "Handling message: " message)
   (when message
     (handler-case

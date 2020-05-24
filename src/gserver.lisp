@@ -147,11 +147,11 @@ Otherwise the result is `nil' to resume user message handling."
     (log:debug "Current-state: " (slot-value gserver 'state))
     (cond
       (handle-result
-       (process-handle-result handle-result gserver))
+       (process-handler-result handle-result gserver))
       (t
        (process-not-handled)))))
 
-(defun process-handle-result (handle-result gserver)
+(defun process-handler-result (handle-result gserver)
   (log:info "Message handled, result: " handle-result)
   (cond
     ((consp handle-result)

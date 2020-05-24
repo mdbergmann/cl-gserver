@@ -72,16 +72,14 @@ Same convention as for 'handle-call' except that no return is sent to the caller
 The result can be of different types.
 Success result: <returned-state>
 qUnhandled result: :unhandled
-Error result: (cons :handler-error <error-description-as-string>)
-"
+Error result: (cons :handler-error <error-description-as-string>)"
   (when message
     (let ((result (submit-message gserver message t)))
       (log:debug "Message process result:" result)
       result)))
 
 (defun cast (gserver message)
-"Sends a message to a gserver asynchronously.
-No result."
+"Sends a message to a gserver asynchronously. There is no result."
   (when message
     (let ((result (submit-message gserver message nil)))
       (log:debug "Message process result:" result)

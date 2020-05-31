@@ -8,15 +8,14 @@
 
 (def-suite gserver-mp-tests
   :description "gserver mp tests"
-  :in cl-gserver.tests:test-suite
-  )
+  :in cl-gserver.tests:test-suite)
 
 (in-suite gserver-mp-tests)
 
 (log:config :warn)
 
-(test counter-mp
-  "Counter server - multi processors."
+(def-fixture mp-setup ()
+  (setf lparallel:*kernel* (lparallel:make-kernel 8))
 
   (defclass counter-server (gserver) ())
   (defmethod handle-cast ((server counter-server) message current-state)
@@ -31,15 +30,26 @@
          (cons new-state new-state)))
       (:get (cons current-state current-state))))
 
-  (let ((cut (make-instance 'counter-server :state 0)))
-    (time
-     (progn 
-       (iter (repeat 100000)
-         (call cut :add))
-       (iter (repeat 500)
-         (call cut :sub))))
+  (let* ((cut (make-instance 'counter-server :state 0))
+         (max-loop 100000)
+         (per-thread (/ max-loop 8)))
+    (&body)
+    (call cut :stop))
+  (lparallel:end-kernel))
 
-    (is (= 99500 (call cut :get)))
-    (call cut :stop)))
+(test counter-mp
+  "Counter server - multi processors."
 
-  (run! 'counter-mp)
+  (with-fixture mp-setup ()
+    ;; add
+    (map nil #'lparallel:force
+         (mapcar (lambda (x)
+                   (lparallel:future
+                     (dotimes (n (1+ per-thread))
+                       (call cut :add))
+                     (dotimes (n per-thread)
+                       (call cut :sub))))
+                 (loop repeat 8 collect "n")))
+    (is (= 8 (call cut :get)))))
+
+(time (run! 'counter-mp))

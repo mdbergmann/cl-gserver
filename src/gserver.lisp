@@ -32,7 +32,7 @@
                     :initform (make-gserver-state)
                     :documentation
                     "The internal state of the server.")
-    (msgbox :initform (make-instance 'mb:message-box)))
+    (msgbox :initform (make-instance 'mb:message-box-bt)))
   (:documentation
 "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.

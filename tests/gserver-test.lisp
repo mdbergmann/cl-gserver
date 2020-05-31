@@ -33,7 +33,7 @@
 
 
 (test handle-call
-  "Simple add-server handle-call test."
+  "Simple server handle-call test."
 
   (with-fixture server-fixture ((lambda (server message current-state)
                                   (declare (ignore server))
@@ -49,7 +49,6 @@
     (is (= 1000 (call cut '(:add 1000))))
     (is (= 500 (call cut '(:sub 500))))
     (is (eq :unhandled (call cut "Foo")))))
-
 
 (test error-in-handler
   "testing error handling"

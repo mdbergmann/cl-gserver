@@ -1,4 +1,4 @@
-(ql:quickload "lparallel")
+;;(ql:quickload "lparallel")
 ;;(ql:quickload "bordeaux-threads")
 
 (use-package :lparallel)
@@ -8,7 +8,7 @@
 (defparameter *counter* 0)
 (defparameter *called* 0)
 (defparameter +threads+ 8)
-(defparameter +per-thread+ 5000)
+(defparameter +per-thread+ 50)
 
 (defun max-loop () (* +per-thread+ +threads+))
 
@@ -25,7 +25,9 @@
 (defun submit-msg-fut ()
   (let* ((lparallel:*kernel* *msgbox-kernel*)
          (fut (lparallel:future
-                (incf *counter*))))))
+                (incf *counter*)
+                *counter*)))
+    (force fut)))
 
 (defun runner (submit-fun)
   (setf *msgbox-kernel* (lparallel:make-kernel 1))

@@ -12,9 +12,10 @@ GServer runs it's own thread that handles the incoming messages and maintains th
 In that regard message handling should be quick. Long operations should be delegated to elsewhere.
 
 
-In it's functionality regarding state it is also not unsimilar:
-- to Clojure's [Agent](https://clojure.org/reference/agents) 
-- or [cl-actors](https://github.com/naveensundarg/Common-Lisp-Actors).
+In it's functionality regarding state it is also not unsimilar:  
+- to Clojure's [Agent](https://clojure.org/reference/agents)  
+- Akka Actors library for JVM  
+- [cl-actors](https://github.com/naveensundarg/Common-Lisp-Actors)
 
 But, on GenServer (or `Gserver`) two more implementations in this libarary are based on it, that is Clojure's `Agent` and `Akka`s Actor. At least in a local form. None of this supports remoting, yet.
 
@@ -116,24 +117,6 @@ We can also pop the stack:
 => returns 3
 (call *stack-server* :pop)
 => returns 2
-```
-
-#### Performance considerations
-
-As in this simple test 100_000 messages were processed in 660ms.
-
-```
-CL-GSERVER> (log:config :warn)
-CL-GSERVER> (time (iter:iter (iter:repeat 100000)
-                    (call *my-server* :foo)))
-
-Evaluation took:
-  0.660 seconds of real time
-  1.115068 seconds of total run time (0.899642 user, 0.215426 system)
-  [ Run times consist of 0.013 seconds GC time, and 1.103 seconds non-GC time. ]
-  168.94% CPU
-  2,107,197,625 processor cycles
-  80,363,168 bytes consed
 ```
 
 ## Agent
@@ -273,3 +256,91 @@ For GServer and Actor you just send a `:stop` message and it will respond with `
 The `:stop` message is queued the same way as ordinary messages.
 
 To stop an Agent you need to call `agent-stop` function. It will also respond with `:stopped`.
+
+## Performance considerations
+
+The test results here were done on an 8 core Xeon system with SBCL.  
+Number of messages: 8 million with 8 threads each sending 1 million messages.
+
+The message-box is a single [Bordeaux-Threads](https://github.com/sionescu/bordeaux-threads) thread which can operate on:
+
+### An unbounded queue
+
+The queue used here is the cons-queue of [lparallel](https://github.com/lmj/lparallel) which has a good performance.
+
+8 million messages could be queezed through this message-box in ~7 seconds.
+
+**SBCL:**
+
+```
+Evaluation took:
+  6.976 seconds of real time
+  51.041781 seconds of total run time (50.774304 user, 0.267477 system)
+  [ Run times consist of 0.725 seconds GC time, and 50.317 seconds non-GC time. ]
+  731.68% CPU
+  22,268,009,162 processor cycles
+  384,150,656 bytes consed
+  
+Counter: 8000000
+msg/s: 1142857.142857143
+```
+
+The above result is for messages that don't require a feedback. `ask`, or `call` messages whcih must deliver the result to the caller are much slower.
+
+Message handling with result delivery:
+
+```
+Evaluation took:
+  18.181 seconds of real time
+  107.494489 seconds of total run time (30.038678 user, 77.455811 system)
+  [ Run times consist of 0.218 seconds GC time, and 107.277 seconds non-GC time. ]
+  591.24% CPU
+  58,034,749,891 processor cycles
+  1,673,953,600 bytes consed
+  
+Counter: 8000000
+```
+
+This is because some additional locking and waiting must be performed to deliver the result to the caller when it was processed by the message queue.
+
+
+**CCL 1.12 is quite a bit slower altogether than SBCL:**
+
+```
+took 25,432,484 microseconds (25.432484 seconds) to run.
+      6,055,551 microseconds ( 6.055551 seconds, 23.81%) of which was spent in GC.
+During that period, and with 16 available CPU cores,
+     33,735,407 microseconds (33.735410 seconds) were spent in user mode
+     96,117,573 microseconds (96.117580 seconds) were spent in system mode
+ 24,208 bytes of memory allocated.
+ 130,439 minor page faults, 1 major page faults, 0 swaps.
+Counter: 8000000
+```
+
+**ECL 20.4.24:**
+
+```
+real time : 76.989 secs
+run time  : 67.377 secs
+gc count  : 3 times
+consed    : 2952602000 bytes
+Counter: 8000000
+```
+
+**ABCL 1.6.1:**
+
+```
+28.931 seconds real time
+87105548 cons cells
+Counter: 8000000
+```
+
+### Bounded queue
+
+The bounded queue, based on the [cl-speedy-queue](https://github.com/zkat/cl-speedy-queue) with some locking around it is slightly faster on my test system. ~0.5s on average. Not much in fact.  
+The bounded queue on really busy system has some memory resource advantages as it is limited to 1000 entries. But it starts back-pressuring and gets slower when it has been fully filled to 90%.
+
+
+### Comparison with Akka
+
+A similar test with Akka on the JVM (Java 8) manages to process 8 million messages in ~4.5 seconds. Which is still a good portion faster than what CL can do.

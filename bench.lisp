@@ -1,11 +1,5 @@
-(asdf:load-system :lparallel)
-(use-package :lparallel)
-
-(asdf:load-system :cl-speedy-queue)
-(use-package :cl-speedy-queue)
-
-(push #P"~/Development/MySources/cl-gserver/" asdf:*central-registry*)
-(asdf:load-system "cl-gserver")
+;;(push #P"~/Development/MySources/cl-gserver/" asdf:*central-registry*)
+;;(asdf:load-system "cl-gserver")
 
 ;;(use-package :bordeaux-threads)
 
@@ -72,7 +66,7 @@
                                     :name x))
                   (mapcar (lambda (n) (format nil "thread-~a" n))
                           (loop for n from 1 to +threads+ collect n))))
-     (assert-cond (lambda () (= *counter* (max-loop))) 5)))
+     (assert-cond (lambda () (= *counter* (max-loop))) 120)))
   (setf *endtime* (get-universal-time))
   (format t "Counter: ~a~%" *counter*)
   (format t "Elapsed: ~a~%" (- *endtime* *starttime*))

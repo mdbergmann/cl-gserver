@@ -1,7 +1,12 @@
+(asdf:load-system :lparallel)
+(use-package :lparallel)
+
+(asdf:load-system :cl-speedy-queue)
+(use-package :cl-speedy-queue)
+
 (push #P"~/Development/MySources/cl-gserver/" asdf:*central-registry*)
 (asdf:load-system "cl-gserver")
 
-(use-package :lparallel)
 ;;(use-package :bordeaux-threads)
 
 (defparameter *starttime* 0)

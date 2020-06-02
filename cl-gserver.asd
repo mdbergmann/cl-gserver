@@ -1,15 +1,17 @@
 (defsystem "cl-gserver"
-  :version "0.3.0"
+  :version "0.4.0"
   :author "Manfred Bergmann"
   :license "MIT"
   :description "Erlang inspired GenServer library with Agent for easy access to state."
   :depends-on ("lparallel"
+               "cl-speedy-queue"
                "log4cl"
                "iterate")
   :components ((:module "src"
                 :serial t
                 :components
                 ((:file "utils")
+                 (:file "queue")
                  (:file "message-box")
                  (:file "gserver")
                  (:file "agent")

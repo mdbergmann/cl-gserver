@@ -45,17 +45,21 @@
   ((queue-thread :initform nil
                  :documentation
                  "The thread that pops queue items.")
-   (queue :initform (make-instance 'queue:queue-lcc)
+   (queue :initform (make-instance 'queue:queue-unbounded)
          :documentation
           "The queue.")
    (should-run :initform t
                :documentation
-               "Flag that indicates whether the message processing should commence.")))
+               "Flag that indicates whether the message processing should commence."))
+  (:documentation
+   "Bordeaux-Threads based message-box with a single thread operating on a message queue.
+This is used as default."))
 
 (defmethod initialize-instance :after ((self message-box-bt) &key)
   (log:debug "Initialize instance: ~a~%" self)
   
-  (with-slots (name queue-thread) self
+  (with-slots (name queue queue-thread) self
+    (log:info "Using queue: " queue)
     (setf queue-thread (bt:make-thread
                         (lambda () (message-processing-loop self))
                         :name  (mkstr "message-thread-" name)))))
@@ -68,8 +72,10 @@
 
 (defun pop-queue-and-process (msgbox)
   "This blocks until a new queue item arrived."
+  (log:debug "Trying to pop from queue...")
   (with-slots (queue) msgbox
     (let ((item (queue:popq queue)))
+      (log:debug "Got item: " item)
       (process-queue-item item)
       (incf (slot-value msgbox 'processed-messages)))))
 
@@ -86,6 +92,7 @@
         (t (c) (log:warn "Error in handler-fun: " c))))))
 
 (defmethod submit ((self message-box-bt) message withreply-p handler-fun)
+  (log:debug "Submit message: " message)
   (with-slots (queue) self
     (if withreply-p
         (submit/reply queue message handler-fun)

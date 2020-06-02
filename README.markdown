@@ -343,6 +343,7 @@ It starts back-pressuring when a 90% threshold is reached.
 
 
 To choose between unbounded and bounded queue you specify `:max-queue-size <n>` as key argument when making an instance of `Gserver`, `Actor`, or `Agent`.
+Specify 0 or `nil` for an unbounded queue and a value > 1 for a bounded queue. However, choose at least 10 entries.
 
 ### Comparison with Akka
 

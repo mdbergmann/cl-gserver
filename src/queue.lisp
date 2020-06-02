@@ -39,10 +39,10 @@
 
 
 ;; ----------------------------------------
-;; ----------- Queues simple-cqueue ------
+;; ----------- cl-speedy-queue ------------
 ;; ----------------------------------------
 
-(defclass queue-scq (queue-base)
+(defclass queue-bounded (queue-base)
   ((queue :initform (speedq:make-queue 1000))
    (lock :initform (bt:make-lock))
    (cvar :initform (bt:make-condition-variable))

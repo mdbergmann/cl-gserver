@@ -17,7 +17,7 @@ In it's functionality regarding state it is also not unsimilar:
 - Akka Actors library for JVM  
 - [cl-actors](https://github.com/naveensundarg/Common-Lisp-Actors)
 
-But, on GenServer (or `Gserver`) two more implementations in this libarary are based on it, that is Clojure's `Agent` and `Akka`s Actor. At least in a local form. None of this supports remoting, yet.
+This library also provides an `Actor` type and an `Agent` type. Both based on `Gserver`.
 
 
 ## Usage

@@ -50,7 +50,7 @@
                     :initform 900))
   (:documentation "Bounded queue with 1000 elements."))
 
-(defmethod pushq ((self queue-scq) element)
+(defmethod pushq ((self queue-bounded) element)
   (with-slots (queue lock cvar yield-threshold) self
     (bt:acquire-lock lock t)
     (speedq:enqueue element queue)
@@ -67,7 +67,7 @@
             (bt:thread-yield))))))
     
 
-(defmethod popq ((self queue-scq))
+(defmethod popq ((self queue-bounded))
   (with-slots (queue lock cvar) self
     (bt:with-lock-held (lock)
       (log:debug "Lock aquired...")

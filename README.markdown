@@ -338,8 +338,11 @@ Counter: 8000000
 ### Bounded queue
 
 The bounded queue, based on the [cl-speedy-queue](https://github.com/zkat/cl-speedy-queue) with some locking around it is slightly faster on my test system. ~0.5s on average. Not much in fact.  
-The bounded queue on really busy system has some memory resource advantages as it is limited to 1000 entries. But it starts back-pressuring and gets slower when it has been fully filled to 90%.
+The bounded queue on really busy system has some memory resource advantages because it can be limited to value of max entries.
+It starts back-pressuring when a 90% threshold is reached.
 
+
+To choose between unbounded and bounded queue you specify `:max-queue-size <n>` as key argument when making an instance of `Gserver`, `Actor`, or `Agent`.
 
 ### Comparison with Akka
 

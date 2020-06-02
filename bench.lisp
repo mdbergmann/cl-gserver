@@ -11,7 +11,7 @@
 (defparameter *msgbox* nil)
 (defparameter *counter* 0)
 (defparameter +threads+ 8)
-(defparameter +per-thread+ 1000000)
+(defparameter +per-thread+ 100000)
 
 (defun max-loop () (* +per-thread+ +threads+))
 
@@ -51,8 +51,8 @@
   (format t "Elapsed: ~a~%" (- *endtime* *starttime*))
   (cl-gserver.messageb:stop *msgbox*))
 
-(defun runner-bt-bt (&optional (withreply-p nil))
-  (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-bt))
+(defun runner-bt-bt (&optional (withreply-p nil) (queue-size 0))
+  (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-bt :max-queue-size queue-size))
   (setf *withreply-p* withreply-p)
   (setf *counter* 0)
   (setf *starttime* (get-universal-time))

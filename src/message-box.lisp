@@ -7,7 +7,7 @@
 
 (in-package :cl-gserver.messageb)
 
-(defstruct queue-item
+(defstruct message-item
   (message nil)
   (withreply-p nil :type boolean)
   (withreply-lock nil)
@@ -16,7 +16,12 @@
 
 (defclass message-box-base ()
   ((name :initform (mkstr "messagebox-" (random 1000000)))
-   (processed-messages :initform 0)))
+   (processed-messages :initform 0)
+   (max-queue-size :initform 0 :initarg :max-queue-size
+                   :documentation
+"0 or nil will make an unbounded queue. 
+A value > 0 will make a bounded queue. 
+Don't make it too small. A queue size of 1000 might be a good choice.")))
 
 (defgeneric submit (message-box-base message withreply-p handler-fun)
   (:documentation "Submit a message to the mailbox to be queued and handled."))
@@ -45,9 +50,9 @@
   ((queue-thread :initform nil
                  :documentation
                  "The thread that pops queue items.")
-   (queue :initform (make-instance 'queue:queue-unbounded)
-         :documentation
-          "The queue.")
+   (queue :initform nil
+          :documentation
+          "Which type of queue will be used depends on the `max-queue-size' setting.")
    (should-run :initform t
                :documentation
                "Flag that indicates whether the message processing should commence."))
@@ -58,7 +63,12 @@ This is used as default."))
 (defmethod initialize-instance :after ((self message-box-bt) &key)
   (log:debug "Initialize instance: ~a~%" self)
   
-  (with-slots (name queue queue-thread) self
+  (with-slots (name queue queue-thread max-queue-size) self
+    (log:debug "Requested max-queue-size: " max-queue-size)
+    (setf queue
+          (case max-queue-size
+            ((0 nil) (make-instance 'queue-unbounded))
+            (t (make-instance 'queue-bounded :max-items max-queue-size))))
     (log:info "Using queue: " queue)
     (setf queue-thread (bt:make-thread
                         (lambda () (message-processing-loop self))
@@ -99,7 +109,7 @@ This is used as default."))
         (submit/no-reply queue message handler-fun))))
 
 (defun submit/no-reply (queue message handler-fun)
-  (let ((push-item (make-queue-item
+  (let ((push-item (make-message-item
                     :message message
                     :withreply-p nil
                     :withreply-lock nil
@@ -117,7 +127,7 @@ This is used as default."))
                            (log:debug "Withreply: handler-fun result: " my-handler-result)))
          (withreply-lock (bt:make-lock))
          (withreply-cvar (bt:make-condition-variable))
-         (push-item (make-queue-item
+         (push-item (make-message-item
                      :message message
                      :withreply-p t
                      :withreply-lock withreply-lock

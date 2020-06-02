@@ -43,43 +43,53 @@
 ;; ----------------------------------------
 
 (defclass queue-bounded (queue-base)
-  ((queue :initform (speedq:make-queue 1000))
+  ((queue :initform nil)
    (lock :initform (bt:make-lock))
    (cvar :initform (bt:make-condition-variable))
-   (yield-threshold :initarg :yield-t
-                    :initform 900))
-  (:documentation "Bounded queue with 1000 elements."))
+   (max-items :initform 1000 :initarg :max-items)
+   (yield-threshold :initform nil))
+  (:documentation "Bounded queue."))
+
+(defmethod initialize-instance :after ((self queue-bounded) &key)
+  (with-slots (queue max-items yield-threshold) self
+    (if (< max-items 0) (error "Max-items 0 or less is not allowed!"))
+
+    (setf yield-threshold
+          (cond
+            ((< max-items 2) 0)
+            ((< max-items 10) 5)
+            (t (* (/ max-items 100) 90))))  ; 90%
+    (log:info "Yield threshold at: " yield-threshold)
+
+    (setf queue (speedq:make-queue max-items))))
 
 (defmethod pushq ((self queue-bounded) element)
   (with-slots (queue lock cvar yield-threshold) self
+
+    (do-check-backpressure queue yield-threshold)
+
     (bt:acquire-lock lock t)
     (speedq:enqueue element queue)
     (bt:condition-notify cvar)
-    (bt:release-lock lock)
-
-    (let ((count (speedq:queue-count queue)))
-      (log:debug "Queue size (push): " count)    
-      (if (> count yield-threshold)
-          (progn
-            (log:debug "Threshold reached: " count)
-            ;; we need to back-pressure
-            (sleep 0.001)
-            (bt:thread-yield))))))
+    (bt:release-lock lock)))
     
+
+(defun do-check-backpressure (queue yield-threshold)
+  (flet ((get-queue-count () (speedq:queue-count queue)))
+    (iter:iter (iter:for count
+                         initially (get-queue-count)
+                         then (get-queue-count))
+      (log:debug "Queue size (push): " count)
+      (if (> count yield-threshold) (bt:thread-yield))
+      (iter:while (> count yield-threshold)))))
 
 (defmethod popq ((self queue-bounded))
   (with-slots (queue lock cvar) self
     (bt:with-lock-held (lock)
       (log:debug "Lock aquired...")
-      (let ((count (speedq:queue-count queue)))
-        (log:debug "Queue size: " count)
-        (if (> count 0)
-            (progn
-              (log:debug "Returning popped item.")
-              (speedq:dequeue queue))
-            (progn
-              (log:debug "Going to sleep...")
-              (bt:condition-wait cvar lock)
-              (log:debug "Awoken, processing queue...")
-              (speedq:dequeue queue)))))))
+      (progn
+        (log:debug "Going to sleep...")
+        (bt:condition-wait cvar lock)
+        (log:debug "Awoken, processing queue...")
+        (speedq:dequeue queue)))))
 

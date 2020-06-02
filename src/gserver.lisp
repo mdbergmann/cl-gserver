@@ -32,7 +32,11 @@
                     :initform (make-gserver-state)
                     :documentation
                     "The internal state of the server.")
-    (msgbox :initform (make-instance 'mb:message-box-bt)))
+    (max-queue-size :initarg :max-queue-size
+                    :initform nil
+                    :documentation
+                    "0 or nil for unbounded queue. > 0 for bounded queue. Don't choose < 10.")
+    (msgbox :initform nil))
   (:documentation
 "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.
@@ -48,7 +52,10 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
   :documentation "Initializes the instance."
-  (log:debug "Initialize instance: ~a~%" self))
+  (log:debug "Initialize instance: ~a~%" self)
+
+  (with-slots (max-queue-size msgbox) self
+    (setf msgbox (make-instance 'mb:message-box-bt :max-queue-size max-queue-size))))
 
 ;; public functions
 

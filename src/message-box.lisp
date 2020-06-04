@@ -92,14 +92,11 @@ This is used as default."))
 (defun process-queue-item (item)
   (with-slots (message handler-fun withreply-p withreply-lock withreply-cvar) item
     (when handler-fun
-      (handler-case
-          (progn
-            (if withreply-p
-                (bt:with-lock-held (withreply-lock)
-                  (funcall handler-fun message)
-                  (bt:condition-notify withreply-cvar))
-                (funcall handler-fun message)))
-        (t (c) (log:warn "Error in handler-fun: " c))))))
+      (if withreply-p
+          (bt:with-lock-held (withreply-lock)
+            (funcall handler-fun message)
+            (bt:condition-notify withreply-cvar))
+          (funcall handler-fun message)))))
 
 (defmethod submit ((self message-box-bt) message withreply-p handler-fun)
   (log:debug "Submit message: " message)

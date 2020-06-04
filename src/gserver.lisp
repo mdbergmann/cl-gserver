@@ -102,10 +102,11 @@ Error result: (cons :handler-error <error-description-as-string>)"
 
 (defun submit-message (gserver message withreply-p)
   (let ((response
-          (mb:with-submit-handler ((slot-value gserver 'msgbox)
-                                   message
-                                   withreply-p)
-            (handle-message gserver message withreply-p))))
+          (mb:with-submit-handler
+              ((slot-value gserver 'msgbox)
+               message
+               withreply-p)
+              (handle-message gserver message withreply-p))))
     (after-submit-message gserver message response)))
 
 (defun after-submit-message (gserver message response)

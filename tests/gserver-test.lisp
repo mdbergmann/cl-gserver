@@ -53,17 +53,18 @@
 (test error-in-handler
   "testing error handling"
   
-  (with-fixture server-fixture (nil
-                                (lambda (server message current-state)
-                                  (declare (ignore server))
-                                  (declare (ignore current-state))
+  (with-fixture server-fixture ((lambda (server message current-state)
+                                  (declare (ignore server current-state))
+                                  (log:debug "ERROR: error-in-handler message handler.")
                                   (match message
-                                    ((list :err) (/ 5 0))))  ; division by 0
+                                    ((list :err) (error "Foo Error"))))
+                                nil
                                 nil)
   (let ((result (call cut '(:err))))
     (format t "Got result : ~a~%" result)
     (is (not (null (cdr result))))
-    (is (eq (car result) :handler-error)))))
+    (is (eq (car result) :handler-error))
+    (is (string= "Foo Error" (format nil "~a" (cdr result)))))))
 
 
 (test stack-server

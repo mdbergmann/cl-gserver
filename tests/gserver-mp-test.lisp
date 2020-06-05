@@ -67,5 +67,5 @@
                  (loop repeat 8 collect "n")))
     (is (= 8 (call cut :get)))))
 
-(time (run! 'counter-mp-unbounded))
-(time (run! 'counter-mp-bounded))
+;;(time (run! 'counter-mp-unbounded))
+;;(time (run! 'counter-mp-bounded))

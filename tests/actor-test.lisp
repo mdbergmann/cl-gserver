@@ -80,6 +80,6 @@
 ;;       (is (equal 5 (ask self "bar")))
 ;;       (is (equal 5 (ask self "get")))))
 
-(run! 'custom-actor)
-(run! 'simple-actor)
+;;(run! 'custom-actor)
+;;(run! 'simple-actor)
 ;;(run! 'with-actor-macro)

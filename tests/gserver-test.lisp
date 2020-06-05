@@ -112,8 +112,8 @@
   (let ((cut (make-instance 'stopping-server)))
     (is (eq :stopped (call cut :stop)))))
 
-(run! 'get-server-name)
-(run! 'handle-call)
-(run! 'error-in-handler)
-(run! 'stack-server)
-(run! 'stopping-server)
+;;(run! 'get-server-name)
+;;(run! 'handle-call)
+;;(run! 'error-in-handler)
+;;(run! 'stack-server)
+;;(run! 'stopping-server)

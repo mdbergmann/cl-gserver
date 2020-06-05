@@ -17,4 +17,4 @@
   "Trivial test"
   (is (string= (mkstr 'foo " hello " 1234) "FOO hello 1234")))
 
-(run! 'mkstr)
+;;(run! 'mkstr)

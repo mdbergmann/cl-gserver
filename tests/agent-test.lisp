@@ -47,7 +47,7 @@
   (let ((agent (make-agent (lambda () nil))))
     (is (eq :stopped (agent-stop agent)))))
 
-(run! 'create-agent)
-(run! 'get-agent-state)
-(run! 'update-agent-state)
-(run! 'stop-agent)
+;;(run! 'create-agent)
+;;(run! 'get-agent-state)
+;;(run! 'update-agent-state)
+;;(run! 'stop-agent)

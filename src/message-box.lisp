@@ -99,6 +99,8 @@ This is used as default."))
           (funcall handler-fun message)))))
 
 (defmethod submit ((self message-box-bt) message withreply-p handler-fun)
+"Alternatively use `with-submit-handler' from your code to handle the message after it was 'popped' from the queue.
+The `handler-fun' argument here will be `funcall'ed when the message was 'popped'."
   (log:debug "Submit message: " message)
   (with-slots (queue) self
     (if withreply-p

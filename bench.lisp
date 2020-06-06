@@ -11,7 +11,7 @@
 (defparameter *msgbox* nil)
 (defparameter *counter* 0)
 (defparameter +threads+ 8)
-(defparameter +per-thread+ 100000)
+(defparameter +per-thread+ 1000)
 
 (defun max-loop () (* +per-thread+ +threads+))
 

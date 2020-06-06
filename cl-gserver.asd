@@ -33,7 +33,9 @@
                  (:file "agent-test")
                  (:file "actor-test"))))
   :description "Test system for cl-gserver"
-  :perform (test-op (op c) (symbol-call :fiveam :run! 'cl-gserver.tests)))
+  :perform (test-op (op c) (symbol-call :fiveam :run!
+                                        (uiop:find-symbol* '#:test-suite
+                                                           '#:cl-gserver.tests))))
 
 ;; add to asdf:*central-registry* is not done
 ;; (push #P"~/Development/MySources/cl-gserver/" asdf:*central-registry*)

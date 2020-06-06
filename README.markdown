@@ -348,3 +348,14 @@ Specify 0 or `nil` for an unbounded queue and a value > 1 for a bounded queue. H
 ### Comparison with Akka
 
 A similar test with Akka on the JVM (Java 8) manages to process 8 million messages in ~4.5 seconds. Which is still a good portion faster than what CL can do.
+
+## Alternatives
+
+**STMX (transactional memory)**
+
+I've also experimented with [stmx](https://github.com/cosmos72/stmx). This project has a fifo queue ('tfifo') that works with transactional memory.
+
+But timing were by far not as good as with a locking queue. On SBCL, I could only try with 800_000 messages using 8 threads. The value of above, 8 million message couldn't be handled for some reason.
+But the timing for 800_000 message shows that stmx on SBCL is at least 5 times slower that the locking cons-queue.
+
+However, stmx, or transational memory in general is an alternative option to deal with state in multi-threaded environments.

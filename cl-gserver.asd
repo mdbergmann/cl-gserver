@@ -48,4 +48,3 @@
 
 ;; TODOs:
 ;; - test the actor macro
-;; - make actors stop and free resources

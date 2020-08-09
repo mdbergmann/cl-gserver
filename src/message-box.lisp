@@ -121,6 +121,7 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
 (defun submit/reply (queue message handler-fun)
   (let* ((my-handler-result 'no-result)
          (my-handler-fun (lambda (msg)
+                           ;; wrap the `handler-fun' so that we can get a function result.
                            (log:debug "Withreply: handler-fun...")
                            (setf my-handler-result (funcall handler-fun msg))
                            (log:debug "Withreply: handler-fun result: " my-handler-result)))

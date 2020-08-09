@@ -37,7 +37,7 @@
   (setf *starttime* (get-universal-time))
   (time
    (progn
-     (map nil #'bt:join-thread
+     (map nil #'bt2:join-thread
           (mapcar (lambda (x)
                     (bt:make-thread (lambda ()
                                       (dotimes (n +per-thread+)
@@ -58,7 +58,7 @@
   (setf *starttime* (get-universal-time))
   (time
    (progn
-     (map nil #'bt:join-thread
+     (map nil #'bt2:join-thread
           (mapcar (lambda (x)
                     (bt:make-thread (lambda ()
                                       (dotimes (n +per-thread+)

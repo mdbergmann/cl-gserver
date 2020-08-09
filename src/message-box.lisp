@@ -70,7 +70,7 @@ This is used as default."))
             ((0 nil) (make-instance 'queue-unbounded))
             (t (make-instance 'queue-bounded :max-items max-queue-size))))
     (log:info "Using queue: " queue)
-    (setf queue-thread (bt:make-thread
+    (setf queue-thread (bt2:make-thread
                         (lambda () (message-processing-loop self))
                         :name  (mkstr "message-thread-" name)))))
 
@@ -93,9 +93,9 @@ This is used as default."))
   (with-slots (message handler-fun withreply-p withreply-lock withreply-cvar) item
     (when handler-fun
       (if withreply-p
-          (bt:with-lock-held (withreply-lock)
+          (bt2:with-lock-held (withreply-lock)
             (funcall handler-fun message)
-            (bt:condition-notify withreply-cvar))
+            (bt2:condition-notify withreply-cvar))
           (funcall handler-fun message)))))
 
 (defmethod submit ((self message-box-bt) message withreply-p handler-fun)
@@ -124,8 +124,8 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
                            (log:debug "Withreply: handler-fun...")
                            (setf my-handler-result (funcall handler-fun msg))
                            (log:debug "Withreply: handler-fun result: " my-handler-result)))
-         (withreply-lock (bt:make-lock))
-         (withreply-cvar (bt:make-condition-variable))
+         (withreply-lock (bt2:make-lock))
+         (withreply-cvar (bt2:make-condition-variable))
          (push-item (make-message-item
                      :message message
                      :withreply-p t
@@ -134,10 +134,10 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
                      :handler-fun my-handler-fun)))
 
     (log:debug "Withreply: waiting for arrival of result...")
-    (bt:with-lock-held (withreply-lock)
+    (bt2:with-lock-held (withreply-lock)
       (log:debug "pushing item to queue:" push-item)
       (queue:pushq queue push-item)
-      (bt:condition-wait withreply-cvar withreply-lock)
+      (bt2:condition-wait withreply-cvar withreply-lock)
       (log:debug "Withreply: result should be available: " my-handler-result))
     my-handler-result))
 

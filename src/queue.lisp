@@ -44,8 +44,8 @@
 
 (defclass queue-bounded (queue-base)
   ((queue :initform nil)
-   (lock :initform (bt:make-lock))
-   (cvar :initform (bt:make-condition-variable))
+   (lock :initform (bt2:make-lock))
+   (cvar :initform (bt2:make-condition-variable))
    (max-items :initform 1000 :initarg :max-items)
    (yield-threshold :initform nil))
   (:documentation "Bounded queue."))
@@ -69,9 +69,9 @@
 
     (backpressure-if-necessary-on queue yield-threshold)
 
-    (bt:with-lock-held (lock)
+    (bt2:with-lock-held (lock)
       (speedq:enqueue element queue)
-      (bt:condition-notify cvar))))
+      (bt2:condition-notify cvar))))
     
 
 (defun backpressure-if-necessary-on (queue yield-threshold)
@@ -82,7 +82,7 @@
     (if (> count yield-threshold)
         (progn
           (log:debug "back-pressure, doing thread-yield.")
-          (bt:thread-yield)
+          (bt2:thread-yield)
           ;;(sleep .01)
           ))
     (iter:while (> count yield-threshold))))
@@ -92,12 +92,11 @@
 
 (defmethod popq ((self queue-bounded))
   (with-slots (queue lock cvar) self
-    (bt:with-lock-held (lock)
+    (bt2:with-lock-held (lock)
       (log:debug "Lock aquired...")
-      #-ccl (if (> (get-queue-count queue) 0)
-                (dequeue/no-wait queue)
-                (dequeue/wait queue cvar lock))
-      #+ccl (dequeue/wait queue cvar lock)
+      (if (> (get-queue-count queue) 0)
+          (dequeue/no-wait queue)
+          (dequeue/wait queue cvar lock))
       )))
 
 (defun dequeue/no-wait (queue)
@@ -106,6 +105,6 @@
 
 (defun dequeue/wait (queue cvar lock)
   (log:debug "Going to sleep...")
-  (bt:condition-wait cvar lock)
+  (bt2:condition-wait cvar lock)
   (log:debug "Awoken, processing queue...")
   (speedq:dequeue queue))

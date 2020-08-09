@@ -120,7 +120,7 @@ Error result: (cons :handler-error <error-description-as-string>)"
 ;; --------- message handling ---------------------
 ;; ------------------------------------------------
 (defun handle-message (gserver message withreply-p)
-  "This function is called from message-box as a callback."
+  "This function is `handler-fun' as submitted to the message-box."
   (log:debug "Handling message: " message)
   (when message
     (handler-case

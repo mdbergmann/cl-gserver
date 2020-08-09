@@ -101,6 +101,7 @@ This is used as default."))
 (defmethod submit ((self message-box-bt) message withreply-p handler-fun)
 "Alternatively use `with-submit-handler' from your code to handle the message after it was 'popped' from the queue.
 The `handler-fun' argument here will be `funcall'ed when the message was 'popped'."
+  (log:debug "Issuing thread: " (bt2:current-thread))
   (log:debug "Submit message: " message)
   (with-slots (queue) self
     (if withreply-p
@@ -137,6 +138,7 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
     (bt2:with-lock-held (withreply-lock)
       (log:debug "pushing item to queue:" push-item)
       (queue:pushq queue push-item)
+      (log:debug "pushing item to queue... done")
       (bt2:condition-wait withreply-cvar withreply-lock)
       (log:debug "Withreply: result should be available: " my-handler-result))
     my-handler-result))

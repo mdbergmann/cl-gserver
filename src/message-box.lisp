@@ -94,8 +94,10 @@ This is used as default."))
     (when handler-fun
       (if withreply-p
           (bt:with-lock-held (withreply-lock)
-            (funcall handler-fun message)
-            (bt:condition-notify withreply-cvar))
+            ;; protect this to make sure the lock is released.
+            (unwind-protect
+                 (funcall handler-fun message)
+              (bt:condition-notify withreply-cvar)))
           (funcall handler-fun message)))))
 
 (defmethod submit ((self message-box-bt) message withreply-p handler-fun)

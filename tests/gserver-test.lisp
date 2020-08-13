@@ -55,7 +55,7 @@
   
   (with-fixture server-fixture ((lambda (server message current-state)
                                   (declare (ignore server current-state))
-                                  (log:debug "ERROR: error-in-handler message handler.")
+                                  (log:info "Raising error condition...")
                                   (match message
                                     ((list :err) (error "Foo Error"))))
                                 nil
@@ -112,8 +112,9 @@
   (let ((cut (make-instance 'stopping-server)))
     (is (eq :stopped (call cut :stop)))))
 
-;;(run! 'get-server-name)
-;;(run! 'handle-call)
-;;(run! 'error-in-handler)
-;;(run! 'stack-server)
-;;(run! 'stopping-server)
+(defun run-tests ()
+  (run! 'get-server-name)
+  (run! 'handle-call)
+  (run! 'error-in-handler)
+  (run! 'stack-server)
+  (run! 'stopping-server))

@@ -1,8 +1,7 @@
 (defpackage :cl-gserver
-  (:use :cl :cl-gserver.utils :lparallel :log4cl)
+  (:use :cl :cl-gserver.utils :log4cl)
   (:local-nicknames (:mb :cl-gserver.messageb))
-  (:export #:init-dispatcher-threadpool
-           #:handle-call
+  (:export #:handle-call
            #:handle-cast
            #:gserver
            #:name
@@ -11,10 +10,6 @@
            #:after-init))
 
 (in-package :cl-gserver)
-
-(defun init-dispatcher-threadpool (size)
-  (log:debug "Initializing dispatcher threadpool with " size " threads")
-  (setf *kernel* (make-kernel size)))
 
 (defstruct gserver-state (running t :type boolean))
 
@@ -120,7 +115,7 @@ Error result: (cons :handler-error <error-description-as-string>)"
 ;; --------- message handling ---------------------
 ;; ------------------------------------------------
 (defun handle-message (gserver message withreply-p)
-  "This function is called from message-box as a callback."
+  "This function is submitted as `handler-fun' to message-box"
   (log:debug "Handling message: " message)
   (when message
     (handler-case

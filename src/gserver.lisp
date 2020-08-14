@@ -6,8 +6,10 @@
            #:gserver
            #:name
            #:call
+           #:acall
            #:cast
-           #:after-init))
+           #:after-init
+           #:make-gserver))
 
 (in-package :cl-gserver)
 
@@ -73,12 +75,26 @@ Same convention as for 'handle-call' except that no return is sent to the caller
 "Send a message to a gserver instance and wait for a result.
 The result can be of different types.
 Success result: <returned-state>
-qUnhandled result: :unhandled
-Error result: (cons :handler-error <error-description-as-string>)"
+Unhandled result: `:unhandled'
+Error result: `(cons :handler-error <error-description-as-string>)'"
   (when message
     (let ((result (submit-message gserver message t)))
       (log:debug "Message process result:" result)
       result)))
+
+(defmacro acall (gserver message &rest body)
+"Macro that makes a `call', but asynchronous. Therefore it spawns a new gserver which waits for the result.
+The provided body is the response handler."
+  (let ((self (gensym))
+        (state (gensym))
+        (received (gensym)))
+    `(make-gserver (mkstr "response-handler-" (random 100000))
+                   :after-init-fun (lambda (,self ,state)
+                                     (let ((,received
+                                             (cl-gserver:call ,gserver ,message)))
+                                       (unwind-protect
+                                            (funcall ,@body ,received)
+                                         (cl-gserver:cast ,self :stop)))))))
 
 (defun cast (gserver message)
 "Sends a message to a gserver asynchronously. There is no result."
@@ -87,7 +103,54 @@ Error result: (cons :handler-error <error-description-as-string>)"
       (log:debug "Message process result:" result)
       result)))
 
+;; -----------------------------------------------
+;; -------- simple gserver -----------------------
+;; -----------------------------------------------
+(defclass simple-gserver (gserver)
+  ((call-fun :initarg :call-fun
+             :initform nil
+             :documentation "The `call' function specified as slot.")
+   (cast-fun :initarg :cast-fun
+             :initform nil
+             :documentation "The `cast' function specified as slot.")
+   (after-init-fun :initarg :after-init-fun
+                   :initform nil
+                   :documentation "Code to be called after gserver start."))
+  (:documentation
+   "A simple gserver to be created just with `make-gserver'."))
+
+(defmethod initialize-instance :after ((self simple-gserver) &key)
+  (log:debug "Initialize instance: ~a~%" self)
+  (after-init self (slot-value self 'state)))
+
+(defmethod after-init ((self simple-gserver) state)
+  (with-slots (after-init-fun) self
+    (when after-init-fun
+      (funcall after-init-fun self state))))
+
+(defmethod handle-call ((self simple-gserver) message current-state)
+  (with-slots (call-fun) self
+    (when call-fun
+      (funcall call-fun self message current-state))))
+
+(defmethod handle-cast ((self simple-gserver) message current-state)
+  (with-slots (cast-fun) self
+    (when cast-fun
+      (funcall cast-fun self message current-state))))
+
+(defun make-gserver (name &key state call-fun cast-fun after-init-fun)
+"Makes a new `simple-gserver' which allows you to specify
+a `name' for the gserver and also `:state', `call-fun', `cast-fun' and `after-init-fun'."
+  (make-instance 'simple-gserver :name name
+                                 :state state
+                                 :call-fun call-fun
+                                 :cast-fun cast-fun
+                                 :after-init-fun after-init-fun))
+  
+
+;; -----------------------------------------------    
 ;; internal functions
+;; -----------------------------------------------
 
 (defun stop-server (gserver)
   (log:debug "Stopping server and message handling!")

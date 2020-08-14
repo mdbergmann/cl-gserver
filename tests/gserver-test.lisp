@@ -2,7 +2,8 @@
   (:use :cl :trivia :fiveam :cl-gserver)
   (:export #:run!
            #:all-tests
-           #:nil))
+           #:nil
+           #:assert-cond))
 
 (in-package :cl-gserver.gserver-test)
 
@@ -31,6 +32,20 @@
   (with-fixture server-fixture (nil nil nil)
     (is (= 0 (search "Server-" (name cut))))))
 
+(test create-simple-gserver
+  "Creates a simple gserver"
+
+  (let ((cut (make-gserver "Foo" :state 0
+                                 :call-fun (lambda (self msg state)
+                                             (declare (ignore self))
+                                             (cons msg state))
+                                 :cast-fun (lambda (self msg state)
+                                             (declare (ignore self))
+                                             (cons msg state))
+                                 :after-init-fun (lambda (self state)
+                                                   (declare (ignore self state))
+                                                   (print "Foo")))))
+    (is (string= "Bar" (call cut "Bar")))))
 
 (test handle-call
   "Simple server handle-call test."
@@ -50,6 +65,23 @@
     (is (= 500 (call cut '(:sub 500))))
     (is (eq :unhandled (call cut "Foo")))))
 
+(test handle-acall
+  "Test handle an asynchronous call."
+
+  (with-fixture server-fixture ((lambda (server msg state)
+                                  (declare (ignore server))
+                                  (match msg
+                                    ((list :respondwith x)
+                                     (cons x state))))
+                                nil
+                                0)
+    (let ((received-check 0))
+      (acall cut '(:respondwith 1)     ; just something arbitrary
+             (lambda (received)
+               (format t "Received result: ~a~%" received)
+               (setf received-check received)))
+      (is (eq t (assert-cond (lambda () (= received-check 1)) 1))))))
+
 (test error-in-handler
   "testing error handling"
   
@@ -60,11 +92,11 @@
                                     ((list :err) (error "Foo Error"))))
                                 nil
                                 nil)
-  (let ((result (call cut '(:err))))
-    (format t "Got result : ~a~%" result)
-    (is (not (null (cdr result))))
-    (is (eq (car result) :handler-error))
-    (is (string= "Foo Error" (format nil "~a" (cdr result)))))))
+  (let ((received (call cut '(:err))))
+    (format t "Got received : ~a~%" received)
+    (is (not (null (cdr received))))
+    (is (eq (car received) :handler-error))
+    (is (string= "Foo Error" (format nil "~a" (cdr received)))))))
 
 
 (test stack-server
@@ -111,6 +143,14 @@
 
   (let ((cut (make-instance 'stopping-server)))
     (is (eq :stopped (call cut :stop)))))
+
+
+(defun assert-cond (assert-fun max-time)
+  (do ((wait-time 0.02 (+ wait-time 0.02))
+       (fun-result nil (funcall assert-fun)))
+      ((eq fun-result t) (return t))
+    (if (> wait-time max-time) (return)
+        (sleep 0.02))))
 
 (defun run-tests ()
   (run! 'get-server-name)

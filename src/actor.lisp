@@ -54,8 +54,8 @@ But the convention persists that the result of `receive' must be a `cons' where
                 :initform nil
                 :documentation "The receive function specified as slot.")
    (after-init-fun :initarg :after-init-fun
-                    :initform nil
-                    :documentation "Code to be called after actor start."))
+                   :initform nil
+                   :documentation "Code to be called after actor start."))
   (:documentation
    "A simplified actor that can be created with just `make-actor'."))
 

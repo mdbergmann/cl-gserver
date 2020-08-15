@@ -65,21 +65,21 @@
     (is (= 500 (call cut '(:sub 500))))
     (is (eq :unhandled (call cut "Foo")))))
 
-(test handle-acall
+(test handle-with-async-call
   "Test handle an asynchronous call."
 
-  (with-fixture server-fixture ((lambda (server msg state)
+  (with-fixture server-fixture (nil
+                                (lambda (server msg state)
                                   (declare (ignore server))
                                   (match msg
                                     ((list :respondwith x)
                                      (cons x state))))
-                                nil
                                 0)
     (let ((received-check 0))
-      (acall cut '(:respondwith 1)     ; just something arbitrary
-             (lambda (received)
-               (format t "Received result: ~a~%" received)
-               (setf received-check received)))
+      (with-async-call cut '(:respondwith 1)     ; just something arbitrary
+             (lambda (result)
+               (format t "Received result: ~a~%" result)
+               (setf received-check result)))
       (is (eq t (assert-cond (lambda () (= received-check 1)) 1))))))
 
 (test error-in-handler
@@ -92,11 +92,11 @@
                                     ((list :err) (error "Foo Error"))))
                                 nil
                                 nil)
-  (let ((received (call cut '(:err))))
-    (format t "Got received : ~a~%" received)
-    (is (not (null (cdr received))))
-    (is (eq (car received) :handler-error))
-    (is (string= "Foo Error" (format nil "~a" (cdr received)))))))
+  (let ((msg (call cut '(:err))))
+    (format t "Got msg : ~a~%" msg)
+    (is (not (null (cdr msg))))
+    (is (eq (car msg) :handler-error))
+    (is (string= "Foo Error" (format nil "~a" (cdr msg)))))))
 
 
 (test stack-server
@@ -154,7 +154,9 @@
 
 (defun run-tests ()
   (run! 'get-server-name)
+  (run! 'create-simple-gserver)
   (run! 'handle-call)
+  (run! 'handle-acall)
   (run! 'error-in-handler)
   (run! 'stack-server)
   (run! 'stopping-server))

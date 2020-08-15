@@ -1,5 +1,7 @@
 (defpackage :cl-gserver.agent-test
   (:use :cl :trivia :fiveam :cl-gserver.agent)
+  (:import-from #:cl-gserver.gserver-test
+                #:assert-cond)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -38,16 +40,21 @@
   (with-fixture agent-fixture ((lambda () '(5 4 3)))
     (is (equalp '(5 4 3) (agent-get agent #'identity)))
     (is (eq t (agent-update agent (lambda (state) (mapcar #'1+ state)))))
-    (sleep 0.5)
-    (is (equalp '(6 5 4) (agent-get agent #'identity)))))
+    (is (eq t (assert-cond (lambda ()
+                             (equalp '(6 5 4) (agent-get agent #'identity)))
+                           1)))))
 
 (test stop-agent
   "Stop agent to cleanup resources."
 
   (let ((agent (make-agent (lambda () nil))))
-    (is (eq :stopped (agent-stop agent)))))
+    (agent-stop agent)
+    (is (eq t (assert-cond (lambda ()
+                             (eq :stopped (agent-get agent #'identity)))
+                           1)))))
 
-;;(run! 'create-agent)
-;;(run! 'get-agent-state)
-;;(run! 'update-agent-state)
-;;(run! 'stop-agent)
+(defun run-tests ()
+  (run! 'create-agent)
+  (run! 'get-agent-state)
+  (run! 'update-agent-state)
+  (run! 'stop-agent))

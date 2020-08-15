@@ -115,15 +115,21 @@ The provided body is the response handler."
   (log:debug "Stopping server and message handling!")
   (with-slots (msgbox internal-state) gserver
     (mb:stop msgbox)
-    (setf internal-state nil)))
+    (setf (slot-value internal-state 'running) nil)))
 
 (defun submit-message (gserver message withreply-p sender)
 "Submitting a message.
 In case of `withreply-p', the `response' is filled because submitting to the message-box is synchronous.
-Otherwise submitting is asynchronous and `response' is just `t'."
+Otherwise submitting is asynchronous and `response' is just `t'.
+In case the gserver was stopped it will respond with just `:stopped'."
   (log:debug "Submitting message: " message)
   (log:debug "Withreply: " withreply-p)
   (log:debug "Sender: " sender)
+
+  (with-slots (internal-state) gserver
+    (unless (gserver-state-running internal-state)
+      (return-from submit-message :stopped)))
+  
   (let ((response
           (mb:with-submit-handler
               ((slot-value gserver 'msgbox)
@@ -148,7 +154,7 @@ Otherwise submitting is asynchronous and `response' is just `t'."
          handle-result))))
 
 ;; ------------------------------------------------
-;; --------- message handling ---------------------
+;; message handling ---------------------
 ;; ------------------------------------------------
 
 (defun handle-message (gserver message withreply-p)
@@ -156,19 +162,21 @@ Otherwise submitting is asynchronous and `response' is just `t'."
   (log:debug "Handling message: " message)
   (when message
     (handler-case
-        (unless (handle-message-internal message)
-          (handle-message-user gserver message withreply-p))
+        (let ((internal-handle-result (handle-message-internal message)))
+          (case internal-handle-result
+            (:resume (handle-message-user gserver message withreply-p))
+            (t internal-handle-result)))
       (t (c)
         (log:warn "Error condition was raised on message processing: " c)
         (cons :handler-error c)))))
 
 (defun handle-message-internal (msg)
 "A `:stop' message will response with `:stopping' and the user handlers are not called.
-Otherwise the result is `nil' to resume user message handling."
+Otherwise the result is `:resume' to resume user message handling."
   (log:debug "Internal handle-call: " msg)
   (case msg
     (:stop :stopping)
-    (t nil)))
+    (t :resume)))
 
 (defun handle-message-user (gserver message withreply-p)
   "This will call the method 'handle-call' with the message."

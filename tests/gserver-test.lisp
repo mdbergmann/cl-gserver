@@ -30,7 +30,8 @@
   "Just retrieves the name of the server"
 
   (with-fixture server-fixture (nil nil nil)
-    (is (= 0 (search "Server-" (name cut))))))
+    (print (name cut))
+    (is (= 0 (search "gs-" (name cut))))))
 
 (test create-simple-gserver
   "Creates a simple gserver"

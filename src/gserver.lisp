@@ -19,7 +19,7 @@
 
 (defclass gserver ()
    ((name :initarg :name
-          :initform (mkstr "Server-" (random 100000))
+          :initform (string (gensym "gs-"))
           :accessor name
           :documentation
           "The name of the gserver. If no name is specified a default one is applied.")
@@ -97,7 +97,7 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
 "Macro that makes a `call', but asynchronous. Therefore it spawns a new gserver which waits for the result.
 The provided body is the response handler."
   (with-gensyms (self msg state)
-    `(make-gserver (mkstr "response-handler-" (random 100000))
+    `(make-gserver (string (gensym "gs-"))
                    :cast-fun (lambda (,self ,msg, state)
                                (declare (ignore ,state))
                                (unwind-protect

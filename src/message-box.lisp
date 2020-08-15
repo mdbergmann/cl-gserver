@@ -15,7 +15,7 @@
   (handler-fun nil :type function))
 
 (defclass message-box-base ()
-  ((name :initform (mkstr "messagebox-" (random 1000000)))
+  ((name :initform (string (gensym "mb-")))
    (processed-messages :initform 0)
    (max-queue-size :initform 0 :initarg :max-queue-size
                    :documentation

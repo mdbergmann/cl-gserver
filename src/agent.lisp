@@ -35,7 +35,7 @@ Stop an agent with `agent-stop' to free resources (threads)."))
 "Makes a new `agent' instance.
 `state-fun' is a function that takes no parameter and provides the initial state of the `agent' as return value."
   (let ((state (funcall state-fun)))
-    (make-instance 'agent :state state :name (mkstr "Agent" (random 100000)))))
+    (make-instance 'agent :state state :name (string (gensym "ag-")))))
 
 (defun agent-get (agent get-fun)
 "Gets the current state of the `agent'.

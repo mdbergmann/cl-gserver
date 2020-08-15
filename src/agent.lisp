@@ -12,7 +12,8 @@
   (:documentation
 "Specialized `gserver' class called `agent'.
 It is meant primarily to encapsulate state.
-To access state it provides `agent-get' and `agent-update' to update state."))
+To access state it provides `agent-get' and `agent-update' to update state.
+Stop an agent with `agent-stop' to free resources (threads)."))
 
 (defmethod handle-call ((self agent) message current-state)
   (cond

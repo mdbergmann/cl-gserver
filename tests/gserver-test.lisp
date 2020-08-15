@@ -46,7 +46,8 @@
                                  :after-init-fun (lambda (self state)
                                                    (declare (ignore self state))
                                                    (print "Foo")))))
-    (is (string= "Bar" (call cut "Bar")))))
+    (is (string= "Bar" (call cut "Bar")))
+    (call cut :stop)))
 
 (test handle-call
   "Simple server handle-call test."
@@ -82,6 +83,43 @@
                (format t "Received result: ~a~%" result)
                (setf received-check result)))
       (is (eq t (assert-cond (lambda () (= received-check 1)) 1))))))
+
+(test handle-async-call
+  "Test handle a composable asynchronous call. on-completed after completion."
+
+  (with-fixture server-fixture (nil
+                                (lambda (server msg state)
+                                  (declare (ignore server))
+                                  (sleep 0.2)
+                                  (match msg
+                                    ((list :respondwith x)
+                                     (cons x state))))
+                                0)
+    (let ((fcomputation (async-call cut '(:respondwith 1))))
+      (is (eq :not-ready (get-result fcomputation)))
+      (is (eq t (assert-cond (lambda () (complete-p fcomputation)) 1)))
+      (is (= 1 (on-completed fcomputation #'identity)))
+      (is (= 1 (get-result fcomputation)))
+  )))
+
+(test handle-async-call-2
+  "Test handle a composable asynchronous call. on-completed before completion."
+
+  (with-fixture server-fixture (nil
+                                (lambda (server msg state)
+                                  (declare (ignore server))
+                                  (sleep 0.5)
+                                  (match msg
+                                    ((list :respondwith x)
+                                     (cons x state))))
+                                0)
+    (let ((fcomputation (async-call cut '(:respondwith 1)))
+          (on-completed-result nil))
+      (is (eq :not-ready (get-result fcomputation)))
+      (on-completed fcomputation (lambda (result) (setf on-completed-result result)))
+      (is (eq t (assert-cond (lambda () (complete-p fcomputation)) 1)))
+      (is (= on-completed-result 1))
+  )))
 
 (test error-in-handler
   "testing error handling"
@@ -157,7 +195,9 @@
   (run! 'get-server-name)
   (run! 'create-simple-gserver)
   (run! 'handle-call)
-  (run! 'handle-acall)
+  (run! 'handle-with-async-call)
+  (run! 'handle-async-call)
+  (run! 'handle-async-call-2)
   (run! 'error-in-handler)
   (run! 'stack-server)
   (run! 'stopping-server))

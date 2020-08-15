@@ -8,10 +8,16 @@
            #:gserver
            #:name
            #:call
+           #:async-call
            #:with-async-call
            #:cast
            #:after-init
-           #:make-gserver))
+           #:make-gserver
+
+           #:fcomputation
+           #:complete-p
+           #:on-completed
+           #:get-result))
 
 (in-package :cl-gserver)
 
@@ -43,8 +49,7 @@ State can be changed by calling into the server via `call' or `cast'.
 Where `call' is waiting for a result and `cast' does not.
 For each `call' and `cast' handlers must be implemented by subclasses.
 
-A GServer runs it's own thread, actually a lparallel message-kernel with one worker, 
-to handle the messages which will eventually update the state.
+A GServer runs a `message-box' which has it's own thread that operates on a message queue.
 
 To stop a Gserver message handling and thread pool you can send the `:stop' message either via `call' (which will respond with `:stopped') or `cast'.
 This is to cleanup thread resources when the Gserver is not needed anymore."))
@@ -98,14 +103,54 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
 The provided body is the response handler."
   (with-gensyms (self msg state)
     `(make-gserver (string (gensym "gs-"))
-                   :cast-fun (lambda (,self ,msg, state)
-                               (declare (ignore ,state))
+                   :cast-fun (lambda (,self ,msg ,state)
                                (unwind-protect
                                     (funcall ,@body ,msg)
-                                 (cl-gserver:cast ,self :stop)))
+                                 (cl-gserver:cast ,self :stop)
+                                 (cons ,msg ,state)))  ;; this is actually irrelevant, but needed as a cons result.
                    :after-init-fun (lambda (,self ,state)
                                      (declare (ignore ,state))
                                      (cl-gserver::submit-message ,gserver ,message nil ,self)))))
+
+(defclass fcomputation ()
+  ((complete-p-fun :initarg :complete-p-fun
+                   :initform (error "Must be initialized with function!"))
+   (get-result-fun :initarg :get-result-fun
+                   :initform (error "Must be initialized with function!"))
+   (on-completed-fun :initarg :on-completed-fun
+                     :initform nil)))
+
+(defun complete-p (fcomputation)
+  (funcall (slot-value fcomputation 'complete-p-fun)))
+(defun on-completed (fcomputation completed-fun)
+  (with-slots (get-result-fun complete-p-fun on-completed-fun) fcomputation
+    ;; install on-completed fun
+    (unless on-completed-fun
+      (setf on-completed-fun completed-fun))
+    ;; call immediately when completed
+    (when (funcall complete-p-fun)
+      (funcall on-completed-fun (funcall get-result-fun)))))
+(defun get-result (fcomputation)
+  (funcall (slot-value fcomputation 'get-result-fun)))
+
+(defun async-call (gserver message)
+  (let* ((async-result :not-ready)
+         (fcomp (make-instance 'fcomputation
+                               :complete-p-fun (lambda ()
+                                                 (not (eq :not-ready async-result)))
+                               :get-result-fun (lambda ()
+                                                 async-result)))
+         (exec-fun (lambda ()
+                     (log:debug "Executing fcomputation function...")
+                     (with-async-call gserver message
+                       (lambda (result)
+                         (log:debug "Result: ~a~%" result)
+                         (setf async-result result)
+                         (with-slots (on-completed-fun) fcomp
+                           (when on-completed-fun
+                             (funcall on-completed-fun async-result))))))))
+    (funcall exec-fun)
+    fcomp))
 
 ;; -----------------------------------------------    
 ;; internal functions

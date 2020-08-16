@@ -22,9 +22,10 @@
   (defmethod handle-cast ((server test-server) message current-state)
     (funcall cast-fun server message current-state))
 
-  (let ((cut (make-instance 'test-server :state state)))  
-    (&body)
-    (call cut :stop)))
+  (let ((cut (make-instance 'test-server :state state)))
+    (unwind-protect
+         (&body)
+      (call cut :stop))))
 
 (test get-server-name
   "Just retrieves the name of the server"
@@ -36,16 +37,17 @@
 (test create-simple-gserver
   "Creates a simple gserver"
 
-  (let ((cut (make-gserver "Foo" :state 0
-                                 :call-fun (lambda (self msg state)
-                                             (declare (ignore self))
-                                             (cons msg state))
-                                 :cast-fun (lambda (self msg state)
-                                             (declare (ignore self))
-                                             (cons msg state))
-                                 :after-init-fun (lambda (self state)
-                                                   (declare (ignore self state))
-                                                   (print "Foo")))))
+  (let ((cut (make-gserver :name "Foo"
+                           :state 0
+                           :call-fun (lambda (self msg state)
+                                       (declare (ignore self))
+                                       (cons msg state))
+                           :cast-fun (lambda (self msg state)
+                                       (declare (ignore self))
+                                       (cons msg state))
+                           :after-init-fun (lambda (self state)
+                                             (declare (ignore self state))
+                                             (print "Foo")))))
     (is (string= "Bar" (call cut "Bar")))
     (call cut :stop)))
 

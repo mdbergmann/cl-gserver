@@ -1,5 +1,7 @@
 (defpackage :cl-gserver.actor-test
-  (:use :cl :fiveam :cl-gserver.actor)
+  (:use :cl :fiveam :cl-gserver.actor :cl-gserver.fcomputation)
+  (:import-from #:cl-gserver.gserver-test
+                #:assert-cond)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -17,16 +19,18 @@
   (defmethod receive ((actor test-actor) message current-state)
     (funcall receive-fun actor message current-state))
 
-  (let ((cut (make-instance 'test-actor :state state)))  
-    (&body)
-    (send cut :stop)))
+  (let ((cut (make-instance 'test-actor :state state)))
+    (unwind-protect
+         (&body)
+      (send cut :stop))))
 
 (def-fixture simple-actor-fixture (receive-fun state)
-  (let ((cut (make-actor "Foo"
+  (let ((cut (make-actor :name "Foo"
                          :state state
                          :receive-fun (lambda (self message state) (funcall receive-fun self message state)))))
-    (&body)
-    (send cut :stop)))
+    (unwind-protect
+         (&body)
+      (send cut :stop))))
 
 
 (test custom-actor
@@ -64,6 +68,23 @@
       (is (equal 5 (ask cut "bar")))
       (is (equal 5 (ask cut "get")))))
 
+(test handle-async-ask
+  "Tests the async ask function."
+
+  (with-fixture simple-actor-fixture ((lambda (self message current-state)
+                                        (declare (ignore self))
+                                        (sleep 0.2)
+                                        (cond
+                                          ((eq :add (car message))
+                                           (cons (+ (second message) (third message)) current-state))))
+                                      0)
+    (let ((fcomp (async-ask cut '(:add 0 5))))
+      (is (eq :not-ready (get-result fcomp)))
+      (is (eq t (assert-cond (lambda () (complete-p fcomp)) 1)))
+      (is (= 5 (on-completed fcomp #'identity)))
+      (is (= 5 (get-result fcomp))))))
+
+
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."
 
@@ -80,6 +101,8 @@
 ;;       (is (equal 5 (ask self "bar")))
 ;;       (is (equal 5 (ask self "get")))))
 
-;;(run! 'custom-actor)
-;;(run! 'simple-actor)
-;;(run! 'with-actor-macro)
+(defun run-tests ()
+  (run! 'custom-actor)
+  (run! 'simple-actor)
+  (run! 'handle-async-ask))
+  ;;(run! 'with-actor-macro))

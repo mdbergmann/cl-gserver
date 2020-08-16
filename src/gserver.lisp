@@ -96,19 +96,18 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
 "Macro that makes a `call', but asynchronous. Therefore it spawns a new gserver which waits for the result.
 The provided body is the response handler."
   (with-gensyms (self msg state)
-    `(make-gserver (string (gensym "gs-"))
-                   :cast-fun (lambda (,self ,msg ,state)
+    `(make-gserver :cast-fun (lambda (,self ,msg ,state)
                                (unwind-protect
                                     (progn
                                       (funcall ,@body ,msg)
-                                      (cl-gserver:cast ,self :stop)
+                                      (cast ,self :stop)
                                       (cons ,msg ,state))
-                                 (cl-gserver:cast ,self :stop)))
+                                 (cast ,self :stop)))
                    :after-init-fun (lambda (,self ,state)
                                      (declare (ignore ,state))
                                      ;; this will call the `cast' function
                                      ;; that's why it's implemented above
-                                     (cl-gserver::submit-message ,gserver ,message nil ,self)))))
+                                     (submit-message ,gserver ,message nil ,self)))))
 
 (defun async-call (gserver message)
   (make-instance 'fcomputation
@@ -270,7 +269,7 @@ Otherwise the result is `:resume' to resume user message handling."
     (when cast-fun
       (funcall cast-fun self message current-state))))
 
-(defun make-gserver (name &key state call-fun cast-fun after-init-fun)
+(defun make-gserver (&key name state call-fun cast-fun after-init-fun)
 "Makes a new `simple-gserver' which allows you to specify
 a `name' for the gserver and also `:state', `call-fun', `cast-fun' and `after-init-fun'."
   (make-instance 'simple-gserver :name name

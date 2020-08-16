@@ -5,6 +5,7 @@
            #:receive
            #:send
            #:ask
+           #:async-ask
            #:make-actor)
            ;;#:with-actor)
   )
@@ -39,12 +40,18 @@ But the convention persists that the result of `receive' must be a `cons' where
   (receive self message current-state))
 
 (defun send (actor message)
-"Sends a message to the `actor'. `send' is asynchronous."
+"Sends a message to the `actor'. `send' is asynchronous. There is no result."
   (cast actor message))
+
 (defun ask (actor message)
 "Sends a message to the `actor'. `ask' is synchronous and waits for a result."
   (call actor message))
 
+(defun async-ask (actor message)
+"Sends a message to `actor' and waits for a result but asynchronously.
+The result is an `fcomputation' which accepts `on-complete' handlers, etc."
+  ;; use the underlying `async-call' from gserver.
+  (async-call actor message))
 
 ;; --------------------
 ;; Simple actor
@@ -74,7 +81,7 @@ But the convention persists that the result of `receive' must be a `cons' where
       (funcall receive-fun self message current-state))))
 
 
-(defun make-actor (name &key state receive-fun after-init-fun)
+(defun make-actor (&key name state receive-fun after-init-fun)
 "Makes a new `simple-actor' which allows you to specify 
 a name with `:state', `:receive-fun' and `:after-init-fun'."
   (make-instance 'simple-actor :name name

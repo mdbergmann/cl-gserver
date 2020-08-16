@@ -1,5 +1,5 @@
 (defpackage :cl-gserver
-  (:use :cl :cl-gserver.utils :log4cl)
+  (:use :cl :cl-gserver.utils :cl-gserver.fcomputation :log4cl)
   (:local-nicknames (:mb :cl-gserver.messageb))
   (:import-from #:alexandria
                 #:with-gensyms)
@@ -9,15 +9,9 @@
            #:name
            #:call
            #:async-call
-           #:with-async-call
            #:cast
            #:after-init
-           #:make-gserver
-
-           #:fcomputation
-           #:complete-p
-           #:on-completed
-           #:get-result))
+           #:make-gserver))
 
 (in-package :cl-gserver)
 
@@ -98,59 +92,32 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
       (log:debug "Message process result:" result)
       result)))  
 
-(defmacro with-async-call (gserver message &rest body)
+(defmacro %with-async-call (gserver message &rest body)
 "Macro that makes a `call', but asynchronous. Therefore it spawns a new gserver which waits for the result.
 The provided body is the response handler."
   (with-gensyms (self msg state)
     `(make-gserver (string (gensym "gs-"))
                    :cast-fun (lambda (,self ,msg ,state)
                                (unwind-protect
-                                    (funcall ,@body ,msg)
-                                 (cl-gserver:cast ,self :stop)
-                                 (cons ,msg ,state)))  ;; this is actually irrelevant, but needed as a cons result.
+                                    (progn
+                                      (funcall ,@body ,msg)
+                                      (cl-gserver:cast ,self :stop)
+                                      (cons ,msg ,state))
+                                 (cl-gserver:cast ,self :stop)))
                    :after-init-fun (lambda (,self ,state)
                                      (declare (ignore ,state))
+                                     ;; this will call the `cast' function
+                                     ;; that's why it's implemented above
                                      (cl-gserver::submit-message ,gserver ,message nil ,self)))))
 
-(defclass fcomputation ()
-  ((complete-p-fun :initarg :complete-p-fun
-                   :initform (error "Must be initialized with function!"))
-   (get-result-fun :initarg :get-result-fun
-                   :initform (error "Must be initialized with function!"))
-   (on-completed-fun :initarg :on-completed-fun
-                     :initform nil)))
-
-(defun complete-p (fcomputation)
-  (funcall (slot-value fcomputation 'complete-p-fun)))
-(defun on-completed (fcomputation completed-fun)
-  (with-slots (get-result-fun complete-p-fun on-completed-fun) fcomputation
-    ;; install on-completed fun
-    (unless on-completed-fun
-      (setf on-completed-fun completed-fun))
-    ;; call immediately when completed
-    (when (funcall complete-p-fun)
-      (funcall on-completed-fun (funcall get-result-fun)))))
-(defun get-result (fcomputation)
-  (funcall (slot-value fcomputation 'get-result-fun)))
-
 (defun async-call (gserver message)
-  (let* ((async-result :not-ready)
-         (fcomp (make-instance 'fcomputation
-                               :complete-p-fun (lambda ()
-                                                 (not (eq :not-ready async-result)))
-                               :get-result-fun (lambda ()
-                                                 async-result)))
-         (exec-fun (lambda ()
-                     (log:debug "Executing fcomputation function...")
-                     (with-async-call gserver message
-                       (lambda (result)
-                         (log:debug "Result: ~a~%" result)
-                         (setf async-result result)
-                         (with-slots (on-completed-fun) fcomp
-                           (when on-completed-fun
-                             (funcall on-completed-fun async-result))))))))
-    (funcall exec-fun)
-    fcomp))
+  (make-instance 'fcomputation
+                 :exec-fun (lambda (set-computation-value-fun)
+                             (log:debug "Executing fcomputation function...")
+                             (%with-async-call gserver message
+                                               (lambda (result)
+                                                 (log:debug "Result: ~a~%" result)
+                                                 (funcall set-computation-value-fun result))))))
 
 ;; -----------------------------------------------    
 ;; internal functions

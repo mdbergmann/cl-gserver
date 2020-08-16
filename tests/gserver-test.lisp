@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.gserver-test
-  (:use :cl :trivia :fiveam :cl-gserver)
+  (:use :cl :trivia :fiveam :cl-gserver :cl-gserver.fcomputation)
   (:export #:run!
            #:all-tests
            #:nil
@@ -67,23 +67,6 @@
     (is (= 500 (call cut '(:sub 500))))
     (is (eq :unhandled (call cut "Foo")))))
 
-(test handle-with-async-call
-  "Test handle an asynchronous call."
-
-  (with-fixture server-fixture (nil
-                                (lambda (server msg state)
-                                  (declare (ignore server))
-                                  (match msg
-                                    ((list :respondwith x)
-                                     (cons x state))))
-                                0)
-    (let ((received-check 0))
-      (with-async-call cut '(:respondwith 1)     ; just something arbitrary
-             (lambda (result)
-               (format t "Received result: ~a~%" result)
-               (setf received-check result)))
-      (is (eq t (assert-cond (lambda () (= received-check 1)) 1))))))
-
 (test handle-async-call
   "Test handle a composable asynchronous call. on-completed after completion."
 
@@ -116,7 +99,8 @@
     (let ((fcomputation (async-call cut '(:respondwith 1)))
           (on-completed-result nil))
       (is (eq :not-ready (get-result fcomputation)))
-      (on-completed fcomputation (lambda (result) (setf on-completed-result result)))
+      (on-completed fcomputation (lambda (result)
+                                   (setf on-completed-result result)))
       (is (eq t (assert-cond (lambda () (complete-p fcomputation)) 1)))
       (is (= on-completed-result 1))
   )))
@@ -195,7 +179,6 @@
   (run! 'get-server-name)
   (run! 'create-simple-gserver)
   (run! 'handle-call)
-  (run! 'handle-with-async-call)
   (run! 'handle-async-call)
   (run! 'handle-async-call-2)
   (run! 'error-in-handler)

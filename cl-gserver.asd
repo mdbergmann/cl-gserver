@@ -11,6 +11,7 @@
                 :serial t
                 :components
                 ((:file "utils")
+                 (:file "fcomputation")
                  (:file "queue")
                  (:file "message-box")
                  (:file "gserver")

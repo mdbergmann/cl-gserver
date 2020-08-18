@@ -20,8 +20,8 @@
              :documentation
              "The asynchronous function to be executed. It will be executed as part of the `fcomputation'.
 The `exec-fun' function (or lambda) takes one argument.
-This argument is a `ready'-function that must be called when `exec-fun' is donr with the computation.
-If there was a value computed, then `ready-fun' must be called with this computed value or nil.")
+This argument is a `resolve'-function that must be called when `exec-fun' is done with the computation.
+If there was a value computed, then `resolve-fun' must be called with this computed value or nil.")
    (on-completed-fun :initarg :on-completed-fun
                      :initform nil
                      :documentation
@@ -33,15 +33,15 @@ It is primarily meant to be used in conjunction with a Gserver or subclasses the
 (defmethod initialize-instance :after ((self fcomputation) &key)
   (with-slots (exec-fun on-completed-fun get-result-fun complete-p-fun) self
     (let* ((async-result :not-ready)
-           (set-computation-value-fun (lambda (computation-value)
-                                        (log:debug "Setting computed value to: " computation-value)
-                                        (setf async-result computation-value)
-                                        (when on-completed-fun
-                                          (funcall on-completed-fun computation-value)))))
+           (resolve-fun (lambda (computation-value)
+                          (log:debug "Setting computed value to: " computation-value)
+                          (setf async-result computation-value)
+                          (when on-completed-fun
+                            (funcall on-completed-fun computation-value)))))
       (setf get-result-fun  (lambda () async-result))
       (setf complete-p-fun (lambda () (not (eq :not-ready async-result))))
     
-      (funcall exec-fun set-computation-value-fun))))
+      (funcall exec-fun resolve-fun))))
 
 (defun complete-p (fcomputation)
   "Is `fcomputation' completed? Returns either `t' or `nil'."

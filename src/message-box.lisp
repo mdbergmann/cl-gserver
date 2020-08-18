@@ -33,6 +33,13 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
   (with-slots (processed-messages) self
     (log:info "Processed messages: " processed-messages)))
 
+(defmethod print-object ((obj message-box-base) stream)
+  (print-unreadable-object (obj stream :type t)
+    (with-slots (name processed-messages max-queue-size) obj
+      (format stream "~a, processed messages: ~a, max-queue-size: ~a"
+              name
+              processed-messages
+              max-queue-size))))
 
 ;; ----------------------------------------
 ;; ------------- Generic ------------------

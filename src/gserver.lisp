@@ -55,6 +55,15 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
   (with-slots (max-queue-size msgbox) self
     (setf msgbox (make-instance 'mb:message-box-bt :max-queue-size max-queue-size))))
 
+(defmethod print-object ((obj gserver) stream)
+  (print-unreadable-object (obj stream :type t)
+    (with-slots (name state internal-state max-queue-size msgbox) obj
+      (format stream "~a, running: ~a, state: ~a, message-box: ~a"
+              name
+              (slot-value internal-state 'running)
+              state
+              msgbox))))
+
 ;; -----------------------------------------------
 ;; public functions
 ;; -----------------------------------------------
@@ -111,12 +120,12 @@ The provided body is the response handler."
 
 (defun async-call (gserver message)
   (make-instance 'fcomputation
-                 :exec-fun (lambda (set-computation-value-fun)
+                 :exec-fun (lambda (resolve-fun)
                              (log:debug "Executing fcomputation function...")
                              (%with-async-call gserver message
                                                (lambda (result)
                                                  (log:debug "Result: ~a~%" result)
-                                                 (funcall set-computation-value-fun result))))))
+                                                 (funcall resolve-fun result))))))
 
 ;; -----------------------------------------------    
 ;; internal functions

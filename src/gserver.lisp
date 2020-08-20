@@ -1,5 +1,5 @@
 (defpackage :cl-gserver
-  (:use :cl :cl-gserver.utils :cl-gserver.fcomputation :log4cl)
+  (:use :cl :cl-gserver.utils :cl-gserver.future :log4cl)
   (:local-nicknames (:mb :cl-gserver.messageb))
   (:import-from #:alexandria
                 #:with-gensyms)
@@ -119,13 +119,12 @@ The provided body is the response handler."
                                      (submit-message ,gserver ,message nil ,self)))))
 
 (defun async-call (gserver message)
-  (make-instance 'fcomputation
-                 :exec-fun (lambda (resolve-fun)
-                             (log:debug "Executing fcomputation function...")
-                             (%with-async-call gserver message
-                                               (lambda (result)
-                                                 (log:debug "Result: ~a~%" result)
-                                                 (funcall resolve-fun result))))))
+  (make-future (lambda (promise-fun)
+                 (log:debug "Executing fcomputation function...")
+                 (%with-async-call gserver message
+                                   (lambda (result)
+                                     (log:debug "Result: ~a~%" result)
+                                     (funcall promise-fun result))))))
 
 ;; -----------------------------------------------    
 ;; internal functions

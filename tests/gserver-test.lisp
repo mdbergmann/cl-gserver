@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.gserver-test
-  (:use :cl :trivia :fiveam :cl-gserver :cl-gserver.fcomputation)
+  (:use :cl :trivia :fiveam :cl-gserver :cl-gserver.future)
   (:export #:run!
            #:all-tests
            #:nil
@@ -80,11 +80,10 @@
                                     ((list :respondwith x)
                                      (cons x state))))
                                 0)
-    (let ((fcomputation (async-call cut '(:respondwith 1))))
-      (is (eq :not-ready (get-result fcomputation)))
-      (is (eq t (assert-cond (lambda () (complete-p fcomputation)) 1)))
-      (is (= 1 (on-completed fcomputation #'identity)))
-      (is (= 1 (get-result fcomputation)))
+    (let ((future (async-call cut '(:respondwith 1))))
+      (is (eq :not-ready (get-result future)))
+      (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
+      (is (= 1 (get-result future)))
   )))
 
 (test handle-async-call-2
@@ -98,12 +97,12 @@
                                     ((list :respondwith x)
                                      (cons x state))))
                                 0)
-    (let ((fcomputation (async-call cut '(:respondwith 1)))
+    (let ((future (async-call cut '(:respondwith 1)))
           (on-completed-result nil))
-      (is (eq :not-ready (get-result fcomputation)))
-      (on-completed fcomputation (lambda (result)
+      (is (eq :not-ready (get-result future)))
+      (on-completed future (lambda (result)
                                    (setf on-completed-result result)))
-      (is (eq t (assert-cond (lambda () (complete-p fcomputation)) 1)))
+      (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
       (is (= on-completed-result 1))
   )))
 

@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor-test
-  (:use :cl :fiveam :cl-gserver.actor :cl-gserver.fcomputation)
+  (:use :cl :fiveam :cl-gserver.actor :cl-gserver.future)
   (:import-from #:cl-gserver.gserver-test
                 #:assert-cond)
   (:export #:run!
@@ -81,7 +81,6 @@
     (let ((fcomp (async-ask cut '(:add 0 5))))
       (is (eq :not-ready (get-result fcomp)))
       (is (eq t (assert-cond (lambda () (complete-p fcomp)) 1)))
-      (is (= 5 (on-completed fcomp #'identity)))
       (is (= 5 (get-result fcomp))))))
 
 

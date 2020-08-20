@@ -6,7 +6,8 @@
   :depends-on ("lparallel"
                "cl-speedy-queue"
                "log4cl"
-               "iterate")
+               "iterate"
+               "blackbird")
   :components ((:module "src"
                 :serial t
                 :components
@@ -32,7 +33,8 @@
                  (:file "gserver-test")
                  (:file "gserver-mp-test")
                  (:file "agent-test")
-                 (:file "actor-test"))))
+                 (:file "actor-test")
+                 (:file "fcomputation-test"))))
   :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run!
                                         (uiop:find-symbol* '#:test-suite

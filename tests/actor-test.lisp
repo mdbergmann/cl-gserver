@@ -45,10 +45,9 @@
                                0)
     (is (not (null cut)))
     (is (eq t (send cut "foo")))
-    (sleep 0.1)
-    (is (equal 1 (ask cut "get")))
-    (is (equal 5 (ask cut "bar")))
-    (is (equal 5 (ask cut "get")))))
+    (is (eq t (assert-cond (lambda () (= 1 (ask cut "get"))) 1)))
+    (is (= 5 (ask cut "bar")))
+    (is (= 5 (ask cut "get")))))
 
 
 (test simple-actor
@@ -61,12 +60,11 @@
                                           ((string= message "bar") (cons 5 5))
                                           ((string= message "get") (cons current-state current-state))))
                                       0)
-      (is (not (null cut)))
-      (is (eq t (send cut "foo")))
-      (sleep 0.1)
-      (is (equal 1 (ask cut "get")))
-      (is (equal 5 (ask cut "bar")))
-      (is (equal 5 (ask cut "get")))))
+    (is (not (null cut)))
+    (is (eq t (send cut "foo")))
+    (is (eq t (assert-cond (lambda () (= 1 (ask cut "get"))) 1)))
+    (is (equal 5 (ask cut "bar")))
+    (is (equal 5 (ask cut "get")))))
 
 (test handle-async-ask
   "Tests the async ask function."

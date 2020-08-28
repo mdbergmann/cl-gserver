@@ -41,8 +41,13 @@ Stop an agent with `agent-stop' to free resources (threads)."))
 "Gets the current state of the `agent'.
 `get-fun' must accept one parameter. That is the current-state of the `agent'.
 To return the current state `get-fun' may be just the `identity' function.
+Beware that this function does directly access the state of the agent for performance reasons.
+It does not go through message processing.
 See `agent-test' for examples."
-  (call agent (cons :get get-fun)))
+  (with-slots (cl-gserver::state) agent
+    (if (running-p agent)
+        (funcall get-fun cl-gserver::state)
+        :stopped)))
 
 (defun agent-update (agent update-fun)
 "Updates the `agent' state.

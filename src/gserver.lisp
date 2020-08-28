@@ -11,7 +11,8 @@
            #:async-call
            #:cast
            #:after-init
-           #:make-gserver))
+           #:make-gserver
+           #:running-p))
 
 (in-package :cl-gserver)
 
@@ -125,6 +126,11 @@ The provided body is the response handler."
                                    (lambda (result)
                                      (log:debug "Result: ~a~%" result)
                                      (funcall promise-fun result))))))
+
+(defun running-p (gserver)
+"Returns true if this server is running. `nil' otherwise."
+  (with-slots (internal-state) gserver
+    (slot-value internal-state 'running)))
 
 ;; -----------------------------------------------    
 ;; internal functions

@@ -31,11 +31,26 @@
          (cons new-state new-state)))
       (:get (cons current-state current-state))))
 
+  (format t "Running non-system tests...~%")
   (let* ((cut (make-instance 'counter-server :state 0 :max-queue-size queue-size))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))
     (&body)
     (call cut :stop))
+  (format t "Running non-system tests...done~%")
+  (format t "Running system tests...~%")
+  (let* ((system (system:make-system :num-workers 4))
+         (cut (make-instance 'counter-server :state 0
+                                             :max-queue-size queue-size
+                                             :system system))
+         (max-loop 10000)
+         (per-thread (/ max-loop 8)))
+    (&body)
+    (call cut :stop)
+    (print system)
+    (system-api:shutdown system))
+  (format t "Running system tests...~%")
+  
   (lparallel:end-kernel))
 
 
@@ -71,5 +86,6 @@
                  (loop repeat 8 collect "n")))
     (is (= 8 (call cut :get)))))
 
-;;(time (run! 'counter-mp-unbounded))
-;;(time (run! 'counter-mp-bounded))
+(defun run-tests ()
+  (time (run! 'counter-mp-unbounded))
+  (time (run! 'counter-mp-bounded)))

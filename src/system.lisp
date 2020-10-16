@@ -16,7 +16,7 @@
                :accessor dispatcher
                :documentation "The message dispatcher."))
   (:documentation
-"A system is a container for GServers/Actors or other incarnations of GServer."))
+   "A system is a container for GServers/Actors or other incarnations of GServer."))
 
 (defmethod print-object ((obj system) stream)
   (print-unreadable-object (obj stream :type t)
@@ -25,6 +25,7 @@
               dispatcher))))
 
 (defun make-system (&key (num-workers 4))
+  "Creates a system with 4 wortkers by default."
   (make-instance 'system :dispatcher (make-dispatcher 'dispatcher-bt :num-workers num-workers)))
 
 (defmethod shutdown ((self system))

@@ -14,14 +14,13 @@
 
 (defclass actor (gserver) ()
   (:documentation
-"Specialized `gserver' class called `actor'.
+   "Specialized `gserver' class called `actor'.
 There is a different terminology behind `actor'.
 I.e. There is only one `receive' function.
 And there is asynchronous `send' and synchronous `ask'.
 So there is not much difference to a `gserver'.
 It only uses one method `receive'. However both `handle-call' and `handle-cast' of `gserver'
 end up in `receive'.
-
 To stop an actors message processing in order to cleanup resouces you should send (either `send' or `ask')
 the `:stop' message. It will respond with `:stopped'."))
 
@@ -30,7 +29,7 @@ the `:stop' message. It will respond with `:stopped'."))
 
 (defgeneric receive (actor message current-state)
   (:documentation
-"The `receive' method handles all messages to an `actor' being it `send' or `ask'.
+   "The `receive' method handles all messages to an `actor' being it `send' or `ask'.
 But the convention persists that the result of `receive' must be a `cons' where
 `car' is to be returned to the caller (for `ask') and `cdr' will update the state."))
 
@@ -40,15 +39,15 @@ But the convention persists that the result of `receive' must be a `cons' where
   (receive self message current-state))
 
 (defun send (actor message)
-"Sends a message to the `actor'. `send' is asynchronous. There is no result."
+  "Sends a message to the `actor'. `send' is asynchronous. There is no result."
   (cast actor message))
 
 (defun ask (actor message)
-"Sends a message to the `actor'. `ask' is synchronous and waits for a result."
+  "Sends a message to the `actor'. `ask' is synchronous and waits for a result."
   (call actor message))
 
 (defun async-ask (actor message)
-"Sends a message to `actor' and waits for a result but asynchronously.
+  "Sends a message to `actor' and waits for a result but asynchronously.
 The result is an `fcomputation' which accepts `on-complete' handlers, etc."
   ;; use the underlying `async-call' from gserver.
   (async-call actor message))
@@ -87,7 +86,7 @@ The result is an `fcomputation' which accepts `on-complete' handlers, etc."
                      system
                      receive-fun
                      after-init-fun)
-"Makes a new `simple-actor' which allows you to specify 
+  "Makes a new `simple-actor' which allows you to specify 
 a name with `:state', `:receive-fun' and `:after-init-fun'."
   (make-instance 'simple-actor :name name
                                :state state

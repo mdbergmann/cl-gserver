@@ -1,17 +1,20 @@
 ;;(push #P"~/Development/MySources/cl-gserver/" asdf:*central-registry*)
-;;(asdf:load-system "cl-gserver")
+(asdf:load-system "cl-gserver")
 
 ;;(use-package :bordeaux-threads)
+
+(log:config :info)
 
 (defparameter *starttime* 0)
 (defparameter *endtime* 0)
 
 (defparameter *withreply-p* nil)
 
+(defparameter *system* nil)
 (defparameter *msgbox* nil)
 (defparameter *counter* 0)
 (defparameter +threads+ 8)
-(defparameter +per-thread+ 1000)
+(defparameter +per-thread+ 10000)
 
 (defun max-loop () (* +per-thread+ +threads+))
 
@@ -30,9 +33,11 @@
     (if (> wait-time max-time) (return)
         (sleep 0.02))))
 
-(defun runner-bt-lsr ()
-  (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-lsr))
-  (setf *withreply-p* t)
+(defun runner-bt-dp (&optional (withreply-p nil) (queue-size 0))
+  (setf *system* (system:make-system :num-workers 8))
+  (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-dp
+                                :dispatcher (system-api:dispatcher *system*)))
+  (setf *withreply-p* withreply-p)
   (setf *counter* 0)
   (setf *starttime* (get-universal-time))
   (time
@@ -49,7 +54,9 @@
   (setf *endtime* (get-universal-time))
   (format t "Counter: ~a~%" *counter*)
   (format t "Elapsed: ~a~%" (- *endtime* *starttime*))
-  (cl-gserver.messageb:stop *msgbox*))
+  (cl-gserver.messageb:stop *msgbox*)
+  (print *system*)
+  (system-api:shutdown *system*))
 
 (defun runner-bt-bt (&optional (withreply-p nil) (queue-size 0))
   (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-bt :max-queue-size queue-size))

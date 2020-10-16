@@ -40,13 +40,13 @@
                     "0 or nil for unbounded queue. > 0 for bounded queue. Don't choose < 10.")
     (msgbox :initform nil
             :documentation
-            "The `message-box'. If nil it will be preset on initialization according to `max-queue-size' setting.")
+            "The `message-box' will be pre-set on initialization according to `max-queue-size' and `system' setting.")
     (system :initarg :system
             :initform nil
             :reader system
             :documentation "The system this gserver is attached to."))
   (:documentation
-"GServer is an Erlang inspired GenServer.
+   "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.
 State can be changed by calling into the server via `call' or `cast'.
 Where `call' is waiting for a result and `cast' does not.
@@ -58,7 +58,8 @@ a `message-box' with it's own thread.
 If the GServer is created through the `system', then it will use the system-wide thread-pool
 to process the `message-box'.
 
-To stop a Gserver message handling and thread pool you can send the `:stop' message either via `call' (which will respond with `:stopped') or `cast'.
+To stop a Gserver message handling and you can send the `:stop' message 
+either via `call' (which will respond with `:stopped') or `cast'.
 This is to cleanup thread resources when the Gserver is not needed anymore."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
@@ -71,7 +72,7 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
                                     :max-queue-size max-queue-size))
         (setf msgbox (make-instance 'mb:message-box-bt
                                     :max-queue-size max-queue-size))))
-  (log:debug "Initialize instance: ~a~%" self))
+  (log:info "Initialize instance: ~a~%" self))
 
 (defmethod print-object ((obj gserver) stream)
   (print-unreadable-object (obj stream :type t)
@@ -89,21 +90,21 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
 
 (defgeneric after-init (server state)
   (:documentation
-"Generic function definition that you may call from `initialize-instance'."))
+   "Generic function definition that you may call from `initialize-instance'."))
 
 (defgeneric handle-call (gserver message current-state)
   (:documentation
-"Handles calls to the server. Must be implemented by subclasses.
+   "Handles calls to the server. Must be implemented by subclasses.
 The convention here is to return a `cons' with values to be returned to caller as `car', and the new state as `cdr'.
 `handle-call' is executed in the default message dispatcher thread."))
 
 (defgeneric handle-cast (gserver message current-state)
   (:documentation
-"Handles casts to the server. Must be implemented by subclasses.
+   "Handles casts to the server. Must be implemented by subclasses.
 Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
 
 (defun call (gserver message)
-"Send a message to a gserver instance and wait for a result.
+  "Send a message to a gserver instance and wait for a result.
 The result can be of different types.
 Success result: <returned-state>
 Unhandled result: `:unhandled'
@@ -114,14 +115,14 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
       result)))
 
 (defun cast (gserver message)
-"Sends a message to a gserver asynchronously. There is no result."
+  "Sends a message to a gserver asynchronously. There is no result."
   (when message
     (let ((result (submit-message gserver message nil nil)))
       (log:debug "Message process result:" result)
       result)))  
 
 (defmacro %with-async-call (gserver message &rest body)
-"Macro that makes a `call', but asynchronous. Therefore it spawns a new gserver which waits for the result.
+  "Macro that makes a `call', but asynchronous. Therefore it spawns a new gserver which waits for the result.
 The provided body is the response handler."
   (with-gensyms (self msg state)
     `(make-gserver :cast-fun (lambda (,self ,msg ,state)
@@ -140,7 +141,7 @@ The provided body is the response handler."
                    :name (mkstr "Async-call-waiter-" (gensym)))))
 
 (defun async-call (gserver message)
-"This returns a `future'.
+  "This returns a `future'.
 An `async-call' is similar to a `call' in that the caller gets back a result 
 but it doesn't have to actively wait for it. Instead a `future' wraps the result.
 However, the internal message handling is based on `cast', so the `gserver' in fact has to
@@ -158,7 +159,7 @@ received the response the `future' will be fulfilled with the `promise'."
                                      (funcall promise-fun result))))))
 
 (defun running-p (gserver)
-"Returns true if this server is running. `nil' otherwise."
+  "Returns true if this server is running. `nil' otherwise."
   (with-slots (internal-state) gserver
     (slot-value internal-state 'running)))
 
@@ -173,7 +174,7 @@ received the response the `future' will be fulfilled with the `promise'."
     (setf (slot-value internal-state 'running) nil)))
 
 (defun submit-message (gserver message withreply-p sender)
-"Submitting a message.
+  "Submitting a message.
 In case of `withreply-p', the `response' is filled because submitting to the message-box is synchronous.
 Otherwise submitting is asynchronous and `response' is just `t'.
 In case the gserver was stopped it will respond with just `:stopped'."
@@ -226,7 +227,7 @@ In case the gserver was stopped it will respond with just `:stopped'."
         (cons :handler-error c)))))
 
 (defun handle-message-internal (msg)
-"A `:stop' message will response with `:stopping' and the user handlers are not called.
+  "A `:stop' message will response with `:stopping' and the user handlers are not called.
 Otherwise the result is `:resume' to resume user message handling."
   (log:debug "Internal handle-call: " msg)
   (case msg
@@ -253,7 +254,7 @@ Otherwise the result is `:resume' to resume user message handling."
        (process-not-handled)))))
 
 (defun process-handler-result (handle-result gserver)
-  (log:info "Message handled, result: " handle-result)
+  (log:debug "Message handled, result: " handle-result)
   (cond
     ((consp handle-result)
      (progn
@@ -320,7 +321,7 @@ Otherwise the result is `:resume' to resume user message handling."
                        call-fun
                        cast-fun
                        after-init-fun)
-"Makes a new `simple-gserver' which allows you to specify
+  "Makes a new `simple-gserver' which allows you to specify
 a `name' for the gserver and also `:state', `call-fun', `cast-fun' and `after-init-fun'."
   (make-instance 'simple-gserver :name name
                                  :state state

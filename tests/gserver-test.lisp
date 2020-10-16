@@ -1,5 +1,6 @@
 (defpackage :cl-gserver.gserver-test
-  (:use :cl :trivia :fiveam :cl-gserver :cl-gserver.future)
+  (:use :cl :trivia :fiveam
+   :cl-gserver :cl-gserver.future :cl-gserver.system :cl-gserver.system-api)
   (:export #:run!
            #:all-tests
            #:nil
@@ -29,10 +30,24 @@
   (defmethod handle-cast ((server test-server) message current-state)
     (funcall cast-fun server message current-state))
 
+  (format t "Running no-system tests...~%")
   (let ((cut (make-instance 'test-server :state state)))
     (unwind-protect
          (&body)
-      (call cut :stop))))
+      (call cut :stop)))
+  (format t "Running no-system tests...done~%")
+  (format t "Running system tests...~%")
+  (let* ((system (make-system :num-workers 2))
+         (cut (make-instance 'test-server
+                             :state state
+                             :system system)))
+    (unwind-protect
+         (&body)
+      (call cut :stop)
+      (print system)
+      (shutdown system)))
+  (format t "Running system tests...~%"))
+
 
 (test get-server-name
   "Just retrieves the name of the server"
@@ -153,10 +168,13 @@
                                 '(5))
     (is (equalp '(5) (call cut :get)))
     (cast cut (cons :push 4))
+    (sleep 0.01)
     (cast cut (cons :push 3))
+    (sleep 0.01)
     (cast cut (cons :push 2))
+    (sleep 0.01)
     (cast cut (cons :push 1))
-    (sleep 0.5)
+    (sleep 0.3)
     (is (equalp '(5 4 3 2 1) (call cut :get)))
     (is (= 5 (call cut :pop)))
     (is (= 4 (call cut :pop)))

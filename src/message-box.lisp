@@ -13,11 +13,23 @@
 (defclass message-box-base ()
   ((name :initform (string (gensym "mb-")))
    (processed-messages :initform 0)
-   (max-queue-size :initform 0 :initarg :max-queue-size
+   (queue :initform nil
+          :documentation
+          "Which type of queue will be used depends on the `max-queue-size' setting.")
+   (max-queue-size :initform 0
+                   :initarg :max-queue-size
                    :documentation
-"0 or nil will make an unbounded queue. 
+                   "0 or nil will make an unbounded queue. 
 A value > 0 will make a bounded queue. 
 Don't make it too small. A queue size of 1000 might be a good choice.")))
+
+(defmethod initialize-instance :after ((self message-box-base) &key)
+  (with-slots (queue max-queue-size) self
+    (setf queue
+          (case max-queue-size
+            ((0 nil) (make-instance 'queue-unbounded))
+            (t (make-instance 'queue-bounded :max-items max-queue-size)))))
+  (log:debug "Initialize instance: ~a~%" self))
 
 (defgeneric submit (message-box-base message withreply-p handler-fun)
   (:documentation "Submit a message to the mailbox to be queued and handled."))
@@ -31,18 +43,20 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
 
 (defmethod print-object ((obj message-box-base) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (name processed-messages max-queue-size) obj
-      (format stream "~a, processed messages: ~a, max-queue-size: ~a"
+    (with-slots (name processed-messages max-queue-size queue) obj
+      (format stream "~a, processed messages: ~a, max-queue-size: ~a, queue: ~a"
               name
               processed-messages
-              max-queue-size))))
+              max-queue-size
+              queue))))
 
 ;; ----------------------------------------
 ;; ------------- Generic ------------------
 ;; ----------------------------------------
 
 (defmacro with-submit-handler ((msgbox message withreply-p) &rest body)
-  "Macro to let the caller specify a message handler function."
+  "Macro to let the caller specify a message handler function.
+Use this instead of `submit'."
   `(submit ,msgbox ,message ,withreply-p (lambda (message) ,@body)))
 
 ;; ----------------------------------------
@@ -60,30 +74,22 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
   ((queue-thread :initform nil
                  :documentation
                  "The thread that pops queue items.")
-   (queue :initform nil
-          :documentation
-          "Which type of queue will be used depends on the `max-queue-size' setting.")
    (should-run :initform t
                :documentation
                "Flag that indicates whether the message processing should commence."))
   (:documentation
-"Bordeaux-Threads based message-box with a single thread operating on a message queue.
+   "Bordeaux-Threads based message-box with a single thread operating on a message queue.
 This is used when the gserver is created outside of the `system'.
 There is a limit on the maximum number of gservers/actors/agents that can be created with
 this kind of queue because each message-box requires exactly one thread."))
 
 (defmethod initialize-instance :after ((self message-box-bt) &key)
-  (with-slots (name queue queue-thread max-queue-size) self
-    (log:debug "Max-queue-size: " max-queue-size)
-    (setf queue
-          (case max-queue-size
-            ((0 nil) (make-instance 'queue-unbounded))
-            (t (make-instance 'queue-bounded :max-items max-queue-size))))
-    (log:info "Using queue: " queue)
+  (with-slots (name queue-thread) self
     (setf queue-thread (bt:make-thread
                         (lambda () (message-processing-loop self))
                         :name  (mkstr "message-thread-" name))))
-  (log:debug "Initialize instance: ~a~%" self))
+  (when (next-method-p)
+    (call-next-method)))
 
 (defun message-processing-loop (msgbox)
   "The message processing loop."
@@ -121,6 +127,7 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
         (submit/no-reply queue message handler-fun))))
 
 (defun submit/no-reply (queue message handler-fun)
+  "This is quite efficient, no lockimng necessary."
   (let ((push-item (make-message-item
                     :message message
                     :withreply-p nil
@@ -132,6 +139,8 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
     t))
   
 (defun submit/reply (queue message handler-fun)
+  "This requires some more action. This function has to provide a result and so it's has to wait until
+The queue thread has processed the message."
   (let* ((my-handler-result 'no-result)
          (my-handler-fun (lambda (msg)
                            ;; wrap the `handler-fun' so that we can get a function result.
@@ -175,31 +184,27 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
 ;; ----------------------------------------
 
 (defclass message-box-dp (message-box-base)
-  ((queue :initform nil
-          :documentation
-          "Which type of queue will be used depends on the `max-queue-size' setting.")
-   (dispatcher :initarg :dispatcher
+  ((dispatcher :initarg :dispatcher
                :initform (error "Must be set!")
                :reader dispatcher
                :documentation "The dispatcher from the system.")
    (lock :initform (bt:make-lock)))
   (:documentation
-"This message box is a message-box that uses the `system's `dispatcher'.
-This has the advantage that an almost unlimited gservers/actors/agents can be created."))
+   "This message box is a message-box that uses the `system's `dispatcher'.
+This has the advantage that an almost unlimited gservers/actors/agents can be created.
+This message-box doesn't 'own' a separate thread. It uses the `dispatcher' to handle the message processing.
+The `dispatcher is kind of like a thread pool."))
 
 (defmethod initialize-instance :after ((self message-box-dp) &key)
-  (log:debug "Initialize instance: ~a~%" self)
-
-  (with-slots (name queue queue-thread max-queue-size) self
-    (log:debug "Requested max-queue-size: " max-queue-size)
-    (setf queue
-          (case max-queue-size
-            ((0 nil) (make-instance 'queue-unbounded))
-            (t (make-instance 'queue-bounded :max-items max-queue-size))))
-    (log:info "Using queue: " queue)))
-
+  (when (next-method-p)
+    (call-next-method)))
 
 (defmethod submit ((self message-box-dp) message withreply-p handler-fun)
+  "Submitting a message on a multi-threaded `dispatcher' is different as submitting on a single threaded message-box.
+On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads.
+On the `dispatcher' this is not the case. The order cannot be guaranteed when messages are processed by different 
+`dispatcher' threads. However, the we still guarantee a 'single-threadedness' regarding the state of the actor.
+This is archieved here by protecting the `handler-fun' executation by a lock."
   (with-slots (name
                queue
                processed-messages

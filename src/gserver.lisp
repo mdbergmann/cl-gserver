@@ -1,13 +1,14 @@
 (defpackage :cl-gserver
   (:use :cl :cl-gserver.utils :cl-gserver.future)
   (:local-nicknames (:mb :cl-gserver.messageb))
+  (:import-from #:cl-gserver.system-api
+                #:dispatcher)
   (:import-from #:alexandria
                 #:with-gensyms)
   (:export #:handle-call
            #:handle-cast
            #:gserver
            #:name
-           #:system
            #:call
            #:async-call
            #:cast
@@ -37,12 +38,12 @@
                     :initform nil
                     :documentation
                     "0 or nil for unbounded queue. > 0 for bounded queue. Don't choose < 10.")
-    (msgbox :initarg :msgbox
-            :initform nil
+    (msgbox :initform nil
             :documentation
             "The `message-box'. If nil it will be preset on initialization according to `max-queue-size' setting.")
-    (system :initform nil
-            :accessor system
+    (system :initarg :system
+            :initform nil
+            :reader system
             :documentation "The system this gserver is attached to."))
   (:documentation
 "GServer is an Erlang inspired GenServer.
@@ -62,17 +63,22 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
   :documentation "Initializes the instance."
-  (log:debug "Initialize instance: ~a~%" self)
 
-  (with-slots (max-queue-size msgbox) self
-    (unless msgbox
-      (setf msgbox (make-instance 'mb:message-box-bt :max-queue-size max-queue-size)))))
+  (with-slots (max-queue-size msgbox system) self
+    (if system
+        (setf msgbox (make-instance 'mb:message-box-dp
+                                    :dispatcher (dispatcher system)
+                                    :max-queue-size max-queue-size))
+        (setf msgbox (make-instance 'mb:message-box-bt
+                                    :max-queue-size max-queue-size))))
+  (log:debug "Initialize instance: ~a~%" self))
 
 (defmethod print-object ((obj gserver) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (name state internal-state max-queue-size msgbox) obj
-      (format stream "~a, running: ~a, state: ~a, message-box: ~a"
+    (with-slots (name state internal-state max-queue-size msgbox system) obj
+      (format stream "~a, system: ~a, running: ~a, state: ~a, message-box: ~a"
               name
+              (not (null system))
               (slot-value internal-state 'running)
               state
               msgbox))))
@@ -129,9 +135,21 @@ The provided body is the response handler."
                                      (declare (ignore ,state))
                                      ;; this will call the `cast' function
                                      ;; that's why it's implemented above
-                                     (submit-message ,gserver ,message nil ,self)))))
+                                     (submit-message ,gserver ,message nil ,self))
+                   :system (system ,gserver)
+                   :name (mkstr "Async-call-waiter-" (gensym)))))
 
 (defun async-call (gserver message)
+"This returns a `future'.
+An `async-call' is similar to a `call' in that the caller gets back a result 
+but it doesn't have to actively wait for it. Instead a `future' wraps the result.
+However, the internal message handling is based on `cast', so the `gserver' in fact has to
+implement `handle-cast' to make this work.
+How this works is that the message to the target `gserver' is not 'sent' using the callers thread
+but instead an anonymous `gserver' is started behind the scenes and this in fact makes sends
+the message to the target `gserver'. It does sent itself along as 'sender'.
+The target `gserver' sends a response back to the initial `sender'. When that happens and the anonymous `gserver'
+received the response the `future' will be fulfilled with the `promise'."
   (make-future (lambda (promise-fun)
                  (log:debug "Executing fcomputation function...")
                  (%with-async-call gserver message
@@ -295,11 +313,18 @@ Otherwise the result is `:resume' to resume user message handling."
     (when cast-fun
       (funcall cast-fun self message current-state))))
 
-(defun make-gserver (&key name state call-fun cast-fun after-init-fun)
+(defun make-gserver (&key
+                       (name (mkstr "simple-gs-" (gensym)))
+                       state
+                       system
+                       call-fun
+                       cast-fun
+                       after-init-fun)
 "Makes a new `simple-gserver' which allows you to specify
 a `name' for the gserver and also `:state', `call-fun', `cast-fun' and `after-init-fun'."
   (make-instance 'simple-gserver :name name
                                  :state state
+                                 :system system
                                  :call-fun call-fun
                                  :cast-fun cast-fun
                                  :after-init-fun after-init-fun))

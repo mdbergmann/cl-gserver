@@ -81,11 +81,17 @@ The result is an `fcomputation' which accepts `on-complete' handlers, etc."
       (funcall receive-fun self message current-state))))
 
 
-(defun make-actor (&key name state receive-fun after-init-fun)
+(defun make-actor (&key
+                     (name (utils:mkstr "actor-" (gensym)))
+                     state
+                     system
+                     receive-fun
+                     after-init-fun)
 "Makes a new `simple-actor' which allows you to specify 
 a name with `:state', `:receive-fun' and `:after-init-fun'."
   (make-instance 'simple-actor :name name
                                :state state
+                               :system system
                                :receive-fun receive-fun
                                :after-init-fun after-init-fun))
 

@@ -2,10 +2,12 @@
   (:use :cl)
   (:nicknames :dispatcher-api)
   (:export #:make-dispatcher
-           #:terminate
+           #:dispatcher-base
+           #:shutdown
            #:dispatch
            #:dispatch-async
            #:workers
+           #:num-workers
            ))
 
 (in-package :cl-gserver.dispatcher-api)
@@ -17,6 +19,7 @@
   ((num-workers :initarg :num-workers
                 :initform 1
                 :type integer
+                :reader num-workers
                 :documentation "The desired number of workers.")
    (workers :initform nil
             :reader workers
@@ -29,6 +32,6 @@
               num-workers
               workers))))
 
-(defgeneric terminate (dispatcher-base))
+(defgeneric shutdown (dispatcher-base))
 (defgeneric dispatch (dispatcher-base fun))
 (defgeneric dispatch-async (dispatcher-base fun))

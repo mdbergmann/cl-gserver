@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.system-test
-  (:use :cl :fiveam :cl-gserver.system)
+  (:use :cl :fiveam :cl-gserver.system :cl-gserver.system-api)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -16,7 +16,7 @@
   (let ((system (make-system)))
     (is (not (null system)))
     (is (not (null (dispatcher system))))
-    (terminate system)))
+    (shutdown system)))
 
 (defun runtests ()
   (run! 'create-system))

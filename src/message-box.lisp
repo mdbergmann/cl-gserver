@@ -73,10 +73,8 @@ There is a limit on the maximum number of gservers/actors/agents that can be cre
 this kind of queue because each message-box requires exactly one thread."))
 
 (defmethod initialize-instance :after ((self message-box-bt) &key)
-  (log:debug "Initialize instance: ~a~%" self)
-  
   (with-slots (name queue queue-thread max-queue-size) self
-    (log:debug "Requested max-queue-size: " max-queue-size)
+    (log:debug "Max-queue-size: " max-queue-size)
     (setf queue
           (case max-queue-size
             ((0 nil) (make-instance 'queue-unbounded))
@@ -84,7 +82,8 @@ this kind of queue because each message-box requires exactly one thread."))
     (log:info "Using queue: " queue)
     (setf queue-thread (bt:make-thread
                         (lambda () (message-processing-loop self))
-                        :name  (mkstr "message-thread-" name)))))
+                        :name  (mkstr "message-thread-" name))))
+  (log:debug "Initialize instance: ~a~%" self))
 
 (defun message-processing-loop (msgbox)
   "The message processing loop."
@@ -206,18 +205,21 @@ This has the advantage that an almost unlimited gservers/actors/agents can be cr
                processed-messages
                dispatcher
                lock) self
-
+    (incf processed-messages)
     (log:debug "Enqueuing message: " message)
     (pushq queue message)
 
-    (log:debug "Making dispatcher poping the queue and processing the message...")
-    (incf processed-messages)
-
     (let ((dispatcher-fun (lambda ()
-                            (funcall handler-fun (popq queue)))))
+                            (log:debug "Executing handler-fun with popped message...")
+                            (let ((popped-msg (popq queue)))
+                              (bt:acquire-lock lock t)
+                              (prog1
+                                  (funcall handler-fun popped-msg)
+                                (bt:release-lock lock))))))
       (if withreply-p
           (dispatch dispatcher dispatcher-fun)
           (dispatch-async dispatcher dispatcher-fun)))))
 
 (defmethod stop ((self message-box-dp))
-  (call-next-method))
+  (when (next-method-p)
+    (call-next-method)))

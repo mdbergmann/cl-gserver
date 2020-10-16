@@ -15,19 +15,19 @@
   "Checks creating a dispatcher"
   (let ((cut (make-dispatcher 'dispatcher-bt)))
     (is (not (null cut)))
-    (terminate cut)))
+    (shutdown cut)))
 
 (test create-the-workers
   "Checks that the workers are created as gservers"
   (let ((cut (make-dispatcher 'dispatcher-bt :num-workers 4)))
     (is (= 4 (length (workers cut))))
-    (terminate cut)))
+    (shutdown cut)))
 
 (test dispatch-to-worker
   "Tests the dispatching to a worker"
   (let ((cut (make-dispatcher 'dispatcher-bt)))
     (is (= 15 (dispatch cut (lambda () (loop for i from 1 to 5 sum i)))))
-    (terminate cut)))
+    (shutdown cut)))
 
 (defun runtests ()
   (run! 'create-dispatcher)

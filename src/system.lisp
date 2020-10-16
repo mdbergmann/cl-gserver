@@ -1,21 +1,18 @@
 (defpackage :cl-gserver.system
-  (:use :cl :cl-gserver)
+  (:use :cl :cl-gserver :cl-gserver.system-api)
   (:nicknames :system)
+  (:import-from :dispatcher-api
+                #:make-dispatcher)
   (:import-from :dispatcher
                 #:dispatcher-bt)
-  (:import-from :dispatcher-api
-                #:make-dispatcher
-                #:terminate)
   (:export #:make-system
-           #:system
-           #:dispatcher
-           #:terminate))
+           #:system))
 
 (in-package :cl-gserver.system)
 
 (defclass system ()
   ((dispatcher :initarg :dispatcher
-               :initform (make-instance 'dispatcher-bt)
+               :initform nil
                :accessor dispatcher
                :documentation "The message dispatcher."))
   (:documentation
@@ -27,9 +24,8 @@
       (format stream "dispatcher: ~a"
               dispatcher))))
 
-
-(defun make-system (&key (num-workers 1))
+(defun make-system (&key (num-workers 4))
   (make-instance 'system :dispatcher (make-dispatcher 'dispatcher-bt :num-workers num-workers)))
 
-(defun terminate (system)
-  (dispatcher-api:terminate (dispatcher system)))
+(defmethod shutdown ((self system))
+  (dispatcher-api:shutdown (dispatcher self)))

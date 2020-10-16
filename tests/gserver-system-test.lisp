@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.gserver-system-test
-  (:use :cl :trivia :fiveam :cl-gserver :cl-gserver.future :cl-gserver.system)
+  (:use :cl :trivia :fiveam :cl-gserver :cl-gserver.future :cl-gserver.system :cl-gserver.system-api)
   (:export #:run!
            #:all-tests
            #:nil
@@ -22,16 +22,15 @@
   (defmethod handle-cast ((server test-server) message current-state)
     (funcall cast-fun server message current-state))
 
-  (let* ((system (make-system :num-workers 4))
+  (let* ((system (make-system :num-workers 2))
          (cut (make-instance 'test-server
                              :state state
-                             :msgbox (make-instance 'cl-gserver.messageb:message-box-dp
-                                                    :dispatcher (dispatcher system)))))
+                             :system system)))
     (unwind-protect
          (&body)
       (call cut :stop)
       (print system)
-      (terminate system)
+      (shutdown system)
       )))
 
 (test handle-call
@@ -65,7 +64,8 @@
                                 0)
     (let ((future (async-call cut '(:respondwith 1))))
       (is (eq :not-ready (get-result future)))
-      (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
+      (is (eq t (cl-gserver.gserver-test:assert-cond
+                 (lambda () (complete-p future)) 1)))
       (is (= 1 (get-result future)))
   )))
 
@@ -75,7 +75,7 @@
   (with-fixture server-fixture (nil
                                 (lambda (server msg state)
                                   (declare (ignore server))
-                                  (sleep 0.5)
+                                  (sleep 1.0)
                                   (match msg
                                     ((list :respondwith x)
                                      (cons x state))))
@@ -85,7 +85,8 @@
       (is (eq :not-ready (get-result future)))
       (on-completed future (lambda (result)
                                    (setf on-completed-result result)))
-      (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
+      (is (eq t (cl-gserver.gserver-test:assert-cond
+                 (lambda () (complete-p future)) 1)))
       (is (= on-completed-result 1))
   )))
 
@@ -135,7 +136,7 @@
     (cast cut (cons :push 2))
     (sleep 0.01)
     (cast cut (cons :push 1))
-    (sleep 0.01)
+    (sleep 0.3)
     (is (equalp '(5 4 3 2 1) (call cut :get)))
     (is (= 5 (call cut :pop)))
     (is (= 4 (call cut :pop)))
@@ -143,8 +144,6 @@
     (is (= 2 (call cut :pop)))
     (is (= 1 (call cut :pop)))
     (is (null (call cut :pop)))))
-
-(test )
 
 (test stopping-server
   "Stopping a server stops the message handling and frees resources."

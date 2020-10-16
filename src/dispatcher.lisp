@@ -1,10 +1,7 @@
 (defpackage :cl-gserver.dispatcher
   (:use :cl :cl-gserver :cl-gserver.dispatcher-api)
   (:nicknames :dispatcher)
-  (:export #:dispatcher-bt
-           #:terminate
-           #:dispatch
-           #:dispatch-async))
+  (:export #:dispatcher-bt))
 
 (in-package :cl-gserver.dispatcher)
 
@@ -28,7 +25,7 @@
     (when workers
       (cast (nth (random num-workers) workers) (cons :execute fun)))))
 
-(defmethod terminate ((self dispatcher-bt))
+(defmethod shutdown ((self dispatcher-bt))
   (with-slots (workers) self
     (mapcar (lambda (worker) (cast worker :stop)) workers)))
 

@@ -1,8 +1,8 @@
 (defsystem "cl-gserver"
-  :version "0.6.1"
+  :version "0.7.0"
   :author "Manfred Bergmann"
   :license "MIT"
-  :description "Erlang inspired GenServer library with Agent for easy access to state."
+  :description "Erlang inspired GenServer library featuring actors and agents for easy access to state."
   :depends-on ("lparallel"
                "cl-speedy-queue"
                "log4cl"
@@ -14,10 +14,13 @@
                 ((:file "utils")
                  (:file "fcomputation")
                  (:file "queue")
+                 (:file "dispatcher-api")
                  (:file "message-box")
                  (:file "gserver")
                  (:file "agent")
-                 (:file "actor"))))
+                 (:file "actor")
+                 (:file "dispatcher")
+                 (:file "system"))))
   :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 
 (defsystem "cl-gserver/tests"
@@ -34,7 +37,9 @@
                  (:file "gserver-mp-test")
                  (:file "agent-test")
                  (:file "actor-test")
-                 (:file "fcomputation-test"))))
+                 (:file "fcomputation-test")
+                 (:file "dispatcher-test")
+                 (:file "system-test"))))
   :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run!
                                         (uiop:find-symbol* '#:test-suite

@@ -1,18 +1,14 @@
 (defpackage :cl-gserver.messageb
-  (:use :cl :cl-gserver.utils :cl-gserver.queue :lparallel :log4cl)
-  (:export #:message-box-lsr #:message-box-bt
+  (:use :cl :cl-gserver.utils :cl-gserver.queue)
+  (:import-from :dispatcher-api
+                #:dispatch
+                #:dispatch-async)
+  (:export #:message-box-dp #:message-box-bt
            #:submit
            #:with-submit-handler
            #:stop))
 
 (in-package :cl-gserver.messageb)
-
-(defstruct message-item
-  (message nil)
-  (withreply-p nil :type boolean)
-  (withreply-lock nil)
-  (withreply-cvar nil)
-  (handler-fun nil :type function))
 
 (defclass message-box-base ()
   ((name :initform (string (gensym "mb-")))
@@ -53,6 +49,13 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
 ;; ------------- Bordeaux ----------------
 ;; ----------------------------------------
 
+(defstruct message-item
+  (message nil)
+  (withreply-p nil :type boolean)
+  (withreply-lock nil)
+  (withreply-cvar nil)
+  (handler-fun nil :type function))
+
 (defclass message-box-bt (message-box-base)
   ((queue-thread :initform nil
                  :documentation
@@ -64,8 +67,10 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
                :documentation
                "Flag that indicates whether the message processing should commence."))
   (:documentation
-   "Bordeaux-Threads based message-box with a single thread operating on a message queue.
-This is used as default."))
+"Bordeaux-Threads based message-box with a single thread operating on a message queue.
+This is used when the gserver is created outside of the `system'.
+There is a limit on the maximum number of gservers/actors/agents that can be created with
+this kind of queue because each message-box requires exactly one thread."))
 
 (defmethod initialize-instance :after ((self message-box-bt) &key)
   (log:debug "Initialize instance: ~a~%" self)
@@ -167,49 +172,52 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
 
 
 ;; ----------------------------------------
-;; ------------- lparallel ----------------
+;; ------------- dispatcher msgbox---------
 ;; ----------------------------------------
 
-(defclass message-box-lsr (message-box-base)
-  ((message-kernel :initform nil
-                   :documentation
-                   "The message-kernel with 1 worker for handling the messages.")
-   (message-channel :initform nil
-                    :documentation
-                    "The message-channel for the message-kernel. Since we only have 1 worker here it is safe to make an instance channel regarding FIFO.")))
+(defclass message-box-dp (message-box-base)
+  ((queue :initform nil
+          :documentation
+          "Which type of queue will be used depends on the `max-queue-size' setting.")
+   (dispatcher :initarg :dispatcher
+               :initform (error "Must be set!")
+               :reader dispatcher
+               :documentation "The dispatcher from the system.")
+   (lock :initform (bt:make-lock)))
+  (:documentation
+"This message box is a message-box that uses the `system's `dispatcher'.
+This has the advantage that an almost unlimited gservers/actors/agents can be created."))
 
-(defmethod initialize-instance :after ((self message-box-lsr) &key)
+(defmethod initialize-instance :after ((self message-box-dp) &key)
   (log:debug "Initialize instance: ~a~%" self)
-  
-  (with-slots (message-kernel
-               message-channel
-               name) self
-     (let ((*kernel* (make-kernel 1 :name (mkstr "message-kernel-" name))))
-       (setf message-kernel *kernel*)
-       (setf message-channel (make-channel)))))
 
-(defmethod submit ((self message-box-lsr) message withreply-p handler-fun)
+  (with-slots (name queue queue-thread max-queue-size) self
+    (log:debug "Requested max-queue-size: " max-queue-size)
+    (setf queue
+          (case max-queue-size
+            ((0 nil) (make-instance 'queue-unbounded))
+            (t (make-instance 'queue-bounded :max-items max-queue-size))))
+    (log:info "Using queue: " queue)))
+
+
+(defmethod submit ((self message-box-dp) message withreply-p handler-fun)
   (with-slots (name
-               message-kernel
-               message-channel
-               processed-messages) self
-    (let* ((*task-category* (mkstr name "-task"))
-           (*kernel* message-kernel)
-           (channel message-channel))
-      (log:trace "Channel: " channel)
-      (log:trace "Pushing ~a to channel" message)
-      (submit-task channel (lambda ()
-                             (funcall handler-fun message)))
+               queue
+               processed-messages
+               dispatcher
+               lock) self
 
-      (incf processed-messages)
+    (log:debug "Enqueuing message: " message)
+    (pushq queue message)
+
+    (log:debug "Making dispatcher poping the queue and processing the message...")
+    (incf processed-messages)
+
+    (let ((dispatcher-fun (lambda ()
+                            (funcall handler-fun (popq queue)))))
       (if withreply-p
-          (receive-result channel)
-          (progn
-            (future (receive-result channel))
-            t)))))
+          (dispatch dispatcher dispatcher-fun)
+          (dispatch-async dispatcher dispatcher-fun)))))
 
-(defmethod stop ((self message-box-lsr))
-  (call-next-method)
-  (with-slots (message-kernel) self
-    (let ((*kernel* message-kernel))
-      (end-kernel :wait t))))
+(defmethod stop ((self message-box-dp))
+  (call-next-method))

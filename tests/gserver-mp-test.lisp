@@ -19,6 +19,7 @@
 
   (defclass counter-server (gserver) ())
   (defmethod handle-cast ((server counter-server) message current-state)
+    (declare (ignore message))
     (cons current-state current-state))
   (defmethod handle-call ((server counter-server) message current-state)
     (match message
@@ -37,6 +38,7 @@
     (call cut :stop))
   (lparallel:end-kernel))
 
+
 (test counter-mp-unbounded
   "Counter server - multi processors - unbounded queue"
 
@@ -44,6 +46,7 @@
     ;; add
     (map nil #'lparallel:force
          (mapcar (lambda (x)
+                   (declare (ignore x))
                    (lparallel:future
                      (dotimes (n (1+ per-thread))
                        (call cut :add))
@@ -59,6 +62,7 @@
     ;; add
     (map nil #'lparallel:force
          (mapcar (lambda (x)
+                   (declare (ignore x))
                    (lparallel:future
                      (dotimes (n (1+ per-thread))
                        (call cut :add))

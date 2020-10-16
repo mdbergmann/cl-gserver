@@ -1,5 +1,5 @@
 (defpackage :cl-gserver
-  (:use :cl :cl-gserver.utils :cl-gserver.future :log4cl)
+  (:use :cl :cl-gserver.utils :cl-gserver.future)
   (:local-nicknames (:mb :cl-gserver.messageb))
   (:import-from #:alexandria
                 #:with-gensyms)
@@ -7,6 +7,7 @@
            #:handle-cast
            #:gserver
            #:name
+           #:system
            #:call
            #:async-call
            #:cast
@@ -36,7 +37,13 @@
                     :initform nil
                     :documentation
                     "0 or nil for unbounded queue. > 0 for bounded queue. Don't choose < 10.")
-    (msgbox :initform nil))
+    (msgbox :initarg :msgbox
+            :initform nil
+            :documentation
+            "The `message-box'. If nil it will be preset on initialization according to `max-queue-size' setting.")
+    (system :initform nil
+            :accessor system
+            :documentation "The system this gserver is attached to."))
   (:documentation
 "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.
@@ -44,7 +51,11 @@ State can be changed by calling into the server via `call' or `cast'.
 Where `call' is waiting for a result and `cast' does not.
 For each `call' and `cast' handlers must be implemented by subclasses.
 
-A GServer runs a `message-box' which has it's own thread that operates on a message queue.
+A GServer runs a `message-box' that processes all the received messages.
+When the GServer was created ad-hoc (out of the `system'), then it will create
+a `message-box' with it's own thread.
+If the GServer is created through the `system', then it will use the system-wide thread-pool
+to process the `message-box'.
 
 To stop a Gserver message handling and thread pool you can send the `:stop' message either via `call' (which will respond with `:stopped') or `cast'.
 This is to cleanup thread resources when the Gserver is not needed anymore."))
@@ -54,7 +65,8 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
   (log:debug "Initialize instance: ~a~%" self)
 
   (with-slots (max-queue-size msgbox) self
-    (setf msgbox (make-instance 'mb:message-box-bt :max-queue-size max-queue-size))))
+    (unless msgbox
+      (setf msgbox (make-instance 'mb:message-box-bt :max-queue-size max-queue-size)))))
 
 (defmethod print-object ((obj gserver) stream)
   (print-unreadable-object (obj stream :type t)

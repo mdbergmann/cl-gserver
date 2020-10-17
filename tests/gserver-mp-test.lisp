@@ -41,10 +41,10 @@
   (format t "Running system tests...~%")
   (let* ((system (system:make-system :num-workers 4))
          (cut (make-instance 'counter-server :state 0
-                                             :max-queue-size queue-size
-                                             :system system))
+                                             :max-queue-size queue-size))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))
+    (gs::attach-system cut system)
     (&body)
     (call cut :stop)
     (print system)

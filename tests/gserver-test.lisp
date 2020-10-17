@@ -39,8 +39,8 @@
   (format t "Running system tests...~%")
   (let* ((system (make-system :num-workers 2))
          (cut (make-instance 'test-server
-                             :state state
-                             :system system)))
+                             :state state)))
+    (gs::attach-system cut system)
     (unwind-protect
          (&body)
       (call cut :stop)
@@ -72,6 +72,18 @@
                                              (print "Foo")))))
     (is (string= "Bar" (call cut "Bar")))
     (call cut :stop)))
+
+(test switch-message-box-when-attaching-system
+  "Test if the message-box is switched when a system is attached."
+  (let* ((system (make-system))
+         (cut (make-gserver)))
+    (unwind-protect
+         (progn
+           (is (typep (gs::msgbox cut) 'cl-gserver.messageb:message-box-bt))
+           (gs::attach-system cut system)
+           (is (typep (gs::msgbox cut) 'cl-gserver.messageb:message-box-dp)))
+      (call cut :stop)
+      (shutdown system))))
 
 (test handle-call
   "Simple server handle-call test."

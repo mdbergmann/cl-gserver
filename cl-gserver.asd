@@ -7,6 +7,7 @@
                "cl-speedy-queue"
                "log4cl"
                "iterate"
+               "str"
                "blackbird")
   :components ((:module "src"
                 :serial t

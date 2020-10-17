@@ -10,7 +10,7 @@
 
 (in-package :cl-gserver.system)
 
-(defclass system ()
+(defclass system (actor-creator)
   ((dispatcher :initarg :dispatcher
                :initform nil
                :accessor dispatcher
@@ -25,8 +25,20 @@
               dispatcher))))
 
 (defun make-system (&key (num-workers 4))
-  "Creates a system with 4 wortkers by default."
-  (make-instance 'system :dispatcher (make-dispatcher 'dispatcher-bt :num-workers num-workers)))
+  "Creates a system with 4 workers by default."
+  (make-instance 'system
+                 :dispatcher (make-dispatcher 'dispatcher-bt :num-workers num-workers)))
 
 (defmethod shutdown ((self system))
   (dispatcher-api:shutdown (dispatcher self)))
+
+(defmethod actors ((self system))
+  (with-slots (actors) self
+    actors))
+
+(defmethod actor-of ((self system) create-fun)
+  (let ((actor (funcall create-fun)))
+    (gs::attach-system actor self)
+    (with-slots (actors) self
+      (setf actors (list* actor actors)))
+    actor))

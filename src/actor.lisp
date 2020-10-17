@@ -7,7 +7,7 @@
            #:ask
            #:async-ask
            #:make-actor)
-           ;;#:with-actor)
+  ;;#:with-actor)
   )
 
 (in-package :cl-gserver.actor)
@@ -83,14 +83,12 @@ The result is an `fcomputation' which accepts `on-complete' handlers, etc."
 (defun make-actor (&key
                      (name (gensym "actor-"))
                      state
-                     system
                      receive-fun
                      after-init-fun)
   "Makes a new `simple-actor' which allows you to specify 
 a name with `:state', `:receive-fun' and `:after-init-fun'."
   (make-instance 'simple-actor :name name
                                :state state
-                               :system system
                                :receive-fun receive-fun
                                :after-init-fun after-init-fun))
 

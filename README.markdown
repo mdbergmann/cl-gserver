@@ -160,11 +160,11 @@ First create a ping actor:
                                      :receive-fun
                                      (lambda (self msg state)
                                        (trivia:match msg
-                                         ((cons :ping teller) (progn
-                                                                (log:info "ping from: " teller)
+                                         ((cons :ping sender) (progn
+                                                                (log:info "ping from: " sender)
                                                                 (sleep 1)
                                                                 (when (< state 5)
-                                                                  (act:tell teller (cons :pong self))
+                                                                  (act:tell sender (cons :pong self))
                                                                   (cons nil (1+ state)))))))))
 ```
 
@@ -185,15 +185,15 @@ Now let's create the pong actor:
                                      :receive-fun
                                      (lambda (self msg state)
                                      (trivia:match msg
-                                       ((cons :pong teller) (progn
-                                                              (log:info "pong from: " teller)
+                                       ((cons :pong sender) (progn
+                                                              (log:info "pong from: " sender)
                                                               (sleep 1)
-                                                              (act:tell teller (cons :ping self))
+                                                              (act:tell sender (cons :ping self))
                                                               (cons nil nil)))))))
 ```
 
 Now we have two actors which can play ping pong.  
-We trigger it my telling a `:ping` to the `*ping*` actor but we also specify the `*pong*` actor as teller.
+We trigger it my telling a `:ping` to the `*ping*` actor but we also specify the `*pong*` actor as sender.
 
 `(act:tell *ping* (cons :ping *pong*))`
 

@@ -26,7 +26,7 @@ This library also provides an `Actor` type and an `Agent` type. Both based on `G
 
 #### Creating a custom gserver
 
-First `:use :cl-gserver`.
+First `:use :cl-gserver.gserver`.
 
 Let's create a simple stack gserver:
 

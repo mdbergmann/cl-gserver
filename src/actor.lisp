@@ -3,7 +3,7 @@
   (:nicknames :act)
   (:export #:actor
            #:receive
-           #:send
+           #:tell
            #:ask
            #:async-ask
            #:make-actor)
@@ -17,11 +17,11 @@
    "Specialized `gserver' class called `actor'.
 There is a different terminology behind `actor'.
 I.e. There is only one `receive' function.
-And there is asynchronous `send' and synchronous `ask'.
+And there is asynchronous `tell' and synchronous `ask'.
 So there is not much difference to a `gserver'.
 It only uses one method `receive'. However both `handle-call' and `handle-cast' of `gserver'
 end up in `receive'.
-To stop an actors message processing in order to cleanup resouces you should send (either `send' or `ask')
+To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
 the `:stop' message. It will respond with `:stopped'."))
 
 (defmethod initialize-instance :after ((self actor) &key)
@@ -29,7 +29,7 @@ the `:stop' message. It will respond with `:stopped'."))
 
 (defgeneric receive (actor message current-state)
   (:documentation
-   "The `receive' method handles all messages to an `actor' being it `send' or `ask'.
+   "The `receive' method handles all messages to an `actor' being it `tell' or `ask'.
 But the convention persists that the result of `receive' must be a `cons' where
 `car' is to be returned to the caller (for `ask') and `cdr' will update the state."))
 
@@ -38,8 +38,8 @@ But the convention persists that the result of `receive' must be a `cons' where
 (defmethod handle-call ((self actor) message current-state)
   (receive self message current-state))
 
-(defun send (actor message)
-  "Sends a message to the `actor'. `send' is asynchronous. There is no result."
+(defun tell (actor message)
+  "Sends a message to the `actor'. `tell' is asynchronous. There is no result."
   (cast actor message))
 
 (defun ask (actor message)

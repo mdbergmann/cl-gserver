@@ -22,7 +22,7 @@
   (let ((cut (make-instance 'test-actor :state state)))
     (unwind-protect
          (&body)
-      (send cut :stop))))
+      (tell cut :stop))))
 
 (def-fixture simple-actor-fixture (receive-fun state)
   (let ((cut (make-actor :name "Foo"
@@ -30,7 +30,7 @@
                          :receive-fun (lambda (self message state) (funcall receive-fun self message state)))))
     (unwind-protect
          (&body)
-      (send cut :stop))))
+      (tell cut :stop))))
 
 
 (test custom-actor
@@ -44,7 +44,7 @@
                                    ((string= message "get") (cons current-state current-state))))
                                0)
     (is (not (null cut)))
-    (is (eq t (send cut "foo")))
+    (is (eq t (tell cut "foo")))
     (is (eq t (assert-cond (lambda () (= 1 (ask cut "get"))) 1)))
     (is (= 5 (ask cut "bar")))
     (is (= 5 (ask cut "get")))))
@@ -61,7 +61,7 @@
                                           ((string= message "get") (cons current-state current-state))))
                                       0)
     (is (not (null cut)))
-    (is (eq t (send cut "foo")))
+    (is (eq t (tell cut "foo")))
     (is (eq t (assert-cond (lambda () (= 1 (ask cut "get"))) 1)))
     (is (equal 5 (ask cut "bar")))
     (is (equal 5 (ask cut "get")))))
@@ -92,7 +92,7 @@
 ;;          ((string= msg "bar") (cons 5 5))
 ;;          ((string= msg "get") (cons state state))))
       
-;;       (is (eq t (send self "foo")))
+;;       (is (eq t (tell self "foo")))
 ;;       (sleep 0.1)
 ;;       (is (equal 1 (ask self "get")))
 ;;       (is (equal 5 (ask self "bar")))

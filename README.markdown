@@ -137,7 +137,7 @@ We can also pop the stack:
 
 ### Usage
 
-Actors are another abstraction, or use-case of a `GServer` (GenServer). However, actors don't exist in Erlang. Actors are pretty much a `GServer` only that they provider only one method `receive` to handle both `send` (which is like `cast`), `ask` (which is like `call`) and `async-ask` (which is like `async-call`).  
+Actors are another abstraction, or use-case of a `GServer` (GenServer). However, actors don't exist in Erlang. Actors are pretty much a `GServer` only that they provider only one method `receive` to handle both `tell` (which is like `cast`), `ask` (which is like `call`) and `async-ask` (which is like `async-call`).  
 The `cons` return of `receive` is also a convention.
 
 To use actors import the `cl-gserver.actor` package.
@@ -160,11 +160,11 @@ First create a ping actor:
                                      :receive-fun
                                      (lambda (self msg state)
                                        (trivia:match msg
-                                         ((cons :ping sender) (progn
-                                                                (log:info "ping from: " sender)
+                                         ((cons :ping teller) (progn
+                                                                (log:info "ping from: " teller)
                                                                 (sleep 1)
                                                                 (when (< state 5)
-                                                                  (act:send sender (cons :pong self))
+                                                                  (act:tell teller (cons :pong self))
                                                                   (cons nil (1+ state)))))))))
 ```
 
@@ -185,19 +185,19 @@ Now let's create the pong actor:
                                      :receive-fun
                                      (lambda (self msg state)
                                      (trivia:match msg
-                                       ((cons :pong sender) (progn
-                                                              (log:info "pong from: " sender)
+                                       ((cons :pong teller) (progn
+                                                              (log:info "pong from: " teller)
                                                               (sleep 1)
-                                                              (act:send sender (cons :ping self))
+                                                              (act:tell teller (cons :ping self))
                                                               (cons nil nil)))))))
 ```
 
 Now we have two actors which can play ping pong.  
-We trigger it my sending a `:ping` to the `*ping*` actor but we also specify the `*pong*` actor as sender.
+We trigger it my telling a `:ping` to the `*ping*` actor but we also specify the `*pong*` actor as teller.
 
-`(act:send *ping* (cons :ping *pong*))`
+`(act:tell *ping* (cons :ping *pong*))`
 
-As can be seen on the `*ping*` actor definition, it will update it's state by incrementing the received pings. Once they are >= 5 it will stop sending a pong.
+As can be seen on the `*ping*` actor definition, it will update it's state by incrementing the received pings. Once they are >= 5 it will stop telling a pong.
 
 ## Agent
 
@@ -266,7 +266,7 @@ Alternatively, one can wrap an agent inside a class and provide methods for simp
 ## Cleaning up resources
 
 A GServer/Actor/Agent can be stopped which will stop the message processing thread.  
-For GServer and Actor you just send a `:stop` message and it will respond with `:stopped`.
+For GServer and Actor you just tell a `:stop` message and it will respond with `:stopped`.
 The `:stop` message is queued the same way as ordinary messages.
 
 To stop an Agent you need to call `agent-stop` function. It will also respond with `:stopped`.
@@ -274,7 +274,7 @@ To stop an Agent you need to call `agent-stop` function. It will also respond wi
 ## Performance considerations
 
 The test results here were done on an 8 core Xeon system with SBCL.  
-Number of messages: 8 million with 8 threads each sending 1 million messages.
+Number of messages: 8 million with 8 threads each telling 1 million messages.
 
 The message-box is a single [Bordeaux-Threads](https://github.com/sionescu/bordeaux-threads) thread which can operate on:
 

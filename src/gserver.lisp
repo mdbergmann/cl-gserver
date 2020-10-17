@@ -60,7 +60,7 @@ a `message-box' with it's own thread.
 If the GServer is created through the `system', then it will use the system-wide thread-pool
 to process the `message-box'.
 
-To stop a Gserver message handling and you can send the `:stop' message 
+To stop a Gserver message handling and you can tell the `:stop' message 
 either via `call' (which will respond with `:stopped') or `cast'.
 This is to cleanup thread resources when the Gserver is not needed anymore."))
 
@@ -149,9 +149,9 @@ but it doesn't have to actively wait for it. Instead a `future' wraps the result
 However, the internal message handling is based on `cast', so the `gserver' in fact has to
 implement `handle-cast' to make this work.
 How this works is that the message to the target `gserver' is not 'sent' using the callers thread
-but instead an anonymous `gserver' is started behind the scenes and this in fact makes sends
-the message to the target `gserver'. It does sent itself along as 'sender'.
-The target `gserver' sends a response back to the initial `sender'. When that happens and the anonymous `gserver'
+but instead an anonymous `gserver' is started behind the scenes and this in fact makes tells
+the message to the target `gserver'. It does sent itself along as 'teller'.
+The target `gserver' tells a response back to the initial `teller'. When that happens and the anonymous `gserver'
 received the response the `future' will be fulfilled with the `promise'."
   (make-future (lambda (promise-fun)
                  (log:debug "Executing fcomputation function...")
@@ -175,14 +175,14 @@ received the response the `future' will be fulfilled with the `promise'."
     (mb:stop msgbox)
     (setf (slot-value internal-state 'running) nil)))
 
-(defun submit-message (gserver message withreply-p sender)
+(defun submit-message (gserver message withreply-p teller)
   "Submitting a message.
 In case of `withreply-p', the `response' is filled because submitting to the message-box is synchronous.
 Otherwise submitting is asynchronous and `response' is just `t'.
 In case the gserver was stopped it will respond with just `:stopped'."
   (log:debug "Submitting message: " message)
   (log:debug "Withreply: " withreply-p)
-  (log:debug "Sender: " sender)
+  (log:debug "Sender: " teller)
 
   (with-slots (internal-state) gserver
     (unless (gserver-state-running internal-state)
@@ -195,20 +195,20 @@ In case the gserver was stopped it will respond with just `:stopped'."
                withreply-p)
               (process-response gserver
                                 (handle-message gserver message withreply-p)
-                                sender))))
+                                teller))))
     response))
 
-(defun process-response (gserver handle-result sender)
+(defun process-response (gserver handle-result teller)
   (log:debug "Processing handle-result: " handle-result)
   (case handle-result
     (:stopping (progn
                  (stop-server gserver)
                  :stopped))
     (t (progn
-         (when sender
+         (when teller
            (progn
-             (log:debug "We have a sender. Send the response back: " sender)
-             (cast sender handle-result)))
+             (log:debug "We have a teller. Send the response back: " teller)
+             (cast teller handle-result)))
          handle-result))))
 
 ;; ------------------------------------------------

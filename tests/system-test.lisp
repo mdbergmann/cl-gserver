@@ -15,14 +15,18 @@
   (let ((cut (make-system)))
     (unwind-protect
          (&body)
-      (shutdown cut))))
+      (shutdown cut)
+      (sleep 1))))
 
 (test create-system
   "Creates a system"
   (let ((system (make-system)))
-    (is (not (null system)))
-    (is (not (null (dispatcher system))))
-    (shutdown system)))
+    (unwind-protect
+         (progn
+           (is (not (null system)))
+           (is (not (null (dispatcher system)))))
+      (shutdown system)
+      (sleep 1))))
 
 (test shutdown-system
   "Tests shutting down a system and stopping all dispatcher mailboxes."
@@ -41,7 +45,6 @@
 
 (test create-actors
   "Creates actors in the system."
-
   (with-fixture test-system ()
     (let ((actor (actor-of cut (lambda () (make-actor)))))
       (is (not (null actor)))

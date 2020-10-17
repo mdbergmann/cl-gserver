@@ -44,7 +44,6 @@
     (unwind-protect
          (&body)
       (call cut :stop)
-      (print system)
       (shutdown system)))
   (format t "Running system tests...~%"))
 

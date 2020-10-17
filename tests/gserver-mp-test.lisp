@@ -47,7 +47,6 @@
     (gs::attach-system cut system)
     (&body)
     (call cut :stop)
-    (print system)
     (system-api:shutdown system))
   (format t "Running system tests...~%")
   

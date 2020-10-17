@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.system
-  (:use :cl :cl-gserver :cl-gserver.system-api)
+  (:use :cl :cl-gserver.gserver :cl-gserver.system-api)
   (:nicknames :system)
   (:import-from :dispatcher-api
                 #:make-dispatcher)

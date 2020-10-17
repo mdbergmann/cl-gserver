@@ -18,5 +18,5 @@
     (is (not (null (dispatcher system))))
     (shutdown system)))
 
-(defun runtests ()
+(defun run-tests ()
   (run! 'create-system))

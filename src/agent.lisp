@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.agent
-  (:use :cl :cl-gserver :cl-gserver.utils :log4cl)
+  (:use :cl :cl-gserver.gserver :cl-gserver.utils :log4cl)
   (:export #:make-agent
            #:agent-get
            #:agent-update
@@ -44,9 +44,9 @@ To return the current state `get-fun' may be just the `identity' function.
 Beware that this function does directly access the state of the agent for performance reasons.
 It does not go through message processing.
 See `agent-test' for examples."
-  (with-slots (cl-gserver::state) agent
+  (with-slots (cl-gserver.gserver::state) agent
     (if (running-p agent)
-        (funcall get-fun cl-gserver::state)
+        (funcall get-fun cl-gserver.gserver::state)
         :stopped)))
 
 (defun agent-update (agent update-fun)

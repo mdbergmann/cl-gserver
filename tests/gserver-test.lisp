@@ -1,6 +1,6 @@
 (defpackage :cl-gserver.gserver-test
   (:use :cl :trivia :fiveam
-   :cl-gserver :cl-gserver.future :cl-gserver.system :cl-gserver.system-api)
+   :cl-gserver.gserver :cl-gserver.future :cl-gserver.system :cl-gserver.system-api)
   (:export #:run!
            #:all-tests
            #:nil

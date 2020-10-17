@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.gserver-mp-test
-  (:use :cl :trivia :iterate :fiveam :cl-gserver)
+  (:use :cl :trivia :iterate :fiveam :cl-gserver.gserver)
   (:export #:run!
            #:all-tests
            #:nil))

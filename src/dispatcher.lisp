@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.dispatcher
-  (:use :cl :cl-gserver :cl-gserver.dispatcher-api)
+  (:use :cl :cl-gserver.gserver :cl-gserver.dispatcher-api)
   (:nicknames :dispatcher)
   (:export #:dispatcher-bt))
 

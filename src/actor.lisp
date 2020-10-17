@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor
-  (:use :cl :cl-gserver)
+  (:use :cl :cl-gserver.gserver)
   (:nicknames :act)
   (:export #:actor
            #:receive
@@ -67,7 +67,7 @@ The result is an `fcomputation' which accepts `on-complete' handlers, etc."
 
 (defmethod initialize-instance :after ((self simple-actor) &key)
   (log:debug "Initialize instance: ~a~%" self)
-  (after-init self (slot-value self 'cl-gserver::state)))
+  (after-init self (slot-value self 'state)))
 
 (defmethod after-init ((self simple-actor) state)
   (with-slots (after-init-fun) self
@@ -81,7 +81,7 @@ The result is an `fcomputation' which accepts `on-complete' handlers, etc."
 
 
 (defun make-actor (&key
-                     (name (utils:mkstr "actor-" (gensym)))
+                     (name (gensym "actor-"))
                      state
                      system
                      receive-fun

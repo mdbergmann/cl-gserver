@@ -2,7 +2,7 @@
   :version "0.7.0"
   :author "Manfred Bergmann"
   :license "MIT"
-  :description "Erlang inspired GenServer library featuring actors and agents for easy access to state."
+  :description "Erlang inspired GenServer library featuring actors and agents for easy access to state and asynchronous operations."
   :depends-on ("lparallel"
                "cl-speedy-queue"
                "log4cl"

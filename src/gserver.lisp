@@ -1,4 +1,4 @@
-(defpackage :cl-gserver
+(defpackage :cl-gserver.gserver
   (:use :cl :cl-gserver.utils :cl-gserver.future)
   (:local-nicknames (:mb :cl-gserver.messageb))
   (:import-from #:cl-gserver.system-api
@@ -9,6 +9,7 @@
            #:handle-cast
            #:gserver
            #:name
+           #:state
            #:call
            #:async-call
            #:cast
@@ -16,7 +17,7 @@
            #:make-gserver
            #:running-p))
 
-(in-package :cl-gserver)
+(in-package :cl-gserver.gserver)
 
 (defstruct gserver-state (running t :type boolean))
 
@@ -28,6 +29,7 @@
           "The name of the gserver. If no name is specified a default one is applied.")
     (state :initarg :state
            :initform nil
+           :reader state
            :documentation
            "The encapsulated state.")
     (internal-state :initarg :internal-state
@@ -315,7 +317,7 @@ Otherwise the result is `:resume' to resume user message handling."
       (funcall cast-fun self message current-state))))
 
 (defun make-gserver (&key
-                       (name (mkstr "simple-gs-" (gensym)))
+                       (name (gensym "simple-gs-"))
                        state
                        system
                        call-fun

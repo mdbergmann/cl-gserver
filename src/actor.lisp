@@ -12,7 +12,31 @@
 
 (in-package :cl-gserver.actor)
 
-(defclass actor (gserver) ()
+;; -------------------------------------------------------
+;; Actor API
+;; -------------------------------------------------------
+(defclass actor-api () ()
+  (:documentation "This represents the API of an actor."))
+(defgeneric tell (actor message)
+  (:documentation
+   "Sends a message to the `actor'. `tell' is asynchronous. There is no result."))
+(defgeneric ask (actor message)
+  (:documentation
+  "Sends a message to the `actor'. `ask' is synchronous and waits for a result."))
+(defgeneric async-ask (actor message)
+  (:documentation
+  "Sends a message to `actor' and waits for a result but asynchronously.
+The result is an `fcomputation' which accepts `on-complete' handlers, etc."))
+
+
+(defclass actor-base (gserver)
+  ((receive-fun :initarg :receive-fun
+                :initform (error "Must be specified!")
+                :reader receive-fun)
+   (after-start-fun :initarg :after-start-fun
+                    :initform nil
+                    :reader after-start-fun
+                    :documentation "Code to be called after actor start."))
   (:documentation
    "Specialized `gserver' class called `actor'.
 There is a different terminology behind `actor'.
@@ -24,73 +48,90 @@ end up in `receive'.
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
 the `:stop' message. It will respond with `:stopped'."))
 
-(defmethod initialize-instance :after ((self actor) &key)
+(defmethod initialize-instance :after ((self actor-base) &key)
   (log:debug "Initialize instance: ~a~%" self))
 
-(defgeneric receive (actor message current-state)
-  (:documentation
-   "The `receive' method handles all messages to an `actor' being it `tell' or `ask'.
-But the convention persists that the result of `receive' must be a `cons' where
-`car' is to be returned to the caller (for `ask') and `cdr' will update the state."))
+(defmethod handle-cast ((self actor-base) message current-state)
+  (funcall (receive-fun self) self message current-state))
+(defmethod handle-call ((self actor-base) message current-state)
+  (funcall (receive-fun self) self message current-state))
+(defmethod after-init ((self actor-base) state)
+  (with-slots (after-start-fun) self
+    (when after-start-fun
+      (funcall after-start-fun self state))))
 
-(defmethod handle-cast ((self actor) message current-state)
-  (receive self message current-state))
-(defmethod handle-call ((self actor) message current-state)
-  (receive self message current-state))
+(defmethod tell ((self actor-base) message)
+  (cast self message))
 
-(defun tell (actor message)
-  "Sends a message to the `actor'. `tell' is asynchronous. There is no result."
-  (cast actor message))
+(defmethod ask ((self actor-base) message)
+  (call self message))
 
-(defun ask (actor message)
-  "Sends a message to the `actor'. `ask' is synchronous and waits for a result."
-  (call actor message))
-
-(defun async-ask (actor message)
-  "Sends a message to `actor' and waits for a result but asynchronously.
-The result is an `fcomputation' which accepts `on-complete' handlers, etc."
+(defmethod async-ask ((self actor-base) message)
   ;; use the underlying `async-call' from gserver.
-  (async-call actor message))
+  (async-call self message))
 
-;; --------------------
-;; Simple actor
-;; --------------------
-(defclass simple-actor (actor)
-  ((receive-fun :initarg :receive-fun
-                :initform nil
-                :documentation "The receive function specified as slot.")
-   (after-init-fun :initarg :after-init-fun
-                   :initform nil
-                   :documentation "Code to be called after actor start."))
-  (:documentation
-   "A simplified actor that can be created with just `make-actor'."))
 
-(defmethod initialize-instance :after ((self simple-actor) &key)
-  (log:debug "Initialize instance: ~a~%" self)
-  (after-init self (slot-value self 'state)))
+;; -------------------------------------------------------
+;; 'standard' actor
+;; -------------------------------------------------------
 
-(defmethod after-init ((self simple-actor) state)
-  (with-slots (after-init-fun) self
-    (when after-init-fun
-      (funcall after-init-fun self state))))
+(defclass actor ()
+  ((wrapped-actor :initform nil
+                  :reader wrapped-actor
+                  :documentation "The wrapped actor. `actor' acts as a facade.")
+   (name :initarg :name
+         :initform (string (gensym "act-"))
+         :type string)
+   (state :initarg :state
+          :initform nil)
+   (max-queue-size :initarg :max-queue-size
+                   :initform 0
+                   :type integer
+                   :documentation "0 means unbounded queue. > 0 means bounded queue. For bounded choose >= 100")
+   (receive-fun :initarg :receive-fun
+                :initform (error "Must be specified!")
+                :documentation
+                "The `receive' method handles all messages to an `actor' being it `tell' or `ask'.
+But the convention persists that the result of `receive' must be a `cons' where
+`car' is to be returned to the caller (for `ask') and `cdr' will update the state.")
+   (after-start-fun :initarg :after-start-fun
+                    :initform nil
+                    :documentation "Code to be called after actor start.")))
 
-(defmethod receive ((self simple-actor) message current-state)
-  (with-slots (receive-fun) self
-    (when receive-fun
-      (funcall receive-fun self message current-state))))
+(defmethod print-object ((obj actor) stream)
+  (print-unreadable-object (obj stream :type t)
+    (with-slots (wrapped-actor) obj
+      (format stream "wrapped: ~a" wrapped-actor))))
 
+(defmethod initialize-instance :after ((self actor) &key)
+  (with-slots (wrapped-actor name state max-queue-size receive-fun after-start-fun) self
+    (setf wrapped-actor (make-instance 'actor-base
+                                       :name name
+                                       :state state
+                                       :max-queue-size max-queue-size
+                                       :receive-fun receive-fun
+                                       :after-start-fun after-start-fun))))
+
+(defmethod tell ((self actor) message)
+  (tell (wrapped-actor self) message))
+
+(defmethod ask ((self actor) message)
+  (ask (wrapped-actor self) message))
+
+(defmethod async-ask ((self actor) message)
+  (async-ask (wrapped-actor self) message))
 
 (defun make-actor (&key
                      (name (gensym "actor-"))
                      state
                      receive-fun
-                     after-init-fun)
-  "Makes a new `simple-actor' which allows you to specify 
-a name with `:state', `:receive-fun' and `:after-init-fun'."
-  (make-instance 'simple-actor :name name
-                               :state state
-                               :receive-fun receive-fun
-                               :after-init-fun after-init-fun))
+                     after-start-fun)
+  "Makes a new 'standard' `actor' which allows you to specify 
+a name with `:state', `:receive-fun' and `:after-start-fun'."
+  (make-instance 'actor :name name
+                        :state state
+                        :receive-fun receive-fun
+                        :after-start-fun after-start-fun))
 
 ;; (defmacro with-actor (&rest body)
 ;;   (format t "body: ~a~%" body)

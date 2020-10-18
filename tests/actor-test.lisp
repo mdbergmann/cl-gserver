@@ -16,22 +16,12 @@
 
 (def-fixture actor-fixture (receive-fun state)
   (defclass test-actor (actor) ())
-  (defmethod receive ((actor test-actor) message current-state)
-    (funcall receive-fun actor message current-state))
-
-  (let ((cut (make-instance 'test-actor :state state)))
+  (let ((cut (make-instance 'test-actor
+                            :state state
+                            :receive-fun receive-fun)))
     (unwind-protect
          (&body)
       (tell cut :stop))))
-
-(def-fixture simple-actor-fixture (receive-fun state)
-  (let ((cut (make-actor :name "Foo"
-                         :state state
-                         :receive-fun (lambda (self message state) (funcall receive-fun self message state)))))
-    (unwind-protect
-         (&body)
-      (tell cut :stop))))
-
 
 (test custom-actor
   "Test a subclass of actor."
@@ -50,32 +40,16 @@
     (is (= 5 (ask cut "get")))))
 
 
-(test simple-actor
-  "The simplified actor."
-
-  (with-fixture simple-actor-fixture ((lambda (self message current-state)
-                                        (declare (ignore self))
-                                        (cond
-                                          ((string= message "foo") (cons 1 1))
-                                          ((string= message "bar") (cons 5 5))
-                                          ((string= message "get") (cons current-state current-state))))
-                                      0)
-    (is (not (null cut)))
-    (is (eq t (tell cut "foo")))
-    (is (eq t (assert-cond (lambda () (= 1 (ask cut "get"))) 1)))
-    (is (equal 5 (ask cut "bar")))
-    (is (equal 5 (ask cut "get")))))
-
 (test handle-async-ask
   "Tests the async ask function."
 
-  (with-fixture simple-actor-fixture ((lambda (self message current-state)
-                                        (declare (ignore self))
-                                        (sleep 0.2)
-                                        (cond
-                                          ((eq :add (car message))
-                                           (cons (+ (second message) (third message)) current-state))))
-                                      0)
+  (with-fixture actor-fixture ((lambda (self message current-state)
+                                 (declare (ignore self))
+                                 (sleep 0.2)
+                                 (cond
+                                   ((eq :add (car message))
+                                    (cons (+ (second message) (third message)) current-state))))
+                               0)
     (let ((fcomp (async-ask cut '(:add 0 5))))
       (is (eq :not-ready (get-result fcomp)))
       (is (eq t (assert-cond (lambda () (complete-p fcomp)) 1)))
@@ -100,6 +74,5 @@
 
 (defun run-tests ()
   (run! 'custom-actor)
-  (run! 'simple-actor)
   (run! 'handle-async-ask))
   ;;(run! 'with-actor-macro))

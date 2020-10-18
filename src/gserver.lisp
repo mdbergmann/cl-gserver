@@ -41,13 +41,11 @@
                     :initform nil
                     :documentation
                     "0 or nil for unbounded queue. > 0 for bounded queue. Don't choose < 10.")
-    (msgbox :initform nil
+    (msgbox :initarg :msgbox
+            :initform (error "Must be defined!")
             :reader msgbox
             :documentation
-            "The `message-box' will be pre-set on initialization according to `max-queue-size' and `system' setting.")
-    (system :initform nil
-            :reader system
-            :documentation "The system this gserver is attached to."))
+            "The `message-box' will be pre-set on initialization according to `max-queue-size' and `system' setting."))
   (:documentation
    "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.

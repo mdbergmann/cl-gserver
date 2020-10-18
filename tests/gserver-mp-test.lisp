@@ -1,5 +1,9 @@
 (defpackage :cl-gserver.gserver-mp-test
   (:use :cl :trivia :iterate :fiveam :cl-gserver.gserver)
+  (:import-from #:system-api
+                #:shutdown)
+  (:import-from #:actor-container
+                #:actor-of)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -40,14 +44,15 @@
   (format t "Running non-system tests...done~%")
   (format t "Running system tests...~%")
   (let* ((system (system:make-system :num-workers 4))
-         (cut (make-instance 'counter-server :state 0
-                                             :max-queue-size queue-size))
+         (cut (actor-of system (lambda ()
+                                 (make-instance 'counter-server :state 0
+                                                                :max-queue-size queue-size))))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))
-    (gs::attach-system cut system)
-    (&body)
+    (unwind-protect
+         (&body)
     (call cut :stop)
-    (system-api:shutdown system))
+    (shutdown system)))
   (format t "Running system tests...~%")
   
   (lparallel:end-kernel))

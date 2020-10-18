@@ -185,6 +185,12 @@ received the response the `future' will be fulfilled with the `promise'."
     (mb:stop msgbox)
     (setf (slot-value internal-state 'running) nil)))
 
+(defun ensure-message-box (gserver)
+  (with-slots (msgbox) gserver
+    (unless msgbox
+      (log:debug "Setting up message box...")
+      (setf msgbox (make-message-box gserver)))))
+
 (defun submit-message (gserver message withreply-p sender)
   "Submitting a message.
 In case of `withreply-p', the `response' is filled because submitting to the message-box is synchronous.
@@ -196,10 +202,9 @@ In case the gserver was stopped it will respond with just `:stopped'."
 
   (with-slots (internal-state msgbox) gserver
     (unless (gserver-state-running internal-state)
-      (return-from submit-message :stopped))
-    (unless msgbox
-      (log:debug "Setting up message box...")
-      (setf msgbox (make-message-box gserver))))
+      (return-from submit-message :stopped)))
+
+  (ensure-message-box gserver)
   
   (let ((response
           (mb:with-submit-handler

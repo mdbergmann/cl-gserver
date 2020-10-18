@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.system
-  (:use :cl :cl-gserver.gserver :cl-gserver.system-api :cl-gserver.actor-container)
+  (:use :cl :cl-gserver.gserver :cl-gserver.system-api :cl-gserver.actor-context)
   (:nicknames :system)
   (:import-from :dispatcher-api
                 #:make-dispatcher)
@@ -10,7 +10,7 @@
 
 (in-package :cl-gserver.system)
 
-(defclass system (actor-container)
+(defclass system (actor-context)
   ((dispatcher :initarg :dispatcher
                :initform nil
                :accessor dispatcher

@@ -1,7 +1,7 @@
 (defpackage :cl-gserver.system-test
   (:use :cl :fiveam
         :cl-gserver.system :cl-gserver.system-api
-        :cl-gserver.actor :cl-gserver.actor-container)
+        :cl-gserver.actor :cl-gserver.actor-context)
   (:export #:run!
            #:all-tests
            #:nil))

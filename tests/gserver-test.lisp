@@ -1,7 +1,7 @@
 (defpackage :cl-gserver.gserver-test
   (:use :cl :trivia :fiveam
    :cl-gserver.gserver :cl-gserver.future :cl-gserver.system :cl-gserver.system-api)
-  (:import-from #:cl-gserver.actor-container
+  (:import-from #:cl-gserver.actor-context
                 #:actor-of)
   (:export #:run!
            #:all-tests

@@ -2,7 +2,7 @@
   (:use :cl :trivia :iterate :fiveam :cl-gserver.gserver)
   (:import-from #:system-api
                 #:shutdown)
-  (:import-from #:actor-container
+  (:import-from #:ac
                 #:actor-of)
   (:export #:run!
            #:all-tests

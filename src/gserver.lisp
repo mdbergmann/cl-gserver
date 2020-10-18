@@ -67,17 +67,16 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
 
 (defmethod initialize-instance :after ((self gserver) &key)
   :documentation "Initializes the instance."
-  (setup-message-box self)
   (log:info "Initialize instance: ~a~%" self))
 
-(defun setup-message-box (gserver)
-  (with-slots (max-queue-size msgbox system) gserver
+(defun make-message-box (gserver)
+  (with-slots (max-queue-size system) gserver
     (if system
-        (setf msgbox (make-instance 'mb:message-box-dp
-                                    :dispatcher (dispatcher system)
-                                    :max-queue-size max-queue-size))
-        (setf msgbox (make-instance 'mb:message-box-bt
-                                    :max-queue-size max-queue-size)))))
+        (make-instance 'mb:message-box-dp
+                       :dispatcher (dispatcher system)
+                       :max-queue-size max-queue-size)
+        (make-instance 'mb:message-box-bt
+                       :max-queue-size max-queue-size))))
 
 (defmethod print-object ((obj gserver) stream)
   (print-unreadable-object (obj stream :type t)
@@ -92,11 +91,8 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
 (defun attach-system (gserver system-to-attach)
   "Attaches a system on the gserver. This should only be used by the `system' directly, not by the user."
   (when system-to-attach
-    (with-slots (msgbox system) gserver
-      (setf system system-to-attach)
-      (when msgbox
-        (mb:stop msgbox))
-      (setup-message-box gserver))))
+    (with-slots (system) gserver
+      (setf system system-to-attach))))
 
 ;; -----------------------------------------------
 ;; public functions
@@ -198,9 +194,12 @@ In case the gserver was stopped it will respond with just `:stopped'."
   (log:debug "Withreply: " withreply-p)
   (log:debug "Sender: " sender)
 
-  (with-slots (internal-state) gserver
+  (with-slots (internal-state msgbox) gserver
     (unless (gserver-state-running internal-state)
-      (return-from submit-message :stopped)))
+      (return-from submit-message :stopped))
+    (unless msgbox
+      (log:debug "Setting up message box...")
+      (setf msgbox (make-message-box gserver))))
   
   (let ((response
           (mb:with-submit-handler

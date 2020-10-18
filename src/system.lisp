@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.system
-  (:use :cl :cl-gserver.gserver :cl-gserver.system-api)
+  (:use :cl :cl-gserver.gserver :cl-gserver.system-api :cl-gserver.actor-container)
   (:nicknames :system)
   (:import-from :dispatcher-api
                 #:make-dispatcher)
@@ -10,7 +10,7 @@
 
 (in-package :cl-gserver.system)
 
-(defclass system (actor-creator)
+(defclass system (actor-container)
   ((dispatcher :initarg :dispatcher
                :initform nil
                :accessor dispatcher
@@ -32,13 +32,8 @@
 (defmethod shutdown ((self system))
   (dispatcher-api:shutdown (dispatcher self)))
 
-(defmethod actors ((self system))
-  (with-slots (actors) self
-    actors))
-
 (defmethod actor-of ((self system) create-fun)
   (let ((actor (funcall create-fun)))
     (gs::attach-system actor self)
-    (with-slots (actors) self
-      (setf actors (list* actor actors)))
+    (add-actor self actor)
     actor))

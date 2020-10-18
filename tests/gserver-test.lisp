@@ -1,6 +1,8 @@
 (defpackage :cl-gserver.gserver-test
   (:use :cl :trivia :fiveam
    :cl-gserver.gserver :cl-gserver.future :cl-gserver.system :cl-gserver.system-api)
+  (:import-from #:cl-gserver.actor-container
+                #:actor-of)
   (:export #:run!
            #:all-tests
            #:nil
@@ -38,9 +40,8 @@
   (format t "Running no-system tests...done~%")
   (format t "Running system tests...~%")
   (let* ((system (make-system :num-workers 2))
-         (cut (make-instance 'test-server
-                             :state state)))
-    (gs::attach-system cut system)
+         (cut (actor-of system (lambda () (make-instance 'test-server
+                                                    :state state)))))
     (unwind-protect
          (&body)
       (call cut :stop)
@@ -72,17 +73,27 @@
     (is (string= "Bar" (call cut "Bar")))
     (call cut :stop)))
 
-(test switch-message-box-when-attaching-system
-  "Test if the message-box is switched when a system is attached."
+(test uses-dispatcher-messagebox-with-system
+  "Test if the message-box is a distributed one when using system."
   (let* ((system (make-system))
-         (cut (make-gserver)))
+         (cut (actor-of system (lambda () (make-gserver)))))
     (unwind-protect
          (progn
-           (is (typep (gs::msgbox cut) 'cl-gserver.messageb:message-box-bt))
-           (gs::attach-system cut system)
+           (is (null (gs::msgbox cut)))
+           (call cut :foo)
            (is (typep (gs::msgbox cut) 'cl-gserver.messageb:message-box-dp)))
       (call cut :stop)
       (shutdown system))))
+
+(test uses-self-contained-messagebox-without-system
+  "Test if the message-box is self-container when not using system."
+  (let ((cut (make-gserver)))
+    (unwind-protect
+         (progn
+           (is (null (gs::msgbox cut)))
+           (call cut :foo)
+           (is (typep (gs::msgbox cut) 'cl-gserver.messageb:message-box-bt)))
+      (call cut :stop))))
 
 (test handle-call
   "Simple server handle-call test."

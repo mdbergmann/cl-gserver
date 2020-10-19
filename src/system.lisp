@@ -34,6 +34,5 @@
 
 (defmethod actor-of ((self system) create-fun)
   (let ((actor (funcall create-fun)))
-    (gs::attach-system actor self)
     (add-actor self actor)
     actor))

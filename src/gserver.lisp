@@ -2,20 +2,14 @@
   (:use :cl :cl-gserver.utils :cl-gserver.future)
   (:nicknames :gs)
   (:local-nicknames (:mb :cl-gserver.messageb))
-  (:import-from #:cl-gserver.system-api
-                #:dispatcher)
-  (:import-from #:alexandria
-                #:with-gensyms)
   (:export #:handle-call
            #:handle-cast
            #:gserver
            #:name
            #:state
+           #:msgbox
            #:call
-           #:async-call
            #:cast
-           #:after-init
-           #:make-gserver
            #:running-p))
 
 (in-package :cl-gserver.gserver)
@@ -25,7 +19,7 @@
 (defclass gserver ()
    ((name :initarg :name
           :initform (string (gensym "gs-"))
-          :accessor name
+          :reader name
           :documentation
           "The name of the gserver. If no name is specified a default one is applied.")
     (state :initarg :state
@@ -37,15 +31,13 @@
                     :initform (make-gserver-state)
                     :documentation
                     "The internal state of the server.")
-    (max-queue-size :initarg :max-queue-size
-                    :initform nil
-                    :documentation
-                    "0 or nil for unbounded queue. > 0 for bounded queue. Don't choose < 10.")
-    (msgbox :initarg :msgbox
-            :initform (error "Must be defined!")
-            :reader msgbox
+    (msgbox :initform nil
             :documentation
-            "The `message-box' will be pre-set on initialization according to `max-queue-size' and `system' setting."))
+            "The `message-box'.")
+    (system :initform nil
+            :reader system
+            :documentation
+            "The system where this actor is part of."))
   (:documentation
    "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.
@@ -63,22 +55,9 @@ To stop a Gserver message handling and you can tell the `:stop' message
 either via `call' (which will respond with `:stopped') or `cast'.
 This is to cleanup thread resources when the Gserver is not needed anymore."))
 
-(defmethod initialize-instance :after ((self gserver) &key)
-  :documentation "Initializes the instance."
-  (log:info "Initialize instance: ~a~%" self))
-
-(defun make-message-box (gserver)
-  (with-slots (max-queue-size system) gserver
-    (if system
-        (make-instance 'mb:message-box-dp
-                       :dispatcher (dispatcher system)
-                       :max-queue-size max-queue-size)
-        (make-instance 'mb:message-box-bt
-                       :max-queue-size max-queue-size))))
-
 (defmethod print-object ((obj gserver) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (name state internal-state max-queue-size msgbox system) obj
+    (with-slots (name state internal-state msgbox system) obj
       (format stream "~a, system: ~a, running: ~a, state: ~a, message-box: ~a"
               name
               (not (null system))
@@ -86,19 +65,9 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
               state
               msgbox))))
 
-(defun attach-system (gserver system-to-attach)
-  "Attaches a system on the gserver. This should only be used by the `system' directly, not by the user."
-  (when system-to-attach
-    (with-slots (system) gserver
-      (setf system system-to-attach))))
-
 ;; -----------------------------------------------
 ;; public functions
 ;; -----------------------------------------------
-
-(defgeneric after-init (server state)
-  (:documentation
-   "Generic function definition that you may call from `initialize-instance'."))
 
 (defgeneric handle-call (gserver message current-state)
   (:documentation
@@ -129,45 +98,6 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
       (log:debug "Message process result:" result)
       result)))  
 
-(defmacro %with-async-call (gserver message &rest body)
-  "Macro that makes a `call', but asynchronous. Therefore it spawns a new gserver which waits for the result.
-The provided body is the response handler."
-  (with-gensyms (self msg state waiter)
-    `(let ((,waiter (make-gserver :cast-fun (lambda (,self ,msg ,state)
-                                              (unwind-protect
-                                                   (progn
-                                                     (funcall ,@body ,msg)
-                                                     (cast ,self :stop)
-                                                     (cons ,msg ,state))
-                                                (cast ,self :stop)))
-                                  :after-init-fun (lambda (,self ,state)
-                                                    (declare (ignore ,state))
-                                                    ;; this will call the `cast' function
-                                                    ;; that's why it's implemented above
-                                                    (submit-message ,gserver ,message nil ,self))
-                                  :name (mkstr "Async-call-waiter-" (gensym)))))
-       (attach-system ,waiter (system ,gserver))
-       ,waiter)))
-       
-
-(defun async-call (gserver message)
-  "This returns a `future'.
-An `async-call' is similar to a `call' in that the caller gets back a result 
-but it doesn't have to actively wait for it. Instead a `future' wraps the result.
-However, the internal message handling is based on `cast', so the `gserver' in fact has to
-implement `handle-cast' to make this work.
-How this works is that the message to the target `gserver' is not 'sent' using the callers thread
-but instead an anonymous `gserver' is started behind the scenes and this in fact makes tells
-the message to the target `gserver'. It does sent itself along as 'sender'.
-The target `gserver' tells a response back to the initial `sender'. When that happens and the anonymous `gserver'
-received the response the `future' will be fulfilled with the `promise'."
-  (make-future (lambda (promise-fun)
-                 (log:debug "Executing fcomputation function...")
-                 (%with-async-call gserver message
-                                   (lambda (result)
-                                     (log:debug "Result: ~a~%" result)
-                                     (funcall promise-fun result))))))
-
 (defun running-p (gserver)
   "Returns true if this server is running. `nil' otherwise."
   (with-slots (internal-state) gserver
@@ -183,12 +113,6 @@ received the response the `future' will be fulfilled with the `promise'."
     (mb:stop msgbox)
     (setf (slot-value internal-state 'running) nil)))
 
-(defun ensure-message-box (gserver)
-  (with-slots (msgbox) gserver
-    (unless msgbox
-      (log:debug "Setting up message box...")
-      (setf msgbox (make-message-box gserver)))))
-
 (defun submit-message (gserver message withreply-p sender)
   "Submitting a message.
 In case of `withreply-p', the `response' is filled because submitting to the message-box is synchronous.
@@ -202,8 +126,6 @@ In case the gserver was stopped it will respond with just `:stopped'."
     (unless (gserver-state-running internal-state)
       (return-from submit-message :stopped)))
 
-  (ensure-message-box gserver)
-  
   (let ((response
           (mb:with-submit-handler
               ((slot-value gserver 'msgbox)
@@ -296,52 +218,3 @@ Otherwise the result is `:resume' to resume user message handling."
 
 (defun reply-value (cons-result)
   (car cons-result))
-
-;; -----------------------------------------------
-;; -------- simple gserver -----------------------
-;; -----------------------------------------------
-(defclass simple-gserver (gserver)
-  ((call-fun :initarg :call-fun
-             :initform nil
-             :documentation "The `call' function specified as slot.")
-   (cast-fun :initarg :cast-fun
-             :initform nil
-             :documentation "The `cast' function specified as slot.")
-   (after-init-fun :initarg :after-init-fun
-                   :initform nil
-                   :documentation "Code to be called after gserver start."))
-  (:documentation
-   "A simple gserver to be created just with `make-gserver'."))
-
-(defmethod initialize-instance :after ((self simple-gserver) &key)
-  (log:debug "Initialize instance: ~a~%" self)
-  (after-init self (slot-value self 'state)))
-
-(defmethod after-init ((self simple-gserver) state)
-  (with-slots (after-init-fun) self
-    (when after-init-fun
-      (funcall after-init-fun self state))))
-
-(defmethod handle-call ((self simple-gserver) message current-state)
-  (with-slots (call-fun) self
-    (when call-fun
-      (funcall call-fun self message current-state))))
-
-(defmethod handle-cast ((self simple-gserver) message current-state)
-  (with-slots (cast-fun) self
-    (when cast-fun
-      (funcall cast-fun self message current-state))))
-
-(defun make-gserver (&key
-                       (name (gensym "simple-gs-"))
-                       state
-                       call-fun
-                       cast-fun
-                       after-init-fun)
-  "Makes a new `simple-gserver' which allows you to specify
-a `name' for the gserver and also `:state', `call-fun', `cast-fun' and `after-init-fun'."
-  (make-instance 'simple-gserver :name name
-                                 :state state
-                                 :call-fun call-fun
-                                 :cast-fun cast-fun
-                                 :after-init-fun after-init-fun))

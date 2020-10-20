@@ -117,14 +117,17 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
   "Submitting a message.
 In case of `withreply-p', the `response' is filled because submitting to the message-box is synchronous.
 Otherwise submitting is asynchronous and `response' is just `t'.
-In case the gserver was stopped it will respond with just `:stopped'."
+In case the gserver was stopped it will respond with just `:stopped'.
+In case no messge-box is configured this function respnds with `:no-message-handling'."
   (log:debug "Submitting message: " message)
   (log:debug "Withreply: " withreply-p)
   (log:debug "Sender: " sender)
 
   (with-slots (internal-state msgbox) gserver
     (unless (gserver-state-running internal-state)
-      (return-from submit-message :stopped)))
+      (return-from submit-message :stopped))
+    (unless msgbox
+      (return-from submit-message :no-message-handling)))
 
   (let ((response
           (mb:with-submit-handler

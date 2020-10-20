@@ -134,7 +134,7 @@ received the response the `future' will be fulfilled with the `promise'."
 
 (defun make-single-actor (actor-class &key name state receive-fun after-start-fun queue-size)
   (unless (subtypep actor-class 'actor)
-    (type-error "actor-class is no subclass of 'actor"))
+    (error "actor-class is no subclass of 'actor"))
   (let ((single-actor (make-instance 'single-actor)))
     (with-slots (wrapped-actor) single-actor
       (setf wrapped-actor (make-instance actor-class :name name

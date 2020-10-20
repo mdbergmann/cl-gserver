@@ -107,7 +107,7 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
 ;; internal functions
 ;; -----------------------------------------------
 
-(defun stop-server (gserver)
+(defun stop (gserver)
   (log:debug "Stopping server and message handling!")
   (with-slots (msgbox internal-state) gserver
     (mb:stop msgbox)
@@ -140,7 +140,7 @@ In case the gserver was stopped it will respond with just `:stopped'."
   (log:debug "Processing handle-result: " handle-result)
   (case handle-result
     (:stopping (progn
-                 (stop-server gserver)
+                 (stop gserver)
                  :stopped))
     (t (progn
          (when sender

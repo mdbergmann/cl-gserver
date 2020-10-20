@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.dispatcher-test
-  (:use :cl :fiveam :cl-gserver.dispatcher-api :cl-gserver.dispatcher)
+  (:use :cl :fiveam :cl-gserver.dispatcher-api :cl-gserver.dispatcher :cl-gserver.actor)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -37,7 +37,7 @@
                                                  (mapcar #'bt:thread-name (bt:all-threads))))))
     (let* ((len-message-threads-before (len-message-threads))
            (cut (make-dispatcher 'dispatcher-bt :num-workers 4)))
-      (mapcar (lambda (worker) (gs:call worker (cons :execute (lambda () )))) (workers cut))
+      (mapcar (lambda (worker) (ask worker (cons :execute (lambda () )))) (workers cut))
       (is (= (+ len-message-threads-before 4) (len-message-threads)))
       (shutdown cut)
       (is (eq t (cl-gserver.gserver-test:assert-cond

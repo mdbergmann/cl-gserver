@@ -9,7 +9,7 @@
            #:tell
            #:ask
            #:async-ask
-           #:after-init
+           #:after-start
            #:make-actor
            #:make-single-actor)
   ;;#:with-actor)
@@ -32,7 +32,7 @@
   (:documentation
   "Sends a message to `actor' and waits for a result but asynchronously.
 The result is an `fcomputation' which accepts `on-complete' handlers, etc."))
-(defgeneric after-init (actor state)
+(defgeneric after-start (actor state)
   (:documentation
    "Generic function definition that you may call from `initialize-instance'."))
 
@@ -61,7 +61,7 @@ the `:stop' message. It will respond with `:stopped'."))
 (defmethod handle-call ((self actor) message current-state)
   (funcall (receive-fun self) self message current-state))
 
-(defmethod after-init ((self actor) state)
+(defmethod after-start ((self actor) state)
   (with-slots (after-start-fun) self
     (when after-start-fun
       (funcall after-start-fun self state))))
@@ -88,8 +88,8 @@ It will run it's own threaded message-box."))
     (with-slots (wrapped-actor) obj
       (format stream "wrapped: ~a" wrapped-actor))))
 
-(defmethod after-init ((self single-actor) state)
-  (after-init (wrapped-actor self) state))
+(defmethod after-start ((self single-actor) state)
+  (after-start (wrapped-actor self) state))
 
 (defmethod tell ((self single-actor) message)
   (tell (wrapped-actor self) message))
@@ -145,7 +145,7 @@ received the response the `future' will be fulfilled with the `promise'."
       (with-slots (msgbox) wrapped-actor
         (setf msgbox (make-instance 'mb:message-box-bt
                                     :max-queue-size queue-size))))
-    (after-init single-actor state)
+    (after-start single-actor state)
     single-actor))
 
 ;; (defmacro with-actor (&rest body)
@@ -163,7 +163,7 @@ received the response the `future' will be fulfilled with the `promise'."
 ;;                                          (msg msg-sym)
 ;;                                          (state state-sym))
 ;;                                      (car recv-form)))
-;;                    :after-init-fun (lambda (,actor-sym ,state-sym)
+;;                    :after-start-fun (lambda (,actor-sym ,state-sym)
 ;;                                      ,(let ((self actor-sym)
 ;;                                             (state state-sym))
 ;;                                         (car rest-body)))))))

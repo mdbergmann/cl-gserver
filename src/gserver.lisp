@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.gserver
-  (:use :cl :cl-gserver.utils :cl-gserver.future)
+  (:use :cl :cl-gserver.utils)
   (:nicknames :gs)
   (:local-nicknames (:mb :cl-gserver.messageb))
   (:export #:handle-call

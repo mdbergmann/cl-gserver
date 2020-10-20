@@ -7,7 +7,8 @@
   (:nicknames :si-act)
   (:export #:make-single-actor
            #:single-actor
-           #:async-ask))
+           #:async-ask
+           #:the-wrapped))
 
 (in-package :cl-gserver.single-actor)
 
@@ -17,7 +18,7 @@
 
 (defclass single-actor ()
   ((wrapped-actor :initform nil
-                  :reader wrapped-actor
+                  :accessor the-wrapped
                   :documentation "The wrapped actor. `actor' acts as a facade."))
   (:documentation
    "A 'single' actor can be instantiated separate of a `system'.
@@ -29,13 +30,13 @@ It will run it's own threaded message-box."))
       (format stream "wrapped: ~a" wrapped-actor))))
 
 (defmethod after-start ((self single-actor) state)
-  (after-start (wrapped-actor self) state))
+  (after-start (the-wrapped self) state))
 
 (defmethod tell ((self single-actor) message)
-  (tell (wrapped-actor self) message))
+  (tell (the-wrapped self) message))
 
 (defmethod ask ((self single-actor) message)
-  (ask (wrapped-actor self) message))
+  (ask (the-wrapped self) message))
 
 (defmacro %with-async-ask (actor message &rest body)
   "Macro that makes a `call', but asynchronous. Therefore it spawns a new single-actor which waits for the result.
@@ -68,7 +69,7 @@ The target `actor' tells a response back to the initial `sender'. When that happ
 received the response the `future' will be fulfilled with the `promise'."
   (make-future (lambda (promise-fun)
                  (log:debug "Executing fcomputation function...")
-                 (%with-async-ask (wrapped-actor self) message
+                 (%with-async-ask (the-wrapped self) message
                                    (lambda (result)
                                      (log:debug "Result: ~a~%" result)
                                      (funcall promise-fun result))))))

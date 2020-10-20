@@ -39,7 +39,7 @@ It will run it's own threaded message-box."))
   (ask (the-wrapped self) message))
 
 (defmacro %with-async-ask (actor message &rest body)
-  "Macro that makes a `call', but asynchronous. Therefore it spawns a new single-actor which waits for the result.
+  "Macro that makes an `ask', but asynchronous. Therefore it spawns a new single-actor which waits for the result.
 The provided body is the response handler."
   (with-gensyms (self msg state waiter)
     `(let ((,waiter (make-single-actor 'actor
@@ -54,7 +54,7 @@ The provided body is the response handler."
                                                           (declare (ignore ,state))
                                                           ;; this will call the `cast' function
                                                           (gs::submit-message ,actor ,message nil ,self))
-                                       :name (gensym "Async-ask-waiter-"))))
+                                       :name (string (gensym "Async-ask-waiter-")))))
        ,waiter)))
 
 (defmethod async-ask ((self single-actor) message)

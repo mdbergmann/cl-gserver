@@ -33,9 +33,11 @@
 (test create-actors
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (actor-of cut (lambda () (make-actor)))))
+    (let ((actor (actor-of cut (lambda () (make-instance 'actor
+                                                    :receive-fun (lambda ()))))))
+      (print actor)
       (is (not (null actor)))
-      (is (not (null (gs::system actor))))
+      (is (not (null (the-system actor))))
       (is (= 1 (length (get-actors cut))))
       (is (eq actor (car (get-actors cut)))))))
 

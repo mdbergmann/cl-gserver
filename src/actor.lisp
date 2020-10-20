@@ -24,12 +24,18 @@
   "Sends a message to the `actor'. `ask' is synchronous and waits for a result."))
 (defgeneric async-ask (actor message)
   (:documentation
-  "Sends a message to `actor' and waits for a result but asynchronously.
-The result is an `fcomputation' which accepts `on-complete' handlers, etc."))
+   "This returns a `future'.
+An `async-ask' is similar to a `ask' in that the caller gets back a result 
+but it doesn't have to actively wait for it. Instead a `future' wraps the result.
+However, the internal message handling is based on `tell'.
+How this works is that the message to the target `actor' is not 'sent' using the callers thread
+but instead an anonymous `actor' is started behind the scenes and this in fact makes tells
+the message to the target `actor'. It does sent itself along as 'sender'.
+The target `actor' tells a response back to the initial `sender'. When that happens and the anonymous `actor'
+received the response the `future' will be fulfilled with the `promise'."))
 (defgeneric after-start (actor state)
   (:documentation
    "Generic function definition that you may call from `initialize-instance'."))
-
 
 (defclass actor (gserver)
   ((receive-fun :initarg :receive-fun

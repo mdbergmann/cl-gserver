@@ -51,6 +51,7 @@ The strategy to select a worker is random."
    "Specialized `gserver' used as `worker' is the message `dispatcher'."))
 
 (defun receive-fun (self message current-state)
+  "The worker receive function."
   (declare (ignore self))
   (case (car message)
     (:execute (cons (funcall (cdr message)) current-state))))

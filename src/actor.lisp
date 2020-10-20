@@ -132,14 +132,15 @@ received the response the `future' will be fulfilled with the `promise'."
                                      (log:debug "Result: ~a~%" result)
                                      (funcall promise-fun result))))))
 
-(defun make-single-actor (clazz &key name state receive-fun after-start-fun queue-size)
-  (assert (subtypep clazz 'actor))
+(defun make-single-actor (actor-class &key name state receive-fun after-start-fun queue-size)
+  (unless (subtypep actor-class 'actor)
+    (type-error "actor-class is no subclass of 'actor"))
   (let ((single-actor (make-instance 'single-actor)))
     (with-slots (wrapped-actor) single-actor
-      (setf wrapped-actor (make-instance clazz :name name
-                                               :state state
-                                               :receive-fun receive-fun
-                                               :after-start-fun after-start-fun))
+      (setf wrapped-actor (make-instance actor-class :name name
+                                                     :state state
+                                                     :receive-fun receive-fun
+                                                     :after-start-fun after-start-fun))
       (with-slots (msgbox) wrapped-actor
         (setf msgbox (make-instance 'mb:message-box-bt
                                     :max-queue-size queue-size))))

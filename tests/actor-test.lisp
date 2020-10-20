@@ -55,6 +55,13 @@
       (is (eq t (assert-cond (lambda () (complete-p fcomp)) 1)))
       (is (= 5 (get-result fcomp))))))
 
+(test single-actor--enforce-correct-actor-type
+  "Test to enforce the correct actor subclass when creating single-actor."
+  (handler-case
+      (progn 
+        (make-single-actor "foo")
+        (fail "Should not create!"))
+    (error (c) (declare (ignore c)) (is-true t))))
 
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."
@@ -74,5 +81,6 @@
 
 (defun run-tests ()
   (run! 'single-actor)
-  (run! 'single-actor--handle-async-ask))
+  (run! 'single-actor--handle-async-ask)
+  (run! 'single-actor--enforce-correct-actor-type))
   ;;(run! 'with-actor-macro))

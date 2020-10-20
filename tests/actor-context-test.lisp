@@ -18,7 +18,8 @@
 (test create-actor--actor-of
   "Tests creating a new actor in the context."
   (let* ((cut (make-actor-context))
-         (actor (actor-of cut (lambda () (make-actor)))))
+         (actor (actor-of cut (lambda () (make-instance 'actor
+                                                   :receive-fun (lambda ()))))))
     (is (not (null actor)))
     (is (= 1 (length (get-actors cut))))))
 

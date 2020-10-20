@@ -3,6 +3,7 @@
   (:import-from :dispatcher-api
                 #:dispatch
                 #:dispatch-async)
+  (:nicknames :mesgb)
   (:export #:message-box-dp #:message-box-bt
            #:submit
            #:with-submit-handler

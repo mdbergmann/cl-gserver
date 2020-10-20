@@ -22,6 +22,7 @@
                  (:file "gserver")
                  (:file "agent")
                  (:file "actor")
+                 (:file "single-actor")
                  (:file "dispatcher")
                  (:file "system"))))
   :in-order-to ((test-op (test-op "cl-gserver/tests"))))

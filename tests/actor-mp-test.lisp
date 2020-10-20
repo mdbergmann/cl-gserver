@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor-mp-test
-  (:use :cl :trivia :iterate :fiveam :cl-gserver.actor)
+  (:use :cl :trivia :iterate :fiveam :act :si-act)
   ;; (:import-from #:system-api
   ;;               #:shutdown)
   ;; (:import-from #:ac

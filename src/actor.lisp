@@ -79,7 +79,8 @@ the `:stop' message. It will respond with `:stopped'."))
   ((wrapped-actor :initform nil
                   :reader wrapped-actor
                   :documentation "The wrapped actor. `actor' acts as a facade."))
-  (:documentation "A 'single' actor can be instantiated separate of a `system'.
+  (:documentation
+   "A 'single' actor can be instantiated separate of a `system'.
 It will run it's own threaded message-box."))
 
 (defmethod print-object ((obj single-actor) stream)

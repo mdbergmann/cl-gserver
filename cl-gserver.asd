@@ -37,7 +37,7 @@
                 ((:file "all-test")
                  (:file "utils-test")
                  (:file "gserver-test")
-                 (:file "gserver-mp-test")
+                 (:file "actor-mp-test")
                  (:file "agent-test")
                  (:file "actor-test")
                  (:file "actor-context-test")

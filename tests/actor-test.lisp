@@ -23,6 +23,7 @@
          (&body)
       (tell cut :stop))))
 
+
 (test single-actor
   "Test a subclass of actor."
 
@@ -50,10 +51,29 @@
                                           ((eq :add (car message))
                                            (cons (+ (second message) (third message)) current-state))))
                                       0)
-    (let ((fcomp (async-ask cut '(:add 0 5))))
-      (is (eq :not-ready (get-result fcomp)))
-      (is (eq t (assert-cond (lambda () (complete-p fcomp)) 1)))
-      (is (= 5 (get-result fcomp))))))
+    (let ((future (async-ask cut '(:add 0 5))))
+      (is (eq :not-ready (get-result future)))
+      (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
+      (is (= 5 (get-result future))))))
+
+
+(test single-actor--handle-async-ask-2
+  "Test handle a composable asynchronous call. on-completed before completion."
+
+  (with-fixture single-actor-fixture ((lambda (self message current-state)
+                                        (declare (ignore self))
+                                        (sleep 0.5)
+                                        (cond
+                                          ((eq :add (car message))
+                                           (cons (+ (second message) (third message)) current-state))))
+                                      0)
+    (let ((future (async-ask cut '(:add 0 5)))
+          (on-completed-result nil))
+      (is (eq :not-ready (get-result future)))
+      (on-completed future (lambda (result)
+                             (setf on-completed-result result)))
+      (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
+      (is (= 5 (get-result future))))))
 
 (test single-actor--enforce-correct-actor-type
   "Test to enforce the correct actor subclass when creating single-actor."
@@ -82,5 +102,6 @@
 (defun run-tests ()
   (run! 'single-actor)
   (run! 'single-actor--handle-async-ask)
+  (run! 'single-actor--handle-async-ask-2)
   (run! 'single-actor--enforce-correct-actor-type))
   ;;(run! 'with-actor-macro))

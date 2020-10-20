@@ -32,21 +32,10 @@
   (defmethod handle-cast ((server test-server) message current-state)
     (funcall cast-fun server message current-state))
 
-  (format t "Running no-system tests...~%")
   (let ((cut (make-instance 'test-server :state state)))
     (unwind-protect
          (&body)
-      (call cut :stop)))
-  (format t "Running no-system tests...done~%")
-  (format t "Running system tests...~%")
-  (let* ((system (make-system :num-workers 2))
-         (cut (actor-of system (lambda () (make-instance 'test-server
-                                                    :state state)))))
-    (unwind-protect
-         (&body)
-      (call cut :stop)
-      (shutdown system)))
-  (format t "Running system tests...~%"))
+      (call cut :stop))))
 
 
 (test get-server-name
@@ -56,7 +45,7 @@
     (print (name cut))
     (is (= 0 (search "gs-" (name cut))))))
 
-(test create-simple-gserver
+(test create-gserver
   "Creates a simple gserver"
 
   (let ((cut (make-gserver :name "Foo"
@@ -73,27 +62,7 @@
     (is (string= "Bar" (call cut "Bar")))
     (call cut :stop)))
 
-(test uses-dispatcher-messagebox-with-system
-  "Test if the message-box is a distributed one when using system."
-  (let* ((system (make-system))
-         (cut (actor-of system (lambda () (make-gserver)))))
-    (unwind-protect
-         (progn
-           (is (null (gs::msgbox cut)))
-           (call cut :foo)
-           (is (typep (gs::msgbox cut) 'cl-gserver.messageb:message-box-dp)))
-      (call cut :stop)
-      (shutdown system))))
 
-(test uses-self-contained-messagebox-without-system
-  "Test if the message-box is self-container when not using system."
-  (let ((cut (make-gserver)))
-    (unwind-protect
-         (progn
-           (is (null (gs::msgbox cut)))
-           (call cut :foo)
-           (is (typep (gs::msgbox cut) 'cl-gserver.messageb:message-box-bt)))
-      (call cut :stop))))
 
 (test handle-call
   "Simple server handle-call test."
@@ -218,7 +187,7 @@
 
 (defun run-tests ()
   (run! 'get-server-name)
-  (run! 'create-simple-gserver)
+  (run! 'create-gserver)
   (run! 'handle-call)
   (run! 'handle-async-call)
   (run! 'handle-async-call-2)

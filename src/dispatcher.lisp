@@ -22,7 +22,7 @@ they do not have their own message processing thread but rather use this facilit
 
 (defmethod dispatch ((self dispatcher-bt) fun)
   "Dispatches a function to a worker of the dispatcher to execute there.
-`dispatch' does a `call' to a `dispatcher' worker, which means this call will block.
+`dispatch' does a `ask' to a `dispatcher' worker, which means this call will block.
 The strategy to select a worker is random."
   (with-slots (workers num-workers) self
     (when workers
@@ -30,7 +30,7 @@ The strategy to select a worker is random."
 
 (defmethod dispatch-async ((self dispatcher-bt) fun)
   "Dispatches a function to a worker of the dispatcher to execute there.
-`dispatch-async' does a `cast' to a `dispatcher' worker and is asynchronous.
+`dispatch-async' does a `tell' to a `dispatcher' worker and is asynchronous.
 The strategy to select a worker is random."
   (with-slots (workers num-workers) self
     (when workers

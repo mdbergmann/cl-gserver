@@ -1,7 +1,7 @@
 (defpackage :cl-gserver.system-test
   (:use :cl :fiveam
         :cl-gserver.system-api :cl-gserver.system
-        :cl-gserver.actor :cl-gserver.actor-context)
+        :cl-gserver.actor :cl-gserver.system-actor :cl-gserver.actor-context)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -41,7 +41,7 @@
       (is (eq actor (car (get-actors cut)))))))
 
 (test creating-many-actors
-  "Creating many actors should pose a problem."
+  "Creating many actors should not pose a problem."
   (with-fixture test-system ()
     (let ((actors (loop for i from 1 to 10000
                         collect (actor-of

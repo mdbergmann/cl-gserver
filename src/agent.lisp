@@ -4,6 +4,8 @@
                 #:running-p
                 #:state
                 #:msgbox)
+  (:import-from #:mesgb
+                #:message-box-bt)
   (:export #:make-single-agent           
            #:agent-get
            #:agent-update
@@ -64,11 +66,11 @@ The return value of `update-fun' will be taken as the new state of the `agent'."
   (tell agent :stop))
 
 
-(defclass single-agent (single-actor) ())
+(defclass single-agent (wrapping-actor-base) ())
 
 (defun make-single-agent (state-fun)
   (let ((single-agent (make-instance 'single-agent)))
     (setf (the-wrapped single-agent) (make-agent state-fun))
     (with-slots (msgbox) (the-wrapped single-agent)
-      (setf msgbox (make-instance 'mesgb:message-box-bt)))
+      (setf msgbox (make-instance 'message-box-bt)))
     single-agent))

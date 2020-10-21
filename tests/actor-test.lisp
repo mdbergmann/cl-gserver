@@ -16,9 +16,11 @@
 
 (def-fixture single-actor-fixture (receive-fun state)
   (defclass test-actor (actor) ())
-  (let ((cut (make-single-actor 'test-actor
-                                :state state
-                                :receive-fun receive-fun)))
+  (let ((cut (make-single-actor
+              (lambda ()
+                (make-instance 'test-actor
+                               :state state
+                               :receive-fun receive-fun)))))
     (unwind-protect
          (&body)
       (tell cut :stop))))

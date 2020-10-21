@@ -22,33 +22,22 @@
   (setf lparallel:*kernel* (lparallel:make-kernel 8))
 
   (defclass counter-actor (actor) ())
-  (defmethod handle-receive ((server counter-actor) message current-state)
-    (declare (ignore message))
-    (cons current-state current-state))
-  (defmethod handle-call ((server counter-actor) message current-state)
-    (match message
-      (:add
-       (let ((new-state (1+ current-state)))
-         (cons new-state new-state)))
-      (:sub
-       (let ((new-state (1- current-state)))
-         (cons new-state new-state)))
-      (:get (cons current-state current-state))))
-
+  
   (format t "Running non-system tests...~%")
-  (let* ((cut (make-single-actor 'counter-actor
-                                 :name "counter-actor"
-                                 :state 0
-                                 :receive-fun (lambda (self message current-state)
-                                                (declare (ignore self))
-                                                (match message
-                                                  (:add
-                                                   (let ((new-state (1+ current-state)))
-                                                     (cons new-state new-state)))
-                                                  (:sub
-                                                   (let ((new-state (1- current-state)))
-                                                     (cons new-state new-state)))
-                                                  (:get (cons current-state current-state))))
+  (let* ((cut (make-single-actor (lambda ()
+                                   (make-instance 'counter-actor
+                                                  :name "counter-actor"
+                                                  :state 0
+                                                  :receive-fun (lambda (self message current-state)
+                                                                 (declare (ignore self))
+                                                                 (match message
+                                                                   (:add
+                                                                    (let ((new-state (1+ current-state)))
+                                                                      (cons new-state new-state)))
+                                                                   (:sub
+                                                                    (let ((new-state (1- current-state)))
+                                                                      (cons new-state new-state)))
+                                                                   (:get (cons current-state current-state))))))
                                  :queue-size queue-size))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))

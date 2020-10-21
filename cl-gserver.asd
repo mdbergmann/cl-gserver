@@ -22,6 +22,7 @@
                  (:file "gserver")
                  (:file "actor")
                  (:file "single-actor")
+                 (:file "system-actor")
                  (:file "agent")
                  (:file "dispatcher")
                  (:file "system"))))

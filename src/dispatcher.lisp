@@ -15,10 +15,11 @@ they do not have their own message processing thread but rather use this facilit
   (with-slots (num-workers workers) self
     (setf workers 
           (loop for x from 1 to num-workers
-                collect (make-single-actor 'dispatch-worker
-                                           :name (string (gensym "dispatch-worker-"))
-                                           :queue-size 1000
-                                           :receive-fun #'receive-fun)))))
+                collect (make-single-actor (lambda ()
+                                             (make-instance 'dispatch-worker
+                                                            :name (string (gensym "dispatch-worker-"))
+                                                            :receive-fun #'receive-fun))
+                                           :queue-size 1000)))))
 
 (defmethod dispatch ((self dispatcher-bt) fun)
   "Dispatches a function to a worker of the dispatcher to execute there.

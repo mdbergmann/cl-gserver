@@ -1,11 +1,17 @@
 (defpackage :cl-gserver.actor
   (:use :cl :cl-gserver.gserver)
   (:nicknames :act)
+  (:import-from #:alexandria
+                #:with-gensyms)
   (:export #:actor
            #:tell
            #:ask
            #:async-ask
-           #:after-start)
+           #:after-start
+           ;; wrapping-actor
+           #:wrapping-actor-base
+           #:the-wrapped
+           #:%make-waitor-actor)
   ;;#:with-actor)
   )
 
@@ -70,3 +76,45 @@ the `:stop' message. It will respond with `:stopped'."))
   (cast self message))
 (defmethod ask ((self actor) message)
   (call self message))
+
+;; -------------------------------------
+;; Wrapping actor
+;; -------------------------------------
+
+(defclass wrapping-actor-base ()
+  ((wrapped-actor :initform nil
+                  :accessor the-wrapped
+                  :documentation "The wrapped actor. `wrapping-actor-base' acts as a facade."))
+  (:documentation
+   "This actor wraps another actor. This acts as a base class for `single-actor' and `system-actor'"))
+
+(defmethod print-object ((obj wrapping-actor-base) stream)
+  (print-unreadable-object (obj stream :type t)
+    (with-slots (wrapped-actor) obj
+      (format stream "wrapped: ~a" wrapped-actor))))
+
+(defmethod after-start ((self wrapping-actor-base) state)
+  (after-start (the-wrapped self) state))
+
+(defmethod tell ((self wrapping-actor-base) message)
+  (tell (the-wrapped self) message))
+
+(defmethod ask ((self wrapping-actor-base) message)
+  (ask (the-wrapped self) message))
+
+(defmacro %make-waitor-actor (actor message &rest body)
+  (with-gensyms (self msg state)
+    `(lambda ()
+       (make-instance 'actor 
+                      :receive-fun (lambda (,self ,msg ,state)
+                                     (unwind-protect
+                                          (progn
+                                            (funcall ,@body ,msg)
+                                            (tell ,self :stop)
+                                            (cons ,msg ,state))
+                                       (tell ,self :stop)))
+                      :after-start-fun (lambda (,self ,state)
+                                         (declare (ignore ,state))
+                                         ;; this will call the `tell' function
+                                         (gs::submit-message ,actor ,message nil ,self))
+                      :name (string (gensym "Async-ask-waiter-"))))))

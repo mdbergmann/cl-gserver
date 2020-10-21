@@ -14,7 +14,8 @@
                 #:message-box-dp)
   (:export #:make-system
            #:system
-           #:get-system))
+           #:get-system
+           #:system-actor-p))
 
 (in-package :cl-gserver.system)
 
@@ -65,6 +66,9 @@
   (:documentation
    "A 'system' actor is instanciated as part of a `system'.
 The message dispatch in this case works using a shared thread pool."))
+
+(defun system-actor-p (obj)
+  (typep obj 'system-actor))
 
 (defmethod print-object ((obj system-actor) stream)
   (print-unreadable-object (obj stream :type t)

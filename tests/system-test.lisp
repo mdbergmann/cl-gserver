@@ -35,12 +35,32 @@
   (with-fixture test-system ()
     (let ((actor (actor-of cut (lambda () (make-instance 'actor
                                                     :receive-fun (lambda ()))))))
-      (print actor)
       (is (not (null actor)))
       (is (not (null (get-system actor))))
       (is (= 1 (length (get-actors cut))))
       (is (eq actor (car (get-actors cut)))))))
 
+(test creating-many-actors
+  "Creating many actors should pose a problem."
+  (with-fixture test-system ()
+    (let ((actors (loop for i from 1 to 10000
+                        collect (actor-of
+                                 cut
+                                 (lambda ()
+                                   (make-instance
+                                    'actor
+                                    :receive-fun
+                                    (lambda (self msg state)
+                                      (declare (ignore self))
+                                      (cons (format nil "reply: ~a" msg) state))))))))
+      (log:debug "Starting ask...")
+      (is-true (every (lambda (x) (string= "reply: test" x))
+                      (mapcar (lambda (actor)
+                                (ask actor "test"))
+                              actors)))
+      (log:debug "Starting ask...done"))))
+
 (defun run-tests ()
   (run! 'create-system)
-  (run! 'create-actors))
+  (run! 'create-actors)
+  (run! 'creating-many-actors))

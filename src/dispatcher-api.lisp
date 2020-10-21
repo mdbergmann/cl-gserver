@@ -28,9 +28,7 @@
 (defmethod print-object ((obj dispatcher-base) stream)
   (print-unreadable-object (obj stream :type t)
     (with-slots (num-workers workers) obj
-      (format stream "num-workers: ~a, workers: ~a"
-              num-workers
-              workers))))
+      (format stream "num-workers: ~a" num-workers))))
 
 (defgeneric shutdown (dispatcher-base))
 (defgeneric dispatch (dispatcher-base fun))

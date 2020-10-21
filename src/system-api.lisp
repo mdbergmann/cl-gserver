@@ -2,9 +2,9 @@
   (:use :cl)
   (:nicknames :system-api)
   (:export #:shutdown
-           #:dispatcher))
+           #:get-dispatcher))
 
 (in-package :cl-gserver.system-api)
 
 (defgeneric shutdown (system))
-(defgeneric dispatcher (system))
+(defgeneric get-dispatcher (system))

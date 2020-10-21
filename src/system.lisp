@@ -8,6 +8,8 @@
                 #:make-dispatcher)
   (:import-from #:dispatcher
                 #:dispatcher-bt)
+  (:import-from #:gs
+                #:msgbox)
   (:import-from #:mesgb
                 #:message-box-dp)
   (:export #:make-system
@@ -19,7 +21,7 @@
 (defclass system (actor-context)
   ((dispatcher :initarg :dispatcher
                :initform nil
-               :accessor dispatcher
+               :reader get-dispatcher
                :documentation "The message dispatcher."))
   (:documentation
    "A system is a container for `actors' or subclasses."))
@@ -36,7 +38,11 @@
                  :dispatcher (make-dispatcher 'dispatcher-bt :num-workers num-workers)))
 
 (defmethod shutdown ((self system))
-  (dispatcher-api:shutdown (dispatcher self)))
+  (dispatcher-api:shutdown (get-dispatcher self)))
+
+;; -------------------------------------
+;; actor-context impl
+;; -------------------------------------
 
 (defmethod actor-of ((self system) create-fun)
   (let ((system-actor (make-system-actor self create-fun)))
@@ -62,8 +68,8 @@ The message dispatch in this case works using a shared thread pool."))
 
 (defmethod print-object ((obj system-actor) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (wrapped-actor) obj
-      (format stream "wrapped: ~a" wrapped-actor))))
+    (with-slots (wrapped-actor system) obj
+      (format stream "system: ~a, wrapped: ~a" system wrapped-actor))))
 
 (defmethod after-start ((self system-actor) state)
   (after-start (the-wrapped self) state))
@@ -113,10 +119,8 @@ The provided body is the response handler."
 
     (with-slots (wrapped-actor) system-actor
       (setf wrapped-actor inner-actor)
-      (print wrapped-actor)
       
       (with-slots (msgbox) wrapped-actor
         (setf msgbox (make-instance 'message-box-dp
-                                    :dispatcher (dispatcher system)
-                                    :max-queue-size 1000))))
+                                    :dispatcher (get-dispatcher system)))))
     system-actor))

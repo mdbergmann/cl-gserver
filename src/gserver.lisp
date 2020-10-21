@@ -1,7 +1,6 @@
 (defpackage :cl-gserver.gserver
   (:use :cl :cl-gserver.utils)
   (:nicknames :gs)
-  (:local-nicknames (:mb :cl-gserver.messageb))
   (:export #:handle-call
            #:handle-cast
            #:gserver
@@ -33,11 +32,7 @@
                     "The internal state of the server.")
     (msgbox :initform nil
             :documentation
-            "The `message-box'.")
-    (system :initform nil
-            :reader system
-            :documentation
-            "The system where this actor is part of."))
+            "The `message-box'."))
   (:documentation
    "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.
@@ -58,9 +53,8 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
 (defmethod print-object ((obj gserver) stream)
   (print-unreadable-object (obj stream :type t)
     (with-slots (name state internal-state msgbox system) obj
-      (format stream "~a, system: ~a, running: ~a, state: ~a, message-box: ~a"
+      (format stream "~a, running: ~a, state: ~a, message-box: ~a"
               name
-              (not (null system))
               (slot-value internal-state 'running)
               state
               msgbox))))
@@ -110,7 +104,7 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
 (defun stop (gserver)
   (log:debug "Stopping server and message handling!")
   (with-slots (msgbox internal-state) gserver
-    (mb:stop msgbox)
+    (mesgb:stop msgbox)
     (setf (slot-value internal-state 'running) nil)))
 
 (defun submit-message (gserver message withreply-p sender)
@@ -130,7 +124,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
       (return-from submit-message :no-message-handling)))
 
   (let ((response
-          (mb:with-submit-handler
+          (mesgb:with-submit-handler
               ((slot-value gserver 'msgbox)
                message
                withreply-p)

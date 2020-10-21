@@ -1,6 +1,6 @@
 (defpackage :cl-gserver.system-test
   (:use :cl :fiveam
-        :cl-gserver.system :cl-gserver.system-api
+        :cl-gserver.system-api :cl-gserver.system
         :cl-gserver.actor :cl-gserver.actor-context)
   (:export #:run!
            #:all-tests
@@ -26,7 +26,7 @@
     (unwind-protect
          (progn
            (is (not (null system)))
-           (is (not (null (dispatcher system)))))
+           (is (not (null (get-dispatcher system)))))
       (shutdown system)
       (sleep 1))))
 
@@ -37,7 +37,7 @@
                                                     :receive-fun (lambda ()))))))
       (print actor)
       (is (not (null actor)))
-      (is (not (null (the-system actor))))
+      (is (not (null (get-system actor))))
       (is (= 1 (length (get-actors cut))))
       (is (eq actor (car (get-actors cut)))))))
 

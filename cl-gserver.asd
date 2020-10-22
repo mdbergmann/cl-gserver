@@ -13,13 +13,15 @@
                 :serial t
                 :components
                 ((:file "utils")
-                 (:file "fcomputation")
-                 (:file "queue")
-                 (:file "dispatcher-api")
-                 (:file "message-box")
+                 (:module "core"
+                          :components
+                          ((:file "queue")
+                           (:file "dispatcher-api")
+                           (:file "message-box")
+                           (:file "gserver")))
                  (:file "system-api")
                  (:file "actor-context")
-                 (:file "gserver")
+                 (:file "fcomputation")
                  (:file "actor")
                  (:file "single-actor")
                  (:file "system-actor")

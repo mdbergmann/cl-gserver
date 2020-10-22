@@ -1,11 +1,11 @@
 (defpackage :cl-gserver.system
-  (:use :cl :cl-gserver.actor :cl-gserver.system-actor
+  (:use :cl :cl-gserver.actor :cl-gserver.system-actor :cl-gserver.single-actor
         :cl-gserver.system-api :cl-gserver.actor-context)
   (:nicknames :system)
-  (:import-from #:dispatcher-api
-                #:make-dispatcher)
   (:import-from #:dispatcher
-                #:dispatcher-bt)
+                #:dispatcher-random
+                #:make-dispatcher
+                #:make-dispatcher-worker)
   (:export #:make-system
            #:system))
 
@@ -28,7 +28,13 @@
 (defun make-system (&key (num-workers 4))
   "Creates a system with 4 workers by default."
   (make-instance 'system
-                 :dispatcher (make-dispatcher 'dispatcher-bt :num-workers num-workers)))
+                 :dispatcher (make-dispatcher
+                              'dispatcher-random
+                              (lambda ()
+                                (make-single-actor (lambda ()
+                                                     (make-dispatcher-worker))
+                                                   :queue-size 1000))
+                              :num-workers num-workers)))
 
 (defmethod shutdown ((self system))
   (dispatcher-api:shutdown (get-dispatcher self)))

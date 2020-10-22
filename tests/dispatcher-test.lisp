@@ -1,5 +1,7 @@
 (defpackage :cl-gserver.dispatcher-test
   (:use :cl :fiveam :cl-gserver.dispatcher-api :cl-gserver.dispatcher :cl-gserver.actor)
+  (:import-from #:cl-gserver.single-actor
+                #:make-single-actor)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -11,21 +13,28 @@
 
 (in-suite dispatcher-tests)
 
+(defun make-test-dispatcher (num-workers)
+  (make-dispatcher 'dispatcher-random
+                              (lambda ()
+                                (make-single-actor
+                                 (lambda () (make-dispatcher-worker))))
+                              :num-workers num-workers))
+
 (test create-dispatcher
   "Checks creating a dispatcher"
-  (let ((cut (make-dispatcher 'dispatcher-bt)))
+  (let ((cut (make-test-dispatcher 1)))
     (is (not (null cut)))
     (shutdown cut)))
 
 (test create-the-workers
   "Checks that the workers are created as gservers"
-  (let ((cut (make-dispatcher 'dispatcher-bt :num-workers 4)))
+  (let ((cut (make-test-dispatcher 4)))
     (is (= 4 (length (workers cut))))
     (shutdown cut)))
 
 (test dispatch-to-worker
   "Tests the dispatching to a worker"
-  (let ((cut (make-dispatcher 'dispatcher-bt)))
+  (let ((cut (make-test-dispatcher 1)))
     (is (= 15 (dispatch cut (lambda () (loop for i from 1 to 5 sum i)))))
     (shutdown cut)))
 
@@ -36,7 +45,7 @@
                                                    (str:starts-with-p "message-thread-mb" x))
                                                  (mapcar #'bt:thread-name (bt:all-threads))))))
     (let* ((len-message-threads-before (len-message-threads))
-           (cut (make-dispatcher 'dispatcher-bt :num-workers 4)))
+           (cut (make-test-dispatcher 4)))
       (mapcar (lambda (worker) (ask worker (cons :execute (lambda () )))) (workers cut))
       (is (= (+ len-message-threads-before 4) (len-message-threads)))
       (shutdown cut)

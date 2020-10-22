@@ -22,11 +22,12 @@
 
 (test create-system
   "Creates a system"
-  (let ((system (make-system)))
+  (let ((system (make-system :num-workers 4)))
     (unwind-protect
          (progn
            (is (not (null system)))
-           (is (not (null (get-dispatcher system)))))
+           (is (not (null (get-dispatcher system))))
+           (is (= 4 (length (dispatcher:workers (get-dispatcher system))))))
       (shutdown system)
       (sleep 1))))
 
@@ -40,7 +41,7 @@
       (is (= 1 (length (get-actors cut))))
       (is (eq actor (car (get-actors cut)))))))
 
-(test creating-many-actors
+(test creating-many-actors--and-collect-responses
   "Creating many actors should not pose a problem."
   (with-fixture test-system ()
     (let ((actors (loop for i from 1 to 10000
@@ -63,4 +64,4 @@
 (defun run-tests ()
   (run! 'create-system)
   (run! 'create-actors)
-  (run! 'creating-many-actors))
+  (run! 'creating-many-actors--and-collect-responses))

@@ -30,7 +30,7 @@
            (is (not (null system)))
            (is (not (null (message-dispatcher system))))
            (is-true (typep (message-dispatcher system) 'shared-dispatcher))
-           (is (= 4 (length (dispatcher-workers (message-dispatcher system))))))
+           (is (= 4 (length (workers (message-dispatcher system))))))
       (shutdown system)
       (sleep 1))))
 
@@ -40,7 +40,7 @@
     (unwind-protect
          (progn
            (is-true (typep (message-dispatcher system) 'shared-dispatcher))
-           (is (= 4 (length (dispatcher-workers (message-dispatcher system))))))
+           (is (= 4 (length (workers (message-dispatcher system))))))
       (shutdown system))))
 
 (test create-actors

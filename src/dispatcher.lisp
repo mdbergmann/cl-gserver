@@ -6,7 +6,7 @@
   (:export #:shared-dispatcher
            #:make-dispatcher
            #:make-dispatcher-worker
-           #:dispatcher-workers))
+           #:workers))
 
 (in-package :cl-gserver.dispatcher)
 
@@ -21,7 +21,7 @@
                 :reader num-workers
                 :documentation "The desired number of workers.")
    (workers :initform nil
-            :reader dispatcher-workers
+            :reader workers
             :documentation "The worker instances"))
   (:documentation
    "A `dispatcher' is a pool of `actors'. The dispatching to its actors works in a random way."))

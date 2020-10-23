@@ -45,7 +45,7 @@
     (ask cut :stop))
   (format t "Running non-system tests...done~%")
   ;; (format t "Running system tests...~%")
-  ;; (let* ((system (system:make-system :num-workers 4))
+  ;; (let* ((system (system:make-actor-system :num-workers 4))
   ;;        (cut (actor-of system (lambda ()
   ;;                                (make-instance 'counter-actor :state 0
   ;;                                                               :max-queue-size queue-size))))

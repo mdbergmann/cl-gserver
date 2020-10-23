@@ -1,18 +1,17 @@
-(defpackage :cl-gserver.gserver-test
-  (:use :cl :trivia :fiveam :cl-gserver.gserver :cl-gserver.future)
-  (:local-nicknames (:mb :cl-gserver.messageb))
+(defpackage :cl-gserver.actor-cell-test
+  (:use :cl :trivia :fiveam :cl-gserver.actor-cell)
   (:export #:run!
            #:all-tests
            #:nil
            #:assert-cond))
 
-(in-package :cl-gserver.gserver-test)
+(in-package :cl-gserver.actor-cell-test)
 
-(def-suite gserver-tests
-  :description "gserver tests"
+(def-suite actor-cell-tests
+  :description "actor-cell tests"
   :in cl-gserver.tests:test-suite)
 
-(in-suite gserver-tests)
+(in-suite actor-cell-tests)
 
 (log:config :warn)
 
@@ -23,45 +22,45 @@
     (if (> wait-time max-time) (return)
         (sleep 0.02))))
 
-(def-fixture server-fixture (call-fun cast-fun state)
-  (defclass test-server (gserver) ())
-  (defmethod handle-call ((server test-server) message current-state)
-    (funcall call-fun server message current-state))
-  (defmethod handle-cast ((server test-server) message current-state)
-    (funcall cast-fun server message current-state))
+(def-fixture cell-fixture (call-fun cast-fun state)
+  (defclass test-cell (actor-cell) ())
+  (defmethod handle-call ((cell test-cell) message current-state)
+    (funcall call-fun cell message current-state))
+  (defmethod handle-cast ((cell test-cell) message current-state)
+    (funcall cast-fun cell message current-state))
 
-  (let ((cut (make-instance 'test-server :state state)))
-    (with-slots (msgbox) cut
-      (setf msgbox (make-instance 'mb:message-box-bt)))
+  (let ((cut (make-instance 'test-cell
+                            :state state
+                            :msgbox (make-instance 'mesgb:message-box-bt))))
     (unwind-protect
          (&body)
       (call cut :stop))))
 
 
-(test get-server-name
-  "Just retrieves the name of the server"
+(test get-cell-name
+  "Just retrieves the name of the cell"
 
-  (with-fixture server-fixture (nil nil nil)
+  (with-fixture cell-fixture (nil nil nil)
     (print (name cut))
-    (is (= 0 (search "gs-" (name cut))))))
+    (is (= 0 (search "actor-" (name cut))))))
 
 
 (test no-message-box
   "Test responds with :no-message-handling when no msgbox is configured."
 
-  (defclass no-msg-server (gserver) ())
-  (defmethod handle-call ((server no-msg-server) message current-state)
+  (defclass no-msg-server (actor-cell) ())
+  (defmethod handle-call ((cell no-msg-server) message current-state)
     (cons message current-state))
 
-  (let ((cut (make-instance 'stopping-server)))
+  (let ((cut (make-instance 'stopping-cell)))
     (is (eq :no-message-handling (call cut :foo)))))
 
 
 (test handle-call
-  "Simple server handle-call test."
+  "Simple cell handle-call test."
 
-  (with-fixture server-fixture ((lambda (server message current-state)
-                                  (declare (ignore server))
+  (with-fixture cell-fixture ((lambda (cell message current-state)
+                                  (declare (ignore cell))
                                   (match message
                                     ((list :add n)
                                      (let ((new-state (+ current-state n)))
@@ -79,8 +78,8 @@
 (test error-in-handler
   "testing error handling"
   
-  (with-fixture server-fixture ((lambda (server message current-state)
-                                  (declare (ignore server current-state))
+  (with-fixture cell-fixture ((lambda (cell message current-state)
+                                  (declare (ignore cell current-state))
                                   (log:info "Raising error condition...")
                                   (match message
                                     ((list :err) (error "Foo Error"))))
@@ -93,11 +92,11 @@
     (is (string= "Foo Error" (format nil "~a" (cdr msg)))))))
 
 
-(test stack-server
-  "a gserver as stack."
+(test stack-cell
+  "a actor-cell as stack."
 
-  (with-fixture server-fixture ((lambda (server message current-state)
-                                  (declare (ignore server))
+  (with-fixture cell-fixture ((lambda (cell message current-state)
+                                  (declare (ignore cell))
                                   (format t "current-state: ~a~%" current-state)
                                   (match message
                                     (:pop
@@ -106,8 +105,8 @@
                                       (cdr current-state)))
                                     (:get
                                      (cons current-state current-state))))
-                                (lambda (server message current-state)
-                                  (declare (ignore server))
+                                (lambda (cell message current-state)
+                                  (declare (ignore cell))
                                   (format t "current-state: ~a~%" current-state)
                                   (match message
                                     ((cons :push value)
@@ -132,23 +131,22 @@
     (is (null (call cut :pop)))))
 
 
-(test stopping-server
-  "Stopping a server stops the message handling and frees resources."
+(test stopping-cell
+  "Stopping a cell stops the message handling and frees resources."
 
-  (defclass stopping-server (gserver) ())
-  (defmethod handle-call ((server stopping-server) message current-state)
+  (defclass stopping-cell (actor-cell) ())
+  (defmethod handle-call ((cell stopping-cell) message current-state)
     (cons message current-state))
 
-  (let ((cut (make-instance 'stopping-server)))
-    (with-slots (msgbox) cut
-      (setf msgbox (make-instance 'mb:message-box-bt)))
+  (let ((cut (make-instance 'stopping-cell
+                            :msgbox (make-instance 'mesgb:message-box-bt))))
     (is (eq :stopped (call cut :stop)))))
 
 
 (defun run-tests ()
-  (run! 'get-server-name)
+  (run! 'get-cell-name)
   (run! 'no-message-box)
   (run! 'handle-call)
   (run! 'error-in-handler)
-  (run! 'stack-server)
-  (run! 'stopping-server))
+  (run! 'stack-cell)
+  (run! 'stopping-cell))

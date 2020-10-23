@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor
-  (:use :cl :cl-gserver.gserver)
+  (:use :cl :cl-gserver.actor-cell)
   (:nicknames :act)
   (:import-from #:alexandria
                 #:with-gensyms)
@@ -8,9 +8,8 @@
            #:ask
            #:async-ask
            #:after-start
-           ;; wrapping-actor
-           #:wrapping-actor-base
-           #:the-wrapped
+           #:cell
+           #:system
            #:%make-waitor-actor)
   ;;#:with-actor)
   )
@@ -42,9 +41,14 @@ received the response the `future' will be fulfilled with the `promise'."))
 (defgeneric after-start (actor state)
   (:documentation
    "Generic function definition that you may call from `initialize-instance'."))
+(defgeneric system (actor)
+  (:documentation "Access to the `actor-system'."))
 
-(defclass actor (gserver)
-  ((receive-fun :initarg :receive-fun
+(defclass actor (actor-api)
+  ((cell :initform nil
+         :reader cell
+         :documentation "The inner `actor-cell'.")
+   (receive-fun :initarg :receive-fun
                 :initform (error "'receive-fun' must be specified!")
                 :reader receive-fun)
    (after-start-fun :initarg :after-start-fun
@@ -62,59 +66,59 @@ end up in `receive'.
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
 the `:stop' message. It will respond with `:stopped'."))
 
-(defmethod handle-cast ((self actor) message current-state)
-  (funcall (receive-fun self) self message current-state))
-(defmethod handle-call ((self actor) message current-state)
-  (funcall (receive-fun self) self message current-state))
+(defmethod initialize-instance :after ((self actor) &key name state msgbox)
+  (with-slots (cell) self
+    (setf cell (make-instance 'actor-cell
+                              :name name
+                              :state state
+                              :msgbox msgbox)))
+  (log:debug "After initialize: ~a" self))
+
+(defmethod print-object ((obj actor) stream)
+  (print-unreadable-object (obj stream :type t)
+    (with-slots (cell) obj
+      (format stream "cell: ~a" cell))))
+
+(defmethod handle-call ((self actor) message state)
+  (funcall (receive-fun self) message state))
+(defmethod handle-cast ((self actor) message state)
+  (funcall (receive-fun self) message state))
+
+(defmethod system ((self actor))
+  (act-cell:system (cell self)))
+
+(defmethod tell ((self actor) message)
+  (cast (cell self) message))
+(defmethod ask ((self actor) message)
+  (call (cell self) message))
 
 (defmethod after-start ((self actor) state)
   (with-slots (after-start-fun) self
     (when after-start-fun
       (funcall after-start-fun self state))))
 
-(defmethod tell ((self actor) message)
-  (cast self message))
-(defmethod ask ((self actor) message)
-  (call self message))
+;; (defmethod async-ask ((self actor) message)
+;;   (make-future (lambda (promise-fun)
+;;                  (log:debug "Executing fcomputation function...")
+;;                  (make-system-actor (system self)
+;;                                     (%make-waitor-actor (cell self) message
+;;                                                         (lambda (result)
+;;                                                           (log:debug "Result: ~a~%" result)
+;;                                                           (funcall promise-fun result)))))))
 
-;; -------------------------------------
-;; Wrapping actor
-;; -------------------------------------
-
-(defclass wrapping-actor-base ()
-  ((wrapped-actor :initform nil
-                  :accessor the-wrapped
-                  :documentation "The wrapped actor. `wrapping-actor-base' acts as a facade."))
-  (:documentation
-   "This actor wraps another actor. This acts as a base class for `single-actor' and `system-actor'"))
-
-(defmethod print-object ((obj wrapping-actor-base) stream)
-  (print-unreadable-object (obj stream :type t)
-    (with-slots (wrapped-actor) obj
-      (format stream "wrapped: ~a" wrapped-actor))))
-
-(defmethod after-start ((self wrapping-actor-base) state)
-  (after-start (the-wrapped self) state))
-
-(defmethod tell ((self wrapping-actor-base) message)
-  (tell (the-wrapped self) message))
-
-(defmethod ask ((self wrapping-actor-base) message)
-  (ask (the-wrapped self) message))
-
-(defmacro %make-waitor-actor (actor message &rest body)
-  (with-gensyms (self msg state)
-    `(lambda ()
-       (make-instance 'actor 
-                      :receive-fun (lambda (,self ,msg ,state)
-                                     (unwind-protect
-                                          (progn
-                                            (funcall ,@body ,msg)
-                                            (tell ,self :stop)
-                                            (cons ,msg ,state))
-                                       (tell ,self :stop)))
-                      :after-start-fun (lambda (,self ,state)
-                                         (declare (ignore ,state))
-                                         ;; this will call the `tell' function
-                                         (gs::submit-message ,actor ,message nil ,self))
-                      :name (string (gensym "Async-ask-waiter-"))))))
+;; (defmacro %make-waitor-actor (actor message &rest body)
+;;   (with-gensyms (self msg state)
+;;     `(lambda ()
+;;        (make-instance 'actor 
+;;                       :receive-fun (lambda (,self ,msg ,state)
+;;                                      (unwind-protect
+;;                                           (progn
+;;                                             (funcall ,@body ,msg)
+;;                                             (tell ,self :stop)
+;;                                             (cons ,msg ,state))
+;;                                        (tell ,self :stop)))
+;;                       :after-start-fun (lambda (,self ,state)
+;;                                          (declare (ignore ,state))
+;;                                          ;; this will call the `tell' function
+;;                                          (cell::submit-message ,actor ,message nil ,self))
+;;                       :name (string (gensym "Async-ask-waiter-"))))))

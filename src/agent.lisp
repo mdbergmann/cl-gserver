@@ -1,6 +1,6 @@
 (defpackage :cl-gserver.agent
   (:use :cl :cl-gserver.actor :cl-gserver.single-actor)
-  (:import-from #:cl-gserver.gserver
+  (:import-from #:cl-gserver.actor-cell
                 #:running-p
                 #:state
                 #:msgbox)

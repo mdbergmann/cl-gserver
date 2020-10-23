@@ -9,5 +9,5 @@
 (in-package :cl-gserver.dispatcher-api)
 
 (defgeneric shutdown (dispatcher))
-(defgeneric dispatch (dispatcher fun))
-(defgeneric dispatch-async (dispatcher fun))
+(defgeneric dispatch (dispatcher dispatcher-exec-fun))
+(defgeneric dispatch-async (dispatcher dispatcher-exec-fun))

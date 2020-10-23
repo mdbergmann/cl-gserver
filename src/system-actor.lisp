@@ -1,9 +1,9 @@
 (defpackage :cl-gserver.system-actor
-  (:use :cl :cl-gserver.actor :cl-gserver.system-api)
+  (:use :cl :cl-gserver.actor :cl-gserver.actor-system-api)
   (:nicknames :system-actor)
   (:import-from #:cl-gserver.future
                 #:make-future)
-  (:import-from #:gs
+  (:import-from #:cell
                 #:msgbox)
   (:import-from #:mesgb
                 #:message-box-dp)
@@ -56,5 +56,5 @@ The message dispatch in this case works using a shared thread pool."))
       
     (with-slots (msgbox) (the-wrapped system-actor)
       (setf msgbox (make-instance 'message-box-dp
-                                  :dispatcher (get-dispatcher system))))
+                                  :dispatcher (message-dispatcher system))))
     system-actor))

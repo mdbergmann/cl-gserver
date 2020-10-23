@@ -18,16 +18,16 @@
                           ((:file "queue")
                            (:file "dispatcher-api")
                            (:file "message-box")
-                           (:file "gserver")))
-                 (:file "system-api")
+                           (:file "actor-cell")))
+                 (:file "actor-system-api")
                  (:file "actor-context")
                  (:file "fcomputation")
                  (:file "actor")
-                 (:file "single-actor")
-                 (:file "system-actor")
-                 (:file "agent")
+;;                 (:file "single-actor")
+;;                 (:file "system-actor")
+;;                 (:file "agent")
                  (:file "dispatcher")
-                 (:file "system"))))
+                 (:file "actor-system"))))
   :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 
 (defsystem "cl-gserver/tests"
@@ -40,14 +40,14 @@
                 :components
                 ((:file "all-test")
                  (:file "utils-test")
-                 (:file "gserver-test")
-                 (:file "actor-mp-test")
-                 (:file "agent-test")
-                 (:file "actor-test")
+                 (:file "actor-cell-test")
+;;                 (:file "actor-mp-test")
+;;                 (:file "agent-test")
+;;                 (:file "actor-test")
                  (:file "actor-context-test")
                  (:file "fcomputation-test")
                  (:file "dispatcher-test")
-                 (:file "system-test"))))
+                 (:file "actor-system-test"))))
   :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run!
                                         (uiop:find-symbol* '#:test-suite

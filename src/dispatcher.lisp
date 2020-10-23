@@ -1,17 +1,18 @@
 (defpackage :cl-gserver.dispatcher
   (:use :cl :cl-gserver.actor :cl-gserver.dispatcher-api)
   (:nicknames :dispatcher)
-  (:export #:dispatcher-random
+  (:import-from #:mesgb
+                #:message-box-bt)
+  (:export #:shared-dispatcher
            #:make-dispatcher
            #:make-dispatcher-worker
-           #:workers))
+           #:dispatcher-workers))
 
 (in-package :cl-gserver.dispatcher)
 
-(defun make-dispatcher (dispatcher-type worker-creator-fun &key (num-workers 1))
+(defun make-dispatcher (dispatcher-type &key (num-workers 1))
   (make-instance dispatcher-type
-                 :num-workers num-workers
-                 :worker-creator-fun worker-creator-fun))
+                 :num-workers num-workers))
 
 (defclass dispatcher-base ()
   ((num-workers :initarg :num-workers
@@ -20,12 +21,8 @@
                 :reader num-workers
                 :documentation "The desired number of workers.")
    (workers :initform nil
-            :reader workers
-            :documentation "The worker instances")
-   (worker-creator-fun :initarg :worker-creator-fun
-                       :initform nil
-                       :reader worker-creator-fun
-                       :documentation "The function to create workers. Class `dispatch-worker'."))
+            :reader dispatcher-workers
+            :documentation "The worker instances"))
   (:documentation
    "A `dispatcher' is a pool of `actors'. The dispatching to its actors works in a random way."))
 
@@ -38,7 +35,7 @@
   (with-slots (num-workers workers worker-creator-fun) self
     (setf workers 
           (loop for x from 1 to num-workers
-                collect (funcall worker-creator-fun)))))
+                collect (make-dispatcher-worker x)))))
 
 (defgeneric dispatch (dispatcher dispatch-exec-fun))
 (defgeneric dispatch-async (dispatcher dispatch-exec-fun))
@@ -50,12 +47,12 @@
 
 
 ;; ---------------------------------
-;; Random dispatcher
+;; Shared dispatcher
 ;; ---------------------------------
 
-(defclass dispatcher-random (dispatcher-base) ())
+(defclass shared-dispatcher (dispatcher-base) ())
 
-(defmethod dispatch ((self dispatcher-random) dispatch-exec-fun)
+(defmethod dispatch ((self shared-dispatcher) dispatch-exec-fun)
   "Dispatches a function (`dispatch-exec-fun') to a worker of the dispatcher to execute there.
 `dispatch' does a `ask' to a `dispatcher' worker, which means this call will block.
 The strategy to select a worker is random."
@@ -63,7 +60,7 @@ The strategy to select a worker is random."
     (when workers
       (ask (nth (random num-workers) workers) (cons :execute dispatch-exec-fun)))))
 
-(defmethod dispatch-async ((self dispatcher-random) dispatch-exec-fun)
+(defmethod dispatch-async ((self shared-dispatcher) dispatch-exec-fun)
   "Dispatches a function to a worker of the dispatcher to execute there.
 `dispatch-async' does a `tell' to a `dispatcher' worker and is asynchronous.
 The strategy to select a worker is random."
@@ -80,10 +77,13 @@ The strategy to select a worker is random."
   (:documentation
    "Specialized `actor' used as `worker' is the message `dispatcher'."))
 
-(defun make-dispatcher-worker ()
-  (make-instance 'dispatch-worker
-                 :name (string (gensym "dispatch-worker-"))
-                 :receive-fun #'receive-fun))
+(defun make-dispatcher-worker (num)
+  (let ((worker (make-instance 'dispatch-worker
+                               :receive-fun #'receive-fun
+                               :name (utils:mkstr "dispatch-worker-" num)
+                               :msgbox (make-instance 'message-box-bt
+                                                      :max-queue-size 1000))))
+    worker))
 
 (defun receive-fun (self message current-state)
   "The worker receive function."

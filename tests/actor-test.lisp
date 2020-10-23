@@ -1,6 +1,6 @@
 (defpackage :cl-gserver.actor-test
   (:use :cl :fiveam :cl-gserver.actor :cl-gserver.single-actor :cl-gserver.future)
-  (:import-from #:cl-gserver.gserver-test
+  (:import-from #:cl-gserver.actor-cell-test
                 #:assert-cond)
   (:export #:run!
            #:all-tests

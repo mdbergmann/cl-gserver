@@ -34,7 +34,7 @@
         (sleep 0.02))))
 
 (defun runner-bt-dp (&optional (withreply-p nil) (queue-size 0))
-  (setf *system* (system:make-system :num-workers 8))
+  (setf *system* (system:make-actor-system :num-workers 8))
   (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-dp
                                 :dispatcher (system-api:dispatcher *system*)))
   (setf *withreply-p* withreply-p)

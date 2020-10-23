@@ -1,6 +1,6 @@
 (defpackage :cl-gserver.agent-test
   (:use :cl :trivia :fiveam :cl-gserver.agent)
-  (:import-from #:cl-gserver.gserver-test
+  (:import-from #:cl-gserver.actor-cell-test
                 #:assert-cond)
   (:export #:run!
            #:all-tests

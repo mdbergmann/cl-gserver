@@ -4,13 +4,13 @@
   (:export #:actor-context
            #:make-actor-context
            #:actor-of
-           #:get-actors
+           #:actors
            #:add-actor))
 (in-package :cl-gserver.actor-context)
 
 (defclass actor-context ()
   ((actors :initform '()
-           :reader get-actors
+           :reader actors
            :documentation "A list of actors."))
   (:documentation "Actor context deals with creating and adding actors in classes that inherit `actor-context'."))
 

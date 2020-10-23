@@ -3,7 +3,7 @@
   (:nicknames :si-act)
   (:import-from #:cl-gserver.future
                 #:make-future)
-  (:import-from #:cl-gserver.gserver
+  (:import-from #:cl-gserver.actor-cell
                 #:msgbox
                 #:state)
   (:import-from #:mesgb

@@ -14,12 +14,11 @@
 
 (in-suite actor-tests)
 
-(def-fixture actor-fixture (receive-fun before-start-fun state)
+(def-fixture actor-fixture (receive-fun state)
   (defclass test-actor (actor) ())
   (let ((cut (make-instance 'actor
                             :state state
                             :receive-fun receive-fun
-                            :before-start-fun before-start-fun
                             :msgbox (make-instance 'mesgb:message-box-bt))))
     (unwind-protect
          (&body)
@@ -34,7 +33,6 @@
                                    ((string= message "foo") (cons 1 1))
                                    ((string= message "bar") (cons 5 5))
                                    ((string= message "get") (cons current-state current-state))))
-                               nil
                                0)
     (is (not (null cut)))
     (is (eq t (tell cut "foo")))
@@ -52,7 +50,6 @@
                                  (cond
                                    ((eq :add (car message))
                                     (cons (+ (second message) (third message)) current-state))))
-                               nil
                                0)
     (let ((future (async-ask cut '(:add 0 5))))
       (is (eq :not-ready (get-result future)))
@@ -69,7 +66,6 @@
                                         (cond
                                           ((eq :add (car message))
                                            (cons (+ (second message) (third message)) current-state))))
-                               nil
                                0)
     (let ((future (async-ask cut '(:add 0 5)))
           (on-completed-result nil))

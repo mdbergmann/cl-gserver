@@ -9,7 +9,6 @@
            #:tell
            #:ask
            #:async-ask
-           #:before-start
            #:system)
   ;;#:with-actor)
   )
@@ -41,6 +40,9 @@ received the response the `future' will be fulfilled with the `promise'."))
 (defgeneric before-start (actor state)
   (:documentation
    "Generic function definition that you may call from `initialize-instance'."))
+(defgeneric after-stop (actor)
+  (:documentation
+   "Generic function definition that is called after the actor cell has stopped."))
 (defgeneric system (actor)
   (:documentation "Access to the `actor-system'."))
 
@@ -49,10 +51,10 @@ received the response the `future' will be fulfilled with the `promise'."))
                 :initform (error "'receive-fun' must be specified!")
                 :reader receive-fun)
    (before-start-fun :initarg :before-start-fun
-                    :initform nil
-                    :reader before-start-fun
-                    :documentation
-                    "Code to be called after actor start.
+                     :initform nil
+                     :reader before-start-fun
+                     :documentation
+                     "Code to be called after actor start.
 The `before-start-fun' lambda takes two arguments. 
 1: the actor instance, 
 2: the state"))
@@ -63,16 +65,16 @@ There is asynchronous `tell' and synchronous `ask'.
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
 the `:stop' message. It will respond with `:stopped'."))
 
-(defmethod initialize-instance :after ((self actor) &key)
-  (log:debug "After initialize: ~a" self)
-  (with-slots (before-start-fun act-cell:state) self
-    (when before-start-fun
-      (funcall before-start-fun self act-cell:state))))
-
 (defmethod handle-call ((self actor) message state)
   (funcall (receive-fun self) self message state))
 (defmethod handle-cast ((self actor) message state)
   (funcall (receive-fun self) self message state))
+(defmethod before-start ((self actor) state)
+  (when (next-method-p)
+    (call-next-method))
+  (with-slots (before-start-fun) self
+    (when before-start-fun
+      (funcall before-start-fun self state))))
 
 (defmethod system ((self actor))
   (when (next-method-p)

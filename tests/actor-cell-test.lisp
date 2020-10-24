@@ -29,9 +29,11 @@
   (defmethod handle-cast ((cell test-cell) message current-state)
     (funcall cast-fun cell message current-state))
   (defmethod before-start ((cell test-cell) state)
-    (funcall before-start-fun cell state))
+    (when before-start-fun
+      (funcall before-start-fun cell state)))
   (defmethod after-stop ((cell test-cell))
-    (funcall after-stop-fun cell))
+    (when after-stop-fun
+      (funcall after-stop-fun cell)))
   
   (let ((cut (make-instance 'test-cell
                             :state state

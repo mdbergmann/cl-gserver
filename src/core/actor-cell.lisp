@@ -3,6 +3,8 @@
   (:nicknames :act-cell)
   (:export #:handle-call
            #:handle-cast
+           #:before-start
+           #:after-stop
            #:actor-cell
            #:cell
            #:name
@@ -65,9 +67,30 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
               state
               msgbox))))
 
+(defmethod initialize-instance :after ((obj actor-cell) &key)
+  (log:debug "initialized: ~a" obj)
+  (before-start obj (slot-value obj 'state)))
+
 ;; -----------------------------------------------
 ;; public functions
 ;; -----------------------------------------------
+
+(defgeneric before-start (actor-cell state)
+  (:documentation
+   "Generic function definition that called from `initialize-instance'."))
+
+(defmethod before-start ((self actor-cell) state)
+  "Empty implementation so that we can call it anyway even if there are no other implementations."
+  (declare (ignore state))
+  nil)
+
+(defgeneric after-stop (actor-cell)
+  (:documentation
+   "Generic function definition that is called after the actor cell has stopped."))
+
+(defmethod after-stop ((self actor-cell))
+  "Empty implementation so that we can call it anyway even if there are no other implementations."
+  nil)
 
 (defgeneric handle-call (actor-cell message current-state)
   (:documentation
@@ -111,7 +134,8 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
   (log:debug "Stopping server and message handling!")
   (with-slots (msgbox internal-state) actor-cell
     (mesgb:stop msgbox)
-    (setf (slot-value internal-state 'running) nil)))
+    (setf (slot-value internal-state 'running) nil)
+    (after-stop actor-cell)))
 
 (defun submit-message (actor-cell message withreply-p sender)
   "Submitting a message.

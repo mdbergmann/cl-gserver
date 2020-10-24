@@ -63,7 +63,7 @@
 ;; TODOs:
 ;; - add agent to system
 ;; - add 'after-stop' handler for cleaning up and remove from actor syste,
-;; - add 'before-start' handler instead of 'after-start'
+;; - add 'before-start' handler instead of 'before-start'
 ;; - see how to mingle in a 'pinned' dispatcher which uses the 'bt' based message box.
 ;; - cleanup all the doc strings
 

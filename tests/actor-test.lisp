@@ -14,12 +14,12 @@
 
 (in-suite actor-tests)
 
-(def-fixture actor-fixture (receive-fun after-start-fun state)
+(def-fixture actor-fixture (receive-fun before-start-fun state)
   (defclass test-actor (actor) ())
   (let ((cut (make-instance 'actor
                             :state state
                             :receive-fun receive-fun
-                            :after-start-fun after-start-fun
+                            :before-start-fun before-start-fun
                             :msgbox (make-instance 'mesgb:message-box-bt))))
     (unwind-protect
          (&body)
@@ -42,19 +42,6 @@
     (is (= 5 (ask cut "bar")))
     (is (= 5 (ask cut "get")))))
 
-
-(test run-after-start-fun
-  "Tests the execution of `after-start-fun'"
-  
-  (with-fixture actor-fixture ((lambda (self message current-state)
-                                 (declare (ignore self message))
-                                 (cons current-state current-state))
-                               (lambda (self state)
-                                 (declare (ignore state))
-                                 (with-slots (act-cell:state) self
-                                   (setf act-cell:state "after-start-fun-executed")))
-                               0)
-    (is (string= "after-start-fun-executed" (ask cut :foo)))))
 
 (test single-actor--handle-async-ask
   "Tests the async ask function."
@@ -110,7 +97,6 @@
 
 (defun run-tests ()
   (run! 'create-alone-actor)
-  (run! 'run-after-start-fun)
   (run! 'single-actor)
   (run! 'single-actor--handle-async-ask)
   (run! 'single-actor--handle-async-ask-2)

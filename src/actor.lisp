@@ -9,7 +9,7 @@
            #:tell
            #:ask
            #:async-ask
-           #:after-start
+           #:before-start
            #:system)
   ;;#:with-actor)
   )
@@ -38,7 +38,7 @@ but instead an anonymous `actor' is started behind the scenes and this in fact m
 the message to the target `actor'. It does sent itself along as 'sender'.
 The target `actor' tells a response back to the initial `sender'. When that happens and the anonymous `actor'
 received the response the `future' will be fulfilled with the `promise'."))
-(defgeneric after-start (actor state)
+(defgeneric before-start (actor state)
   (:documentation
    "Generic function definition that you may call from `initialize-instance'."))
 (defgeneric system (actor)
@@ -48,12 +48,12 @@ received the response the `future' will be fulfilled with the `promise'."))
   ((receive-fun :initarg :receive-fun
                 :initform (error "'receive-fun' must be specified!")
                 :reader receive-fun)
-   (after-start-fun :initarg :after-start-fun
+   (before-start-fun :initarg :before-start-fun
                     :initform nil
-                    :reader after-start-fun
+                    :reader before-start-fun
                     :documentation
                     "Code to be called after actor start.
-The `after-start-fun' lambda takes two arguments. 
+The `before-start-fun' lambda takes two arguments. 
 1: the actor instance, 
 2: the state"))
   (:documentation
@@ -65,9 +65,9 @@ the `:stop' message. It will respond with `:stopped'."))
 
 (defmethod initialize-instance :after ((self actor) &key)
   (log:debug "After initialize: ~a" self)
-  (with-slots (after-start-fun act-cell:state) self
-    (when after-start-fun
-      (funcall after-start-fun self act-cell:state))))
+  (with-slots (before-start-fun act-cell:state) self
+    (when before-start-fun
+      (funcall before-start-fun self act-cell:state))))
 
 (defmethod handle-call ((self actor) message state)
   (funcall (receive-fun self) self message state))
@@ -97,7 +97,7 @@ the `:stop' message. It will respond with `:stopped'."))
                                             (tell ,self :stop)
                                             (cons ,msg ,state))
                                        (tell ,self :stop)))
-                      :after-start-fun (lambda (,self ,state)
+                      :before-start-fun (lambda (,self ,state)
                                          (declare (ignore ,state))
                                          ;; this will call the `tell' function
                                          (act-cell::submit-message ,actor ,message nil ,self))
@@ -127,7 +127,7 @@ the `:stop' message. It will respond with `:stopped'."))
 ;;                                          (msg msg-sym)
 ;;                                          (state state-sym))
 ;;                                      (car recv-form)))
-;;                    :after-start-fun (lambda (,actor-sym ,state-sym)
+;;                    :before-start-fun (lambda (,actor-sym ,state-sym)
 ;;                                      ,(let ((self actor-sym)
 ;;                                             (state state-sym))
 ;;                                         (car rest-body)))))))

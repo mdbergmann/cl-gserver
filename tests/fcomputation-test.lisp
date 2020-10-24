@@ -55,5 +55,4 @@
   (run! 'create-future)
   (run! 'provide-promise)
   (run! 'on-complete-callback)
-  (run! 'complete-with-delay)
-  )
+  (run! 'complete-with-delay))

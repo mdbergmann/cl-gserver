@@ -1,9 +1,7 @@
 (defpackage :cl-gserver.actor-mp-test
-  (:use :cl :trivia :iterate :fiveam :act :si-act)
-  ;; (:import-from #:system-api
-  ;;               #:shutdown)
-  ;; (:import-from #:ac
-  ;;               #:actor-of)
+  (:use :cl :trivia :iterate :fiveam :act)
+  (:import-from #:system-api
+                #:shutdown)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -18,44 +16,46 @@
 
 (log:config :warn)
 
+(defvar *receive-fun* (lambda (self message current-state)
+                        (declare (ignore self))
+                        (match message
+                          (:add
+                           (let ((new-state (1+ current-state)))
+                             (cons new-state new-state)))
+                          (:sub
+                           (let ((new-state (1- current-state)))
+                             (cons new-state new-state)))
+                          (:get (cons current-state current-state)))))
+
 (def-fixture mp-setup (queue-size)
   (setf lparallel:*kernel* (lparallel:make-kernel 8))
 
   (defclass counter-actor (actor) ())
   
   (format t "Running non-system tests...~%")
-  (let* ((cut (make-single-actor (lambda ()
-                                   (make-instance 'counter-actor
-                                                  :name "counter-actor"
-                                                  :state 0
-                                                  :receive-fun (lambda (self message current-state)
-                                                                 (declare (ignore self))
-                                                                 (match message
-                                                                   (:add
-                                                                    (let ((new-state (1+ current-state)))
-                                                                      (cons new-state new-state)))
-                                                                   (:sub
-                                                                    (let ((new-state (1- current-state)))
-                                                                      (cons new-state new-state)))
-                                                                   (:get (cons current-state current-state))))))
-                                 :queue-size queue-size))
+  (let* ((cut (make-instance 'counter-actor
+                             :name "counter-actor"
+                             :state 0
+                             :receive-fun *receive-fun*
+                             :msgbox (make-instance 'mesgb:message-box-bt :max-queue-size queue-size)))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))
     (&body)
     (ask cut :stop))
   (format t "Running non-system tests...done~%")
-  ;; (format t "Running system tests...~%")
-  ;; (let* ((system (system:make-actor-system :num-workers 4))
-  ;;        (cut (actor-of system (lambda ()
-  ;;                                (make-instance 'counter-actor :state 0
-  ;;                                                               :max-queue-size queue-size))))
-  ;;        (max-loop 10000)
-  ;;        (per-thread (/ max-loop 8)))
-  ;;   (unwind-protect
-  ;;        (&body)
-  ;;   (ask cut :stop)
-  ;;   (shutdown system)))
-  ;; (format t "Running system tests...~%")
+  (format t "Running system tests...~%")
+  (let* ((system (system:make-actor-system :dispatcher-type 'dispatcher:shared-dispatcher
+                                           :dispatcher-workers 4))
+         (cut (ac:actor-of system (lambda ()
+                                    (make-instance 'counter-actor :state 0
+                                                                  :receive-fun *receive-fun*))))
+         (max-loop 10000)
+         (per-thread (/ max-loop 8)))
+    (unwind-protect
+         (&body)
+    (ask cut :stop)
+    (shutdown system)))
+  (format t "Running system tests...~%")
   
   (lparallel:end-kernel))
 

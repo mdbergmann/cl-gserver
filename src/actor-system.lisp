@@ -22,8 +22,7 @@
 (defmethod print-object ((obj actor-system) stream)
   (print-unreadable-object (obj stream :type t)
     (with-slots (dispatcher) obj
-      (format stream "dispatcher: ~a"
-              dispatcher))))
+      (format stream "dispatcher: ~a" dispatcher))))
 
 (defun make-actor-system (&key
                       (dispatcher-type 'shared-dispatcher)
@@ -44,6 +43,10 @@
 (defmethod actor-of ((self actor-system) create-fun)
   (let ((actor (funcall create-fun)))
     (assert (subtypep (type-of actor) 'actor))
-    (setf (act-cell:system (act:cell actor)) self)
+    (setf (act-cell:system actor) self)
+    (setf (act-cell:msgbox actor)
+          (make-instance 'mesgb:message-box-dp
+                         :dispatcher (message-dispatcher self)
+                         :max-queue-size 0))
     (add-actor self actor)
     actor))

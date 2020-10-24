@@ -177,7 +177,7 @@ The queue thread has processed the message."
   (call-next-method)
   (with-slots (queue-thread should-run) self
     (setf should-run nil)
-    (submit self :something nil (lambda (msg) (declare (ignore msg))))))
+    (submit self :trigger-closing-the-wait-handler nil (lambda (msg) (declare (ignore msg))))))
 
 
 ;; ----------------------------------------

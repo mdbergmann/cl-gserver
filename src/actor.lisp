@@ -3,14 +3,14 @@
   (:nicknames :act)
   (:import-from #:alexandria
                 #:with-gensyms)
+  (:import-from #:future
+                #:make-future)
   (:export #:actor
            #:tell
            #:ask
            #:async-ask
            #:after-start
-           #:cell
-           #:system
-           #:%make-waitor-actor)
+           #:system)
   ;;#:with-actor)
   )
 
@@ -44,81 +44,90 @@ received the response the `future' will be fulfilled with the `promise'."))
 (defgeneric system (actor)
   (:documentation "Access to the `actor-system'."))
 
-(defclass actor (actor-api)
-  ((cell :initform nil
-         :reader cell
-         :documentation "The inner `actor-cell'.")
-   (receive-fun :initarg :receive-fun
+(defclass actor (actor-api actor-cell)
+  ((receive-fun :initarg :receive-fun
                 :initform (error "'receive-fun' must be specified!")
                 :reader receive-fun)
    (after-start-fun :initarg :after-start-fun
                     :initform nil
                     :reader after-start-fun
-                    :documentation "Code to be called after actor start."))
+                    :documentation
+                    "Code to be called after actor start.
+The `after-start-fun' lambda takes two arguments. 
+1: the actor instance, 
+2: the state"))
   (:documentation
-   "Specialized `gserver' class called `actor'.
-There is a different terminology behind `actor'.
-I.e. There is only one `receive' function.
-And there is asynchronous `tell' and synchronous `ask'.
-So there is not much difference to a `gserver'.
-It only uses one method `receive'. However both `handle-call' and `handle-cast' of `gserver'
-end up in `receive'.
+   "This is the `actor' class.
+The `actor' does it's message handling in the `receive' function.
+There is asynchronous `tell' and synchronous `ask'.
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
 the `:stop' message. It will respond with `:stopped'."))
 
-(defmethod initialize-instance :after ((self actor) &key name state msgbox)
-  (with-slots (cell) self
-    (setf cell (make-instance 'actor-cell
-                              :name name
-                              :state state
-                              :msgbox msgbox)))
-  (log:debug "After initialize: ~a" self))
-
-(defmethod print-object ((obj actor) stream)
-  (print-unreadable-object (obj stream :type t)
-    (with-slots (cell) obj
-      (format stream "cell: ~a" cell))))
+(defmethod initialize-instance :after ((self actor) &key)
+  (log:debug "After initialize: ~a" self)
+  (with-slots (after-start-fun act-cell:state) self
+    (when after-start-fun
+      (funcall after-start-fun self act-cell:state))))
 
 (defmethod handle-call ((self actor) message state)
-  (funcall (receive-fun self) message state))
+  (funcall (receive-fun self) self message state))
 (defmethod handle-cast ((self actor) message state)
-  (funcall (receive-fun self) message state))
+  (funcall (receive-fun self) self message state))
 
 (defmethod system ((self actor))
-  (act-cell:system (cell self)))
+  (when (next-method-p)
+    (call-next-method)))
 
 (defmethod tell ((self actor) message)
-  (cast (cell self) message))
+  (cast self message))
 (defmethod ask ((self actor) message)
-  (call (cell self) message))
+  (call self message))
 
-(defmethod after-start ((self actor) state)
-  (with-slots (after-start-fun) self
-    (when after-start-fun
-      (funcall after-start-fun self state))))
+(defmacro with-waitor-actor (actor message system &rest body)
+  (with-gensyms (self msg state msgbox)
+    `(let ((,msgbox (if ,system
+                        (make-instance 'mesgb:message-box-dp
+                                       :dispatcher (system-api:message-dispatcher ,system))
+                        (make-instance 'mesgb:message-box-bt))))
+       (make-instance 'actor 
+                      :receive-fun (lambda (,self ,msg ,state)
+                                     (unwind-protect
+                                          (progn
+                                            (funcall ,@body ,msg)
+                                            (tell ,self :stop)
+                                            (cons ,msg ,state))
+                                       (tell ,self :stop)))
+                      :after-start-fun (lambda (,self ,state)
+                                         (declare (ignore ,state))
+                                         ;; this will call the `tell' function
+                                         (act-cell::submit-message ,actor ,message nil ,self))
+                      :name (string (gensym "Async-ask-waiter-"))
+                      :msgbox ,msgbox))))
 
-;; (defmethod async-ask ((self actor) message)
-;;   (make-future (lambda (promise-fun)
-;;                  (log:debug "Executing fcomputation function...")
-;;                  (make-system-actor (system self)
-;;                                     (%make-waitor-actor (cell self) message
-;;                                                         (lambda (result)
-;;                                                           (log:debug "Result: ~a~%" result)
-;;                                                           (funcall promise-fun result)))))))
+(defmethod async-ask ((self actor) message)
+  (make-future (lambda (promise-fun)
+                 (log:debug "Executing future function...")
+                 (with-waitor-actor self message (act:system self)
+                   (lambda (result)
+                     (log:debug "Result: ~a~%" result)
+                     (funcall promise-fun result))))))
 
-;; (defmacro %make-waitor-actor (actor message &rest body)
-;;   (with-gensyms (self msg state)
-;;     `(lambda ()
-;;        (make-instance 'actor 
-;;                       :receive-fun (lambda (,self ,msg ,state)
-;;                                      (unwind-protect
-;;                                           (progn
-;;                                             (funcall ,@body ,msg)
-;;                                             (tell ,self :stop)
-;;                                             (cons ,msg ,state))
-;;                                        (tell ,self :stop)))
-;;                       :after-start-fun (lambda (,self ,state)
-;;                                          (declare (ignore ,state))
-;;                                          ;; this will call the `tell' function
-;;                                          (cell::submit-message ,actor ,message nil ,self))
-;;                       :name (string (gensym "Async-ask-waiter-"))))))
+;; (defmacro with-actor (&rest body)
+;;   (format t "body: ~a~%" body)
+;;   (labels ((filter-fun (x) (equal (car x) 'receive)))
+;;     (let ((recv-form (cdr (car (fset:filter #'filter-fun body))))
+;;           (rest-body (remove-if #'filter-fun body))
+;;           (actor-sym (gensym))
+;;           (msg-sym (gensym))
+;;           (state-sym (gensym)))
+;;       `(make-actor "tmp-actor"
+;;                    :state nil
+;;                    :receive-fun (lambda (,actor-sym ,msg-sym ,state-sym)
+;;                                   ,(let ((self actor-sym)
+;;                                          (msg msg-sym)
+;;                                          (state state-sym))
+;;                                      (car recv-form)))
+;;                    :after-start-fun (lambda (,actor-sym ,state-sym)
+;;                                      ,(let ((self actor-sym)
+;;                                             (state state-sym))
+;;                                         (car rest-body)))))))

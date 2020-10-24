@@ -15,12 +15,7 @@
                  :num-workers num-workers))
 
 (defclass dispatcher-base ()
-  ((num-workers :initarg :num-workers
-                :initform 1
-                :type integer
-                :reader num-workers
-                :documentation "The desired number of workers.")
-   (workers :initform nil
+  ((workers :initform nil
             :reader workers
             :documentation "The worker instances"))
   (:documentation
@@ -28,18 +23,15 @@
 
 (defmethod print-object ((obj dispatcher-base) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (num-workers) obj
-      (format stream "num-workers: ~a" num-workers))))
+    (with-slots (workers) obj
+      (format stream "workers: ~a" (length workers)))))
 
-(defmethod initialize-instance :after ((self dispatcher-base) &key)
-  (with-slots (num-workers workers worker-creator-fun) self
+(defmethod initialize-instance :after ((self dispatcher-base) &key (num-workers 1))
+  (with-slots (workers) self
     (setf workers 
           (loop for x from 1 to num-workers
                 collect (make-dispatcher-worker x)))))
 
-(defgeneric dispatch (dispatcher dispatch-exec-fun))
-(defgeneric dispatch-async (dispatcher dispatch-exec-fun))
-(defgeneric shutdown (dispatcher))
 (defmethod shutdown ((self dispatcher-base))
   "Stops all workers."
   (with-slots (workers) self
@@ -56,17 +48,17 @@
   "Dispatches a function (`dispatch-exec-fun') to a worker of the dispatcher to execute there.
 `dispatch' does a `ask' to a `dispatcher' worker, which means this call will block.
 The strategy to select a worker is random."
-  (with-slots (workers num-workers) self
+  (with-slots (workers) self
     (when workers
-      (ask (nth (random num-workers) workers) (cons :execute dispatch-exec-fun)))))
+      (ask (nth (random (length workers)) workers) (cons :execute dispatch-exec-fun)))))
 
 (defmethod dispatch-async ((self shared-dispatcher) dispatch-exec-fun)
   "Dispatches a function to a worker of the dispatcher to execute there.
 `dispatch-async' does a `tell' to a `dispatcher' worker and is asynchronous.
 The strategy to select a worker is random."
-  (with-slots (workers num-workers) self
+  (with-slots (workers) self
     (when workers
-      (tell (nth (random num-workers) workers) (cons :execute dispatch-exec-fun)))))
+      (tell (nth (random (length workers)) workers) (cons :execute dispatch-exec-fun)))))
 
 
 ;; ---------------------------------

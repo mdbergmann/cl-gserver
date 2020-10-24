@@ -17,7 +17,7 @@
 (log:config :warn)
 
 (def-fixture agent-fixture (fun)
-  (let ((agent (make-single-agent (lambda () (funcall fun)))))
+  (let ((agent (make-agent (lambda () (funcall fun)))))
     (&body)
     (agent-stop agent)))
 
@@ -46,7 +46,7 @@
 
 (test stop-agent
   "Stop agent to cleanup resources."
-  (let ((agent (make-single-agent (lambda () nil))))
+  (let ((agent (make-agent (lambda () nil))))
     (agent-stop agent)
     (is (eq t (assert-cond (lambda ()
                              (eq :stopped (agent-get agent #'identity)))

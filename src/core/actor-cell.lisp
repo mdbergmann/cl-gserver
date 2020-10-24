@@ -8,6 +8,7 @@
            #:name
            #:msgbox
            #:system
+           #:state
            #:call
            #:cast
            #:running-p))
@@ -26,12 +27,12 @@
            :initform nil
            :documentation
            "The encapsulated state.")
-    (internal-state :initarg :internal-state
-                    :initform (make-actor-cell-state)
+    (internal-state :initform (make-actor-cell-state)
                     :documentation
                     "The internal state of the server.")
     (msgbox :initarg :msgbox
             :initform nil
+            :accessor msgbox
             :documentation
             "The `message-box'.")
     (system :initform nil
@@ -43,6 +44,7 @@ It is meant to encapsulate state, but also to execute async operations.
 State can be changed by calling into the server via `call' or `cast'.
 Where `call' is waiting for a result and `cast' does not.
 For each `call' and `cast' handlers must be implemented by subclasses.
+
 
 A GServer runs a `message-box' that processes all the received messages.
 When the GServer was created ad-hoc (out of the `system'), then it will create

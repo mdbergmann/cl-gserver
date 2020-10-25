@@ -42,14 +42,25 @@
            (is (= 4 (length (workers (message-dispatcher system))))))
       (shutdown system))))
 
-(test create-actors
+(test create-actors--shared
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))))))
+    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :disp-type :shared)))
       (is (not (null actor)))
+      (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp))
       (is (not (null (act:system actor))))
       (is (= 1 (length (ac:actors cut))))
-      (is (eq actor (car (ac:actors cut)))))))
+      (is (eq actor (elt (ac:actors cut) 0))))))
+
+(test create-actors--pinned
+  "Creates actors in the system."
+  (with-fixture test-system ()
+    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :disp-type :pinned)))
+      (is (not (null actor)))
+      (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt))
+      (is (not (null (act:system actor))))
+      (is (= 1 (length (ac:actors cut))))
+      (is (eq actor (elt (ac:actors cut) 0))))))
 
 (test creating-many-actors--and-collect-responses
   "Creating many actors should not pose a problem."
@@ -71,5 +82,6 @@
 
 (defun run-tests ()
   (run! 'create-system)
-  (run! 'create-actors)
+  (run! 'create-actors--shared)
+  (run! 'create-actors--pinned)
   (run! 'creating-many-actors--and-collect-responses))

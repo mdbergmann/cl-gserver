@@ -44,13 +44,17 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
 ;; actor-context impl
 ;; -------------------------------------
 
-(defmethod actor-of ((self actor-system) create-fun)
+(defmethod actor-of ((self actor-system) create-fun &key (disp-type :shared))
   (let ((actor (funcall create-fun)))
     (assert (typep actor 'actor))
     (setf (act-cell:system actor) self)
-    (setf (act-cell:msgbox actor)
-          (make-instance 'mesgb:message-box-dp
-                         :dispatcher (message-dispatcher self)
-                         :max-queue-size 0))
+    (setf (act-cell:msgbox actor) (message-box-for-disp-type disp-type self))
     (add-actor self actor)
     actor))
+
+(defun message-box-for-disp-type (disp-type system)
+  (case disp-type
+    (:pinned (make-instance 'mesgb:message-box-bt))
+    (otherwise (make-instance 'mesgb:message-box-dp
+                              :dispatcher (message-dispatcher system)
+                              :max-queue-size 0))))

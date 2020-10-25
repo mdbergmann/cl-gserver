@@ -1,7 +1,8 @@
 (defpackage :cl-gserver.actor-system-test
   (:use :cl :fiveam :cl-gserver.actor-system-api :cl-gserver.actor-system :cl-gserver.dispatcher)
   (:import-from #:act
-                #:actor)
+                #:actor
+                #:make-actor)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -44,8 +45,7 @@
 (test create-actors
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (ac:actor-of cut (lambda () (make-instance 'actor
-                                                    :receive-fun (lambda ()))))))
+    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))))))
       (is (not (null actor)))
       (is (not (null (act:system actor))))
       (is (= 1 (length (ac:actors cut))))
@@ -58,9 +58,7 @@
                         collect (ac:actor-of
                                  cut
                                  (lambda ()
-                                   (make-instance
-                                    'actor
-                                    :receive-fun
+                                   (make-actor
                                     (lambda (self msg state)
                                       (declare (ignore self))
                                       (cons (format nil "reply: ~a" msg) state))))))))

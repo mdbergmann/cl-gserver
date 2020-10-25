@@ -1,16 +1,18 @@
 (defpackage :cl-gserver.actor-cell
   (:use :cl :cl-gserver.utils)
   (:nicknames :act-cell)
-  (:export #:handle-call
-           #:handle-cast
-           #:before-start
-           #:after-stop
-           #:actor-cell
+  (:export #:actor-cell
            #:cell
            #:name
            #:msgbox
            #:system
            #:state
+           ;; API
+           #:handle-call
+           #:handle-cast
+           #:before-start
+           #:after-stop
+           #:stop
            #:call
            #:cast
            #:running-p))
@@ -71,25 +73,16 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
   (before-start obj (slot-value obj 'state)))
 
 ;; -----------------------------------------------
-;; public functions
+;; public functions / API
 ;; -----------------------------------------------
 
 (defgeneric before-start (actor-cell state)
   (:documentation
    "Generic function definition that called from `initialize-instance'."))
 
-(defmethod before-start ((self actor-cell) state)
-  "Empty implementation so that we can call it anyway even if there are no other implementations."
-  (declare (ignore state))
-  nil)
-
 (defgeneric after-stop (actor-cell)
   (:documentation
    "Generic function definition that is called after the actor cell has stopped."))
-
-(defmethod after-stop ((self actor-cell))
-  "Empty implementation so that we can call it anyway even if there are no other implementations."
-  nil)
 
 (defgeneric handle-call (actor-cell message current-state)
   (:documentation
@@ -101,6 +94,22 @@ The convention here is to return a `cons' with values to be returned to caller a
   (:documentation
    "Handles casts to the server. Must be implemented by subclasses.
 Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
+
+(defgeneric stop (actor-cell)
+  (:documentation "Stops the actor-cell."))
+
+;; ---------------------------------
+;; Impl
+;; ---------------------------------
+
+(defmethod before-start ((self actor-cell) state)
+  "Empty implementation so that we can call it anyway even if there are no other implementations."
+  (declare (ignore state))
+  nil)
+
+(defmethod after-stop ((self actor-cell))
+  "Empty implementation so that we can call it anyway even if there are no other implementations."
+  nil)
 
 (defun call (actor-cell message)
   "Send a message to a actor-cell instance and wait for a result.
@@ -125,16 +134,16 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
   (with-slots (internal-state) actor-cell
     (slot-value internal-state 'running)))
 
+(defmethod stop ((self actor-cell))
+  (log:debug "Stopping server and message handling!")
+  (with-slots (msgbox internal-state) self
+    (mesgb:stop msgbox)
+    (setf (slot-value internal-state 'running) nil)
+    (after-stop self)))
+
 ;; -----------------------------------------------    
 ;; internal functions
 ;; -----------------------------------------------
-
-(defun stop (actor-cell)
-  (log:debug "Stopping server and message handling!")
-  (with-slots (msgbox internal-state) actor-cell
-    (mesgb:stop msgbox)
-    (setf (slot-value internal-state 'running) nil)
-    (after-stop actor-cell)))
 
 (defun submit-message (actor-cell message withreply-p sender)
   "Submitting a message.

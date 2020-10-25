@@ -38,11 +38,12 @@ This rarely (if at all) needs to change because the agent is very specific."
 (defun make-agent (state-fun)
   "Makes a new `agent' instance.
 `state-fun' is a function that takes no parameter and provides the initial state of the `agent' as return value."
-  (let ((state (funcall state-fun)))
-    (make-instance 'agent :state state
-                          :name (string (gensym "agent-"))
-                          :receive-fun #'receive-fun
-                          :msgbox (make-instance 'message-box-bt))))
+  (let* ((state (funcall state-fun))
+         (agent (make-instance 'agent :state state
+                                      :name (string (gensym "agent-"))
+                                      :receive-fun #'receive-fun)))
+    (setf (msgbox agent) (make-instance 'message-box-bt))
+    agent))
 
 (defun agent-get (agent get-fun)
   "Gets the current state of the `agent'.

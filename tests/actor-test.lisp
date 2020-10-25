@@ -16,30 +16,38 @@
 
 (def-fixture actor-fixture (receive-fun state)
   (defclass test-actor (actor) ())
-  (let ((cut (make-instance 'actor
-                            :state state
-                            :receive-fun receive-fun
-                            :msgbox (make-instance 'mesgb:message-box-bt))))
+  (let ((cut (make-actor receive-fun
+                         :state state)))
+    (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box-bt))
     (unwind-protect
          (&body)
       (tell cut :stop))))
 
-(test create-alone-actor
-  "Test a subclass of actor."
+(test make-actor--has-no-msgbox-and-system
+  "Test constructor. actor should not have msgbox and attached system by default."
 
-  (with-fixture actor-fixture ((lambda (actor message current-state)
-                                 (declare (ignore actor))
-                                 (cond
-                                   ((string= message "foo") (cons 1 1))
-                                   ((string= message "bar") (cons 5 5))
-                                   ((string= message "get") (cons current-state current-state))))
-                               0)
+  (let ((actor (make-actor (lambda (self msg state)
+                             (declare (ignore self msg state))
+                             nil))))
+    (is (null (act-cell:msgbox actor)))
+    (is (null (act-cell:system actor)))))
+
+(test make-actor--with-msgbox
+  "Test contructor and attach a msgbox manually."
+
+  (let ((cut (make-actor (lambda (actor message current-state)
+                             (declare (ignore actor))
+                             (cond
+                               ((string= message "foo") (cons 1 1))
+                               ((string= message "bar") (cons 5 5))
+                               ((string= message "get") (cons current-state current-state)))))))
+    (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box-bt))
     (is (not (null cut)))
     (is (eq t (tell cut "foo")))
     (is (eq t (assert-cond (lambda () (= 1 (ask cut "get"))) 1)))
     (is (= 5 (ask cut "bar")))
-    (is (= 5 (ask cut "get")))))
-
+    (is (= 5 (ask cut "get")))
+    (ask cut :stop)))
 
 (test single-actor--handle-async-ask
   "Tests the async ask function."
@@ -92,8 +100,8 @@
 ;;       (is (equal 5 (ask self "get")))))
 
 (defun run-tests ()
-  (run! 'create-alone-actor)
-  (run! 'single-actor)
+  (run! 'make-actor--has-no-msgbox-and-system)
+  (run! 'make-actor--with-msgbox)
   (run! 'single-actor--handle-async-ask)
   (run! 'single-actor--handle-async-ask-2)
   ;;(run! 'with-actor-macro)

@@ -36,8 +36,8 @@
       (funcall after-stop-fun cell)))
   
   (let ((cut (make-instance 'test-cell
-                            :state state
-                            :msgbox (make-instance 'mesgb:message-box-bt))))
+                            :state state)))
+    (setf (msgbox cut) (make-instance 'mesgb:message-box-bt))
     (unwind-protect
          (&body)
       (call cut :stop))))
@@ -177,8 +177,8 @@
   (defmethod handle-call ((cell stopping-cell) message current-state)
     (cons message current-state))
 
-  (let ((cut (make-instance 'stopping-cell
-                            :msgbox (make-instance 'mesgb:message-box-bt))))
+  (let ((cut (make-instance 'stopping-cell)))
+    (setf (msgbox cut) (make-instance 'mesgb:message-box-bt))
     (is (eq :stopped (call cut :stop)))))
 
 

@@ -36,10 +36,10 @@
   (let* ((cut (make-instance 'counter-actor
                              :name "counter-actor"
                              :state 0
-                             :receive-fun *receive-fun*
-                             :msgbox (make-instance 'mesgb:message-box-bt :max-queue-size queue-size)))
+                             :receive-fun *receive-fun*))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))
+    (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box-bt :max-queue-size queue-size))
     (&body)
     (ask cut :stop))
   (format t "Running non-system tests...done~%")

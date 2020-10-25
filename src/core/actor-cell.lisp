@@ -32,8 +32,7 @@
     (internal-state :initform (make-actor-cell-state)
                     :documentation
                     "The internal state of the server.")
-    (msgbox :initarg :msgbox
-            :initform nil
+    (msgbox :initform nil
             :accessor msgbox
             :documentation
             "The `message-box'.")

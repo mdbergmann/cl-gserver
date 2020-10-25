@@ -17,14 +17,12 @@
 (defun make-actor-context ()
   (make-instance 'actor-context))
 
-
 (defgeneric actor-of (actor-context create-fun))
 
 (defmethod actor-of ((self actor-context) create-fun)
   (let ((created (funcall create-fun)))
     (when created
       (add-actor self created))))
-
 
 (defgeneric add-actor (actor-context actor))
 

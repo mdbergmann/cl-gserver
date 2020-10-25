@@ -1,15 +1,14 @@
 (defpackage :cl-gserver.actor-system-test
-  (:use :cl :fiveam :cl-gserver.actor-system-api
-   :cl-gserver.actor-system :cl-gserver.dispatcher
-   :cl-gserver.actor
-   :cl-gserver.actor-context)
+  (:use :cl :fiveam :cl-gserver.actor-system-api :cl-gserver.actor-system :cl-gserver.dispatcher)
+  (:import-from #:act
+                #:actor)
   (:export #:run!
            #:all-tests
            #:nil))
 (in-package :cl-gserver.actor-system-test)
 
 (def-suite actor-system-tests
-  :description "Tests for the GServer system"
+  :description "Tests for the actor system"
   :in cl-gserver.tests:test-suite)
 
 (in-suite actor-system-tests)
@@ -23,8 +22,7 @@
 
 (test create-system
   "Creates a system"
-  (let ((system (make-actor-system :dispatcher-type 'shared-dispatcher
-                                   :dispatcher-workers 4)))
+  (let ((system (make-actor-system :shared-dispatcher-workers 4)))
     (unwind-protect
          (progn
            (is (not (null system)))
@@ -46,18 +44,18 @@
 (test create-actors
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (actor-of cut (lambda () (make-instance 'actor
+    (let ((actor (ac:actor-of cut (lambda () (make-instance 'actor
                                                     :receive-fun (lambda ()))))))
       (is (not (null actor)))
       (is (not (null (act:system actor))))
-      (is (= 1 (length (actors cut))))
-      (is (eq actor (car (actors cut)))))))
+      (is (= 1 (length (ac:actors cut))))
+      (is (eq actor (car (ac:actors cut)))))))
 
 (test creating-many-actors--and-collect-responses
   "Creating many actors should not pose a problem."
   (with-fixture test-system ()
     (let ((actors (loop for i from 1 to 10000
-                        collect (actor-of
+                        collect (ac:actor-of
                                  cut
                                  (lambda ()
                                    (make-instance
@@ -69,7 +67,7 @@
       (log:debug "Starting ask...")
       (is-true (every (lambda (x) (string= "reply: test" x))
                       (mapcar (lambda (actor)
-                                (ask actor "test"))
+                                (act:ask actor "test"))
                               actors)))
       (log:debug "Starting ask...done"))))
 

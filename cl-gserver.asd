@@ -61,9 +61,13 @@
 ;; (asdf:test-system "cl-gserver/tests")
 
 ;; TODOs:
+;; - add actor-context as composition to system (twice for 'user' and 'system') and actor
+;; - stop 'user' actors first on shutdown
 ;; - add agent to system
 ;; - add 'after-stop' handler for cleaning up and remove from actor syste,
-;; - add 'before-start' handler instead of 'before-start'
-;; - see how to mingle in a 'pinned' dispatcher which uses the 'bt' based message box.
+;; - extract actor api to separate api
+;; - put all '-api' packages first in asd
 ;; - cleanup all the doc strings
+;; OK - add 'before-start' handler instead of 'before-start'
+;; OK - see how to mingle in a 'pinned' dispatcher which uses the 'bt' based message box.
 

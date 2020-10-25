@@ -50,7 +50,7 @@
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp))
       (is (not (null (act:system actor))))
       (is (= 1 (length (ac:actors cut))))
-      (is (eq actor (elt (ac:actors cut) 0))))))
+      (is (eq actor (aref (ac:actors cut) 0))))))
 
 (test create-actors--pinned
   "Creates actors in the system."
@@ -60,7 +60,7 @@
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt))
       (is (not (null (act:system actor))))
       (is (= 1 (length (ac:actors cut))))
-      (is (eq actor (elt (ac:actors cut) 0))))))
+      (is (eq actor (aref (ac:actors cut) 0))))))
 
 (test creating-many-actors--and-collect-responses
   "Creating many actors should not pose a problem."

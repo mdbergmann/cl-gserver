@@ -3,8 +3,8 @@
   (:nicknames :ac)
   (:export #:actor-context
            #:make-actor-context
-           #:actor-of
            #:actors
+           #:actor-of
            #:add-actor))
 (in-package :cl-gserver.actor-context)
 
@@ -23,8 +23,10 @@ Specify the dispatcher type (`disp-type') as either:
 `:shared' to have this actor use the shared messagfe dispatcher of the system
 `:pinned' to have this actor run it's own message box thread (faster, but more resource are bound.)"))
 
-(defgeneric add-actor (actor-context actor))
+(defgeneric add-actor (actor-context actor)
+  (:documentation "Adds the actor to the context and returns it."))
 
 (defmethod add-actor ((self actor-context) actor)
   (with-slots (actors) self
-    (vector-push-extend actor actors)))
+    (vector-push-extend actor actors))
+  actor)

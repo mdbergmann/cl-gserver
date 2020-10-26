@@ -1,6 +1,6 @@
 (defpackage :cl-gserver.actor-system
-  (:use :cl :cl-gserver.actor :cl-gserver.dispatcher
-        :cl-gserver.actor-system-api :cl-gserver.actor-context)
+  (:use :cl :cl-gserver.actor :cl-gserver.dispatcher :cl-gserver.actor-context
+        :cl-gserver.actor-system-api)
   (:nicknames :system)
   (:import-from #:dispatcher
                 #:shared-dispatcher
@@ -12,10 +12,16 @@
 
 (in-package :cl-gserver.actor-system)
 
-(defclass actor-system (actor-context)
+(defclass actor-system ()
   ((dispatcher :initform nil
                :reader message-dispatcher
-               :documentation "The message dispatcher."))
+               :documentation "The message dispatcher.")
+   (system-actor-context :initform (make-actor-context)
+                         :reader system-actor-context
+                         :documentation "An actor context reserved for agents/actors used by the system.")
+   (user-actor-context :initform (make-actor-context)
+                       :reader user-actor-context
+                       :documentation "An actor context for agents/actors created by the user."))
   (:documentation
    "A system is a container for `actors' or subclasses.
 Create the `actor-system' using the constructor function `make-actor-system'.
@@ -40,21 +46,31 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
 (defmethod shutdown ((self actor-system))
   (dispatcher-api:shutdown (message-dispatcher self)))
 
-;; -------------------------------------
-;; actor-context impl
-;; -------------------------------------
-
-(defmethod actor-of ((self actor-system) create-fun &key (disp-type :shared))
-  (let ((actor (funcall create-fun)))
-    (assert (typep actor 'actor))
-    (setf (act-cell:system actor) self)
-    (setf (act-cell:msgbox actor) (message-box-for-disp-type disp-type self))
-    (add-actor self actor)
-    actor))
-
 (defun message-box-for-disp-type (disp-type system)
   (case disp-type
     (:pinned (make-instance 'mesgb:message-box-bt))
     (otherwise (make-instance 'mesgb:message-box-dp
                               :dispatcher (message-dispatcher system)
                               :max-queue-size 0))))
+
+(defun make-new-actor (system create-fun disp-type)
+  (let ((actor (funcall create-fun)))
+    (assert (typep actor 'actor))
+    (setf (act-cell:system actor) system)
+    (setf (act-cell:msgbox actor) (message-box-for-disp-type disp-type system))
+    actor))
+
+(defun actor-context-for-key (context-key system)
+  (case context-key
+    (:system (system-actor-context system))
+    (otherwise (user-actor-context system))))
+
+(defun actor-of-system (system create-fun disp-type &key (context-key :user))
+  "Private API to create system actors. Context-key is either `:system' or `:user'
+Users should use `actor-of'."
+  (let ((actor (make-new-actor system create-fun disp-type)))
+    (add-actor (actor-context-for-key context-key system) actor)))
+
+(defmethod actor-of ((self actor-system) create-fun &key (disp-type :shared))
+  (actor-of-system self create-fun disp-type :context-key :user))
+

@@ -12,14 +12,14 @@
   :components ((:module "src"
                 :serial t
                 :components
-                ((:file "utils")
-                 (:module "core"
-                          :components
-                          ((:file "queue")
-                           (:file "dispatcher-api")
-                           (:file "message-box")
-                           (:file "actor-cell")))
+                ((:file "dispatcher-api")
                  (:file "actor-system-api")
+                 (:file "utils")
+                 (:module "core"
+                  :components
+                  ((:file "queue")
+                   (:file "message-box")
+                   (:file "actor-cell")))
                  (:file "actor-context")
                  (:file "fcomputation")
                  (:file "actor")
@@ -66,7 +66,7 @@
 ;; - add agent to system
 ;; - add 'after-stop' handler for cleaning up and remove from actor syste,
 ;; - extract actor api to separate api
-;; - put all '-api' packages first in asd
+;; => - put all '-api' packages first in asd
 ;; - cleanup all the doc strings
 ;; OK - add 'before-start' handler instead of 'before-start'
 ;; OK - see how to mingle in a 'pinned' dispatcher which uses the 'bt' based message box.

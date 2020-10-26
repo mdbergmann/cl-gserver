@@ -1,5 +1,6 @@
 (defpackage :cl-gserver.dispatcher-test
-  (:use :cl :fiveam :cl-gserver.dispatcher-api :cl-gserver.dispatcher :cl-gserver.actor)
+  (:use :cl :fiveam :cl-gserver.dispatcher-api :cl-gserver.dispatcher
+        :cl-gserver.actor)
   (:export #:run!
            #:all-tests
            #:nil))

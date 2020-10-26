@@ -9,16 +9,13 @@
            #:actor
            #:tell
            #:ask
-           #:async-ask
-           #:system)
+           #:async-ask)
   ;;#:with-actor)
   )
 
 (in-package :cl-gserver.actor)
 
-;; -------------------------------------------------------
-;; Actor API
-;; -------------------------------------------------------
+
 (defclass actor-api () ()
   (:documentation "This represents the API of an actor."))
 (defgeneric tell (actor message)
@@ -38,10 +35,9 @@ but instead an anonymous `actor' is started behind the scenes and this in fact m
 the message to the target `actor'. It does sent itself along as 'sender'.
 The target `actor' tells a response back to the initial `sender'. When that happens and the anonymous `actor'
 received the response the `future' will be fulfilled with the `promise'."))
-(defgeneric system (actor)
-  (:documentation "Access to the `actor-system'."))
 
-(defclass actor (actor-api actor-cell)
+
+(defclass actor (actor-cell actor-api)
   ((receive-fun :initarg :receive-fun
                 :initform (error "'receive-fun' must be specified!")
                 :reader receive-fun))
@@ -62,10 +58,6 @@ the `:stop' message. It will respond with `:stopped'."))
   (funcall (receive-fun self) self message state))
 (defmethod handle-cast ((self actor) message state)
   (funcall (receive-fun self) self message state))
-
-(defmethod system ((self actor))
-  (when (next-method-p)
-    (call-next-method)))
 
 (defmethod tell ((self actor) message)
   (cast self message))
@@ -109,7 +101,7 @@ the `:stop' message. It will respond with `:stopped'."))
 (defmethod async-ask ((self actor) message)
   (make-future (lambda (promise-fun)
                  (log:debug "Executing future function...")
-                 (with-waitor-actor self message (act:system self)
+                 (with-waitor-actor self message (act-cell:system self)
                    (lambda (result)
                      (log:debug "Result: ~a~%" result)
                      (funcall promise-fun result))))))

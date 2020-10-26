@@ -1,5 +1,6 @@
 (defpackage :cl-gserver.actor-system-test
-  (:use :cl :fiveam :cl-gserver.actor-system-api :cl-gserver.actor-system :cl-gserver.dispatcher)
+  (:use :cl :fiveam :cl-gserver.actor-system-api :cl-gserver.actor-system
+        :cl-gserver.dispatcher)
   (:import-from #:act
                 #:actor
                 #:make-actor)
@@ -48,7 +49,7 @@
     (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :disp-type :shared)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp))
-      (is (not (null (act:system actor))))
+      (is (not (null (act-cell:system actor))))
       (is (= 1 (length (ac:actors cut))))
       (is (eq actor (aref (ac:actors cut) 0))))))
 
@@ -58,7 +59,7 @@
     (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :disp-type :pinned)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt))
-      (is (not (null (act:system actor))))
+      (is (not (null (act-cell:system actor))))
       (is (= 1 (length (ac:actors cut))))
       (is (eq actor (aref (ac:actors cut) 0))))))
 

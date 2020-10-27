@@ -3,9 +3,10 @@
   (:nicknames :ac)
   (:export #:actor-context
            #:make-actor-context
-           #:actors
            #:actor-of
-           #:add-actor))
+           #:add-actor
+           #:find-actors
+           #:all-actors))
 (in-package :cl-gserver.actor-context)
 
 (defclass actor-context ()
@@ -26,7 +27,22 @@ Specify the dispatcher type (`disp-type') as either:
 (defgeneric add-actor (actor-context actor)
   (:documentation "Adds the actor to the context and returns it."))
 
+(defgeneric find-actors (actor-context find-fun)
+  (:documentation "Returns actors where `find-fun' provides 'truth'."))
+
+(defgeneric all-actors (actor-context)
+  (:documentation "Retrieves all actors as a list"))
+
+;; --------------------------------
+;; Actor context impl
+;; --------------------------------
+
 (defmethod add-actor ((self actor-context) actor)
-  (with-slots (actors) self
-    (vector-push-extend actor actors))
+  (vector-push-extend actor (actors self))
   actor)
+
+(defmethod find-actors ((self actor-context) find-fun)
+  (mapcan (lambda (x) (if (funcall find-fun x) (list x))) (all-actors self)))
+
+(defmethod all-actors ((self actor-context))
+  (coerce (actors self) 'list))

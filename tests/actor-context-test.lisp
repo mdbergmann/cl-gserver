@@ -31,17 +31,35 @@
   (let* ((cut (make-instance 'test-context))
          (actor (actor-of cut (lambda () (make-actor (lambda ()))))))
     (is (not (null actor)))
-    (is (= 1 (length (actors cut))))))
+    (is (= 1 (length (all-actors cut))))))
 
 (test create-actor--dont-add-when-null-creator
   "Tests creating a new actor in the context."
   (let* ((cut (make-instance 'test-context)))
     (actor-of cut (lambda () nil))
-    (is (= 0 (length (actors cut))))))
+    (is (= 0 (length (all-actors cut))))))
 
+(test find-actors-test
+  "Test for finding actors"
+  (let ((context (make-actor-context)))
+    (add-actor context (make-actor (lambda ()) :name "foo"))
+    (add-actor context (make-actor (lambda ()) :name "foo2"))
+
+    (is (= 2 (length (find-actors context (lambda (actor) (str:starts-with-p "foo" (act-cell:name actor)))))))))
+
+(test retrieve-all-actors
+  "Retrieves all actors"
+  (let ((context (make-actor-context)))
+    (add-actor context (make-actor (lambda ()) :name "foo"))
+    (add-actor context (make-actor (lambda ()) :name "foo2"))
+
+    (is (= 2 (length (all-actors context))))))
 
 (defun run-tests ()
   (run! 'create-with-default-constructor)
   (run! 'create-context)
   (run! 'create-actor--actor-of)
-  (run! 'create-actor--dont-add-when-null-creator))
+  (run! 'create-actor--dont-add-when-null-creator)
+  (run! 'find-actors-test)
+  (run! 'retrieve-all-actors)
+  )

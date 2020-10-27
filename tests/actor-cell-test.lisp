@@ -2,8 +2,7 @@
   (:use :cl :trivia :fiveam :cl-gserver.actor-cell)
   (:export #:run!
            #:all-tests
-           #:nil
-           #:assert-cond))
+           #:nil))
 
 (in-package :cl-gserver.actor-cell-test)
 
@@ -14,13 +13,6 @@
 (in-suite actor-cell-tests)
 
 (log:config :warn)
-
-(defun assert-cond (assert-fun max-time)
-  (do ((wait-time 0.02 (+ wait-time 0.02))
-       (fun-result nil (funcall assert-fun)))
-      ((eq fun-result t) (return t))
-    (if (> wait-time max-time) (return)
-        (sleep 0.02))))
 
 (def-fixture cell-fixture (call-fun cast-fun before-start-fun after-stop-fun state)
   (defclass test-cell (actor-cell) ())

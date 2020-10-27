@@ -1,6 +1,8 @@
 (defpackage :cl-gserver.dispatcher-test
   (:use :cl :fiveam :cl-gserver.dispatcher-api :cl-gserver.dispatcher
         :cl-gserver.actor)
+  (:import-from #:utils
+                #:assert-cond)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -45,7 +47,7 @@
       (mapcar (lambda (worker) (ask worker (cons :execute (lambda () )))) (workers cut))
       (is (= (+ len-message-threads-before 4) (len-message-threads)))
       (shutdown cut)
-      (is (eq t (cl-gserver.actor-cell-test:assert-cond
+      (is (eq t (assert-cond
                  (lambda ()
                    (= len-message-threads-before (len-message-threads)))
                  2))))))

@@ -42,9 +42,7 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
                         :num-workers shared-dispatcher-workers)))
     system))
 
-
-(defmethod shutdown ((self actor-system))
-  (dispatcher-api:shutdown (message-dispatcher self)))
+;; Private Api
 
 (defun message-box-for-disp-type (disp-type system)
   (case disp-type
@@ -53,6 +51,11 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
                               :dispatcher (message-dispatcher system)
                               :max-queue-size 0))))
 
+(defun actor-context-for-key (context system)
+  (case context
+    (:system (system-actor-context system))
+    (otherwise (user-actor-context system))))
+
 (defun make-new-actor (system create-fun disp-type)
   (let ((actor (funcall create-fun)))
     (assert (typep actor 'actor))
@@ -60,17 +63,28 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
     (setf (act-cell:msgbox actor) (message-box-for-disp-type disp-type system))
     actor))
 
-(defun actor-context-for-key (context-key system)
-  (case context-key
-    (:system (system-actor-context system))
-    (otherwise (user-actor-context system))))
-
-(defun actor-of-system (system create-fun disp-type &key (context-key :user))
+(defun %actor-of (system create-fun disp-type &key (context :user))
   "Private API to create system actors. Context-key is either `:system' or `:user'
 Users should use `actor-of'."
   (let ((actor (make-new-actor system create-fun disp-type)))
-    (add-actor (actor-context-for-key context-key system) actor)))
+    (add-actor (actor-context-for-key context system) actor)))
+
+(defun %find-actors (system find-fun &key context)
+  "Private API to find actors in both contexts the actor-system supports.
+Users should use `find-actors'."
+  (ac:find-actors (actor-context-for-key context system) find-fun))
+
+;; Public Api
 
 (defmethod actor-of ((self actor-system) create-fun &key (disp-type :shared))
-  (actor-of-system self create-fun disp-type :context-key :user))
+  (%actor-of self create-fun disp-type :context :user))
 
+(defmethod find-actors ((self actor-system) find-fun)
+  (%find-actors self find-fun :context :user))
+
+(defmethod shutdown ((self actor-system))
+  (dispatcher-api:shutdown (message-dispatcher self))
+  (dolist (actor (ac:all-actors (user-actor-context self)))
+    (act-cell:stop actor))
+  (dolist (actor (ac:all-actors (system-actor-context self)))
+    (act-cell:stop actor)))

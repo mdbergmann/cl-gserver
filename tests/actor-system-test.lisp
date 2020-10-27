@@ -4,6 +4,8 @@
   (:import-from #:act
                 #:actor
                 #:make-actor)
+  (:import-from #:utils
+                #:assert-cond)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -36,7 +38,21 @@
            (is (typep (message-dispatcher system) 'shared-dispatcher))
            (is (= 4 (length (workers (message-dispatcher system))))))
       (shutdown system)
-      (sleep 1))))
+      (sleep 0.5))))
+
+(test shutdown-system
+  "Shutting down should stop all actors whether pinned or shared."
+  (let ((system (make-actor-system)))
+    (ac:actor-of system (lambda () (make-actor (lambda ()))) :disp-type :pinned)
+    (ac:actor-of system (lambda () (make-actor (lambda ()))) :disp-type :shared)
+    (system::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context :system)
+    (system::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context :system)
+
+    (shutdown system)
+    (is-true (assert-cond (lambda ()
+                            (= 0 (length (ac:find-actors
+                                          system
+                                          (lambda (actor) (act-cell:running-p actor)))))) 2))))
 
 (test create-system--check-defaults
   "Checking defaults on the system"
@@ -54,18 +70,18 @@
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp))
       (is (not (null (act-cell:system actor))))
-      (is (= 1 (length (ac:actors (system::user-actor-context cut)))))
-      (is (eq actor (aref (ac:actors (system::user-actor-context cut)) 0))))))
+      (is (= 1 (length (ac:all-actors (system::user-actor-context cut)))))
+      (is (eq actor (first (ac:all-actors (system::user-actor-context cut))))))))
 
 (test create-actors--shared-system
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (system::actor-of-system cut (lambda () (make-actor (lambda ()))) :shared :context-key :system)))
+    (let ((actor (system::%actor-of cut (lambda () (make-actor (lambda ()))) :shared :context :system)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp))
       (is (not (null (act-cell:system actor))))
-      (is (= 1 (length (ac:actors (system::system-actor-context cut)))))
-      (is (eq actor (aref (ac:actors (system::system-actor-context cut)) 0))))))
+      (is (= 1 (length (ac:all-actors (system::system-actor-context cut)))))
+      (is (eq actor (first (ac:all-actors (system::system-actor-context cut))))))))
 
 (test create-actors--pinned-user
   "Creates actors in the system."
@@ -74,18 +90,32 @@
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt))
       (is (not (null (act-cell:system actor))))
-      (is (= 1 (length (ac:actors (system::user-actor-context cut)))))
-      (is (eq actor (aref (ac:actors (system::user-actor-context cut)) 0))))))
+      (is (= 1 (length (ac:all-actors (system::user-actor-context cut)))))
+      (is (eq actor (first (ac:all-actors (system::user-actor-context cut))))))))
 
 (test create-actors--pinned-system
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (system::actor-of-system cut (lambda () (make-actor (lambda ()))) :pinned :context-key :system)))
+    (let ((actor (system::%actor-of cut (lambda () (make-actor (lambda ()))) :pinned :context :system)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt))
       (is (not (null (act-cell:system actor))))
-      (is (= 1 (length (ac:actors (system::system-actor-context cut)))))
-      (is (eq actor (aref (ac:actors (system::system-actor-context cut)) 0))))))
+      (is (= 1 (length (ac:all-actors (system::system-actor-context cut)))))
+      (is (eq actor (first (ac:all-actors (system::system-actor-context cut))))))))
+
+(test find-actors-in-system
+  "Test finding actors in system."
+  (with-fixture test-system ()
+    (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
+          (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2"))))
+          (act3 (system::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :shared :context :system))
+          (act4 (system::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")) :shared :context :system)))
+      (is (eq act1 (car (ac:find-actors cut (lambda (x) (string= "foo" (act-cell:name x)))))))
+      (is (eq act2 (car (ac:find-actors cut (lambda (x) (string= "foo2" (act-cell:name x)))))))
+      (is (eq act3 (car (system::%find-actors cut (lambda (x) (string= "foo" (act-cell:name x))) :context :system))))
+      (is (eq act4 (car (system::%find-actors cut (lambda (x) (string= "foo2" (act-cell:name x))) :context :system))))
+      (is (eq nil (ac:find-actors cut (lambda (x) (declare (ignore x))))))
+      (is (= 2 (length (ac:find-actors cut #'identity)))))))
 
 (test creating-many-actors--and-collect-responses
   "Creating many actors should not pose a problem."
@@ -107,6 +137,7 @@
 
 (defun run-tests ()
   (run! 'create-system)
+  (run! 'shutdown-system)
   (run! 'create-actors--shared-user)
   (run! 'create-actors--shared-system)
   (run! 'create-actors--pinned-user)

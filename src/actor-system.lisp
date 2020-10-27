@@ -42,7 +42,9 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
                         :num-workers shared-dispatcher-workers)))
     system))
 
+;; ----------------------------------------
 ;; Private Api
+;; ----------------------------------------
 
 (defun message-box-for-disp-type (disp-type system)
   (case disp-type
@@ -74,7 +76,9 @@ Users should use `actor-of'."
 Users should use `find-actors'."
   (ac:find-actors (actor-context-for-key context system) find-fun))
 
+;; ----------------------------------------
 ;; Public Api
+;; ----------------------------------------
 
 (defmethod actor-of ((self actor-system) create-fun &key (disp-type :shared))
   (%actor-of self create-fun disp-type :context :user))

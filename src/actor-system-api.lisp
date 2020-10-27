@@ -1,10 +1,8 @@
 (defpackage :cl-gserver.actor-system-api
   (:use :cl)
   (:nicknames :system-api)
-  (:export #:shutdown
-           #:message-dispatcher))
+  (:export #:dispatchers))
 
 (in-package :cl-gserver.actor-system-api)
 
-(defgeneric shutdown (system))
-(defgeneric message-dispatcher (system))
+(defgeneric dispatchers (system))

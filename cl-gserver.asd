@@ -33,6 +33,7 @@
   :license "MIT"
   :depends-on ("cl-gserver"
                "fiveam"
+               "cl-mock"
                "trivia")
   :components ((:module "tests"
                 :components

@@ -8,18 +8,18 @@
                 #:make-dispatcher-worker)
   (:export #:make-actor-system
            #:actor-system
-           #:message-dispatcher))
+           #:dispatchers))
 
 (in-package :cl-gserver.actor-system)
 
 (defclass actor-system ()
-  ((dispatcher :initform nil
-               :reader message-dispatcher
-               :documentation "The message dispatcher.")
-   (system-actor-context :initform (make-actor-context)
+  ((dispatchers :initform nil
+                :reader dispatchers
+                :documentation "The message dispatcher.")
+   (system-actor-context :initform nil
                          :reader system-actor-context
                          :documentation "An actor context reserved for agents/actors used by the system.")
-   (user-actor-context :initform (make-actor-context)
+   (user-actor-context :initform nil
                        :reader user-actor-context
                        :documentation "An actor context for agents/actors created by the user."))
   (:documentation
@@ -29,66 +29,57 @@ It allows to create actors using the method `actor-of'."))
 
 (defmethod print-object ((obj actor-system) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (dispatcher) obj
-      (format stream "dispatcher: ~a" dispatcher))))
+    (with-slots (dispatchers) obj
+      (format stream "dispatchers: ~a" dispatchers))))
+
+(defmethod initialize-instance :after ((self actor-system) &key)
+  (with-slots (user-actor-context system-actor-context) self
+    (setf user-actor-context (make-actor-context self))
+    (setf system-actor-context (make-actor-context self))))
 
 (defun make-actor-system (&key (shared-dispatcher-workers 4))
   "Creates a system.
 Allows to configure the amount of workers for the `shared-dispatcher'."
   (let ((system (make-instance 'actor-system)))
-    (with-slots (dispatcher) system
-      (setf dispatcher (make-dispatcher
-                        'shared-dispatcher
-                        :num-workers shared-dispatcher-workers)))
+    (with-slots (dispatchers) system
+      (setf dispatchers (list :shared (make-dispatcher
+                                       'shared-dispatcher
+                                       :num-workers shared-dispatcher-workers))))
     system))
 
 ;; ----------------------------------------
 ;; Private Api
 ;; ----------------------------------------
 
-(defun message-box-for-disp-type (disp-type system)
-  (case disp-type
-    (:pinned (make-instance 'mesgb:message-box-bt))
-    (otherwise (make-instance 'mesgb:message-box-dp
-                              :dispatcher (message-dispatcher system)
-                              :max-queue-size 0))))
-
-(defun actor-context-for-key (context system)
-  (case context
+(defun actor-context-for-key (context-key system)
+  (case context-key
     (:system (system-actor-context system))
     (otherwise (user-actor-context system))))
 
-(defun make-new-actor (system create-fun disp-type)
-  (let ((actor (funcall create-fun)))
-    (assert (typep actor 'actor))
-    (setf (act-cell:system actor) system)
-    (setf (act-cell:msgbox actor) (message-box-for-disp-type disp-type system))
-    actor))
-
-(defun %actor-of (system create-fun disp-type &key (context :user))
+(defun %actor-of (system create-fun dispatch-type &key (context-key :user))
   "Private API to create system actors. Context-key is either `:system' or `:user'
 Users should use `actor-of'."
-  (let ((actor (make-new-actor system create-fun disp-type)))
-    (add-actor (actor-context-for-key context system) actor)))
+  (ac:actor-of
+   (actor-context-for-key context-key system)
+   create-fun
+   :dispatch-type dispatch-type))
 
-(defun %find-actors (system find-fun &key context)
+(defun %find-actors (system find-fun &key context-key)
   "Private API to find actors in both contexts the actor-system supports.
 Users should use `find-actors'."
-  (ac:find-actors (actor-context-for-key context system) find-fun))
+  (ac:find-actors (actor-context-for-key context-key system) find-fun))
 
 ;; ----------------------------------------
 ;; Public Api
 ;; ----------------------------------------
 
-(defmethod actor-of ((self actor-system) create-fun &key (disp-type :shared))
-  (%actor-of self create-fun disp-type :context :user))
+(defmethod actor-of ((self actor-system) create-fun &key (dispatch-type :shared))
+  (%actor-of self create-fun dispatch-type :context-key :user))
 
 (defmethod find-actors ((self actor-system) find-fun)
-  (%find-actors self find-fun :context :user))
+  (%find-actors self find-fun :context-key :user))
 
 (defmethod shutdown ((self actor-system))
-  (dispatcher-api:shutdown (message-dispatcher self))
-  (dolist (actor (ac:all-actors (user-actor-context self)))
-    (act-cell:stop actor))
-  (dolist (actor (ac:all-actors (system-actor-context self)))
-    (act-cell:stop actor)))
+  (dispatcher-api:shutdown (getf (dispatchers self) :shared))
+  (ac:shutdown (user-actor-context self))
+  (ac:shutdown (system-actor-context self)))

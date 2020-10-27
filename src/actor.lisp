@@ -81,7 +81,8 @@ the `:stop' message. It will respond with `:stopped'."))
   (with-gensyms (self msg state msgbox waitor-actor)
     `(let ((,msgbox (if ,system
                         (make-instance 'mesgb:message-box-dp
-                                       :dispatcher (system-api:message-dispatcher ,system))
+                                       :dispatcher
+                                       (getf (system-api:dispatchers ,system) :shared))
                         (make-instance 'mesgb:message-box-bt)))
            (,waitor-actor (make-instance 'async-waitor-actor
                                         :receive-fun (lambda (,self ,msg ,state)

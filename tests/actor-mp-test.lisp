@@ -1,7 +1,5 @@
 (defpackage :cl-gserver.actor-mp-test
   (:use :cl :trivia :iterate :fiveam :act)
-  (:import-from #:system-api
-                #:shutdown)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -53,7 +51,7 @@
     (unwind-protect
          (&body)
     (ask cut :stop)
-    (shutdown system)))
+    (ac:shutdown system)))
   (format t "Running system tests...~%")
   
   (lparallel:end-kernel))

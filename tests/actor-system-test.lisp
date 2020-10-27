@@ -21,34 +21,29 @@
   (let ((cut (make-actor-system)))
     (unwind-protect
          (&body)
-      (shutdown cut)
+      (ac:shutdown cut)
       (sleep 0.5))))
 
 (test create-system
   "Creates a system"
   (let ((system (make-actor-system :shared-dispatcher-workers 4)))
-    (unwind-protect
-         (progn
-           (is (not (null system)))
-           (is (not (null (system::system-actor-context system))))
-           (is (typep (system::system-actor-context system) 'ac:actor-context))
-           (is (not (null (system::user-actor-context system))))
-           (is (typep (system::user-actor-context system) 'ac:actor-context))
-           (is (not (null (message-dispatcher system))))
-           (is (typep (message-dispatcher system) 'shared-dispatcher))
-           (is (= 4 (length (workers (message-dispatcher system))))))
-      (shutdown system)
-      (sleep 0.5))))
+    (is (not (null system)))
+    (is (not (null (system::system-actor-context system))))
+    (is (typep (system::system-actor-context system) 'ac:actor-context))
+    (is (not (null (system::user-actor-context system))))
+    (is (typep (system::user-actor-context system) 'ac:actor-context))
+    (ac:shutdown system)
+    (sleep 0.5)))
 
 (test shutdown-system
   "Shutting down should stop all actors whether pinned or shared."
   (let ((system (make-actor-system)))
-    (ac:actor-of system (lambda () (make-actor (lambda ()))) :disp-type :pinned)
-    (ac:actor-of system (lambda () (make-actor (lambda ()))) :disp-type :shared)
-    (system::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context :system)
-    (system::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context :system)
+    (system::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :user)
+    (system::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :user)
+    (system::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :system)
+    (system::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :system)
 
-    (shutdown system)
+    (ac:shutdown system)
     (is-true (assert-cond (lambda ()
                             (= 0 (length (ac:find-actors
                                           system
@@ -57,16 +52,15 @@
 (test create-system--check-defaults
   "Checking defaults on the system"
   (let ((system (make-actor-system)))
-    (unwind-protect
-         (progn
-           (is-true (typep (message-dispatcher system) 'shared-dispatcher))
-           (is (= 4 (length (workers (message-dispatcher system))))))
-      (shutdown system))))
+    (let ((dispatchers (dispatchers system)))
+      (is-true (typep (getf dispatchers :shared) 'shared-dispatcher))
+      (is (= 4 (length (workers (getf dispatchers :shared))))))
+    (ac:shutdown system)))
 
 (test create-actors--shared-user
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :disp-type :shared)))
+    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :shared)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp))
       (is (not (null (act-cell:system actor))))
@@ -76,7 +70,7 @@
 (test create-actors--shared-system
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (system::%actor-of cut (lambda () (make-actor (lambda ()))) :shared :context :system)))
+    (let ((actor (system::%actor-of cut (lambda () (make-actor (lambda ()))) :shared :context-key :system)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp))
       (is (not (null (act-cell:system actor))))
@@ -86,7 +80,7 @@
 (test create-actors--pinned-user
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :disp-type :pinned)))
+    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :pinned)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt))
       (is (not (null (act-cell:system actor))))
@@ -96,7 +90,7 @@
 (test create-actors--pinned-system
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (system::%actor-of cut (lambda () (make-actor (lambda ()))) :pinned :context :system)))
+    (let ((actor (system::%actor-of cut (lambda () (make-actor (lambda ()))) :pinned :context-key :system)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt))
       (is (not (null (act-cell:system actor))))
@@ -108,12 +102,12 @@
   (with-fixture test-system ()
     (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
           (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2"))))
-          (act3 (system::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :shared :context :system))
-          (act4 (system::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")) :shared :context :system)))
+          (act3 (system::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :shared :context-key :system))
+          (act4 (system::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")) :shared :context-key :system)))
       (is (eq act1 (car (ac:find-actors cut (lambda (x) (string= "foo" (act-cell:name x)))))))
       (is (eq act2 (car (ac:find-actors cut (lambda (x) (string= "foo2" (act-cell:name x)))))))
-      (is (eq act3 (car (system::%find-actors cut (lambda (x) (string= "foo" (act-cell:name x))) :context :system))))
-      (is (eq act4 (car (system::%find-actors cut (lambda (x) (string= "foo2" (act-cell:name x))) :context :system))))
+      (is (eq act3 (car (system::%find-actors cut (lambda (x) (string= "foo" (act-cell:name x))) :context-key :system))))
+      (is (eq act4 (car (system::%find-actors cut (lambda (x) (string= "foo2" (act-cell:name x))) :context-key :system))))
       (is (eq nil (ac:find-actors cut (lambda (x) (declare (ignore x))))))
       (is (= 2 (length (ac:find-actors cut #'identity)))))))
 

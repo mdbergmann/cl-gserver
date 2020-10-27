@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor-context-test
-  (:use :cl :fiveam :cl-gserver.actor-context :act)
+  (:use :cl :fiveam :cl-mock :cl-gserver.actor-context :act)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -11,55 +11,82 @@
 
 (in-suite actor-context-tests)
 
-(defclass test-context (actor-context) ())
-(defmethod actor-of ((self test-context) create-fun &key disp-type)
-  (declare (ignore disp-type))
-  (let ((created (funcall create-fun)))
-    (when created
-      (add-actor self created))))
-
 (test create-with-default-constructor
   "Test if the defauilt constructor creates a context."
-  (is (not (null (make-actor-context)))))
+  (is (not (null (make-actor-context nil)))))
 
-(test create-context
+(test create-context--check-aggregated-components
   "Tests creating a context."
-  (is (not (null (make-instance 'test-context)))))
+  (let ((cut (make-actor-context :some-system)))
+    (is (not (null cut)))
+    (is (not (null (system cut))))
+    ))
 
-(test create-actor--actor-of
-  "Tests creating a new actor in the context."
-  (let* ((cut (make-instance 'test-context))
-         (actor (actor-of cut (lambda () (make-actor (lambda ()))))))
-    (is (not (null actor)))
-    (is (= 1 (length (all-actors cut))))))
+(test create-actor--actor-of--shared
+  "Tests creating a new actor in the context with shared dispatcher"
+  (with-mocks ()
+    (answer (system-api:dispatchers _) nil)
+    (let* ((cut (make-actor-context nil))
+           (actor (actor-of cut (lambda () (make-actor (lambda ()))))))
+      (is (not (null actor)))
+      (is (= 1 (length (all-actors cut))))
+      (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp)))
+    (is (= 1 (length (invocations 'system-api:dispatchers))))))
+
+(test create-actor--actor-of--pinned
+  "Tests creating a new actor in the context with pinned dispatcher"
+  (with-mocks ()
+    (answer (system-api:dispatchers _) nil)
+    (let* ((cut (make-actor-context nil))
+           (actor (actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :pinned)))
+      (is (not (null actor)))
+      (is (= 1 (length (all-actors cut))))
+      (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt)))
+    (is (= 0 (length (invocations 'system-api:dispatchers))))))
 
 (test create-actor--dont-add-when-null-creator
   "Tests creating a new actor in the context."
-  (let* ((cut (make-instance 'test-context)))
+  (let* ((cut (make-actor-context nil)))
     (actor-of cut (lambda () nil))
     (is (= 0 (length (all-actors cut))))))
 
 (test find-actors-test
   "Test for finding actors"
-  (let ((context (make-actor-context)))
-    (add-actor context (make-actor (lambda ()) :name "foo"))
-    (add-actor context (make-actor (lambda ()) :name "foo2"))
-
-    (is (= 2 (length (find-actors context (lambda (actor) (str:starts-with-p "foo" (act-cell:name actor)))))))))
+  (with-mocks ()
+    (answer (system-api:dispatchers _) nil)
+    (let ((context (make-actor-context nil)))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
+      (is (= 2 (length
+                (find-actors context
+                             (lambda (actor) (str:starts-with-p "foo" (act-cell:name actor))))))))))
 
 (test retrieve-all-actors
   "Retrieves all actors"
-  (let ((context (make-actor-context)))
-    (add-actor context (make-actor (lambda ()) :name "foo"))
-    (add-actor context (make-actor (lambda ()) :name "foo2"))
+  (with-mocks ()
+    (answer (system-api:dispatchers _) nil)
+    (let ((context (make-actor-context nil)))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
+      (is (= 2 (length (all-actors context)))))))
 
-    (is (= 2 (length (all-actors context))))))
+(test shutdown-actor-context
+  "Shutdown actor context - stop all actors."
+  (with-mocks ()
+    (answer (system-api:dispatchers _) nil)
+    (let ((context (make-actor-context nil)))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
+      (shutdown context)
+      (is (= 0 (length (find-actors context (lambda (a) (act-cell:running-p a)))))))))
 
 (defun run-tests ()
   (run! 'create-with-default-constructor)
-  (run! 'create-context)
-  (run! 'create-actor--actor-of)
+  (run! 'create-context--check-aggregated-components)
+  (run! 'create-actor--actor-of--shared)
+  (run! 'create-actor--actor-of--pinned)
   (run! 'create-actor--dont-add-when-null-creator)
   (run! 'find-actors-test)
   (run! 'retrieve-all-actors)
+  (run! 'shutdown-actor-context)
   )

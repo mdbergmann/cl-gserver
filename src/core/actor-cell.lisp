@@ -61,7 +61,7 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
 
 (defmethod print-object ((obj actor-cell) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (name state internal-state msgbox system) obj
+    (with-slots (name state internal-state msgbox) obj
       (format stream "~a, running: ~a, state: ~a, message-box: ~a"
               name
               (slot-value internal-state 'running)

@@ -142,4 +142,5 @@
   (run! 'create-actors--shared-system)
   (run! 'create-actors--pinned-user)
   (run! 'create-actors--pinned-system)
+  (run! 'find-actors-in-system)
   (run! 'creating-many-actors--and-collect-responses))

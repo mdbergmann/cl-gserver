@@ -64,6 +64,7 @@
 ;; => - add actor-context as composition to system (twice for 'user' and 'system') and actor
 ;; - add agent to system
 ;; - add 'after-stop' handler for cleaning up and remove from actor syste,
+;; - make sure that actor names are unique within their context.
 ;; - extract actor api to separate api
 ;; - cleanup all the doc strings
 ;; OK - stop 'user' actors first on shutdown

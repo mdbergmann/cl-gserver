@@ -23,14 +23,14 @@
          (&body)
       (tell cut :stop))))
 
-(test make-actor--has-no-msgbox-and-system
-  "Test constructor. actor should not have msgbox and attached system by default."
+(test make-actor--has-no-msgbox-and-actor-context
+  "Test constructor. actor should not have msgbox and attached actor-context."
 
   (let ((actor (make-actor (lambda (self msg state)
                              (declare (ignore self msg state))
                              nil))))
     (is (null (act-cell:msgbox actor)))
-    (is (null (act-cell:system actor)))))
+    (is (null (context actor)))))
 
 (test make-actor--with-msgbox
   "Test contructor and attach a msgbox manually."
@@ -83,6 +83,7 @@
       (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
       (is (= 5 (get-result future))))))
 
+
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."
 
@@ -100,7 +101,7 @@
 ;;       (is (equal 5 (ask self "get")))))
 
 (defun run-tests ()
-  (run! 'make-actor--has-no-msgbox-and-system)
+  (run! 'make-actor--has-no-msgbox-and-actor-context)
   (run! 'make-actor--with-msgbox)
   (run! 'single-actor--handle-async-ask)
   (run! 'single-actor--handle-async-ask-2)

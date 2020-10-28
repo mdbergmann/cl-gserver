@@ -9,7 +9,8 @@
            #:actor
            #:tell
            #:ask
-           #:async-ask)
+           #:async-ask
+           #:context)
   ;;#:with-actor)
   )
 
@@ -40,7 +41,13 @@ received the response the `future' will be fulfilled with the `promise'."))
 (defclass actor (actor-cell actor-api)
   ((receive-fun :initarg :receive-fun
                 :initform (error "'receive-fun' must be specified!")
-                :reader receive-fun))
+                :reader receive-fun)
+   (context :initform nil
+            :reader context
+            :documentation
+            "This is the `actor-context' every actor carries.
+When the actor is created from scratch it has no `actor-context'.
+When created through the contexts, or systems `actor-of' function an `actor-context' will be set."))
   (:documentation
    "This is the `actor' class.
 The `actor' does it's message handling in the `receive' function.
@@ -102,10 +109,11 @@ the `:stop' message. It will respond with `:stopped'."))
 (defmethod async-ask ((self actor) message)
   (make-future (lambda (promise-fun)
                  (log:debug "Executing future function...")
-                 (with-waitor-actor self message (act-cell:system self)
-                   (lambda (result)
-                     (log:debug "Result: ~a~%" result)
-                     (funcall promise-fun result))))))
+                 (let ((context (context self)))
+                   (with-waitor-actor self message (if context (ac:system context) nil)
+                                      (lambda (result)
+                                        (log:debug "Result: ~a~%" result)
+                                        (funcall promise-fun result)))))))
 
 ;; (defmacro with-actor (&rest body)
 ;;   (format t "body: ~a~%" body)

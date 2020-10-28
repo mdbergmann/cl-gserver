@@ -14,17 +14,18 @@
                 :components
                 ((:file "dispatcher-api")
                  (:file "actor-system-api")
+                 (:file "actor-context-api")
                  (:file "utils")
                  (:module "core"
                   :components
                   ((:file "queue")
                    (:file "message-box")
                    (:file "actor-cell")))
-                 (:file "actor-context")
                  (:file "fcomputation")
                  (:file "actor")
                  (:file "agent")
                  (:file "dispatcher")
+                 (:file "actor-context")
                  (:file "actor-system"))))
   :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 

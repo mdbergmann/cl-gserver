@@ -1,11 +1,12 @@
 (defpackage :cl-gserver.actor-system
-  (:use :cl :cl-gserver.actor :cl-gserver.dispatcher :cl-gserver.actor-context
-        :cl-gserver.actor-system-api)
-  (:nicknames :system)
+  (:use :cl)
+  (:nicknames :sys)
   (:import-from #:dispatcher
                 #:shared-dispatcher
                 #:make-dispatcher
                 #:make-dispatcher-worker)
+  (:import-from #:ac
+                #:make-actor-context)
   (:export #:make-actor-system
            #:actor-system
            #:dispatchers))

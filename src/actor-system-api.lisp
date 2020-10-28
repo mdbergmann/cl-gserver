@@ -1,8 +1,8 @@
-(defpackage :cl-gserver.actor-system-api
+(defpackage :cl-gserver.actor-system
   (:use :cl)
-  (:nicknames :system-api)
+  (:nicknames :sys)
   (:export #:dispatchers))
 
-(in-package :cl-gserver.actor-system-api)
+(in-package :cl-gserver.actor-system)
 
 (defgeneric dispatchers (system))

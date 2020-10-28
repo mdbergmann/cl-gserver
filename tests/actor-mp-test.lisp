@@ -42,7 +42,7 @@
     (ask cut :stop))
   (format t "Running non-system tests...done~%")
   (format t "Running system tests...~%")
-  (let* ((system (system:make-actor-system :shared-dispatcher-workers 4))
+  (let* ((system (sys:make-actor-system :shared-dispatcher-workers 4))
          (cut (ac:actor-of system (lambda ()
                                     (make-instance 'counter-actor :state 0
                                                                   :receive-fun *receive-fun*))))

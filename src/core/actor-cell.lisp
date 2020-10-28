@@ -5,7 +5,6 @@
            #:cell
            #:name
            #:msgbox
-           #:system
            #:state
            ;; API
            #:handle-call
@@ -37,17 +36,13 @@
     (msgbox :initform nil
             :accessor msgbox
             :documentation
-            "The `message-box'.")
-    (system :initform nil
-            :accessor system
-            :documentation "The system of this actor."))
+            "The `message-box'."))
   (:documentation
    "GServer is an Erlang inspired GenServer.
 It is meant to encapsulate state, but also to execute async operations.
 State can be changed by calling into the server via `call' or `cast'.
 Where `call' is waiting for a result and `cast' does not.
 For each `call' and `cast' handlers must be implemented by subclasses.
-
 
 A GServer runs a `message-box' that processes all the received messages.
 When the GServer was created ad-hoc (out of the `system'), then it will create

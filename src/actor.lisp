@@ -43,7 +43,7 @@ received the response the `future' will be fulfilled with the `promise'."))
                 :initform (error "'receive-fun' must be specified!")
                 :reader receive-fun)
    (context :initform nil
-            :reader context
+            :accessor context
             :documentation
             "This is the `actor-context' every actor carries.
 When the actor is created from scratch it has no `actor-context'.
@@ -89,7 +89,7 @@ the `:stop' message. It will respond with `:stopped'."))
     `(let ((,msgbox (if ,system
                         (make-instance 'mesgb:message-box-dp
                                        :dispatcher
-                                       (getf (system-api:dispatchers ,system) :shared))
+                                       (getf (sys:dispatchers ,system) :shared))
                         (make-instance 'mesgb:message-box-bt)))
            (,waitor-actor (make-instance 'async-waitor-actor
                                         :receive-fun (lambda (,self ,msg ,state)

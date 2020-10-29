@@ -1,10 +1,6 @@
 (defpackage :cl-gserver.actor-context
   (:use :cl)
-  (:nicknames :ac)
-  (:export #:actor-of
-           #:find-actors
-           #:all-actors
-           #:shutdown))
+  (:nicknames :ac))
 
 (in-package :cl-gserver.actor-context)
     

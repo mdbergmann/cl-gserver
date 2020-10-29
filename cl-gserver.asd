@@ -65,6 +65,7 @@
 #|
 TODOs:
 => - add actor-context as composition to system (twice for 'user' and 'system') and actor
+- check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - add 'after-stop' handler for cleaning up and remove from actor syste,
 - make sure that actor names are unique within their context.

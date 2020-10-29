@@ -12,8 +12,7 @@
                 #:find-actors
                 #:shutdown)
   (:export #:make-actor-system
-           #:actor-system
-           #:dispatchers))
+           #:actor-system))
 
 (in-package :cl-gserver.actor-system)
 

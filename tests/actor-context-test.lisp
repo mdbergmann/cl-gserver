@@ -25,7 +25,7 @@
 (test create-actor--actor-of--shared
   "Tests creating a new actor in the context with shared dispatcher"
   (with-mocks ()
-    (answer (sys:dispatchers _) nil)
+    (answer (asys:dispatchers _) nil)
     (let* ((cut (make-actor-context nil))
            (actor (actor-of cut (lambda () (make-actor (lambda ()))))))
       (is (not (null actor)))
@@ -34,12 +34,12 @@
       (is (not (null (act:context actor))))
       (is (not (eq cut (act:context actor))))
       (is (null (ac:system (act:context actor)))))
-    (is (= 1 (length (invocations 'sys:dispatchers))))))
+    (is (= 1 (length (invocations 'asys:dispatchers))))))
 
 (test create-actor--actor-of--pinned
   "Tests creating a new actor in the context with pinned dispatcher"
   (with-mocks ()
-    (answer (sys:dispatchers _) nil)
+    (answer (asys:dispatchers _) nil)
     (let* ((cut (make-actor-context nil))
            (actor (actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :pinned)))
       (is (not (null actor)))
@@ -48,7 +48,7 @@
       (is (not (null (act:context actor))))
       (is (not (eq cut (act:context actor))))
       (is (null (ac:system (act:context actor)))))
-    (is (= 0 (length (invocations 'sys:dispatchers))))))
+    (is (= 0 (length (invocations 'asys:dispatchers))))))
 
 (test create-actor--dont-add-when-null-creator
   "Tests creating a new actor in the context."
@@ -59,7 +59,7 @@
 (test find-actors-test
   "Test for finding actors"
   (with-mocks ()
-    (answer (sys:dispatchers _) nil)
+    (answer (asys:dispatchers _) nil)
     (let ((context (make-actor-context nil)))
       (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
       (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
@@ -70,7 +70,7 @@
 (test retrieve-all-actors
   "Retrieves all actors"
   (with-mocks ()
-    (answer (sys:dispatchers _) nil)
+    (answer (asys:dispatchers _) nil)
     (let ((context (make-actor-context nil)))
       (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
       (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
@@ -79,7 +79,7 @@
 (test shutdown-actor-context
   "Shutdown actor context - stop all actors."
   (with-mocks ()
-    (answer (sys:dispatchers _) nil)
+    (answer (asys:dispatchers _) nil)
     (let ((context (make-actor-context nil)))
       (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
       (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))

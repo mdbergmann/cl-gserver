@@ -5,7 +5,7 @@
                 #:make-actor)
   (:import-from #:utils
                 #:assert-cond)
-  (:import-from #:dispatcher
+  (:import-from #:disp
                 #:workers
                 #:shared-dispatcher)
   (:export #:run!
@@ -30,20 +30,20 @@
   "Creates a system"
   (let ((system (make-actor-system :shared-dispatcher-workers 4)))
     (is (not (null system)))
-    (is (not (null (sys::system-actor-context system))))
-    (is (typep (sys::system-actor-context system) 'ac:actor-context))
-    (is (not (null (sys::user-actor-context system))))
-    (is (typep (sys::user-actor-context system) 'ac:actor-context))
+    (is (not (null (asys::system-actor-context system))))
+    (is (typep (asys::system-actor-context system) 'ac:actor-context))
+    (is (not (null (asys::user-actor-context system))))
+    (is (typep (asys::user-actor-context system) 'ac:actor-context))
     (ac:shutdown system)
     (sleep 0.5)))
 
 (test shutdown-system
   "Shutting down should stop all actors whether pinned or shared."
   (let ((system (make-actor-system)))
-    (sys::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :user)
-    (sys::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :user)
-    (sys::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :system)
-    (sys::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :system)
+    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :user)
+    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :user)
+    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :system)
+    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :system)
 
     (ac:shutdown system)
     (is-true (assert-cond (lambda ()
@@ -67,19 +67,19 @@
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp))
       (is (not (null (act:context actor))))
       (is (eq (ac:system (act:context actor)) cut))
-      (is (= 1 (length (ac:all-actors (sys::user-actor-context cut)))))
-      (is (eq actor (first (ac:all-actors (sys::user-actor-context cut))))))))
+      (is (= 1 (length (ac:all-actors (asys::user-actor-context cut)))))
+      (is (eq actor (first (ac:all-actors (asys::user-actor-context cut))))))))
 
 (test actor-of--shared-system
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (sys::%actor-of cut (lambda () (make-actor (lambda ()))) :shared :context-key :system)))
+    (let ((actor (asys::%actor-of cut (lambda () (make-actor (lambda ()))) :shared :context-key :system)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp))
       (is (not (null (act:context actor))))
       (is (eq (ac:system (act:context actor)) cut))
-      (is (= 1 (length (ac:all-actors (sys::system-actor-context cut)))))
-      (is (eq actor (first (ac:all-actors (sys::system-actor-context cut))))))))
+      (is (= 1 (length (ac:all-actors (asys::system-actor-context cut)))))
+      (is (eq actor (first (ac:all-actors (asys::system-actor-context cut))))))))
 
 (test actor-of--pinned-user
   "Creates actors in the system."
@@ -89,31 +89,31 @@
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt))
       (is (not (null (act:context actor))))
       (is (eq (ac:system (act:context actor)) cut))
-      (is (= 1 (length (ac:all-actors (sys::user-actor-context cut)))))
-      (is (eq actor (first (ac:all-actors (sys::user-actor-context cut))))))))
+      (is (= 1 (length (ac:all-actors (asys::user-actor-context cut)))))
+      (is (eq actor (first (ac:all-actors (asys::user-actor-context cut))))))))
 
 (test actor-of--pinned-system
   "Creates actors in the system."
   (with-fixture test-system ()
-    (let ((actor (sys::%actor-of cut (lambda () (make-actor (lambda ()))) :pinned :context-key :system)))
+    (let ((actor (asys::%actor-of cut (lambda () (make-actor (lambda ()))) :pinned :context-key :system)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt))
       (is (not (null (act:context actor))))
       (is (eq (ac:system (act:context actor)) cut))
-      (is (= 1 (length (ac:all-actors (sys::system-actor-context cut)))))
-      (is (eq actor (first (ac:all-actors (sys::system-actor-context cut))))))))
+      (is (= 1 (length (ac:all-actors (asys::system-actor-context cut)))))
+      (is (eq actor (first (ac:all-actors (asys::system-actor-context cut))))))))
 
 (test find-actors--in-system
   "Test finding actors in system."
   (with-fixture test-system ()
     (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
           (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2"))))
-          (act3 (sys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :shared :context-key :system))
-          (act4 (sys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")) :shared :context-key :system)))
+          (act3 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :shared :context-key :system))
+          (act4 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")) :shared :context-key :system)))
       (is (eq act1 (car (ac:find-actors cut (lambda (x) (string= "foo" (act-cell:name x)))))))
       (is (eq act2 (car (ac:find-actors cut (lambda (x) (string= "foo2" (act-cell:name x)))))))
-      (is (eq act3 (car (sys::%find-actors cut (lambda (x) (string= "foo" (act-cell:name x))) :context-key :system))))
-      (is (eq act4 (car (sys::%find-actors cut (lambda (x) (string= "foo2" (act-cell:name x))) :context-key :system))))
+      (is (eq act3 (car (asys::%find-actors cut (lambda (x) (string= "foo" (act-cell:name x))) :context-key :system))))
+      (is (eq act4 (car (asys::%find-actors cut (lambda (x) (string= "foo2" (act-cell:name x))) :context-key :system))))
       (is (eq nil (ac:find-actors cut (lambda (x) (declare (ignore x))))))
       (is (= 2 (length (ac:find-actors cut #'identity)))))))
 

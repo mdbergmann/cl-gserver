@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.dispatcher-test
-  (:use :cl :fiveam :cl-gserver.dispatcher-api :cl-gserver.dispatcher
+  (:use :cl :fiveam :cl-gserver.dispatcher
         :cl-gserver.actor)
   (:import-from #:utils
                 #:assert-cond)

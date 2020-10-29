@@ -3,10 +3,10 @@
   (:nicknames :ac)
   (:export #:actor-context
            #:make-actor-context
+           #:system
            #:actor-of
            #:find-actors
            #:all-actors
-           #:system
            #:shutdown))
 (in-package :cl-gserver.actor-context)
 

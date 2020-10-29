@@ -1,6 +1,6 @@
 (defpackage :cl-gserver.messageb
   (:use :cl :cl-gserver.utils :cl-gserver.queue)
-  (:import-from :dispatcher-api
+  (:import-from #:disp
                 #:dispatch
                 #:dispatch-async)
   (:nicknames :mesgb)

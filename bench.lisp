@@ -36,7 +36,7 @@
 (defun runner-bt-dp (&optional (withreply-p nil) (queue-size 0))
   (setf *system* (system:make-actor-system :num-workers 8))
   (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-dp
-                                :dispatcher (sys:dispatcher *system*)))
+                                :dispatcher (asys:dispatcher *system*)))
   (setf *withreply-p* withreply-p)
   (setf *counter* 0)
   (setf *starttime* (get-universal-time))
@@ -56,7 +56,7 @@
   (format t "Elapsed: ~a~%" (- *endtime* *starttime*))
   (cl-gserver.messageb:stop *msgbox*)
   (print *system*)
-  (sys:shutdown *system*))
+  (asys:shutdown *system*))
 
 (defun runner-bt-bt (&optional (withreply-p nil) (queue-size 0))
   (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-bt :max-queue-size queue-size))

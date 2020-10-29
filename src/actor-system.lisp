@@ -1,12 +1,15 @@
 (defpackage :cl-gserver.actor-system
   (:use :cl)
-  (:nicknames :sys)
-  (:import-from #:dispatcher
+  (:nicknames :asys)
+  (:import-from #:disp
                 #:shared-dispatcher
                 #:make-dispatcher
                 #:make-dispatcher-worker)
   (:import-from #:ac
-                #:make-actor-context)
+                #:make-actor-context
+                #:actor-of
+                #:find-actors
+                #:shutdown)
   (:export #:make-actor-system
            #:actor-system
            #:dispatchers))
@@ -81,6 +84,6 @@ Users should use `find-actors'."
   (%find-actors self find-fun :context-key :user))
 
 (defmethod shutdown ((self actor-system))
-  (dispatcher-api:shutdown (getf (dispatchers self) :shared))
+  (disp:shutdown (getf (dispatchers self) :shared))
   (ac:shutdown (user-actor-context self))
   (ac:shutdown (system-actor-context self)))

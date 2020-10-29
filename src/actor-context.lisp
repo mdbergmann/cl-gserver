@@ -1,11 +1,15 @@
-;; ----------------------------------------
-;; Actor-Context implementation
-;; ----------------------------------------
+(defpackage :cl-gserver.actor-context
+  (:use :cl)
+  (:nicknames :ac)
+  (:export #:actor-of
+           #:find-actors
+           #:all-actors
+           #:shutdown))
 
 (in-package :cl-gserver.actor-context)
     
 (defun get-shared-dispatcher (system)
-  (getf (sys:dispatchers system) :shared))
+  (getf (asys:dispatchers system) :shared))
 
 (defun add-actor (context actor)
   (vector-push-extend actor (actors context))

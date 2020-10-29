@@ -7,6 +7,7 @@
                 #:make-dispatcher-worker)
   (:import-from #:ac
                 #:make-actor-context
+                ;; protocol
                 #:actor-of
                 #:find-actors
                 #:shutdown)
@@ -20,8 +21,8 @@
   ((dispatchers :initform nil
                 :reader dispatchers
                 :documentation "The message dispatcher.")
-   (system-actor-context :initform nil
-                         :reader system-actor-context
+   (internal-actor-context :initform nil
+                         :reader internal-actor-context
                          :documentation "An actor context reserved for agents/actors used by the system.")
    (user-actor-context :initform nil
                        :reader user-actor-context
@@ -37,9 +38,9 @@ It allows to create actors using the method `actor-of'."))
       (format stream "dispatchers: ~a" dispatchers))))
 
 (defmethod initialize-instance :after ((self actor-system) &key)
-  (with-slots (user-actor-context system-actor-context) self
+  (with-slots (user-actor-context internal-actor-context) self
     (setf user-actor-context (make-actor-context self))
-    (setf system-actor-context (make-actor-context self))))
+    (setf internal-actor-context (make-actor-context self))))
 
 (defun make-actor-system (&key (shared-dispatcher-workers 4))
   "Creates a system.
@@ -57,11 +58,11 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
 
 (defun actor-context-for-key (context-key system)
   (case context-key
-    (:system (system-actor-context system))
+    (:internal (internal-actor-context system))
     (otherwise (user-actor-context system))))
 
 (defun %actor-of (system create-fun dispatch-type &key (context-key :user))
-  "Private API to create system actors. Context-key is either `:system' or `:user'
+  "Private API to create system actors. Context-key is either `:internal' or `:user'
 Users should use `actor-of'."
   (ac:actor-of
    (actor-context-for-key context-key system)
@@ -86,4 +87,4 @@ Users should use `find-actors'."
 (defmethod shutdown ((self actor-system))
   (disp:shutdown (getf (dispatchers self) :shared))
   (ac:shutdown (user-actor-context self))
-  (ac:shutdown (system-actor-context self)))
+  (ac:shutdown (internal-actor-context self)))

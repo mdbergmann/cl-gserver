@@ -30,8 +30,8 @@
   "Creates a system"
   (let ((system (make-actor-system :shared-dispatcher-workers 4)))
     (is (not (null system)))
-    (is (not (null (asys::system-actor-context system))))
-    (is (typep (asys::system-actor-context system) 'ac:actor-context))
+    (is (not (null (asys::internal-actor-context system))))
+    (is (typep (asys::internal-actor-context system) 'ac:actor-context))
     (is (not (null (asys::user-actor-context system))))
     (is (typep (asys::user-actor-context system) 'ac:actor-context))
     (ac:shutdown system)
@@ -42,8 +42,8 @@
   (let ((system (make-actor-system)))
     (asys::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :user)
     (asys::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :user)
-    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :system)
-    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :system)
+    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :internal)
+    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :internal)
 
     (ac:shutdown system)
     (is-true (assert-cond (lambda ()
@@ -59,8 +59,8 @@
       (is (= 4 (length (workers (getf dispatchers :shared))))))
     (ac:shutdown system)))
 
-(test actor-of--shared-user
-  "Creates actors in the system."
+(test actor-of--shared--user
+  "Creates actors in the system in user context with shared dispatcher."
   (with-fixture test-system ()
     (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :shared)))
       (is (not (null actor)))
@@ -70,19 +70,19 @@
       (is (= 1 (length (ac:all-actors (asys::user-actor-context cut)))))
       (is (eq actor (first (ac:all-actors (asys::user-actor-context cut))))))))
 
-(test actor-of--shared-system
-  "Creates actors in the system."
+(test actor-of--shared--internal
+  "Creates actors in the system in internal context with shared dispatcher."
   (with-fixture test-system ()
-    (let ((actor (asys::%actor-of cut (lambda () (make-actor (lambda ()))) :shared :context-key :system)))
+    (let ((actor (asys::%actor-of cut (lambda () (make-actor (lambda ()))) :shared :context-key :internal)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-dp))
       (is (not (null (act:context actor))))
       (is (eq (ac:system (act:context actor)) cut))
-      (is (= 1 (length (ac:all-actors (asys::system-actor-context cut)))))
-      (is (eq actor (first (ac:all-actors (asys::system-actor-context cut))))))))
+      (is (= 1 (length (ac:all-actors (asys::internal-actor-context cut)))))
+      (is (eq actor (first (ac:all-actors (asys::internal-actor-context cut))))))))
 
-(test actor-of--pinned-user
-  "Creates actors in the system."
+(test actor-of--pinned--user
+  "Creates actors in the system in user context with pinned dispatcher."
   (with-fixture test-system ()
     (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :pinned)))
       (is (not (null actor)))
@@ -92,28 +92,28 @@
       (is (= 1 (length (ac:all-actors (asys::user-actor-context cut)))))
       (is (eq actor (first (ac:all-actors (asys::user-actor-context cut))))))))
 
-(test actor-of--pinned-system
-  "Creates actors in the system."
+(test actor-of--pinned--internal
+  "Creates actors in the system in internal context with pinned dispatcher."
   (with-fixture test-system ()
-    (let ((actor (asys::%actor-of cut (lambda () (make-actor (lambda ()))) :pinned :context-key :system)))
+    (let ((actor (asys::%actor-of cut (lambda () (make-actor (lambda ()))) :pinned :context-key :internal)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box-bt))
       (is (not (null (act:context actor))))
       (is (eq (ac:system (act:context actor)) cut))
-      (is (= 1 (length (ac:all-actors (asys::system-actor-context cut)))))
-      (is (eq actor (first (ac:all-actors (asys::system-actor-context cut))))))))
+      (is (= 1 (length (ac:all-actors (asys::internal-actor-context cut)))))
+      (is (eq actor (first (ac:all-actors (asys::internal-actor-context cut))))))))
 
 (test find-actors--in-system
   "Test finding actors in system."
   (with-fixture test-system ()
     (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
           (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2"))))
-          (act3 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :shared :context-key :system))
-          (act4 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")) :shared :context-key :system)))
+          (act3 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :shared :context-key :internal))
+          (act4 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")) :shared :context-key :internal)))
       (is (eq act1 (car (ac:find-actors cut (lambda (x) (string= "foo" (act-cell:name x)))))))
       (is (eq act2 (car (ac:find-actors cut (lambda (x) (string= "foo2" (act-cell:name x)))))))
-      (is (eq act3 (car (asys::%find-actors cut (lambda (x) (string= "foo" (act-cell:name x))) :context-key :system))))
-      (is (eq act4 (car (asys::%find-actors cut (lambda (x) (string= "foo2" (act-cell:name x))) :context-key :system))))
+      (is (eq act3 (car (asys::%find-actors cut (lambda (x) (string= "foo" (act-cell:name x))) :context-key :internal))))
+      (is (eq act4 (car (asys::%find-actors cut (lambda (x) (string= "foo2" (act-cell:name x))) :context-key :internal))))
       (is (eq nil (ac:find-actors cut (lambda (x) (declare (ignore x))))))
       (is (= 2 (length (ac:find-actors cut #'identity)))))))
 
@@ -138,9 +138,9 @@
 (defun run-tests ()
   (run! 'create-system)
   (run! 'shutdown-system)
-  (run! 'actor-of--shared-user)
-  (run! 'actor-of--shared-system)
-  (run! 'actor-of--pinned-user)
-  (run! 'actor-of--pinned-system)
+  (run! 'actor-of--shared--user)
+  (run! 'actor-of--shared--internal)
+  (run! 'actor-of--pinned--user)
+  (run! 'actor-of--pinned--internal)
   (run! 'find-actors--in-system)
   (run! 'creating-many-actors--and-collect-responses))

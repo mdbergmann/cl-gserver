@@ -14,15 +14,15 @@
 
 (log:config :warn)
 
-(def-fixture cell-fixture (call-fun cast-fun before-start-fun after-stop-fun state)
+(def-fixture cell-fixture (call-fun cast-fun pre-start-fun after-stop-fun state)
   (defclass test-cell (actor-cell) ())
   (defmethod handle-call ((cell test-cell) message current-state)
     (funcall call-fun cell message current-state))
   (defmethod handle-cast ((cell test-cell) message current-state)
     (funcall cast-fun cell message current-state))
-  (defmethod before-start ((cell test-cell) state)
-    (when before-start-fun
-      (funcall before-start-fun cell state)))
+  (defmethod pre-start ((cell test-cell) state)
+    (when pre-start-fun
+      (funcall pre-start-fun cell state)))
   (defmethod after-stop ((cell test-cell))
     (when after-stop-fun
       (funcall after-stop-fun cell)))
@@ -41,8 +41,8 @@
     (print (name cut))
     (is (= 0 (search "actor-" (name cut))))))
 
-(test run-before-start-fun
-  "Tests the execution of `before-start'"
+(test run-pre-start-fun
+  "Tests the execution of `pre-start'"
   
   (with-fixture cell-fixture ((lambda (self message current-state)
                                 (declare (ignore self message))
@@ -51,10 +51,10 @@
                               (lambda (self state)
                                 (declare (ignore state))
                                 (with-slots (act-cell:state) self
-                                  (setf act-cell:state "before-start-fun-executed")))
+                                  (setf act-cell:state "pre-start-fun-executed")))
                               nil
                               0)
-    (is (string= "before-start-fun-executed" (call cut :foo)))))
+    (is (string= "pre-start-fun-executed" (call cut :foo)))))
 
 (defparameter *after-stop-val* nil)
 (test run-after-stop-fun

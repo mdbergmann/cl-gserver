@@ -3,7 +3,7 @@
   (:nicknames :act)
   (:import-from #:act-cell
                 #:actor-cell
-                #:before-start
+                #:pre-start
                 #:after-stop
                 #:handle-call
                 #:handle-cast
@@ -68,7 +68,7 @@ In any case stop the actor-cell."
 (defclass async-waitor-actor (actor)
   ((after-start-fun :initarg :after-start-fun)))
 
-(defmethod before-start ((self async-waitor-actor) state)
+(defmethod pre-start ((self async-waitor-actor) state)
   (when (next-method-p)
     (call-next-method))
   (with-slots (after-start-fun) self
@@ -120,7 +120,7 @@ In any case stop the actor-cell."
 ;;                                          (msg msg-sym)
 ;;                                          (state state-sym))
 ;;                                      (car recv-form)))
-;;                    :before-start-fun (lambda (,actor-sym ,state-sym)
+;;                    :pre-start-fun (lambda (,actor-sym ,state-sym)
 ;;                                      ,(let ((self actor-sym)
 ;;                                             (state state-sym))
 ;;                                         (car rest-body)))))))

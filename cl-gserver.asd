@@ -74,7 +74,7 @@ OK - extract actor api to separate api
 OK - cleanup all the doc strings
 OK - stop 'user' actors first on shutdown
 OK - verify system shutdown
-OK - add 'before-start' handler instead of 'before-start'
+OK - add 'pre-start' handler instead of 'pre-start'
 OK - see how to mingle in a 'pinned' dispatcher which uses the 'bt' based message box.
 OK - put all '-api' packages first in asd
 |#

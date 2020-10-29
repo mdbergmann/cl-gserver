@@ -9,7 +9,7 @@
            ;; API
            #:handle-call
            #:handle-cast
-           #:before-start
+           #:pre-start
            #:after-stop
            #:stop
            #:call
@@ -70,13 +70,13 @@ Note: the `actor-cell' uses `call' and `cast' functions which translate to `ask'
               msgbox))))
 
 (defmethod initialize-instance :after ((obj actor-cell) &key)
-  (before-start obj (slot-value obj 'state)))
+  (pre-start obj (slot-value obj 'state)))
 
 ;; -----------------------------------------------
 ;; public functions / API
 ;; -----------------------------------------------
 
-(defgeneric before-start (actor-cell state)
+(defgeneric pre-start (actor-cell state)
   (:documentation
    "Generic function definition that called from `initialize-instance'."))
 
@@ -102,7 +102,7 @@ Same convention as for 'handle-call' except that no return is sent to the caller
 ;; Impl
 ;; ---------------------------------
 
-(defmethod before-start ((self actor-cell) state)
+(defmethod pre-start ((self actor-cell) state)
   "Empty implementation so that we can call it anyway even if there are no other implementations."
   (declare (ignore state))
   nil)

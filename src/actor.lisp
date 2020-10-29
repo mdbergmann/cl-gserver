@@ -6,7 +6,8 @@
                 #:before-start
                 #:after-stop
                 #:handle-call
-                #:handle-cast)
+                #:handle-cast
+                #:stop)
   (:import-from #:alexandria
                 #:with-gensyms)
   (:import-from #:future
@@ -33,10 +34,27 @@ the `:stop' message. It will respond with `:stopped'."))
                  :state state
                  :receive-fun receive-fun))
 
+;; -------------------------------
+;; actor-cell impls
+;; -------------------------------
+
 (defmethod handle-call ((self actor) message state)
   (funcall (receive-fun self) self message state))
 (defmethod handle-cast ((self actor) message state)
   (funcall (receive-fun self) self message state))
+
+(defmethod stop ((self actor))
+  "If this actor has an `actor-context', also stop all children.
+In any case stop the actor-cell."
+  (let ((context (context self)))
+    (when context
+        (dolist (child (ac:all-actors context))
+          (stop child)))
+    (call-next-method)))
+
+;; -------------------------------
+;; actor protocol impl
+;; -------------------------------
 
 (defmethod tell ((self actor) message)
   (act-cell:cast self message))

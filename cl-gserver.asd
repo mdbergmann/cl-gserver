@@ -63,6 +63,7 @@
 #|
 TODOs:
 - add 'stop' actor to the actor-context protocol which is implemented in actor.
+- shutdown of actor-context should stop actors and recursively also shutdown child acs
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - add 'after-stop' handler for cleaning up and remove from actor syste,

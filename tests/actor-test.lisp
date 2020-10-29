@@ -55,7 +55,8 @@
                                  (declare (ignore self message current-state)))
                                0)
     ;; attach actor-context - this is usually done when the actor was created from the actor-system
-    (setf (act:context cut) (ac:make-actor-context (asys:make-actor-system :shared-dispatcher-workers 0)))
+    (setf (act:context cut)
+          (ac:make-actor-context (asys:make-actor-system :shared-dispatcher-workers 0)))
     (let ((child-actor (ac:actor-of (act:context cut)
                                     (lambda () (make-actor (lambda (self msg state)
                                                         (declare (ignore self msg state))))))))
@@ -63,6 +64,24 @@
       (is (not (eq (act:context child-actor) (act:context cut))))
       (is (eq (ac:system (act:context child-actor)) (ac:system (act:context cut))))
       (is (eq child-actor (first (ac:all-actors (act:context cut))))))))
+
+(test stop-actor--stoping-parent-stops-also-child
+  "Tests that stopping a parent actor also the children are stopped."
+  (with-fixture actor-fixture ((lambda (self message current-state)
+                                 (declare (ignore self message current-state)))
+                               0)
+    ;; attach actor-context
+    (setf (act:context cut)
+          (ac:make-actor-context (asys:make-actor-system :shared-dispatcher-workers 0)))
+    (let ((child-actor (ac:actor-of (act:context cut)
+                                    (lambda () (make-actor (lambda (self msg state)
+                                                        (declare (ignore self msg state))))))))
+      (act-cell:stop cut)
+      (is (assert-cond (lambda ()
+                         (notany
+                          #'act-cell:running-p
+                          (list cut child-actor))) 1))
+      )))
 
 (test single-actor--handle-async-ask
   "Tests the async ask function."
@@ -119,6 +138,7 @@
   (run! 'make-actor--has-no-msgbox-and-actor-context)
   (run! 'make-actor--with-msgbox)
   (run! 'actor-of--from-existing-actor-context)
+  (run! 'stop-actor--stoping-parent-stops-also-child)
   (run! 'single-actor--handle-async-ask)
   (run! 'single-actor--handle-async-ask-2)
   ;;(run! 'with-actor-macro)

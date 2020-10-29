@@ -38,19 +38,19 @@
   "Updates agent state"
   (with-fixture agent-fixture ((lambda () '(5 4 3)))
     (is (equalp '(5 4 3) (agent-get agent #'identity)))
-    (is (eq t (agent-update agent (lambda (state) (mapcar #'1+ state)))))
-    (is (eq t (assert-cond (lambda ()
-                             (equalp '(6 5 4) (agent-get agent #'identity)))
-                           1)))))
+    (is (agent-update agent (lambda (state) (mapcar #'1+ state))))
+    (is (assert-cond (lambda ()
+                       (equalp '(6 5 4) (agent-get agent #'identity)))
+                     1))))
 
 
 (test stop-agent
   "Stop agent to cleanup resources."
   (let ((agent (make-agent (lambda () nil))))
     (agent-stop agent)
-    (is (eq t (assert-cond (lambda ()
-                             (eq :stopped (agent-get agent #'identity)))
-                           1)))))
+    (is (assert-cond (lambda ()
+                       (eq :stopped (agent-get agent #'identity)))
+                     1))))
 
 (defun run-tests ()
   (run! 'create-agent)

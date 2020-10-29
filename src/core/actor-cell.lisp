@@ -135,11 +135,12 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
     (slot-value internal-state 'running)))
 
 (defmethod stop ((self actor-cell))
-  (log:debug "Stopping server and message handling!")
+  (log:debug "Stopping on actor-cell: " self)
   (with-slots (msgbox internal-state) self
-    (mesgb:stop msgbox)
-    (setf (slot-value internal-state 'running) nil)
-    (after-stop self)))
+    (when (slot-value internal-state 'running)
+      (mesgb:stop msgbox)
+      (setf (slot-value internal-state 'running) nil)
+      (after-stop self))))
 
 ;; -----------------------------------------------    
 ;; internal functions

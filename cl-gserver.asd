@@ -15,6 +15,7 @@
                 ((:file "dispatcher-api")
                  (:file "actor-system-api")
                  (:file "actor-context-api")
+                 (:file "actor-api")
                  (:file "utils")
                  (:module "core"
                   :components
@@ -70,7 +71,7 @@ TODOs:
 - add 'after-stop' handler for cleaning up and remove from actor syste,
 - make sure that actor names are unique within their context.
 - extract actor api to separate api
-- cleanup all the doc strings
+OK - cleanup all the doc strings
 OK - stop 'user' actors first on shutdown
 OK - verify system shutdown
 OK - add 'before-start' handler instead of 'before-start'

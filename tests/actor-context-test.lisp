@@ -47,7 +47,9 @@
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/bt))
       (is (not (null (act:context actor))))
       (is (not (eq cut (act:context actor))))
-      (is (null (ac:system (act:context actor)))))
+      (is (null (ac:system (act:context actor))))
+      ;; stop the :pinned actor
+      (act-cell:stop actor))
     (is (= 0 (length (invocations 'asys:dispatchers))))))
 
 (test create-actor--dont-add-when-null-creator

@@ -40,7 +40,7 @@
   "Tests shutting down a dispatcher and stopping all workers."
   (flet ((len-message-threads () (length
                                   (remove-if-not (lambda (x)
-                                                   (str:starts-with-p "message-thread-mb" x))
+                                                   (str:starts-with-p "message-thread-mesgb" x))
                                                  (mapcar #'bt:thread-name (bt:all-threads))))))
     (let* ((len-message-threads-before (len-message-threads))
            (cut (make-test-dispatcher 4)))

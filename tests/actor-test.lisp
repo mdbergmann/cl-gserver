@@ -18,7 +18,7 @@
   (defclass test-actor (actor) ())
   (let ((cut (make-actor receive-fun
                          :state state)))
-    (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box-bt))
+    (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt))
     (unwind-protect
          (&body)
       (tell cut :stop))))
@@ -41,7 +41,7 @@
                                ((string= message "foo") (cons 1 1))
                                ((string= message "bar") (cons 5 5))
                                ((string= message "get") (cons current-state current-state)))))))
-    (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box-bt))
+    (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt))
     (is (not (null cut)))
     (is (eq t (tell cut "foo")))
     (is (eq t (assert-cond (lambda () (= 1 (ask cut "get"))) 1)))

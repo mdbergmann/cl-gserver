@@ -1,9 +1,26 @@
 (defpackage :cl-gserver.actor-context
   (:use :cl)
-  (:nicknames :ac))
+  (:nicknames :ac)
+  (:export #:actor-context
+           #:make-actor-context))
 
 (in-package :cl-gserver.actor-context)
     
+(defclass actor-context ()
+  ((actors :initform (make-array 50 :adjustable t :fill-pointer 0)
+           :reader actors
+           :documentation "A list of actors.")
+   (system :initform nil
+           :reader system
+           :documentation "A reference to the `actor-system'."))
+  (:documentation "Actor context deals with creating and adding actors in classes that inherit `actor-context'."))
+
+(defun make-actor-context (actor-system)
+  (let ((context (make-instance 'actor-context)))
+    (with-slots (system) context
+      (setf system actor-system))
+    context))
+
 (defun get-shared-dispatcher (system)
   (getf (asys:dispatchers system) :shared))
 
@@ -13,8 +30,8 @@
 
 (defun message-box-for-dispatch-type (dispatch-type context)
   (case dispatch-type
-    (:pinned (make-instance 'mesgb:message-box-bt))
-    (otherwise (make-instance 'mesgb:message-box-dp
+    (:pinned (make-instance 'mesgb:message-box/bt))
+    (otherwise (make-instance 'mesgb:message-box/dp
                               :dispatcher (get-shared-dispatcher (system context))
                               :max-queue-size 0))))
 

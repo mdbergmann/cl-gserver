@@ -5,7 +5,7 @@
                 #:state
                 #:msgbox)
   (:import-from #:mesgb
-                #:message-box-bt)
+                #:message-box/bt)
   (:export #:make-agent           
            #:agent-get
            #:agent-update
@@ -42,7 +42,7 @@ This rarely (if at all) needs to change because the agent is very specific."
          (agent (make-instance 'agent :state state
                                       :name (string (gensym "agent-"))
                                       :receive-fun #'receive-fun)))
-    (setf (msgbox agent) (make-instance 'message-box-bt))
+    (setf (msgbox agent) (make-instance 'message-box/bt))
     agent))
 
 (defun agent-get (agent get-fun)

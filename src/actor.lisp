@@ -87,10 +87,10 @@ the `:stop' message. It will respond with `:stopped'."))
 (defmacro with-waitor-actor (actor message system &rest body)
   (with-gensyms (self msg state msgbox waitor-actor)
     `(let ((,msgbox (if ,system
-                        (make-instance 'mesgb:message-box-dp
+                        (make-instance 'mesgb:message-box/dp
                                        :dispatcher
                                        (getf (asys:dispatchers ,system) :shared))
-                        (make-instance 'mesgb:message-box-bt)))
+                        (make-instance 'mesgb:message-box/bt)))
            (,waitor-actor (make-instance 'async-waitor-actor
                                         :receive-fun (lambda (,self ,msg ,state)
                                                        (unwind-protect

@@ -37,7 +37,7 @@
                              :receive-fun *receive-fun*))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))
-    (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box-bt :max-queue-size queue-size))
+    (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt :max-queue-size queue-size))
     (&body)
     (ask cut :stop))
   (format t "Running non-system tests...done~%")

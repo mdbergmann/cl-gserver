@@ -4,7 +4,7 @@
                 #:dispatch
                 #:dispatch-async)
   (:nicknames :mesgb)
-  (:export #:message-box-dp #:message-box-bt
+  (:export #:message-box/dp #:message-box/bt
            #:submit
            #:with-submit-handler
            #:stop))
@@ -71,7 +71,7 @@ Use this instead of `submit'."
   (withreply-cvar nil)
   (handler-fun nil :type function))
 
-(defclass message-box-bt (message-box-base)
+(defclass message-box/bt (message-box-base)
   ((queue-thread :initform nil
                  :documentation
                  "The thread that pops queue items.")
@@ -84,7 +84,7 @@ This is used when the gserver is created outside of the `system'.
 There is a limit on the maximum number of gservers/actors/agents that can be created with
 this kind of queue because each message-box requires exactly one thread."))
 
-(defmethod initialize-instance :after ((self message-box-bt) &key)
+(defmethod initialize-instance :after ((self message-box/bt) &key)
   (with-slots (name queue-thread) self
     (setf queue-thread (bt:make-thread
                         (lambda () (message-processing-loop self))
@@ -118,7 +118,7 @@ this kind of queue because each message-box requires exactly one thread."))
               (bt:condition-notify withreply-cvar)))
           (funcall handler-fun message)))))
 
-(defmethod submit ((self message-box-bt) message withreply-p handler-fun)
+(defmethod submit ((self message-box/bt) message withreply-p handler-fun)
 "Alternatively use `with-submit-handler' from your code to handle the message after it was 'popped' from the queue.
 The `handler-fun' argument here will be `funcall'ed when the message was 'popped'."
   (log:debug "Submit message: " message)
@@ -173,7 +173,7 @@ The queue thread has processed the message."
            (+ sleep-time wait-acc)
            (when (or (funcall cond-fun) (> wait-acc max-time)) (return))))))
 
-(defmethod stop ((self message-box-bt))
+(defmethod stop ((self message-box/bt))
   (call-next-method)
   (with-slots (queue-thread should-run) self
     (setf should-run nil)
@@ -184,7 +184,7 @@ The queue thread has processed the message."
 ;; ------------- dispatcher msgbox---------
 ;; ----------------------------------------
 
-(defclass message-box-dp (message-box-base)
+(defclass message-box/dp (message-box-base)
   ((dispatcher :initarg :dispatcher
                :initform (error "Must be set!")
                :reader dispatcher
@@ -196,11 +196,11 @@ This has the advantage that an almost unlimited gservers/actors/agents can be cr
 This message-box doesn't 'own' a separate thread. It uses the `dispatcher' to handle the message processing.
 The `dispatcher is kind of like a thread pool."))
 
-(defmethod initialize-instance :after ((self message-box-dp) &key)
+(defmethod initialize-instance :after ((self message-box/dp) &key)
   (when (next-method-p)
     (call-next-method)))
 
-(defmethod submit ((self message-box-dp) message withreply-p handler-fun)
+(defmethod submit ((self message-box/dp) message withreply-p handler-fun)
   "Submitting a message on a multi-threaded `dispatcher' is different as submitting on a single threaded message-box.
 On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads.
 On the `dispatcher' this is not the case. The order cannot be guaranteed when messages are processed by different 
@@ -226,6 +226,6 @@ This is archieved here by protecting the `handler-fun' executation by a lock."
           (dispatch dispatcher dispatcher-fun)
           (dispatch-async dispatcher dispatcher-fun)))))
 
-(defmethod stop ((self message-box-dp))
+(defmethod stop ((self message-box/dp))
   (when (next-method-p)
     (call-next-method)))

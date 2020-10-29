@@ -54,9 +54,6 @@
                                         (uiop:find-symbol* '#:test-suite
                                                            '#:cl-gserver.tests))))
 
-;; add to asdf:*central-registry* is not done
-;; (push #P"~/Development/MySources/cl-gserver/" asdf:*central-registry*)
-;;
 ;; load system
 ;; (asdf:load-system "cl-gserver")
 ;;
@@ -65,12 +62,14 @@
 
 #|
 TODOs:
-=> - add actor-context as composition to system (twice for 'user' and 'system') and actor
+- add 'stop' actor to the actor-context protocol which is implemented in actor.
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - add 'after-stop' handler for cleaning up and remove from actor syste,
 - make sure that actor names are unique within their context.
-- extract actor api to separate api
+- add timeouts for ask, async-ask and all cases that use those.
+OK - add actor-context as composition to system (twice for 'user' and 'system') and actor
+OK - extract actor api to separate api
 OK - cleanup all the doc strings
 OK - stop 'user' actors first on shutdown
 OK - verify system shutdown

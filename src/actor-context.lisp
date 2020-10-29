@@ -7,6 +7,7 @@
 
 (defun make-actor-context (actor-system)
   "Creates an `actor-context'. Requires a reference to `system'."
+  (assert (not (null actor-system)) nil "Requires an actor-system!")
   (let ((context (make-instance 'actor-context)))
     (with-slots (system) context
       (setf system actor-system))

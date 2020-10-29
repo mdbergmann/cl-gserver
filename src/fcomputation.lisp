@@ -11,7 +11,7 @@
 
 (defclass future ()
   ((promise :initform nil
-                :documentation "The wrapped promise")))
+            :documentation "The wrapped promise")))
 
 (defun make-future (execute-fun)
   (let ((future (make-instance 'future)))

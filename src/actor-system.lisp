@@ -7,34 +7,36 @@
                 #:make-dispatcher-worker)
   (:import-from #:ac
                 #:make-actor-context
-                ;; protocol
+                ;; actor-context protocol
                 #:actor-of
                 #:find-actors
-                #:shutdown)
-  (:export #:make-actor-system
-           #:actor-system))
+                #:shutdown))
 
 (in-package :cl-gserver.actor-system)
 
 (defclass actor-system ()
-  ((dispatchers :initform nil
+  ((dispatchers :initform '()
                 :reader dispatchers
-                :documentation "The message dispatcher.")
+                :documentation "Internal API: contains a list of available message dispatchers.")
    (internal-actor-context :initform nil
                          :reader internal-actor-context
-                         :documentation "An actor context reserved for agents/actors used by the system.")
+                         :documentation "Internal API: an actor context reserved for agents/actors used by the system.")
    (user-actor-context :initform nil
                        :reader user-actor-context
-                       :documentation "An actor context for agents/actors created by the user."))
+                       :documentation "Internal API: an actor context for agents/actors created by the user."))
   (:documentation
-   "A system is a container for `actors' or subclasses.
-Create the `actor-system' using the constructor function `make-actor-system'.
-It allows to create actors using the method `actor-of'."))
+   "An `actor-system' is opening facility. The first thing you do is to create an `actor-system'
+using the main constructor `make-actor-system'.
+With the `actor-system' you can create actors via the `actor-context' protocol function: `actor-of'."))
 
 (defmethod print-object ((obj actor-system) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (dispatchers) obj
-      (format stream "dispatchers: ~a" dispatchers))))
+    (with-slots (dispatchers internal-actor-context user-actor-context) obj
+      (format stream "dispatchers: ~a, shared-workers: ~a, user actors: ~a, internal actors: ~a"
+              (length dispatchers)
+              (length (disp:workers (getf dispatchers :shared)))
+              (length (ac:all-actors user-actor-context))
+              (length (ac:all-actors internal-actor-context))))))
 
 (defmethod initialize-instance :after ((self actor-system) &key)
   (with-slots (user-actor-context internal-actor-context) self
@@ -42,7 +44,7 @@ It allows to create actors using the method `actor-of'."))
     (setf internal-actor-context (make-actor-context self))))
 
 (defun make-actor-system (&key (shared-dispatcher-workers 4))
-  "Creates a system.
+  "Creates an `actor-system'.
 Allows to configure the amount of workers for the `shared-dispatcher'."
   (let ((system (make-instance 'actor-system)))
     (with-slots (dispatchers) system

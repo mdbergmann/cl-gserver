@@ -25,7 +25,7 @@
           :initform (string (gensym "actor-"))
           :reader name
           :documentation
-          "The name of the gserver. If no name is specified a default one is applied.")
+          "The name of the actor/actor-cell. If no name is specified a default one is applied.")
     (state :initarg :state
            :initform nil
            :documentation
@@ -36,23 +36,29 @@
     (msgbox :initform nil
             :accessor msgbox
             :documentation
-            "The `message-box'."))
+            "The `message-box'. By default the `actor'/`actor-cell' has no message-box.
+When the actor is created through the `actor-context' of an actor, or the `actor-system'
+then it will be populated with a message-box."))
   (:documentation
-   "GServer is an Erlang inspired GenServer.
+   "`actor-cell' is the base of the `actor'.
 It is meant to encapsulate state, but also to execute async operations.
 State can be changed by calling into the server via `call' or `cast'.
 Where `call' is waiting for a result and `cast' does not.
 For each `call' and `cast' handlers must be implemented by subclasses.
 
-A GServer runs a `message-box' that processes all the received messages.
-When the GServer was created ad-hoc (out of the `system'), then it will create
-a `message-box' with it's own thread.
-If the GServer is created through the `system', then it will use the system-wide thread-pool
-to process the `message-box'.
+It uses a `message-box' to processes the received messages.
+When the `actor'/`actor-cell' was created ad-hoc (out of the `actor-system'/`actor-context'),
+it will not have a message-box and can't process messages.
+When the `actor' is created through the `actor-system' or `actor-context',
+one can decide what kind of message-box/dispatcher should be used for the new `actor'.
 
-To stop a Gserver message handling and you can tell the `:stop' message 
+See `actor-context' `actor-of' method for more information on this.
+
+To stop an `actor' message handling and you can send the `:stop' message 
 either via `call' (which will respond with `:stopped') or `cast'.
-This is to cleanup thread resources when the Gserver is not needed anymore."))
+This is to cleanup thread resources when the Gserver is not needed anymore.
+
+Note: the `actor-cell' uses `call' and `cast' functions which translate to `ask' and `tell' on the `actor'."))
 
 (defmethod print-object ((obj actor-cell) stream)
   (print-unreadable-object (obj stream :type t)
@@ -64,7 +70,6 @@ This is to cleanup thread resources when the Gserver is not needed anymore."))
               msgbox))))
 
 (defmethod initialize-instance :after ((obj actor-cell) &key)
-  (log:debug "initialized: ~a" obj)
   (before-start obj (slot-value obj 'state)))
 
 ;; -----------------------------------------------
@@ -175,7 +180,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
     (t (progn
          (when sender
            (progn
-             (log:debug "We have a teller. Send the response back: " sender)
+             (log:debug "We have a sender. Send the response back to: " sender)
              (cast sender handle-result)))
          handle-result))))
 
@@ -228,9 +233,7 @@ Otherwise the result is `:resume' to resume user message handling."
   (cond
     ((consp handle-result)
      (progn
-       (log:debug "Updating state...")
        (update-state actor-cell handle-result)
-       (log:debug "Updating state...done")
        (reply-value handle-result)))
     (t
      (progn

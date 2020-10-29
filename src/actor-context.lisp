@@ -1,21 +1,12 @@
 (defpackage :cl-gserver.actor-context
   (:use :cl)
   (:nicknames :ac)
-  (:export #:actor-context
-           #:make-actor-context))
+  (:export #:make-actor-context))
 
 (in-package :cl-gserver.actor-context)
-    
-(defclass actor-context ()
-  ((actors :initform (make-array 50 :adjustable t :fill-pointer 0)
-           :reader actors
-           :documentation "A list of actors.")
-   (system :initform nil
-           :reader system
-           :documentation "A reference to the `actor-system'."))
-  (:documentation "Actor context deals with creating and adding actors in classes that inherit `actor-context'."))
 
 (defun make-actor-context (actor-system)
+  "Creates an `actor-context'. Requires a reference to `system'."
   (let ((context (make-instance 'actor-context)))
     (with-slots (system) context
       (setf system actor-system))

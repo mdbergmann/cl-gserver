@@ -11,15 +11,17 @@
 (in-package :cl-gserver.dispatcher)
 
 (defun make-dispatcher (dispatcher-type &key (num-workers 1))
+  "Default constructor."
   (make-instance dispatcher-type
                  :num-workers num-workers))
 
 (defclass dispatcher-base ()
   ((workers :initform nil
             :reader workers
-            :documentation "The worker instances"))
+            :documentation "The workers of this dispatcher."))
   (:documentation
-   "A `dispatcher' is a pool of `actors'. The dispatching to its actors works in a random way."))
+   "A `dispatcher' is a pool of `actors'.
+The strategy to choose worker is random."))
 
 (defmethod print-object ((obj dispatcher-base) stream)
   (print-unreadable-object (obj stream :type t)
@@ -37,25 +39,20 @@
   (with-slots (workers) self
     (mapcar (lambda (worker) (tell worker :stop)) workers)))
 
-
 ;; ---------------------------------
 ;; Shared dispatcher
 ;; ---------------------------------
 
-(defclass shared-dispatcher (dispatcher-base) ())
+(defclass shared-dispatcher (dispatcher-base) ()
+  (:documentation
+   "A shared dispatcher."))
 
 (defmethod dispatch ((self shared-dispatcher) dispatch-exec-fun)
-  "Dispatches a function (`dispatch-exec-fun') to a worker of the dispatcher to execute there.
-`dispatch' does a `ask' to a `dispatcher' worker, which means this call will block.
-The strategy to select a worker is random."
   (with-slots (workers) self
     (when workers
       (ask (nth (random (length workers)) workers) (cons :execute dispatch-exec-fun)))))
 
 (defmethod dispatch-async ((self shared-dispatcher) dispatch-exec-fun)
-  "Dispatches a function to a worker of the dispatcher to execute there.
-`dispatch-async' does a `tell' to a `dispatcher' worker and is asynchronous.
-The strategy to select a worker is random."
   (with-slots (workers) self
     (when workers
       (tell (nth (random (length workers)) workers) (cons :execute dispatch-exec-fun)))))

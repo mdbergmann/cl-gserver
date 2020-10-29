@@ -45,9 +45,9 @@ received the response the `future' will be fulfilled with the `promise'."))
    (context :initform nil
             :accessor context
             :documentation
-            "This is the `actor-context' every actor carries.
+            "This is the `actor-context' every actor is composed of.
 When the actor is created from scratch it has no `actor-context'.
-When created through the contexts, or systems `actor-of' function an `actor-context' will be set."))
+When created through the `actor-context', or system `actor-of' function an `actor-context' will be set."))
   (:documentation
    "This is the `actor' class.
 The `actor' does it's message handling in the `receive' function.

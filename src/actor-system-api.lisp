@@ -1,8 +1,8 @@
 (defpackage :cl-gserver.actor-system
   (:use :cl)
   (:nicknames :asys)
-  (:export #:dispatchers))
+  (:export #:make-actor-system
+           #:actor-system
+           #:dispatchers))
 
 (in-package :cl-gserver.actor-system)
-
-(defgeneric dispatchers (system))

@@ -12,7 +12,7 @@
 (in-package :cl-gserver.messageb)
 
 (defclass message-box-base ()
-  ((name :initform (string (gensym "mb-")))
+  ((name :initform (string (gensym "mesgb-")))
    (processed-messages :initform 0)
    (queue :initform nil
           :documentation
@@ -30,7 +30,7 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
           (case max-queue-size
             ((0 nil) (make-instance 'queue-unbounded))
             (t (make-instance 'queue-bounded :max-items max-queue-size)))))
-  (log:debug "Initialize instance: ~a~%" self))
+  (log:debug "Initialize instance: ~a" self))
 
 (defgeneric submit (message-box-base message withreply-p handler-fun)
   (:documentation "Submit a message to the mailbox to be queued and handled."))
@@ -121,14 +121,14 @@ this kind of queue because each message-box requires exactly one thread."))
 (defmethod submit ((self message-box/bt) message withreply-p handler-fun)
 "Alternatively use `with-submit-handler' from your code to handle the message after it was 'popped' from the queue.
 The `handler-fun' argument here will be `funcall'ed when the message was 'popped'."
-  (log:debug "Submit message: " message)
+  (log:trace "Submit message: " message)
   (with-slots (queue) self
     (if withreply-p
         (submit/reply queue message handler-fun)
         (submit/no-reply queue message handler-fun))))
 
 (defun submit/no-reply (queue message handler-fun)
-  "This is quite efficient, no lockimng necessary."
+  "This is quite efficient, no locking necessary."
   (let ((push-item (make-message-item
                     :message message
                     :withreply-p nil
@@ -145,9 +145,9 @@ The queue thread has processed the message."
   (let* ((my-handler-result 'no-result)
          (my-handler-fun (lambda (msg)
                            ;; wrap the `handler-fun' so that we can get a function result.
-                           (log:debug "Withreply: handler-fun...")
+                           (log:trace "Withreply: handler-fun...")
                            (setf my-handler-result (funcall handler-fun msg))
-                           (log:debug "Withreply: handler-fun result: " my-handler-result)))
+                           (log:trace "Withreply: handler-fun result: " my-handler-result)))
          (withreply-lock (bt:make-lock))
          (withreply-cvar (bt:make-condition-variable))
          (push-item (make-message-item
@@ -157,12 +157,12 @@ The queue thread has processed the message."
                      :withreply-cvar withreply-cvar
                      :handler-fun my-handler-fun)))
 
-    (log:debug "Withreply: waiting for arrival of result...")
+    (log:trace "Withreply: waiting for arrival of result...")
     (bt:with-lock-held (withreply-lock)
-      (log:debug "pushing item to queue:" push-item)
+      (log:trace "pushing item to queue:" push-item)
       (queue:pushq queue push-item)
       (bt:condition-wait withreply-cvar withreply-lock)
-      (log:debug "Withreply: result should be available: " my-handler-result))
+      (log:trace "Withreply: result should be available: " my-handler-result))
     my-handler-result))
 
 (defun wait-condition (cond-fun &optional (sleep-time 0.02) (max-time 12))

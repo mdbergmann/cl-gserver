@@ -5,6 +5,7 @@
            #:actor-of
            #:find-actors
            #:all-actors
+           #:stop
            #:shutdown
            #:system))
 (in-package :cl-gserver.actor-context)
@@ -33,6 +34,9 @@ Specify the dispatcher type (`disp-type') as either:
 
 (defgeneric all-actors (actor-context)
   (:documentation "Retrieves all actors as a list"))
+
+(defgeneric stop (actor-context actor)
+  (:documentation "Stops the given actor on the context"))
 
 (defgeneric shutdown (actor-context)
   (:documentation "Stops all actors in this context."))

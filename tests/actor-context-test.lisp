@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor-context-test
-  (:use :cl :fiveam :cl-gserver.actor-context :act)
+  (:use :cl :fiveam :cl-mock :cl-gserver.actor-context :act)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -13,17 +13,17 @@
 
 (defvar *test-actor-system* (asys:make-actor-system :shared-dispatcher-workers 0))
 
-(test create-with-default-constructor
+(test create--with-default-constructor
   "Test if the default constructor creates a context."
   (is (not (null (make-actor-context *test-actor-system*)))))
 
-(test create-context--check-aggregated-components
+(test create--check-aggregated-components
   "Tests creating a context."
   (let ((cut (make-actor-context *test-actor-system*)))
     (is (not (null cut)))
     (is (not (null (system cut))))))
 
-(test create-actor--actor-of--shared
+(test actor-of--shared
   "Tests creating a new actor in the context with shared dispatcher"
   (let* ((cut (make-actor-context *test-actor-system*))
          (actor (actor-of cut (lambda () (make-actor (lambda ()))))))
@@ -34,7 +34,7 @@
     (is (not (eq cut (act:context actor))))
     (is (not (null (ac:system (act:context actor)))))))
 
-(test create-actor--actor-of--pinned
+(test actor-of--pinned
   "Tests creating a new actor in the context with pinned dispatcher"
   (let* ((cut (make-actor-context *test-actor-system*))
          (actor (actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :pinned)))
@@ -47,7 +47,7 @@
     ;; stop the :pinned actor
     (act-cell:stop actor)))
 
-(test create-actor--dont-add-when-null-creator
+(test actor-of--dont-add-when-null-creator
   "Tests creating a new actor in the context."
   (let* ((cut (make-actor-context *test-actor-system*)))
     (actor-of cut (lambda () nil))
@@ -61,6 +61,19 @@
     (is (= 2 (length
               (find-actors context
                            (lambda (actor) (str:starts-with-p "foo" (act-cell:name actor)))))))))
+
+(test stop-actor--by-context
+  "Tests stopping an actor."
+  (with-mocks ()
+    (let* ((cut (make-actor-context *test-actor-system*))
+           (actor (actor-of cut (lambda () (make-actor (lambda ())))))
+           (cell-stop-called nil))
+      (answer (act-cell:stop _)
+        (setf cell-stop-called t)
+        nil)
+      (stop cut actor)
+      (is-true cell-stop-called)
+      (is (= 1 (length (invocations 'act-cell:stop)))))))
 
 (test retrieve-all-actors
   "Retrieves all actors"
@@ -78,11 +91,11 @@
     (is (= 0 (length (find-actors context (lambda (a) (act-cell:running-p a))))))))
 
 (defun run-tests ()
-  (run! 'create-with-default-constructor)
-  (run! 'create-context--check-aggregated-components)
-  (run! 'create-actor--actor-of--shared)
-  (run! 'create-actor--actor-of--pinned)
-  (run! 'create-actor--dont-add-when-null-creator)
+  (run! 'create--with-default-constructor)
+  (run! 'create--check-aggregated-components)
+  (run! 'actor-of--shared)
+  (run! 'actor-of--pinned)
+  (run! 'actor-of--dont-add-when-null-creator)
   (run! 'find-actors-test)
   (run! 'retrieve-all-actors)
   (run! 'shutdown-actor-context)

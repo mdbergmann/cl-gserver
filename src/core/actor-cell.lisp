@@ -217,10 +217,10 @@ Otherwise the result is `:resume' to resume user message handling."
          (handle-result
            (if withreply-p
                (progn
-                 (log:debug "Calling handle-call on: " actor-cell)
+                 (log:trace "Calling handle-call on: " actor-cell)
                  (handle-call actor-cell message current-state))
                (progn
-                 (log:debug "Calling handle-cast on: " actor-cell)
+                 (log:trace "Calling handle-cast on: " actor-cell)
                  (handle-cast actor-cell message current-state)))))
     (log:debug "Current-state: " (slot-value actor-cell 'state))
     (cond

@@ -45,6 +45,9 @@
 (defmethod all-actors ((self actor-context))
   (coerce (actors self) 'list))
 
+(defmethod stop ((self actor-context) actor)
+  (act-cell:stop actor))
+
 (defmethod shutdown ((self actor-context))
   (dolist (actor (all-actors self))
     (act-cell:stop actor)))

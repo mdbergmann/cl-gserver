@@ -66,13 +66,13 @@ In any case stop the actor-cell."
 ;; -------------------------------
 
 (defclass async-waitor-actor (actor)
-  ((after-start-fun :initarg :after-start-fun)))
+  ((pre-start-fun :initarg :pre-start-fun)))
 
 (defmethod pre-start ((self async-waitor-actor) state)
   (when (next-method-p)
     (call-next-method))
-  (with-slots (after-start-fun) self
-    (funcall after-start-fun self state)))
+  (with-slots (pre-start-fun) self
+    (funcall pre-start-fun self state)))
 
 (defmacro with-waitor-actor (actor message system &rest body)
   (with-gensyms (self msg state msgbox waitor-actor)
@@ -89,7 +89,7 @@ In any case stop the actor-cell."
                                                               (tell ,self :stop)
                                                               (cons ,msg ,state))
                                                          (tell ,self :stop)))
-                                        :after-start-fun (lambda (,self ,state)
+                                        :pre-start-fun (lambda (,self ,state)
                                                            (declare (ignore ,state))
                                                            ;; this will call the `tell' function
                                                            (act-cell::submit-message ,actor ,message nil ,self))

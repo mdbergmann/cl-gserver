@@ -62,12 +62,13 @@
 
 #|
 TODOs:
-- shutdown of actor-context should stop actors and recursively also shutdown child acs
+=> - stopping an actor removes it from the actors in the context
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - add 'after-stop' handler for cleaning up and remove from actor syste,
 - make sure that actor names are unique within their context.
 - add timeouts for ask, async-ask and all cases that use those.
+OK - shutdown of actor-context should stop actors and recursively also shutdown child acs
 OK - add 'stop' actor to the actor-context protocol.
 OK - add actor-context as composition to system (twice for 'user' and 'system') and actor
 OK - extract actor api to separate api

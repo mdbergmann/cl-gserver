@@ -23,20 +23,31 @@ This is internal API. Use `all-actors' or `find-actors' instead.")
   (:documentation "`actor-context' deals with creating and maintaining actors.
 The `actor-system' and the `actor' itself are composed of an `actor-context'."))
 
-(defgeneric actor-of (actor-context create-fun &key dispatch-type)
+(defgeneric actor-of (context create-fun &key dispatch-type)
   (:documentation "Creates and adds actors to the given context.
+The context can be an `actor-context', an `actor-system',
+because both an `actor-system' and an `actor' are composed of an `actor-context'.
+When an `actor-system' is specified as context then the new actor will be a new root actor.
+When th new actor should be a child of another actor, then the `actor-context' of the (to be) parent
+`actor' should be specified.
+
 Specify the dispatcher type (`disp-type') as either:
 `:shared' to have this actor use the shared message dispatcher of the context
 `:pinned' to have this actor run it's own message box thread (faster, but more resource are bound.)"))
 
-(defgeneric find-actors (actor-context test-fun)
+(defgeneric find-actors (context test-fun)
   (:documentation "Returns actors where `test-fun' provides 'truth'."))
 
-(defgeneric all-actors (actor-context)
+(defgeneric all-actors (context)
   (:documentation "Retrieves all actors as a list"))
 
-(defgeneric stop (actor-context actor)
-  (:documentation "Stops the given actor on the context"))
+(defgeneric stop (context actor)
+  (:documentation
+   "Stops the given actor on the context. 
+The context may either be an `actor-context', or an `actor-system'."))
 
-(defgeneric shutdown (actor-context)
-  (:documentation "Stops all actors in this context."))
+(defgeneric shutdown (context)
+  (:documentation
+   "Stops all actors in this context.
+When the context is an `actor-context' this still stop the actor context and all its actors.
+For the `actor-system' it will stop the whole system with all actors."))

@@ -10,6 +10,7 @@
                 ;; actor-context protocol
                 #:actor-of
                 #:find-actors
+                #:all-actors
                 #:shutdown
                 #:stop))
 
@@ -76,6 +77,9 @@ Users should use `actor-of'."
 Users should use `find-actors'."
   (ac:find-actors (actor-context-for-key context-key system) test-fun))
 
+(defun %all-actors (system context-key)
+  (ac:all-actors (actor-context-for-key context-key system)))
+
 ;; ----------------------------------------
 ;; Public Api
 ;; ----------------------------------------
@@ -85,6 +89,9 @@ Users should use `find-actors'."
 
 (defmethod find-actors ((self actor-system) test-fun)
   (%find-actors self test-fun :context-key :user))
+
+(defmethod all-actors ((self actor-system))
+  (%all-actors self :user))
 
 (defmethod stop ((self actor-system) actor)
   (act-cell:stop actor))

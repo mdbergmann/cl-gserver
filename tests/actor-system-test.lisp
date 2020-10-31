@@ -117,6 +117,15 @@
       (is (eq nil (ac:find-actors cut (lambda (x) (declare (ignore x))))))
       (is (= 2 (length (ac:find-actors cut #'identity)))))))
 
+(test all-actors--in-system-user-context
+  "Retrieves all actors in user actor context of system."
+  (with-fixture test-system ()
+    (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
+          (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")))))
+      (is (= 2 (length (ac:all-actors cut))))
+      (is (eq act1 (first (ac:all-actors cut))))
+      (is (eq act2 (second (ac:all-actors cut)))))))
+
 (test stop-actor--in-system
   "Tests stopping an actor. This pretty much does the same as the method in actor-context."
   (with-fixture test-system ()

@@ -1,8 +1,11 @@
 (defpackage :cl-gserver.utils
   (:nicknames :utils)
   (:use :cl)
+  (:import-from #:alexandria
+                #:with-gensyms)
   (:export #:mkstr
-           #:assert-cond))
+           #:assert-cond
+           #:filter))
 
 (in-package :cl-gserver.utils)
 
@@ -17,3 +20,7 @@
       ((eq fun-result t) (return t))
     (if (> wait-time max-time) (return)
         (sleep 0.02))))
+
+(defmacro filter (fun list)
+  (with-gensyms (x)
+  `(mapcan (lambda (,x) (if (funcall ,fun ,x) (list ,x))) ,list)))

@@ -39,8 +39,8 @@
     (when created
       (add-actor self created))))
 
-(defmethod find-actors ((self actor-context) find-fun)
-  (mapcan (lambda (x) (if (funcall find-fun x) (list x))) (all-actors self)))
+(defmethod find-actors ((self actor-context) test-fun)
+  (utils:filter test-fun (all-actors self)))
 
 (defmethod all-actors ((self actor-context))
   (coerce (actors self) 'list))

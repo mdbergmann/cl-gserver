@@ -29,8 +29,8 @@ Specify the dispatcher type (`disp-type') as either:
 `:shared' to have this actor use the shared message dispatcher of the context
 `:pinned' to have this actor run it's own message box thread (faster, but more resource are bound.)"))
 
-(defgeneric find-actors (actor-context find-fun)
-  (:documentation "Returns actors where `find-fun' provides 'truth'."))
+(defgeneric find-actors (actor-context test-fun)
+  (:documentation "Returns actors where `test-fun' provides 'truth'."))
 
 (defgeneric all-actors (actor-context)
   (:documentation "Retrieves all actors as a list"))

@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor-system-test
-  (:use :cl :fiveam :cl-gserver.actor-system)
+  (:use :cl :fiveam :cl-mock :cl-gserver.actor-system)
   (:import-from #:act
                 #:actor
                 #:make-actor)
@@ -117,6 +117,21 @@
       (is (eq nil (ac:find-actors cut (lambda (x) (declare (ignore x))))))
       (is (= 2 (length (ac:find-actors cut #'identity)))))))
 
+(test stop-actor--in-system
+  "Tests stopping an actor. This pretty much does the same as the method in actor-context."
+  (with-fixture test-system ()
+    (with-mocks ()
+      (let ((act (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
+            (call-to-stop-done nil))
+        (answer (act-cell:stop actor-to-stop)
+          (progn
+            (assert (eq actor-to-stop act))
+            (setf call-to-stop-done t)
+            nil))
+        (ac:stop cut act)
+        (is-true call-to-stop-done)
+        (is (= 1 (length (invocations 'act-cell:stop))))))))
+
 (test creating-many-actors--and-collect-responses
   "Creating many actors should not pose a problem."
   (with-fixture test-system ()
@@ -143,4 +158,5 @@
   (run! 'actor-of--pinned--user)
   (run! 'actor-of--pinned--internal)
   (run! 'find-actors--in-system)
+  (run! 'stop-actor--in-system)
   (run! 'creating-many-actors--and-collect-responses))

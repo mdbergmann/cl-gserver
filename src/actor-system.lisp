@@ -10,7 +10,8 @@
                 ;; actor-context protocol
                 #:actor-of
                 #:find-actors
-                #:shutdown))
+                #:shutdown
+                #:stop))
 
 (in-package :cl-gserver.actor-system)
 
@@ -70,10 +71,10 @@ Users should use `actor-of'."
    create-fun
    :dispatch-type dispatch-type))
 
-(defun %find-actors (system find-fun &key context-key)
+(defun %find-actors (system test-fun &key context-key)
   "Private API to find actors in both contexts the actor-system supports.
 Users should use `find-actors'."
-  (ac:find-actors (actor-context-for-key context-key system) find-fun))
+  (ac:find-actors (actor-context-for-key context-key system) test-fun))
 
 ;; ----------------------------------------
 ;; Public Api
@@ -82,8 +83,11 @@ Users should use `find-actors'."
 (defmethod actor-of ((self actor-system) create-fun &key (dispatch-type :shared))
   (%actor-of self create-fun dispatch-type :context-key :user))
 
-(defmethod find-actors ((self actor-system) find-fun)
-  (%find-actors self find-fun :context-key :user))
+(defmethod find-actors ((self actor-system) test-fun)
+  (%find-actors self test-fun :context-key :user))
+
+(defmethod stop ((self actor-system) actor)
+  (act-cell:stop actor))
 
 (defmethod shutdown ((self actor-system))
   (disp:shutdown (getf (dispatchers self) :shared))

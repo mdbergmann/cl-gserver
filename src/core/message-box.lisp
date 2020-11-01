@@ -32,6 +32,15 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
             (t (make-instance 'queue-bounded :max-items max-queue-size)))))
   (log:debug "Initialize instance: ~a" self))
 
+(defmethod print-object ((obj message-box-base) stream)
+  (print-unreadable-object (obj stream :type t)
+    (with-slots (name processed-messages max-queue-size queue) obj
+      (format stream "~a, processed messages: ~a, max-queue-size: ~a, queue: ~a"
+              name
+              processed-messages
+              max-queue-size
+              queue))))
+
 (defgeneric submit (message-box-base message withreply-p timeout handler-fun)
   (:documentation "Submit a message to the mailbox to be queued and handled."))
 
@@ -42,14 +51,6 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
   (with-slots (processed-messages) self
     (log:debug "Processed messages: " processed-messages)))
 
-(defmethod print-object ((obj message-box-base) stream)
-  (print-unreadable-object (obj stream :type t)
-    (with-slots (name processed-messages max-queue-size queue) obj
-      (format stream "~a, processed messages: ~a, max-queue-size: ~a, queue: ~a"
-              name
-              processed-messages
-              max-queue-size
-              queue))))
 
 ;; ----------------------------------------
 ;; ------------- Generic ------------------
@@ -64,7 +65,7 @@ Use this instead of `submit'."
 ;; ------------- Bordeaux ----------------
 ;; ----------------------------------------
 
-(defstruct message-item
+(defstruct message-item/bt
   (message nil)
   (withreply-p nil :type boolean)
   (withreply-lock nil)
@@ -132,7 +133,7 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
 
 (defun submit/no-reply (queue message handler-fun)
   "This is quite efficient, no locking necessary."
-  (let ((push-item (make-message-item
+  (let ((push-item (make-message-item/bt
                     :message message
                     :withreply-p nil
                     :withreply-lock nil
@@ -154,7 +155,7 @@ The queue thread has processed the message."
                            (log:trace "Withreply: handler-fun result: " my-handler-result)))
          (withreply-lock (bt:make-lock))
          (withreply-cvar (bt:make-condition-variable))
-         (push-item (make-message-item
+         (push-item (make-message-item/bt
                      :message message
                      :withreply-p t
                      :withreply-lock withreply-lock
@@ -189,6 +190,11 @@ The queue thread has processed the message."
 ;; ------------- dispatcher msgbox---------
 ;; ----------------------------------------
 
+(defstruct message-item/dp
+  (message nil)
+  (timeout nil)
+  (handler-fun nil :type function))
+
 (defclass message-box/dp (message-box-base)
   ((dispatcher :initarg :dispatcher
                :initform (error "Must be set!")
@@ -210,23 +216,30 @@ The `dispatcher is kind of like a thread pool."))
 On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads.
 On the `dispatcher' this is not the case. The order cannot be guaranteed when messages are processed by different 
 `dispatcher' threads. However, the we still guarantee a 'single-threadedness' regarding the state of the actor.
-This is archieved here by protecting the `handler-fun' executation by a lock."
+This is archieved here by protecting the `handler-fun' executation by a lock.
+
+The `timeout' with the 'dispatcher mailbox' assumes that the message received the dispatcher queue
+and the handler in a reasonable amount of time, so that the effective timeout applies on the actual
+handling of the message on the dispatcher queue thread."
   (with-slots (name
                queue
                processed-messages
                dispatcher
                lock) self
     (incf processed-messages)
-    (log:debug "Enqueuing message: " message)
+    (log:info "Enqueuing. Timeout: " timeout " message: " message)
     (pushq queue message)
 
     (let ((dispatcher-fun (lambda ()
                             (log:trace "Popping message...")
                             (let ((popped-msg (popq queue)))
-                              (log:trace "Popping message...done")
+                              (log:trace "Popping message " popped-msg "...done")
                               (bt:acquire-lock lock t)
                               (unwind-protect
-                                   (funcall handler-fun popped-msg)
+                                   (if timeout
+                                       (bt:with-timeout (timeout)
+                                         (funcall handler-fun popped-msg))
+                                       (funcall handler-fun popped-msg))
                                 (bt:release-lock lock))))))
       (if withreply-p
           (dispatch dispatcher dispatcher-fun)

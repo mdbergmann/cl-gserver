@@ -94,33 +94,35 @@ In any case stop the actor-cell."
   (with-slots (pre-start-fun) self
     (funcall pre-start-fun self state)))
 
-(defmacro with-waitor-actor (actor message system &rest body)
+(defmacro with-waitor-actor (actor message system timeout &rest body)
   (with-gensyms (self msg state msgbox waitor-actor)
     `(let ((,msgbox (if ,system
                         (make-instance 'mesgb:message-box/dp
                                        :dispatcher
                                        (getf (asys:dispatchers ,system) :shared))
                         (make-instance 'mesgb:message-box/bt)))
-           (,waitor-actor (make-instance 'async-waitor-actor
-                                        :receive-fun (lambda (,self ,msg ,state)
-                                                       (unwind-protect
-                                                            (progn
-                                                              (funcall ,@body ,msg)
-                                                              (tell ,self :stop)
-                                                              (cons ,msg ,state))
-                                                         (tell ,self :stop)))
-                                        :pre-start-fun (lambda (,self ,state)
-                                                           (declare (ignore ,state))
-                                                           ;; this will call the `tell' function
-                                                           (act-cell::submit-message ,actor ,message nil ,self nil))
-                                        :name (string (gensym "Async-ask-waiter-")))))
+           (,waitor-actor (make-instance
+                           'async-waitor-actor
+                           :receive-fun (lambda (,self ,msg ,state)
+                                          (unwind-protect
+                                               (progn
+                                                 (funcall ,@body ,msg)
+                                                 (tell ,self :stop)
+                                                 (cons ,msg ,state))
+                                            (tell ,self :stop)))
+                           :pre-start-fun (lambda (,self ,state)
+                                            (declare (ignore ,state))
+                                            ;; this will call the `tell' function
+                                            (act-cell::submit-message ,actor ,message nil ,self ,timeout))
+                           :name (string (gensym "Async-ask-waiter-")))))
        (setf (act-cell:msgbox ,waitor-actor) ,msgbox))))
 
-(defmethod async-ask ((self actor) message)
+(defmethod async-ask ((self actor) message &key (timeout nil))
   (make-future (lambda (promise-fun)
                  (log:debug "Executing future function...")
-                 (let ((context (context self)))
-                   (with-waitor-actor self message (if context (ac:system context) nil)
+                 (let* ((context (context self))
+                        (system (if context (ac:system context) nil)))
+                   (with-waitor-actor self message system timeout
                                       (lambda (result)
                                         (log:debug "Result: ~a~%" result)
                                         (funcall promise-fun result)))))))

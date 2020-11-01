@@ -36,9 +36,12 @@ In case of a `tell' operation there will be no response and the `car' of the `co
 Specify `timeout' if a message is to be expected after a certain time.
 An `:handler-error' with `timeout' condition will be returned is the call timed out."))
 
-(defgeneric async-ask (actor message)
+(defgeneric async-ask (actor message &key :timeout)
   (:documentation
    "This returns a `future'.
+Specify `timeout' if a message is to be expected after a certain time.
+An `:handler-error' with `timeout' condition will be returned is the call timed out.
+
 An `async-ask' is similar to a `ask' in that the caller gets back a result 
 but it doesn't have to actively wait for it. Instead a `future' wraps the result.
 However, the internal message handling is based on `tell'.

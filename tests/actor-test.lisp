@@ -158,6 +158,24 @@
       (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
       (is (= 5 (get-result future))))))
 
+(test async-ask--timeout
+  "Tests for async-ask timeout."
+  (with-fixture actor-fixture ((lambda ())
+                               0
+                               t)
+    (let* ((actor (ac:actor-of (ac:system (act:context cut))
+                               (lambda ()
+                                 (make-actor
+                                  (lambda (self msg state)
+                                    (declare (ignore self msg))
+                                    (sleep 2)
+                                    (cons :my-result state))))))
+           (future (async-ask actor "foo" :timeout 0.5)))
+      (sleep 1)
+      (print future)
+      (is (eq :handler-error (car (get-result future))))
+      (is (typep (cdr (get-result future)) 'bt:timeout)))))
+
 
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."

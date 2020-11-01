@@ -13,6 +13,11 @@
   ((promise :initform nil
             :documentation "The wrapped promise")))
 
+(defmethod print-object ((obj future) stream)
+  (print-unreadable-object (obj stream :type t)
+    (with-slots (promise) obj
+      (format stream "promise: ~a" promise))))
+
 (defun make-future (execute-fun)
   (let ((future (make-instance 'future)))
     (with-slots (promise) future

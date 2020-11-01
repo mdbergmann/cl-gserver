@@ -20,13 +20,16 @@
                 :initform (error "'receive-fun' must be specified!")
                 :reader receive-fun)
    (context :initform nil
-            :accessor context))
+            :accessor context)
+   (watchers :initform '()
+             :reader watchers
+             :documentation "List of watchers of this actor."))
   (:documentation
    "This is the `actor' class.
 The `actor' does it's message handling in the `receive' function.
-There is asynchronous `tell' and synchronous `ask'.
+There is asynchronous `tell' (no response) and synchronous `ask' and asynchronous `async-ask' (with response).
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
-the `:stop' message. It will respond with `:stopped'."))
+the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask')."))
 
 (defmethod make-actor (receive-fun &key name state)
   (make-instance 'actor
@@ -50,7 +53,10 @@ In any case stop the actor-cell."
     (when context
         (dolist (child (ac:all-actors context))
           (stop child)))
-    (call-next-method)))
+    (call-next-method)
+    ;; notify watchers
+    (dolist (watcher (watchers self))
+      (tell watcher (cons :stopped self)))))
 
 ;; -------------------------------
 ;; actor protocol impl
@@ -58,8 +64,17 @@ In any case stop the actor-cell."
 
 (defmethod tell ((self actor) message)
   (act-cell:cast self message))
+
 (defmethod ask ((self actor) message)
   (act-cell:call self message))
+
+(defmethod watch ((self actor) watcher)
+  (with-slots (watchers) self
+    (setf watchers (cons watcher watchers))))
+
+(defmethod unwatch ((self actor) watcher)
+  (with-slots (watchers) self
+    (setf watchers (utils:filter (lambda (w) (not (eq watcher w))) watchers))))
 
 ;; -------------------------------
 ;; Async handling

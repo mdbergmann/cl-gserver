@@ -27,11 +27,11 @@
                               :dispatcher (get-shared-dispatcher (system context))
                               :max-queue-size 0))))
 
-(defun make-actor (context create-fun dispatch-type)
+(defun make-actor (actor-context create-fun dispatch-type)
   (let ((actor (funcall create-fun)))
     (when actor
-      (setf (act-cell:msgbox actor) (message-box-for-dispatch-type dispatch-type context))
-      (setf (act:context actor) (make-actor-context (system context))))
+      (setf (act-cell:msgbox actor) (message-box-for-dispatch-type dispatch-type actor-context))
+      (setf (act:context actor) (make-actor-context (system actor-context))))
     actor))
 
 (defmethod actor-of ((self actor-context) create-fun &key (dispatch-type :shared))

@@ -81,7 +81,7 @@ Users should use `find-actors'."
   (ac:all-actors (actor-context-for-key context-key system)))
 
 ;; ----------------------------------------
-;; Public Api
+;; Public Api / actor-context protocol
 ;; ----------------------------------------
 
 (defmethod actor-of ((self actor-system) create-fun &key (dispatch-type :shared))

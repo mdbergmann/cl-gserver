@@ -62,10 +62,10 @@
 
 #|
 TODOs:
-=> - stopping an actor removes it from the actors in the context
+=> - add watching (parent to child) which will notify of termination
+- stopping an actor removes it from the parent actor context
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
-- add 'after-stop' handler for cleaning up and remove from actor syste,
 - make sure that actor names are unique within their context.
 - add timeouts for ask, async-ask and all cases that use those.
 OK - shutdown of actor-context should stop actors and recursively also shutdown child acs

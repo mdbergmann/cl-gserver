@@ -6,10 +6,25 @@
            #:tell
            #:ask
            #:async-ask
-           #:context)
+           #:context
+           #:watch
+           #:unwatch
+           #:watchers)
 )
 
 (in-package :cl-gserver.actor)
+
+(defgeneric make-actor (receive-fun &key name state)
+  (:documentation
+   "Default constructor of an `actor'.
+The `receive-fun' parameter is a function that should take 3 parameters.
+That is the actor instance itself, the message and the current state of the actor.
+The `receive-fun' can then decide how to handle the message.
+In any case it has to return a `cons' of message to be sent back to caller (`car'), if applicable.
+And the new state of the actor.
+I.e.: `(cons <my-response> <my-new-state>)'
+If the operation was an `ask' or `async-ask' then the `car' part of the `cons' will be sent back to the caller.
+In case of a `tell' operation there will be no response and the `car' of the `cons' is ignored."))
 
 (defgeneric tell (actor message)
   (:documentation
@@ -37,14 +52,16 @@ received the response the `future' will be fulfilled with the `promise'."))
 When the actor is created from scratch it has no `actor-context'.
 When created through the `actor-context's, or system's `actor-of' function an `actor-context' will be set."))
 
-(defgeneric make-actor (receive-fun &key name state)
+(defgeneric watch (actor watcher)
   (:documentation
-   "Default constructor of an `actor'.
-The `receive-fun' parameter is a function that should take 3 parameters.
-That is the actor instance itself, the message and the current state of the actor.
-The `receive-fun' can then decide how to handle the message.
-In any case it has to return a `cons' of message to be sent back to caller (`car'), if applicable.
-And the new state of the actor.
-I.e.: `(cons <my-response> <my-new-state>)'
-If the operation was an `ask' or `async-ask' then the `car' part of the `cons' will be sent back to the caller.
-In case of a `tell' operation there will be no response and the `car' of the `cons' is ignored."))
+   "Registers `watcher' as a watcher of `actor'.
+Watching lets the watcher know about lifecycle changes of the actor being watched.
+I.e.: when it stopped. The message being sent in this case is: `(cons :stopped actor-instance)`"))
+
+(defgeneric unwatch (actor watcher)
+  (:documentation
+   "Unregisters `watcher' of `actor'."))
+
+(defgeneric watchers (actor)
+  (:documentation
+   "Returns a list of watchers of `actor'."))

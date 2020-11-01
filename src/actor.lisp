@@ -46,17 +46,22 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
 (defmethod handle-cast ((self actor) message state)
   (funcall (receive-fun self) self message state))
 
+(defun stop-children (actor)
+  (let ((context (context actor)))
+    (when context
+      (dolist (child (ac:all-actors context))
+        (stop child)))))
+
+(defun notify-watchers (actor)
+  (dolist (watcher (watchers actor))
+    (tell watcher (cons :stopped actor))))
+
 (defmethod stop ((self actor))
   "If this actor has an `actor-context', also stop all children.
 In any case stop the actor-cell."
-  (let ((context (context self)))
-    (when context
-        (dolist (child (ac:all-actors context))
-          (stop child)))
-    (call-next-method)
-    ;; notify watchers
-    (dolist (watcher (watchers self))
-      (tell watcher (cons :stopped self)))))
+  (stop-children self)
+  (call-next-method)
+  (notify-watchers self))
 
 ;; -------------------------------
 ;; actor protocol impl
@@ -65,8 +70,8 @@ In any case stop the actor-cell."
 (defmethod tell ((self actor) message)
   (act-cell:cast self message))
 
-(defmethod ask ((self actor) message)
-  (act-cell:call self message))
+(defmethod ask ((self actor) message &key (timeout nil))
+  (act-cell:call self message :timeout timeout))
 
 (defmethod watch ((self actor) watcher)
   (with-slots (watchers) self

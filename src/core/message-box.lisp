@@ -221,14 +221,13 @@ This is archieved here by protecting the `handler-fun' executation by a lock."
     (pushq queue message)
 
     (let ((dispatcher-fun (lambda ()
-                            (log:debug "Executing handler-fun with popped message...")
+                            (log:trace "Popping message...")
                             (let ((popped-msg (popq queue)))
-                              ;;(bt:acquire-lock lock t)
-                              ;;(unwind-protect
+                              (log:trace "Popping message...done")
+                              (bt:acquire-lock lock t)
+                              (unwind-protect
                                    (funcall handler-fun popped-msg)
-                                ;;(bt:release-lock lock)
-                                ;;)
-                              ))))
+                                (bt:release-lock lock))))))
       (if withreply-p
           (dispatch dispatcher dispatcher-fun)
           (dispatch-async dispatcher dispatcher-fun)))))

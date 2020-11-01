@@ -63,6 +63,7 @@
 #|
 TODOs:
 => - add timeouts for ask, async-ask and all cases that use those.
+   -- missing async-ask timeout
 - stopping an actor removes it from the parent actor context
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system

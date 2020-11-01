@@ -40,7 +40,7 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
 
 (defmethod stop ((self message-box-base))
   (with-slots (processed-messages) self
-    (log:info "Processed messages: " processed-messages)))
+    (log:debug "Processed messages: " processed-messages)))
 
 (defmethod print-object ((obj message-box-base) stream)
   (print-unreadable-object (obj stream :type t)
@@ -223,10 +223,12 @@ This is archieved here by protecting the `handler-fun' executation by a lock."
     (let ((dispatcher-fun (lambda ()
                             (log:debug "Executing handler-fun with popped message...")
                             (let ((popped-msg (popq queue)))
-                              (bt:acquire-lock lock t)
-                              (prog1
-                                  (funcall handler-fun popped-msg)
-                                (bt:release-lock lock))))))
+                              ;;(bt:acquire-lock lock t)
+                              ;;(unwind-protect
+                                   (funcall handler-fun popped-msg)
+                                ;;(bt:release-lock lock)
+                                ;;)
+                              ))))
       (if withreply-p
           (dispatch dispatcher dispatcher-fun)
           (dispatch-async dispatcher dispatcher-fun)))))

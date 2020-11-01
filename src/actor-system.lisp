@@ -34,8 +34,7 @@ With the `actor-system' you can create actors via the `actor-context' protocol f
 (defmethod print-object ((obj actor-system) stream)
   (print-unreadable-object (obj stream :type t)
     (with-slots (dispatchers internal-actor-context user-actor-context) obj
-      (format stream "dispatchers: ~a, shared-workers: ~a, user actors: ~a, internal actors: ~a"
-              (length dispatchers)
+      (format stream "shared-workers: ~a, user actors: ~a, internal actors: ~a"
               (length (disp:workers (getf dispatchers :shared)))
               (length (ac:all-actors user-actor-context))
               (length (ac:all-actors internal-actor-context))))))
@@ -53,6 +52,7 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
       (setf dispatchers (list :shared (make-dispatcher
                                        'shared-dispatcher
                                        :num-workers shared-dispatcher-workers))))
+    (log:info system)
     system))
 
 ;; ----------------------------------------

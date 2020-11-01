@@ -138,26 +138,27 @@
             (setf call-to-stop-done t)
             nil))
         (ac:stop cut act)
-        (is-true call-to-stop-done)
+        (is-true (assert-cond (lambda () call-to-stop-done) 1))
         (is (= 1 (length (invocations 'act-cell:stop))))))))
 
-(test creating-many-actors--and-collect-responses
+(test creating-some-actors--and-collect-responses
   "Creating many actors should not pose a problem."
   (with-fixture test-system ()
-    (let ((actors (loop for i from 1 to 10000
+    (let ((actors (loop for i from 1 to 100
                         collect (ac:actor-of
                                  cut
                                  (lambda ()
                                    (make-actor
                                     (lambda (self msg state)
                                       (declare (ignore self))
-                                      (cons (format nil "reply: ~a" msg) state))))))))
-      (log:debug "Starting ask...")
-      (is-true (every (lambda (x) (string= "reply: test" x))
-                      (mapcar (lambda (actor)
-                                (act:ask actor "test"))
-                              actors)))
-      (log:debug "Starting ask...done"))))
+                                      (cons (format nil "reply: ~a" msg) state)))))))
+          (ask-result nil))
+      (time (setf ask-result
+                  (every (lambda (x) (string= "reply: test" x))
+                         (mapcar (lambda (actor)
+                                   (act:ask actor "test"))
+                                 actors))))
+      (is-true ask-result))))
 
 (defun run-tests ()
   (run! 'create-system)
@@ -169,4 +170,4 @@
   (run! 'find-actors--in-system)
   (run! 'all-actors--in-system-user-context)
   (run! 'stop-actor--in-system)
-  (run! 'creating-many-actors--and-collect-responses))
+  (run! 'creating-some-actors--and-collect-responses))

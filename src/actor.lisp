@@ -107,7 +107,7 @@ In any case stop the actor-cell."
                                         :pre-start-fun (lambda (,self ,state)
                                                            (declare (ignore ,state))
                                                            ;; this will call the `tell' function
-                                                           (act-cell::submit-message ,actor ,message nil ,self))
+                                                           (act-cell::submit-message ,actor ,message nil ,self nil))
                                         :name (string (gensym "Async-ask-waiter-")))))
        (setf (act-cell:msgbox ,waitor-actor) ,msgbox))))
 

@@ -172,12 +172,13 @@
       (is (typep (cdr result) 'bt:timeout))
       (is (eq :stopped (call cut :stop))))))
 
+
+(defclass stopping-cell (actor-cell) ())
+(defmethod handle-call ((cell stopping-cell) message current-state)
+  (cons message current-state))
+
 (test stopping-cell
   "Stopping a cell stops the message handling and frees resources."
-  (defclass stopping-cell (actor-cell) ())
-  (defmethod handle-call ((cell stopping-cell) message current-state)
-    (cons message current-state))
-
   (let ((cut (make-instance 'stopping-cell)))
     (setf (msgbox cut) (make-instance 'mesgb:message-box/bt))
     (is (eq :stopped (call cut :stop)))))

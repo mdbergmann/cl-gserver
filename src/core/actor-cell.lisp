@@ -113,10 +113,13 @@ Same convention as for 'handle-call' except that no return is sent to the caller
 
 (defun call (actor-cell message &key (timeout nil))
   "Send a message to a actor-cell instance and wait for a result.
+Specify a timeout in seconds if you require a result within a certain period of time.
+Be aware though that this is a resource intensive wait based on a waiting thread.
 The result can be of different types.
 Success result: <returned-state>
 Unhandled result: `:unhandled'
-Error result: `(cons :handler-error <error-description-as-string>)'"
+Error result: `(cons :handler-error <condition>)'
+In case of timeout the error condition is a bt:timeout."
   (when message
     (let ((result (submit-message actor-cell message t nil timeout)))
       (log:debug "Message process result:" result)

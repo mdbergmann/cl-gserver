@@ -111,21 +111,21 @@ Same convention as for 'handle-call' except that no return is sent to the caller
   "Empty implementation so that we can call it anyway even if there are no other implementations."
   nil)
 
-(defun call (actor-cell message)
+(defun call (actor-cell message &key (timeout nil))
   "Send a message to a actor-cell instance and wait for a result.
 The result can be of different types.
 Success result: <returned-state>
 Unhandled result: `:unhandled'
 Error result: `(cons :handler-error <error-description-as-string>)'"
   (when message
-    (let ((result (submit-message actor-cell message t nil)))
+    (let ((result (submit-message actor-cell message t nil timeout)))
       (log:debug "Message process result:" result)
       result)))
 
 (defun cast (actor-cell message)
   "Sends a message to a actor-cell asynchronously. There is no result."
   (when message
-    (let ((result (submit-message actor-cell message nil nil)))
+    (let ((result (submit-message actor-cell message nil nil nil)))
       (log:debug "Message process result:" result)
       result)))  
 
@@ -146,7 +146,7 @@ Error result: `(cons :handler-error <error-description-as-string>)'"
 ;; internal functions
 ;; -----------------------------------------------
 
-(defun submit-message (actor-cell message withreply-p sender)
+(defun submit-message (actor-cell message withreply-p sender timeout)
   "Submitting a message.
 In case of `withreply-p', the `response' is filled because submitting to the message-box is synchronous.
 Otherwise submitting is asynchronous and `response' is just `t'.
@@ -166,7 +166,8 @@ In case no messge-box is configured this function respnds with `:no-message-hand
           (mesgb:with-submit-handler
               ((slot-value actor-cell 'msgbox)
                message
-               withreply-p)
+               withreply-p
+               timeout)
               (process-response actor-cell
                                 (handle-message actor-cell message withreply-p)
                                 sender))))

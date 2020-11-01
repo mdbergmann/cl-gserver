@@ -32,7 +32,7 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
             (t (make-instance 'queue-bounded :max-items max-queue-size)))))
   (log:debug "Initialize instance: ~a" self))
 
-(defgeneric submit (message-box-base message withreply-p handler-fun)
+(defgeneric submit (message-box-base message withreply-p timeout handler-fun)
   (:documentation "Submit a message to the mailbox to be queued and handled."))
 
 (defgeneric stop (message-box-base)
@@ -55,10 +55,10 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
 ;; ------------- Generic ------------------
 ;; ----------------------------------------
 
-(defmacro with-submit-handler ((msgbox message withreply-p) &rest body)
+(defmacro with-submit-handler ((msgbox message withreply-p timeout) &rest body)
   "Macro to let the caller specify a message handler function.
 Use this instead of `submit'."
-  `(submit ,msgbox ,message ,withreply-p (lambda (message) ,@body)))
+  `(submit ,msgbox ,message ,withreply-p ,timeout (lambda (message) ,@body)))
 
 ;; ----------------------------------------
 ;; ------------- Bordeaux ----------------
@@ -69,6 +69,7 @@ Use this instead of `submit'."
   (withreply-p nil :type boolean)
   (withreply-lock nil)
   (withreply-cvar nil)
+  (timeout nil)
   (handler-fun nil :type function))
 
 (defclass message-box/bt (message-box-base)
@@ -108,23 +109,25 @@ this kind of queue because each message-box requires exactly one thread."))
       (incf (slot-value msgbox 'processed-messages)))))
 
 (defun process-queue-item (item)
-  (with-slots (message handler-fun withreply-p withreply-lock withreply-cvar) item
+  (with-slots (message handler-fun withreply-p withreply-lock withreply-cvar timeout) item
     (when handler-fun
       (if withreply-p
           (bt:with-lock-held (withreply-lock)
             ;; protect this to make sure the lock is released.
             (unwind-protect
-                 (funcall handler-fun message)
+                 (if timeout
+                     (bt:with-timeout (timeout) (funcall handler-fun message))
+                     (funcall handler-fun message))
               (bt:condition-notify withreply-cvar)))
           (funcall handler-fun message)))))
 
-(defmethod submit ((self message-box/bt) message withreply-p handler-fun)
+(defmethod submit ((self message-box/bt) message withreply-p timeout handler-fun)
 "Alternatively use `with-submit-handler' from your code to handle the message after it was 'popped' from the queue.
 The `handler-fun' argument here will be `funcall'ed when the message was 'popped'."
   (log:trace "Submit message: " message)
   (with-slots (queue) self
     (if withreply-p
-        (submit/reply queue message handler-fun)
+        (submit/reply queue message timeout handler-fun)
         (submit/no-reply queue message handler-fun))))
 
 (defun submit/no-reply (queue message handler-fun)
@@ -134,12 +137,13 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
                     :withreply-p nil
                     :withreply-lock nil
                     :withreply-cvar nil
+                    :timeout nil
                     :handler-fun handler-fun)))
     (log:debug "pushing item to queue:" push-item)
     (queue:pushq queue push-item)
     t))
   
-(defun submit/reply (queue message handler-fun)
+(defun submit/reply (queue message timeout handler-fun)
   "This requires some more action. This function has to provide a result and so it's has to wait until
 The queue thread has processed the message."
   (let* ((my-handler-result 'no-result)
@@ -155,6 +159,7 @@ The queue thread has processed the message."
                      :withreply-p t
                      :withreply-lock withreply-lock
                      :withreply-cvar withreply-cvar
+                     :timeout timeout
                      :handler-fun my-handler-fun)))
 
     (log:trace "Withreply: waiting for arrival of result...")
@@ -177,7 +182,7 @@ The queue thread has processed the message."
   (call-next-method)
   (with-slots (queue-thread should-run) self
     (setf should-run nil)
-    (submit self :trigger-closing-the-wait-handler nil (lambda (msg) (declare (ignore msg))))))
+    (submit self :trigger-closing-the-wait-handler nil nil (lambda (msg) (declare (ignore msg))))))
 
 
 ;; ----------------------------------------
@@ -200,7 +205,7 @@ The `dispatcher is kind of like a thread pool."))
   (when (next-method-p)
     (call-next-method)))
 
-(defmethod submit ((self message-box/dp) message withreply-p handler-fun)
+(defmethod submit ((self message-box/dp) message withreply-p timeout handler-fun)
   "Submitting a message on a multi-threaded `dispatcher' is different as submitting on a single threaded message-box.
 On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads.
 On the `dispatcher' this is not the case. The order cannot be guaranteed when messages are processed by different 

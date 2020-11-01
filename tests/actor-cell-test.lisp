@@ -36,14 +36,12 @@
 
 (test get-cell-name
   "Just retrieves the name of the cell"
-
   (with-fixture cell-fixture (nil nil nil nil nil)
     (print (name cut))
     (is (= 0 (search "actor-" (name cut))))))
 
 (test run-pre-start-fun
   "Tests the execution of `pre-start'"
-  
   (with-fixture cell-fixture ((lambda (self message current-state)
                                 (declare (ignore self message))
                                 (cons current-state current-state))
@@ -59,7 +57,6 @@
 (defparameter *after-stop-val* nil)
 (test run-after-stop-fun
   "Tests the execution of `after-stop'"
-  
   (with-fixture cell-fixture ((lambda (self message current-state)
                                 (declare (ignore self message))
                                 (cons current-state current-state))
@@ -74,7 +71,6 @@
 
 (test no-message-box
   "Test responds with :no-message-handling when no msgbox is configured."
-
   (defclass no-msg-server (actor-cell) ())
   (defmethod handle-call ((cell no-msg-server) message current-state)
     (cons message current-state))
@@ -84,7 +80,6 @@
 
 (test handle-call
   "Simple cell handle-call test."
-
   (with-fixture cell-fixture ((lambda (cell message current-state)
                                 (declare (ignore cell))
                                 (match message
@@ -104,7 +99,6 @@
 
 (test error-in-handler
   "testing error handling"
-  
   (with-fixture cell-fixture ((lambda (cell message current-state)
                                 (declare (ignore cell current-state))
                                 (log:info "Raising error condition...")
@@ -123,7 +117,6 @@
 
 (test stack-cell
   "a actor-cell as stack."
-
   (with-fixture cell-fixture ((lambda (cell message current-state)
                                 (declare (ignore cell))
                                 (format t "current-state: ~a~%" current-state)
@@ -161,10 +154,26 @@
     (is (= 1 (call cut :pop)))
     (is (null (call cut :pop)))))
 
+(test call-timeout
+  "Tests for ask timeout."
+  (with-fixture cell-fixture ((lambda (self msg state)
+                                (declare (ignore self msg))
+                                (sleep 2)
+                                (cons :my-result state))
+                              nil
+                              nil
+                              nil
+                              0)
+    (let ((result (call cut "foo" :timeout 0.5)))
+      (print result)
+      (format t "cond: ~a~%" (cdr result))
+      ;; we're expecting a timeout error here. But CCL raises an 'interrupted' error.
+      (is (eq :handler-error (car result)))
+      (is (typep (cdr result) 'bt:timeout))
+      (is (eq :stopped (call cut :stop))))))
 
 (test stopping-cell
   "Stopping a cell stops the message handling and frees resources."
-
   (defclass stopping-cell (actor-cell) ())
   (defmethod handle-call ((cell stopping-cell) message current-state)
     (cons message current-state))
@@ -180,4 +189,5 @@
   (run! 'handle-call)
   (run! 'error-in-handler)
   (run! 'stack-cell)
+  (run! 'call-timeout)
   (run! 'stopping-cell))

@@ -62,12 +62,12 @@
 
 #|
 TODOs:
-=> - add timeouts for ask, async-ask and all cases that use those.
-   -- missing async-ask timeout
+- async-ask timeout should be measured from within the waiting actor.
 - stopping an actor removes it from the parent actor context
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - make sure that actor names are unique within their context.
+OK - add timeouts for ask, async-ask and all cases that use those.
 OK- add watching (parent to child) which will notify of termination
 OK - shutdown of actor-context should stop actors and recursively also shutdown child acs
 OK - add 'stop' actor to the actor-context protocol.

@@ -129,7 +129,7 @@ In case of timeout the error condition is a bt:timeout."
   "Sends a message to a actor-cell asynchronously. There is no result."
   (when message
     (let ((result (submit-message actor-cell message nil nil nil)))
-      (log:debug "Message process result:" result)
+      (log:debug "Message process result: ~a" result)
       result)))  
 
 (defun running-p (actor-cell)
@@ -138,7 +138,7 @@ In case of timeout the error condition is a bt:timeout."
     (slot-value internal-state 'running)))
 
 (defmethod stop ((self actor-cell))
-  (log:debug "Stopping on actor-cell: " self)
+  (log:debug "Stopping on actor-cell: ~a" self)
   (with-slots (msgbox internal-state) self
     (when (slot-value internal-state 'running)
       (mesgb:stop msgbox)
@@ -155,9 +155,10 @@ In case of `withreply-p', the `response' is filled because submitting to the mes
 Otherwise submitting is asynchronous and `response' is just `t'.
 In case the actor-cell was stopped it will respond with just `:stopped'.
 In case no messge-box is configured this function respnds with `:no-message-handling'."
-  (log:debug "Submitting message: " message)
-  (log:debug "Withreply: " withreply-p)
-  (log:debug "Sender: " sender)
+  (log:debug "Submitting message: ~a" message)
+  (log:debug "Withreply: ~a" withreply-p)
+  (log:debug "Sender: ~a" sender)
+  (log:debug "Timeout: ~a" timeout)
 
   (with-slots (internal-state msgbox) actor-cell
     (unless (actor-cell-state-running internal-state)
@@ -165,19 +166,23 @@ In case no messge-box is configured this function respnds with `:no-message-hand
     (unless msgbox
       (return-from submit-message :no-message-handling)))
 
-  (let ((response
-          (mesgb:with-submit-handler
-              ((slot-value actor-cell 'msgbox)
-               message
-               withreply-p
-               timeout)
-              (process-response actor-cell
-                                (handle-message actor-cell message withreply-p)
-                                sender))))
-    response))
+  (handler-case
+      (mesgb:with-submit-handler
+          ((slot-value actor-cell 'msgbox)
+           message
+           withreply-p
+           timeout)
+          (process-response actor-cell
+                            (handle-message actor-cell message withreply-p)
+                            sender))
+    (t (c)
+      (log:error "Condition raised: " c)
+      (process-response actor-cell
+                        (cons :handler-error c)
+                        sender))))
 
 (defun process-response (actor-cell handle-result sender)
-  (log:debug "Processing handle-result: " handle-result)
+  (log:debug "Processing handle-result: ~a" handle-result)
   (case handle-result
     (:stopping (progn
                  (stop actor-cell)
@@ -185,7 +190,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
     (t (progn
          (when sender
            (progn
-             (log:debug "We have a sender. Send the response back to: " sender)
+             (log:debug "We have a sender. Send the response back to: ~a" sender)
              (cast sender handle-result)))
          handle-result))))
 
@@ -195,7 +200,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
 
 (defun handle-message (actor-cell message withreply-p)
   "This function is submitted as `handler-fun' to message-box"
-  (log:debug "Handling message: " message)
+  (log:debug "Handling message: ~a" message)
   (when message
     (handler-case
         (let ((internal-handle-result (handle-message-internal message)))
@@ -203,13 +208,13 @@ In case no messge-box is configured this function respnds with `:no-message-hand
             (:resume (handle-message-user actor-cell message withreply-p))
             (t internal-handle-result)))
       (t (c)
-        (log:warn "Error condition was raised on message processing: " c)
+        (log:warn "Error condition was raised: " c)
         (cons :handler-error c)))))
 
 (defun handle-message-internal (msg)
   "A `:stop' message will response with `:stopping' and the user handlers are not called.
 Otherwise the result is `:resume' to resume user message handling."
-  (log:debug "Internal handle-call: " msg)
+  (log:debug "Internal handle-call: ~a" msg)
   (case msg
     (:stop :stopping)
     (t :resume)))
@@ -221,12 +226,12 @@ Otherwise the result is `:resume' to resume user message handling."
          (handle-result
            (if withreply-p
                (progn
-                 (log:trace "Calling handle-call on: " actor-cell)
+                 (log:trace "Calling handle-call on: ~a" actor-cell)
                  (handle-call actor-cell message current-state))
                (progn
-                 (log:trace "Calling handle-cast on: " actor-cell)
+                 (log:trace "Calling handle-cast on: ~a" actor-cell)
                  (handle-cast actor-cell message current-state)))))
-    (log:debug "Current-state: " (slot-value actor-cell 'state))
+    (log:debug "Current-state: ~a" (slot-value actor-cell 'state))
     (cond
       (handle-result
        (process-handler-result handle-result actor-cell))
@@ -234,7 +239,7 @@ Otherwise the result is `:resume' to resume user message handling."
        (process-not-handled)))))
 
 (defun process-handler-result (handle-result actor-cell)
-  (log:debug "Message handled, result: " handle-result)
+  (log:debug "Message handled, result: ~a" handle-result)
   (cond
     ((consp handle-result)
      (progn

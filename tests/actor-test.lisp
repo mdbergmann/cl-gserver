@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor-test
-  (:use :cl :fiveam :cl-gserver.actor :cl-gserver.future)
+  (:use :cl :fiveam :cl-mock :cl-gserver.actor :cl-gserver.future)
   (:import-from #:utils
                 #:assert-cond)
   (:export #:run!
@@ -158,7 +158,50 @@
       (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
       (is (= 5 (get-result future))))))
 
-(test async-ask--timeout
+(test ask--shared--timeout
+  "Tests for ask timeout."
+  (with-fixture actor-fixture ((lambda ())
+                               0
+                               t)
+    (let* ((actor (ac:actor-of (ac:system (act:context cut))
+                               (lambda ()
+                                 (make-actor
+                                  (lambda (self msg state)
+                                    (declare (ignore self msg))
+                                    (sleep 2)
+                                    (cons :my-result state))))))
+           (result (ask actor "foo" :timeout 0.5)))
+      (print result)
+      (format t "cond: ~a~%" (cdr result))
+      ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
+      (is (eq :handler-error (car result)))
+      (is (typep (cdr result) 'bt:timeout))
+      (is (eq :stopped (ask actor :stop))))))
+
+(test ask--shared--timeout-in-dispatcher
+  "Tests for ask timeout."
+  (with-fixture actor-fixture ((lambda ())
+                               0
+                               t)
+    (with-mocks ()
+      (answer (disp:dispatch _ _)
+        (progn
+          (format t "Dispatch called...~%")
+          (sleep 2)))
+      (let* ((actor (ac:actor-of (ac:system (act:context cut))
+                                 (lambda ()
+                                   (make-actor
+                                    (lambda (self msg state)
+                                      (declare (ignore self msg state)))))))
+             (result (ask actor "foo" :timeout 0.5)))
+        (print result)
+        (format t "cond: ~a~%" (cdr result))
+        ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
+        (is (eq :handler-error (car result)))
+        (is (typep (cdr result) 'bt:timeout))
+        (is (= 1 (length (invocations 'disp:dispatch))))))))
+
+(test async-ask--shared--timeout
   "Tests for async-ask timeout."
   (with-fixture actor-fixture ((lambda ())
                                0
@@ -171,11 +214,39 @@
                                     (sleep 2)
                                     (cons :my-result state))))))
            (future (async-ask actor "foo" :timeout 0.5)))
-      (sleep 1)
+      (utils:wait-cond (lambda () (complete-p future)))
       (print future)
       (is (eq :handler-error (car (get-result future))))
       (is (typep (cdr (get-result future)) 'bt:timeout)))))
 
+(test ask--pinned--timeout
+  "Tests for ask timeout."
+  (with-fixture actor-fixture ((lambda (self msg state)
+                                 (declare (ignore self msg))
+                                 (sleep 2)
+                                 (cons :my-result state))
+                               0
+                               nil)
+    (let ((result (ask cut "foo" :timeout 0.5)))
+      (print result)
+      (format t "cond: ~a~%" (cdr result))
+      (is (eq :handler-error (car result)))
+      (is (typep (cdr result) 'bt:timeout))
+      (is (eq :stopped (ask cut :stop))))))
+
+(test async-ask--pinned--timeout
+  "Tests for async-ask timeout."
+  (with-fixture actor-fixture ((lambda (self msg state)
+                                 (declare (ignore self msg))
+                                 (sleep 2)
+                                 (cons :my-result state))
+                               0
+                               nil)
+    (let ((future (async-ask cut "foo" :timeout 0.5)))
+      (utils:wait-cond (lambda () (complete-p future)))
+      (print future)
+      (is (eq :handler-error (car (get-result future))))
+      (is (typep (cdr (get-result future)) 'bt:timeout)))))
 
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."
@@ -202,5 +273,10 @@
   (run! 'stop-actor--stopping-parent-stops-also-child)
   (run! 'single-actor--handle-async-ask)
   (run! 'single-actor--handle-async-ask-2)
+  (run! 'ask--shared--timeout)
+  (run! 'ask--shared--timeout-in-dispatcher)
+  (run! 'async-ask--shared--timeout)
+  (run! 'ask--pinned--timeout)
+  (run! 'async-ask--pinned--timeout)
   ;;(run! 'with-actor-macro)
   )

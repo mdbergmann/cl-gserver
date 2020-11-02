@@ -106,7 +106,7 @@ this kind of queue because each message-box requires exactly one thread."))
   (log:debug "Trying to pop from queue...")
   (with-slots (queue) msgbox
     (let ((item (queue:popq queue)))
-      (log:debug "Got item: " item)
+      (log:debug "Got item: ~a" item)
       (process-queue-item item)
       (incf (slot-value msgbox 'processed-messages)))))
 
@@ -116,10 +116,11 @@ message is 'interrupted'.
 This should happen in conjunction with the outer timeout in `submit/reply'."
   (with-slots (message handler-fun withreply-p withreply-lock withreply-cvar cancelled-p timeout) item
     (when cancelled-p
-      (log:warn "Item got cancelled: " item)
+      (log:warn "Item got cancelled: ~a" item)
       (when withreply-p
         (bt:condition-notify withreply-cvar))
-      (return-from process-queue-item :cancelled))    
+      (return-from process-queue-item :cancelled))
+    
     (when handler-fun
       (if withreply-p
           ;; protect this to make sure the lock is released.
@@ -134,7 +135,7 @@ This should happen in conjunction with the outer timeout in `submit/reply'."
 (defmethod submit ((self message-box/bt) message withreply-p timeout handler-fun)
 "Alternatively use `with-submit-handler' from your code to handle the message after it was 'popped' from the queue.
 The `handler-fun' argument here will be `funcall'ed when the message was 'popped'."
-  (log:trace "Submit message: " message)
+  (log:trace "Submit message: ~a" message)
   (with-slots (queue) self
     (if withreply-p
         (submit/reply queue message timeout handler-fun)
@@ -150,7 +151,7 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
                     :timeout nil
                     :cancelled-p nil
                     :handler-fun handler-fun)))
-    (log:debug "pushing item to queue:" push-item)
+    (log:debug "pushing item to queue: ~a" push-item)
     (queue:pushq queue push-item)
     t))
   
@@ -162,7 +163,7 @@ The queue thread has processed the message."
                            ;; wrap the `handler-fun' so that we can get a function result.
                            (log:trace "Withreply: handler-fun...")
                            (setf my-handler-result (funcall handler-fun msg))
-                           (log:trace "Withreply: handler-fun result: " my-handler-result)))
+                           (log:trace "Withreply: handler-fun result: ~a" my-handler-result)))
          (withreply-lock (bt:make-lock))
          (withreply-cvar (bt:make-condition-variable))
          (push-item (make-message-item/bt
@@ -176,28 +177,19 @@ The queue thread has processed the message."
 
     (log:trace "Withreply: waiting for arrival of result...")
     (bt:with-lock-held (withreply-lock)
-      (log:trace "pushing item to queue:" push-item)
+      (log:trace "pushing item to queue: ~a" push-item)
       (queue:pushq queue push-item)
 
       (when timeout
-        (sleep timeout)  ;; this is a blocking call anyway, so we can sleep
+        (sleep timeout)  ;; submit/reply is a blocking call anyway, so we can sleep
         (when (eq 'no-result my-handler-result)
           (log:warn "Timeout elapsed but result not available yet!")
           (setf (slot-value push-item 'cancelled-p) t)
-          (return-from submit/reply
-            (cons :handler-error (make-condition 'bt:timeout :length timeout)))))
+          (signal (make-condition 'bt:timeout :length timeout))))
 
       (bt:condition-wait withreply-cvar withreply-lock))
-      (log:trace "Withreply: result should be available: " my-handler-result)
+      (log:trace "Withreply: result should be available: ~a" my-handler-result)
     my-handler-result))
-
-(defun wait-condition (cond-fun &optional (sleep-time 0.02) (max-time 12))
-  (let ((wait-acc 0))
-    (if (not (funcall cond-fun))
-        (loop
-           (sleep sleep-time)
-           (+ sleep-time wait-acc)
-           (when (or (funcall cond-fun) (> wait-acc max-time)) (return))))))
 
 (defmethod stop ((self message-box/bt))
   (call-next-method)
@@ -213,6 +205,7 @@ The queue thread has processed the message."
 (defstruct message-item/dp
   (message nil)
   (timeout nil)
+  (cancelled-p nil :type boolean)
   (handler-fun nil :type function))
 
 (defclass message-box/dp (message-box-base)
@@ -231,6 +224,23 @@ The `dispatcher is kind of like a thread pool."))
   (when (next-method-p)
     (call-next-method)))
 
+(defun dispatcher-exec-fun (lock queue)
+  (log:trace "Popping message...")
+  (let ((popped-item (popq queue)))
+    (with-slots (message timeout cancelled-p handler-fun) popped-item
+      (log:debug "Popping message: ~a" popped-item)
+      (when cancelled-p
+        (log:warn "Item got cancelled: ~a" popped-item))
+      (unless cancelled-p
+        ;; protect the actor from concurrent state changes for shared dispatcher
+        (bt:acquire-lock lock t)
+        (unwind-protect
+             (if timeout
+                 (bt:with-timeout (timeout)
+                   (funcall handler-fun message))
+                 (funcall handler-fun message))
+          (bt:release-lock lock))))))
+
 (defmethod submit ((self message-box/dp) message withreply-p timeout handler-fun)
   "Submitting a message on a multi-threaded `dispatcher' is different as submitting on a single threaded message-box.
 On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads.
@@ -240,30 +250,42 @@ This is archieved here by protecting the `handler-fun' executation by a lock.
 
 The `timeout' with the 'dispatcher mailbox' assumes that the message received the dispatcher queue
 and the handler in a reasonable amount of time, so that the effective timeout applies on the actual
-handling of the message on the dispatcher queue thread."
+handling of the message on the dispatcher queue thread.
+
+!!! attention: the `async-ask' uses no reply (here a `dispatch-async')."
   (with-slots (name
                queue
                processed-messages
                dispatcher
                lock) self
     (incf processed-messages)
-    (log:info "Enqueuing. Timeout: " timeout " message: " message)
-    (pushq queue message)
+    (let ((push-item (make-message-item/dp
+                      :message message
+                      :timeout timeout
+                      :cancelled-p nil
+                      :handler-fun handler-fun))
+          (dispatcher-fun (lambda () (funcall #'dispatcher-exec-fun lock queue))))
 
-    (let ((dispatcher-fun (lambda ()
-                            (log:trace "Popping message...")
-                            (let ((popped-msg (popq queue)))
-                              (log:trace "Popping message " popped-msg "...done")
-                              (bt:acquire-lock lock t)
-                              (unwind-protect
-                                   (if timeout
-                                       (bt:with-timeout (timeout)
-                                         (funcall handler-fun popped-msg))
-                                       (funcall handler-fun popped-msg))
-                                (bt:release-lock lock))))))
+      (log:info "Enqueuing... withreply-p: ~a, timeout: ~a, message: ~a" withreply-p timeout message)
+      (pushq queue push-item)
+
       (if withreply-p
-          (dispatch dispatcher dispatcher-fun)
-          (dispatch-async dispatcher dispatcher-fun)))))
+          (dispatch/reply push-item dispatcher dispatcher-fun timeout)
+          (dispatch/noreply dispatcher dispatcher-fun)))))
+
+(defun dispatch/reply (push-item dispatcher dispatcher-fun timeout)
+  (if timeout
+      (handler-case
+          (bt:with-timeout (timeout)
+            (dispatch dispatcher dispatcher-fun))
+        (bt:timeout (c)
+          (log:error "Error condition raised: ~a" c)
+          (setf (slot-value push-item 'cancelled-p) t)
+          (signal c)))  ;; resignal to be picked up by higher level
+      (dispatch dispatcher dispatcher-fun)))
+
+(defun dispatch/noreply (dispatcher dispatcher-fun)
+  (dispatch-async dispatcher dispatcher-fun))
 
 (defmethod stop ((self message-box/dp))
   (when (next-method-p)

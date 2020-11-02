@@ -5,7 +5,8 @@
                 #:with-gensyms)
   (:export #:mkstr
            #:assert-cond
-           #:filter))
+           #:filter
+           #:wait-cond))
 
 (in-package :cl-gserver.utils)
 
@@ -24,3 +25,11 @@
 (defmacro filter (fun list)
   (with-gensyms (x)
   `(mapcan (lambda (,x) (if (funcall ,fun ,x) (list ,x))) ,list)))
+
+(defun wait-cond (cond-fun &optional (sleep-time 0.02) (max-time 12))
+  (let ((wait-acc 0))
+    (if (not (funcall cond-fun))
+        (loop
+           (sleep sleep-time)
+           (+ sleep-time wait-acc)
+           (when (or (funcall cond-fun) (> wait-acc max-time)) (return))))))

@@ -154,25 +154,6 @@
     (is (= 1 (call cut :pop)))
     (is (null (call cut :pop)))))
 
-(test call-timeout
-  "Tests for ask timeout."
-  (with-fixture cell-fixture ((lambda (self msg state)
-                                (declare (ignore self msg))
-                                (sleep 2)
-                                (cons :my-result state))
-                              nil
-                              nil
-                              nil
-                              0)
-    (let ((result (call cut "foo" :timeout 0.5)))
-      (print result)
-      (format t "cond: ~a~%" (cdr result))
-      ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
-      (is (eq :handler-error (car result)))
-      (is (typep (cdr result) 'bt:timeout))
-      (is (eq :stopped (call cut :stop))))))
-
-
 (defclass stopping-cell (actor-cell) ())
 (defmethod handle-call ((cell stopping-cell) message current-state)
   (cons message current-state))
@@ -190,5 +171,4 @@
   (run! 'handle-call)
   (run! 'error-in-handler)
   (run! 'stack-cell)
-  (run! 'call-timeout)
   (run! 'stopping-cell))

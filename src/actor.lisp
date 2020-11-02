@@ -121,11 +121,25 @@ In any case stop the actor-cell."
   (make-future (lambda (promise-fun)
                  (log:debug "Executing future function...")
                  (let* ((context (context self))
-                        (system (if context (ac:system context) nil)))
+                        (system (if context (ac:system context) nil))
+                        (timed-out nil)
+                        (result-received nil))
                    (with-waitor-actor self message system timeout
-                                      (lambda (result)
-                                        (log:debug "Result: ~a~%" result)
-                                        (funcall promise-fun result)))))))
+                     (lambda (result)
+                       (setf result-received t)
+                       (log:info "Result: ~a, timed-out:~a" result timed-out)
+                       (unless timed-out
+                         (funcall promise-fun result))))
+                   (when timeout
+                     (handler-case
+                         (bt:with-timeout (timeout)
+                           (utils:wait-cond (lambda () result-received) 0.1))
+                       (bt:timeout (c)
+                         (log:error "Timeout condition: ~a" c)
+                         (setf timed-out t)
+                         ;; fullfil the future
+                         (funcall promise-fun (cons :handler-error c)))))))))
+
 
 ;; (defmacro with-actor (&rest body)
 ;;   (format t "body: ~a~%" body)

@@ -71,6 +71,7 @@ Use this instead of `submit'."
   (withreply-lock nil)
   (withreply-cvar nil)
   (timeout nil)
+  (cancelled-p nil :type boolean)
   (handler-fun nil :type function))
 
 (defclass message-box/bt (message-box-base)
@@ -110,11 +111,19 @@ this kind of queue because each message-box requires exactly one thread."))
       (incf (slot-value msgbox 'processed-messages)))))
 
 (defun process-queue-item (item)
-  (with-slots (message handler-fun withreply-p withreply-lock withreply-cvar timeout) item
+  "The `timeout' handling in here is to make sure that handling of the
+message is 'interrupted'.
+This should happen in conjunction with the outer timeout in `submit/reply'."
+  (with-slots (message handler-fun withreply-p withreply-lock withreply-cvar cancelled-p timeout) item
+    (when cancelled-p
+      (log:warn "Item got cancelled: " item)
+      (when withreply-p
+        (bt:condition-notify withreply-cvar))
+      (return-from process-queue-item :cancelled))    
     (when handler-fun
       (if withreply-p
+          ;; protect this to make sure the lock is released.
           (bt:with-lock-held (withreply-lock)
-            ;; protect this to make sure the lock is released.
             (unwind-protect
                  (if timeout
                      (bt:with-timeout (timeout) (funcall handler-fun message))
@@ -139,6 +148,7 @@ The `handler-fun' argument here will be `funcall'ed when the message was 'popped
                     :withreply-lock nil
                     :withreply-cvar nil
                     :timeout nil
+                    :cancelled-p nil
                     :handler-fun handler-fun)))
     (log:debug "pushing item to queue:" push-item)
     (queue:pushq queue push-item)
@@ -161,14 +171,24 @@ The queue thread has processed the message."
                      :withreply-lock withreply-lock
                      :withreply-cvar withreply-cvar
                      :timeout timeout
+                     :cancelled-p nil
                      :handler-fun my-handler-fun)))
 
     (log:trace "Withreply: waiting for arrival of result...")
     (bt:with-lock-held (withreply-lock)
       (log:trace "pushing item to queue:" push-item)
       (queue:pushq queue push-item)
-      (bt:condition-wait withreply-cvar withreply-lock)
-      (log:trace "Withreply: result should be available: " my-handler-result))
+
+      (when timeout
+        (sleep timeout)  ;; this is a blocking call anyway, so we can sleep
+        (when (eq 'no-result my-handler-result)
+          (log:warn "Timeout elapsed but result not available yet!")
+          (setf (slot-value push-item 'cancelled-p) t)
+          (return-from submit/reply
+            (cons :handler-error (make-condition 'bt:timeout :length timeout)))))
+
+      (bt:condition-wait withreply-cvar withreply-lock))
+      (log:trace "Withreply: result should be available: " my-handler-result)
     my-handler-result))
 
 (defun wait-condition (cond-fun &optional (sleep-time 0.02) (max-time 12))

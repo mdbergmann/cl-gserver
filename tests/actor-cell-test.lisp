@@ -167,7 +167,7 @@
     (let ((result (call cut "foo" :timeout 0.5)))
       (print result)
       (format t "cond: ~a~%" (cdr result))
-      ;; we're expecting a timeout error here. But CCL raises an 'interrupted' error.
+      ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
       (is (eq :handler-error (car result)))
       (is (typep (cdr result) 'bt:timeout))
       (is (eq :stopped (call cut :stop))))))

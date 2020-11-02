@@ -62,6 +62,7 @@
 
 #|
 TODOs:
+- think about cancellation of dispatched jobs
 - async-ask timeout should be measured from within the waiting actor.
 - stopping an actor removes it from the parent actor context
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?

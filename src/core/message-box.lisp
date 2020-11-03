@@ -4,7 +4,10 @@
                 #:dispatch
                 #:dispatch-async)
   (:nicknames :mesgb)
-  (:export #:message-box/dp #:message-box/bt
+  (:export #:message-box/dp
+           #:message-box/bt
+           #:delayed-cancellable-message
+           #:make-delayed-cancellable-message
            #:submit
            #:with-submit-handler
            #:stop))
@@ -60,6 +63,39 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
   "Macro to let the caller specify a message handler function.
 Use this instead of `submit'."
   `(submit ,msgbox ,message ,withreply-p ,time-out (lambda (message) ,@body)))
+
+
+;; ----------------------------------------
+;; Cancellable message
+;; ----------------------------------------
+
+(defclass delayed-cancellable-message ()
+  ((inner-msg :initarg :inner-msg
+              :initform nil
+              :reader inner-msg)
+   (cancelled-p :initarg :cancelled-p
+                :initform nil
+                :accessor cancelled-p
+                :type boolean)
+   (cancel-timer :initform nil
+                 :accessor cancel-timer)
+   (cancel-delay :initarg :cancel-delay
+                 :initform nil
+                 :reader cancel-delay
+                 :documentation
+                 "Delay after which the message gets cancelled and will not be processed.
+If it has not been processed yet.")))
+
+(defmethod initialize-instance :after ((self delayed-cancellable-message) &key)
+  (setf (cancel-timer self)
+        (make-timer (cancel-delay self)
+                    (lambda () (setf (cancelled-p self) t)))))
+
+(defun make-delayed-cancellable-message (inner-msg delay &optional cancelled-p)
+  (make-instance 'delayed-cancellable-message
+                 :inner-msg inner-msg
+                 :cancel-delay delay
+                 :cancelled-p cancelled-p))
 
 ;; ----------------------------------------
 ;; ------------- Bordeaux ----------------

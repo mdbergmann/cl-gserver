@@ -97,6 +97,32 @@
     (is (= 500 (call cut '(:sub 500))))
     (is (eq :unhandled (call cut "Foo")))))
 
+(test submit-delayed-cancellable-message
+  "Tests the submission of a message that is cancellable."
+  (with-fixture cell-fixture ((lambda (cell message current-state)
+                                (declare (ignore cell))
+                                (assert (typep message 'mesgb:delayed-cancellable-message) nil "No delayed-cancellable message")
+                                (print message)
+                                (with-slots (mesgb::inner-msg mesgb::cancelled-p) message
+                                  (if (eq :to-be-cancelled mesgb::inner-msg)
+                                      (progn
+                                        (sleep 1)
+                                        (if mesgb::cancelled-p
+                                            (cons "Cancelled-by-timer" current-state)
+                                            (cons "Not cancelled" current-state)))
+                                      (if mesgb::cancelled-p
+                                          (cons "Cancelled" current-state)
+                                          (cons "Bar" current-state)))))
+                              nil nil nil 0)
+    (is (string= "No delayed-cancellable message"
+                 (format nil "~a" (cdr (call cut "Foo1")))))
+    (is (string= "Bar"
+                 (call cut (mesgb:make-delayed-cancellable-message "Foo2" 0.0))))
+    (is (string= "Cancelled"
+                 (call cut (mesgb:make-delayed-cancellable-message "Foo3" 0.0 t))))
+    (is (string= "Cancelled-by-timer"
+                 (call cut (mesgb:make-delayed-cancellable-message :to-be-cancelled 0.3))))))
+
 (test error-in-handler
   "testing error handling"
   (with-fixture cell-fixture ((lambda (cell message current-state)
@@ -163,7 +189,6 @@
   (let ((cut (make-instance 'stopping-cell)))
     (setf (msgbox cut) (make-instance 'mesgb:message-box/bt))
     (is (eq :stopped (call cut :stop)))))
-
 
 (defun run-tests ()
   (run! 'get-cell-name)

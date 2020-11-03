@@ -97,31 +97,17 @@
     (is (= 500 (call cut '(:sub 500))))
     (is (eq :unhandled (call cut "Foo")))))
 
-(test submit-delayed-cancellable-message
-  "Tests the submission of a message that is cancellable."
+(test handle-delayed-cancellable-message
+  "Tests that this special kind of message can be handled"
   (with-fixture cell-fixture ((lambda (cell message current-state)
                                 (declare (ignore cell))
-                                (assert (typep message 'mesgb:delayed-cancellable-message) nil "No delayed-cancellable message")
-                                (print message)
-                                (with-slots (mesgb::inner-msg mesgb::cancelled-p) message
-                                  (if (eq :to-be-cancelled mesgb::inner-msg)
-                                      (progn
-                                        (sleep 1)
-                                        (if mesgb::cancelled-p
-                                            (cons "Cancelled-by-timer" current-state)
-                                            (cons "Not cancelled" current-state)))
-                                      (if mesgb::cancelled-p
-                                          (cons "Cancelled" current-state)
-                                          (cons "Bar" current-state)))))
+                                (cons message current-state))
                               nil nil nil 0)
-    (is (string= "No delayed-cancellable message"
-                 (format nil "~a" (cdr (call cut "Foo1")))))
-    (is (string= "Bar"
-                 (call cut (mesgb:make-delayed-cancellable-message "Foo2" 0.0))))
-    (is (string= "Cancelled"
-                 (call cut (mesgb:make-delayed-cancellable-message "Foo3" 0.0 t))))
-    (is (string= "Cancelled-by-timer"
-                 (call cut (mesgb:make-delayed-cancellable-message :to-be-cancelled 0.3))))))
+    (is (string= "inner"
+                 (call cut (mesgb:make-delayed-cancellable-message "inner" nil))))
+    (let ((msg (mesgb:make-delayed-cancellable-message "inner" 0.2)))
+      (sleep 0.5)
+      (is (string= :cancelled (call cut msg))))))
 
 (test error-in-handler
   "testing error handling"
@@ -194,6 +180,7 @@
   (run! 'get-cell-name)
   (run! 'no-message-box)
   (run! 'handle-call)
+  (run! 'handle-delayed-cancellable-message)
   (run! 'error-in-handler)
   (run! 'stack-cell)
   (run! 'stopping-cell))

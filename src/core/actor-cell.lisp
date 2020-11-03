@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor-cell
-  (:use :cl :cl-gserver.utils)
+  (:use :cl :cl-gserver.utils :cl-gserver.messageb)
   (:nicknames :act-cell)
   (:export #:actor-cell
            #:cell
@@ -167,7 +167,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
       (return-from submit-message :no-message-handling)))
 
   (handler-case
-      (mesgb:with-submit-handler
+      (with-submit-handler
           ((slot-value actor-cell 'msgbox)
            message
            withreply-p
@@ -199,17 +199,24 @@ In case no messge-box is configured this function respnds with `:no-message-hand
 ;; ------------------------------------------------
 
 (defun handle-message (actor-cell message withreply-p)
-  "This function is submitted as `handler-fun' to message-box"
+  "This function is submitted as `handler-fun' to message-box
+We check here if the message is of type `delayed-cancellable-message',
+and if it got cancelled, in which case we respond just with `:cancelled'."
   (log:debug "Handling message: ~a" message)
-  (when message
-    (handler-case
-        (let ((internal-handle-result (handle-message-internal message)))
-          (case internal-handle-result
-            (:resume (handle-message-user actor-cell message withreply-p))
-            (t internal-handle-result)))
-      (t (c)
-        (log:warn "Error condition was raised: " c)
-        (cons :handler-error c)))))
+  (when (typep message 'delayed-cancellable-message)
+    (when (cancelled-p message)
+      (log:info "Message got cancelled")
+      (return-from handle-message :cancelled))
+    (setf message (inner-msg message)))
+    
+  (handler-case
+      (let ((internal-handle-result (handle-message-internal message)))
+        (case internal-handle-result
+          (:resume (handle-message-user actor-cell message withreply-p))
+          (t internal-handle-result)))
+    (t (c)
+      (log:warn "Error condition was raised: " c)
+      (cons :handler-error c))))
 
 (defun handle-message-internal (msg)
   "A `:stop' message will response with `:stopping' and the user handlers are not called.

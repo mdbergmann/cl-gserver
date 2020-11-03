@@ -8,6 +8,8 @@
            #:message-box/bt
            #:delayed-cancellable-message
            #:make-delayed-cancellable-message
+           #:cancelled-p
+           #:inner-msg
            #:submit
            #:with-submit-handler
            #:stop))
@@ -84,12 +86,23 @@ Use this instead of `submit'."
                  :reader cancel-delay
                  :documentation
                  "Delay after which the message gets cancelled and will not be processed.
-If it has not been processed yet.")))
+If it has not been processed yet.
+When `nil' no timer is created and this is treated as an ordinary wrapped message.")))
 
 (defmethod initialize-instance :after ((self delayed-cancellable-message) &key)
-  (setf (cancel-timer self)
-        (make-timer (cancel-delay self)
-                    (lambda () (setf (cancelled-p self) t)))))
+  (when (cancel-delay self)
+    (setf (cancel-timer self)
+          (make-timer (cancel-delay self)
+                      (lambda () (setf (cancelled-p self) t))))))
+
+(defmethod print-object ((obj delayed-cancellable-message) stream)
+  (print-unreadable-object (obj stream :type t)
+    (with-slots (inner-msg cancelled-p cancel-delay cancel-timer) obj
+      (format stream "~a, cancelled-p: ~a, cancel-delay: ~a, cancel-timer: ~a"
+              inner-msg
+              cancelled-p
+              cancel-delay
+              cancel-timer))))
 
 (defun make-delayed-cancellable-message (inner-msg delay &optional cancelled-p)
   (make-instance 'delayed-cancellable-message

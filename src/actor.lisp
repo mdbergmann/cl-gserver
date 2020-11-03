@@ -95,7 +95,7 @@ In any case stop the actor-cell."
     (funcall pre-start-fun self state)))
 
 (defmacro with-waitor-actor (actor message system time-out &rest body)
-  (with-gensyms (self msg state msgbox waitor-actor)
+  (with-gensyms (self msg state msgbox waitor-actor delayed-cancel-msg)
     `(let ((,msgbox (if ,system
                         (make-instance 'mesgb:message-box/dp
                                        :dispatcher
@@ -112,8 +112,14 @@ In any case stop the actor-cell."
                                             (tell ,self :stop)))
                            :pre-start-fun (lambda (,self ,state)
                                             (declare (ignore ,state))
-                                            ;; this will call the `tell' function
-                                            (act-cell::submit-message ,actor ,message nil ,self ,time-out))
+                                            ;; wrap the message into
+                                            ;; delayed-cancellable-message
+                                            (let ((,delayed-cancel-msg
+                                                    (mesgb:make-delayed-cancellable-message
+                                                     ,message ,time-out)))
+                                              ;; this will call the `tell' function
+                                              (act-cell::submit-message
+                                               ,actor ,delayed-cancel-msg nil ,self ,time-out)))
                            :name (string (gensym "Async-ask-waiter-")))))
        (setf (act-cell:msgbox ,waitor-actor) ,msgbox))))
 

@@ -62,11 +62,11 @@
 
 #|
 TODOs:
-=> - find a way to cancel the execution for async-ask on shared dispatcher
 - stopping an actor removes it from the parent actor context
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - make sure that actor names are unique within their context.
+OK - find a way to cancel the execution for async-ask on shared dispatcher
 OK - use original bt, but make wrapper for bt:with-timeout and catch different timeout conditions.
 OK - think about cancellation of dispatched jobs
 OK - async-ask timeout should be measured from within the waiting actor.

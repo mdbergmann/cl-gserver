@@ -134,11 +134,13 @@ In any case stop the actor-cell."
                      (handler-case
                          (utils:with-waitfor (time-out)
                            (utils:wait-cond (lambda () result-received) 0.1))
-                       (utils:wait-expired (c)
-                         (log:error "Wait expired condition: ~a" c)
+                       (bt:timeout (c)
+                         (log:error "Timeout condition: ~a" c)
                          (setf timed-out t)
                          ;; fullfil the future
-                         (funcall promise-fun (cons :handler-error c)))))))))
+                         (funcall promise-fun
+                                  (cons :handler-error
+                                        (make-condition 'utils:ask-timeout :wait-time time-out :cause c))))))))))
 
 
 ;; (defmacro with-actor (&rest body)

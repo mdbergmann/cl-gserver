@@ -127,8 +127,7 @@ This should happen in conjunction with the outer time-out in `submit/reply'."
           (bt:with-lock-held (withreply-lock)
             (unwind-protect
                  (if time-out
-                     (utils:with-waitfor (time-out)
-                       (unless cancelled-p (funcall handler-fun message)))
+                     (unless cancelled-p (funcall handler-fun message))
                      (funcall handler-fun message))
               (bt:condition-notify withreply-cvar)))
           (funcall handler-fun message)))))
@@ -186,7 +185,7 @@ The queue thread has processed the message."
         (when (eq 'no-result my-handler-result)
           (log:warn "Time-out elapsed but result not available yet!")
           (setf (slot-value push-item 'cancelled-p) t)
-          (error 'utils:wait-expired :wait-time time-out)))
+          (error 'utils:ask-timeout :wait-time time-out)))
 
       (bt:condition-wait withreply-cvar withreply-lock))
       (log:trace "Withreply: result should be available: ~a" my-handler-result)
@@ -205,7 +204,6 @@ The queue thread has processed the message."
 
 (defstruct message-item/dp
   (message nil)
-  (time-out nil)
   (cancelled-p nil :type boolean)
   (handler-fun nil :type function))
 
@@ -229,7 +227,7 @@ The `dispatcher is kind of like a thread pool."))
   "This function is effectively executed on a dispatcher actor."
   (log:trace "Popping message...")
   (let ((popped-item (popq queue)))
-    (with-slots (message time-out cancelled-p handler-fun) popped-item
+    (with-slots (message cancelled-p handler-fun) popped-item
       (log:debug "Popping message: ~a" popped-item)
       (when cancelled-p
         (log:warn "Item got cancelled: ~a" popped-item))
@@ -237,10 +235,7 @@ The `dispatcher is kind of like a thread pool."))
         ;; protect the actor from concurrent state changes on the shared dispatcher
         (bt:acquire-lock lock t)
         (unwind-protect
-             (if time-out
-                 (utils:with-waitfor (time-out)
-                   (unless cancelled-p (funcall handler-fun message)))
-                 (funcall handler-fun message))
+             (unless cancelled-p (funcall handler-fun message))
           (bt:release-lock lock))))))
 
 (defmethod submit ((self message-box/dp) message withreply-p time-out handler-fun)
@@ -263,7 +258,6 @@ handling of the message on the dispatcher queue thread.
     (incf processed-messages)
     (let ((push-item (make-message-item/dp
                       :message message
-                      :time-out time-out
                       :cancelled-p nil
                       :handler-fun handler-fun))
           (dispatcher-fun (lambda () (funcall #'dispatcher-exec-fun lock queue))))
@@ -277,16 +271,23 @@ handling of the message on the dispatcher queue thread.
 
 (defun dispatch/reply (push-item dispatcher dispatcher-fun time-out)
   (if time-out
-      (handler-case
-          (utils:with-waitfor (time-out)
-            (dispatch dispatcher dispatcher-fun))
-        (utils:wait-expired (c)
-          (log:error "Wait expired: ~a" c)
-          (setf (slot-value push-item 'cancelled-p) t)
-          (error c)))  ;; resignal to be picked up by higher level
-      (dispatch dispatcher dispatcher-fun)))
+      (dispatch/reply/timeout time-out push-item dispatcher dispatcher-fun)
+      (dispatch/reply/no-timeout dispatcher dispatcher-fun)))
+
+(defun dispatch/reply/timeout (time-out push-item dispatcher dispatcher-fun)
+  (handler-case
+      (utils:with-waitfor (time-out)
+        (dispatch dispatcher dispatcher-fun))
+    (bt:timeout (c)
+      (log:warn "Timeout: ~a" c)
+      (setf (slot-value push-item 'cancelled-p) t)
+      (error 'utils:ask-timeout :wait-time time-out :cause c))))
+
+(defun dispatch/reply/no-timeout (dispatcher dispatcher-fun)
+  (dispatch dispatcher dispatcher-fun))
 
 (defun dispatch/noreply (dispatcher dispatcher-fun)
+  "Used by `async-ask'."
   (dispatch-async dispatcher dispatcher-fun))
 
 (defmethod stop ((self message-box/dp))

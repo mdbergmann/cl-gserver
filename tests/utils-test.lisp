@@ -11,10 +11,12 @@
 
 (in-suite cl-gserver.utils-test)
 
-;; your test code here
+(test timer--create
+  "Test create timer"
+  (is (typep (make-timer 0.1 (lambda ())) 'bt:thread)))
 
-(test mkstr
-  "Trivial test"
-  (is (string= (mkstr 'foo " hello " 1234) "FOO hello 1234")))
-
-;;(run! 'mkstr)
+(test timer--run
+  "Tests the timer run."
+  (let ((run-ok nil))
+    (make-timer 0.1 (lambda () (setf run-ok t)))
+    (is-true (assert-cond (lambda () (eq t run-ok)) 1))))

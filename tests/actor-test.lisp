@@ -173,7 +173,7 @@
            (result (ask actor "foo" :time-out 0.5)))
       ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
       (is (eq :handler-error (car result)))
-      (is (typep (cdr result) 'utils:wait-expired))
+      (is (typep (cdr result) 'utils:ask-timeout))
       (is (eq :stopped (ask actor :stop))))))
 
 (test ask--shared--timeout-in-dispatcher
@@ -194,7 +194,7 @@
              (result (ask actor "foo" :time-out 0.5)))
         ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
         (is (eq :handler-error (car result)))
-        (is (typep (cdr result) 'utils:wait-expired))
+        (is (typep (cdr result) 'utils:ask-timeout))
         (is (= 1 (length (invocations 'disp:dispatch))))))))
 
 (test async-ask--shared--timeout
@@ -212,7 +212,7 @@
            (future (async-ask actor "foo" :time-out 0.5)))
       (utils:wait-cond (lambda () (complete-p future)))
       (is (eq :handler-error (car (get-result future))))
-      (is (typep (cdr (get-result future)) 'utils:wait-expired)))))
+      (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
 
 (test ask--pinned--timeout
   "Tests for ask timeout."
@@ -224,7 +224,7 @@
                                nil)
     (let ((result (ask cut "foo" :time-out 0.5)))
       (is (eq :handler-error (car result)))
-      (is (typep (cdr result) 'utils:wait-expired))
+      (is (typep (cdr result) 'utils:ask-timeout))
       (is (eq :stopped (ask cut :stop))))))
 
 (test async-ask--pinned--timeout
@@ -238,7 +238,7 @@
     (let ((future (async-ask cut "foo" :time-out 0.5)))
       (utils:wait-cond (lambda () (complete-p future)))
       (is (eq :handler-error (car (get-result future))))
-      (is (typep (cdr (get-result future)) 'utils:wait-expired)))))
+      (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
 
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."

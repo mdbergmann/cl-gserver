@@ -7,9 +7,10 @@
            #:assert-cond
            #:filter
            #:wait-cond
-           #:wait-expired
+           #:ask-timeout
            #:with-waitfor
-           #:cause))
+           #:cause
+           #:make-timer))
 
 (in-package :cl-gserver.utils)
 
@@ -37,7 +38,7 @@
            (+ sleep-time wait-acc)
            (when (or (funcall cond-fun) (> wait-acc max-time)) (return))))))
 
-(define-condition wait-expired (serious-condition)
+(define-condition ask-timeout (serious-condition)
   ((wait-time :initform nil
               :initarg :wait-time
               :reader wait-time)
@@ -50,17 +51,19 @@
              (print (cause c) stream))))
 
 (defmacro with-waitfor ((wait-time) &body body)
-  (alexandria:with-gensyms (c)
+  (with-gensyms (c)
     `(handler-case
          (bt:with-timeout (,wait-time)
                      ,@body)
-       (bt::interrupt (,c)
-         (log:warn "Interrupted, wrapping to 'expired'.")
-         (error 'wait-expired :wait-time ,wait-time :cause ,c))
        (bt:timeout (,c)
-         (log:warn "bt:timeout, wrapping to 'expired'.")
-         (error 'wait-expired :wait-time ,wait-time :cause ,c))
+         (error ,c))
        #+sbcl
        (sb-ext:timeout (,c)
          (log:warn "sb-ext:timeout, wrapping to 'expired'.")
-         (error 'wait-expired :wait-time ,wait-time :cause ,c)))))
+         (error 'bt:timeout :length ,wait-time)))))
+
+(defun make-timer (delay run-fun)
+  (bt:make-thread (lambda ()
+                    (sleep delay)
+                    (funcall run-fun))
+                  :name (string (gensym "timer-"))))

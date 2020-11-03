@@ -62,6 +62,7 @@
 
 #|
 TODOs:
+=> - use original bt, but make wrapper for bt:with-timeout and catch different timeout conditions.
 - stopping an actor removes it from the parent actor context
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system

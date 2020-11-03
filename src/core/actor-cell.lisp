@@ -111,7 +111,7 @@ Same convention as for 'handle-call' except that no return is sent to the caller
   "Empty implementation so that we can call it anyway even if there are no other implementations."
   nil)
 
-(defun call (actor-cell message &key (timeout nil))
+(defun call (actor-cell message &key (time-out nil))
   "Send a message to a actor-cell instance and wait for a result.
 Specify a timeout in seconds if you require a result within a certain period of time.
 Be aware though that this is a resource intensive wait based on a waiting thread.
@@ -119,9 +119,9 @@ The result can be of different types.
 Success result: <returned-state>
 Unhandled result: `:unhandled'
 Error result: `(cons :handler-error <condition>)'
-In case of timeout the error condition is a bt:timeout."
+In case of time-out the error condition is a bt:timeout."
   (when message
-    (let ((result (submit-message actor-cell message t nil timeout)))
+    (let ((result (submit-message actor-cell message t nil time-out)))
       (log:debug "Message process result:" result)
       result)))
 
@@ -149,7 +149,7 @@ In case of timeout the error condition is a bt:timeout."
 ;; internal functions
 ;; -----------------------------------------------
 
-(defun submit-message (actor-cell message withreply-p sender timeout)
+(defun submit-message (actor-cell message withreply-p sender time-out)
   "Submitting a message.
 In case of `withreply-p', the `response' is filled because submitting to the message-box is synchronous.
 Otherwise submitting is asynchronous and `response' is just `t'.
@@ -158,7 +158,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
   (log:debug "Submitting message: ~a" message)
   (log:debug "Withreply: ~a" withreply-p)
   (log:debug "Sender: ~a" sender)
-  (log:debug "Timeout: ~a" timeout)
+  (log:debug "Timeout: ~a" time-out)
 
   (with-slots (internal-state msgbox) actor-cell
     (unless (actor-cell-state-running internal-state)
@@ -171,7 +171,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
           ((slot-value actor-cell 'msgbox)
            message
            withreply-p
-           timeout)
+           time-out)
           (process-response actor-cell
                             (handle-message actor-cell message withreply-p)
                             sender))

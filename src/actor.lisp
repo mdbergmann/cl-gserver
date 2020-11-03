@@ -70,8 +70,8 @@ In any case stop the actor-cell."
 (defmethod tell ((self actor) message)
   (act-cell:cast self message))
 
-(defmethod ask ((self actor) message &key (timeout nil))
-  (act-cell:call self message :timeout timeout))
+(defmethod ask ((self actor) message &key (time-out nil))
+  (act-cell:call self message :time-out time-out))
 
 (defmethod watch ((self actor) watcher)
   (with-slots (watchers) self
@@ -94,7 +94,7 @@ In any case stop the actor-cell."
   (with-slots (pre-start-fun) self
     (funcall pre-start-fun self state)))
 
-(defmacro with-waitor-actor (actor message system timeout &rest body)
+(defmacro with-waitor-actor (actor message system time-out &rest body)
   (with-gensyms (self msg state msgbox waitor-actor)
     `(let ((,msgbox (if ,system
                         (make-instance 'mesgb:message-box/dp
@@ -113,26 +113,26 @@ In any case stop the actor-cell."
                            :pre-start-fun (lambda (,self ,state)
                                             (declare (ignore ,state))
                                             ;; this will call the `tell' function
-                                            (act-cell::submit-message ,actor ,message nil ,self ,timeout))
+                                            (act-cell::submit-message ,actor ,message nil ,self ,time-out))
                            :name (string (gensym "Async-ask-waiter-")))))
        (setf (act-cell:msgbox ,waitor-actor) ,msgbox))))
 
-(defmethod async-ask ((self actor) message &key (timeout nil))
+(defmethod async-ask ((self actor) message &key (time-out nil))
   (make-future (lambda (promise-fun)
                  (log:debug "Executing future function...")
                  (let* ((context (context self))
                         (system (if context (ac:system context) nil))
                         (timed-out nil)
                         (result-received nil))
-                   (with-waitor-actor self message system timeout
+                   (with-waitor-actor self message system time-out
                      (lambda (result)
                        (setf result-received t)
                        (log:info "Result: ~a, timed-out:~a" result timed-out)
                        (unless timed-out
                          (funcall promise-fun result))))
-                   (when timeout
+                   (when time-out
                      (handler-case
-                         (bt:with-timeout (timeout)
+                         (bt:with-timeout (time-out)
                            (utils:wait-cond (lambda () result-received) 0.1))
                        (bt:timeout (c)
                          (log:error "Timeout condition: ~a" c)

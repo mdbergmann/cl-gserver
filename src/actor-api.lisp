@@ -30,13 +30,13 @@ In case of a `tell' operation there will be no response and the `car' of the `co
   (:documentation
    "Sends a message to the `actor'. `tell' is asynchronous. There is no result."))
 
-(defgeneric ask (actor message &key timeout)
+(defgeneric ask (actor message &key time-out)
   (:documentation
    "Sends a message to the `actor'. `ask' is synchronous and waits for a result.
 Specify `timeout' if a message is to be expected after a certain time.
 An `:handler-error' with `timeout' condition will be returned is the call timed out."))
 
-(defgeneric async-ask (actor message &key :timeout)
+(defgeneric async-ask (actor message &key time-out)
   (:documentation
    "This returns a `future'.
 Specify `timeout' if a message is to be expected after a certain time.

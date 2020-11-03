@@ -170,7 +170,7 @@
                                     (declare (ignore self msg))
                                     (sleep 2)
                                     (cons :my-result state))))))
-           (result (ask actor "foo" :timeout 0.5)))
+           (result (ask actor "foo" :time-out 0.5)))
       (print result)
       (format t "cond: ~a~%" (cdr result))
       ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
@@ -193,7 +193,7 @@
                                    (make-actor
                                     (lambda (self msg state)
                                       (declare (ignore self msg state)))))))
-             (result (ask actor "foo" :timeout 0.5)))
+             (result (ask actor "foo" :time-out 0.5)))
         (print result)
         (format t "cond: ~a~%" (cdr result))
         ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
@@ -213,7 +213,7 @@
                                     (declare (ignore self msg))
                                     (sleep 2)
                                     (cons :my-result state))))))
-           (future (async-ask actor "foo" :timeout 0.5)))
+           (future (async-ask actor "foo" :time-out 0.5)))
       (utils:wait-cond (lambda () (complete-p future)))
       (print future)
       (is (eq :handler-error (car (get-result future))))
@@ -227,7 +227,7 @@
                                  (cons :my-result state))
                                0
                                nil)
-    (let ((result (ask cut "foo" :timeout 0.5)))
+    (let ((result (ask cut "foo" :time-out 0.5)))
       (print result)
       (format t "cond: ~a~%" (cdr result))
       (is (eq :handler-error (car result)))
@@ -242,7 +242,7 @@
                                  (cons :my-result state))
                                0
                                nil)
-    (let ((future (async-ask cut "foo" :timeout 0.5)))
+    (let ((future (async-ask cut "foo" :time-out 0.5)))
       (utils:wait-cond (lambda () (complete-p future)))
       (print future)
       (is (eq :handler-error (car (get-result future))))

@@ -175,6 +175,11 @@ In case no messge-box is configured this function respnds with `:no-message-hand
           (process-response actor-cell
                             (handle-message actor-cell message withreply-p)
                             sender))
+    (bt::interrupt ()
+      (log:warn "Catching bt::interrupt, re-raising 'wait-expired")
+      (process-response actor-cell
+                        (cons :handler-error (make-condition 'wait-expired))
+                        sender))
     (t (c)
       (log:error "Condition raised: " c)
       (process-response actor-cell
@@ -207,6 +212,9 @@ In case no messge-box is configured this function respnds with `:no-message-hand
           (case internal-handle-result
             (:resume (handle-message-user actor-cell message withreply-p))
             (t internal-handle-result)))
+      (bt::interrupt ()
+        (log:warn "Catching bt::interrupt, re-raising 'wait-expired")
+        (cons :handler-error (make-condition 'wait-expired)))
       (t (c)
         (log:warn "Error condition was raised: " c)
         (cons :handler-error c)))))

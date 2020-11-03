@@ -132,10 +132,10 @@ In any case stop the actor-cell."
                          (funcall promise-fun result))))
                    (when time-out
                      (handler-case
-                         (bt:with-timeout (time-out)
+                         (utils:with-waitfor (time-out)
                            (utils:wait-cond (lambda () result-received) 0.1))
-                       (bt:timeout (c)
-                         (log:error "Timeout condition: ~a" c)
+                       (utils:wait-expired (c)
+                         (log:error "Wait expired condition: ~a" c)
                          (setf timed-out t)
                          ;; fullfil the future
                          (funcall promise-fun (cons :handler-error c)))))))))

@@ -127,7 +127,8 @@ This should happen in conjunction with the outer time-out in `submit/reply'."
           (bt:with-lock-held (withreply-lock)
             (unwind-protect
                  (if time-out
-                     (bt:with-timeout (time-out) (funcall handler-fun message))
+                     (utils:with-waitfor (time-out)
+                       (unless cancelled-p (funcall handler-fun message)))
                      (funcall handler-fun message))
               (bt:condition-notify withreply-cvar)))
           (funcall handler-fun message)))))
@@ -185,7 +186,7 @@ The queue thread has processed the message."
         (when (eq 'no-result my-handler-result)
           (log:warn "Time-out elapsed but result not available yet!")
           (setf (slot-value push-item 'cancelled-p) t)
-          (signal (make-condition 'bt:timeout :length time-out))))
+          (error 'utils:wait-expired :wait-time time-out)))
 
       (bt:condition-wait withreply-cvar withreply-lock))
       (log:trace "Withreply: result should be available: ~a" my-handler-result)
@@ -225,6 +226,7 @@ The `dispatcher is kind of like a thread pool."))
     (call-next-method)))
 
 (defun dispatcher-exec-fun (lock queue)
+  "This function is effectively executed on a dispatcher actor."
   (log:trace "Popping message...")
   (let ((popped-item (popq queue)))
     (with-slots (message time-out cancelled-p handler-fun) popped-item
@@ -232,12 +234,12 @@ The `dispatcher is kind of like a thread pool."))
       (when cancelled-p
         (log:warn "Item got cancelled: ~a" popped-item))
       (unless cancelled-p
-        ;; protect the actor from concurrent state changes for shared dispatcher
+        ;; protect the actor from concurrent state changes on the shared dispatcher
         (bt:acquire-lock lock t)
         (unwind-protect
              (if time-out
-                 (bt:with-timeout (time-out)
-                   (funcall handler-fun message))
+                 (utils:with-waitfor (time-out)
+                   (unless cancelled-p (funcall handler-fun message)))
                  (funcall handler-fun message))
           (bt:release-lock lock))))))
 
@@ -276,12 +278,12 @@ handling of the message on the dispatcher queue thread.
 (defun dispatch/reply (push-item dispatcher dispatcher-fun time-out)
   (if time-out
       (handler-case
-          (bt:with-timeout (time-out)
+          (utils:with-waitfor (time-out)
             (dispatch dispatcher dispatcher-fun))
-        (bt:timeout (c)
-          (log:error "Error condition raised: ~a" c)
+        (utils:wait-expired (c)
+          (log:error "Wait expired: ~a" c)
           (setf (slot-value push-item 'cancelled-p) t)
-          (signal c)))  ;; resignal to be picked up by higher level
+          (error c)))  ;; resignal to be picked up by higher level
       (dispatch dispatcher dispatcher-fun)))
 
 (defun dispatch/noreply (dispatcher dispatcher-fun)

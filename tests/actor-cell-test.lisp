@@ -34,11 +34,11 @@
          (&body)
       (call cut :stop))))
 
-(test get-cell-name
+(test get-cell-name-and-state
   "Just retrieves the name of the cell"
-  (with-fixture cell-fixture (nil nil nil nil nil)
-    (print (name cut))
-    (is (= 0 (search "actor-" (name cut))))))
+  (with-fixture cell-fixture (nil nil nil nil '(1))
+    (is (= 0 (search "actor-" (name cut))))
+    (is (equalp '(1) (state cut)))))
 
 (test run-pre-start-fun
   "Tests the execution of `pre-start'"
@@ -177,7 +177,7 @@
     (is (eq :stopped (call cut :stop)))))
 
 (defun run-tests ()
-  (run! 'get-cell-name)
+  (run! 'get-cell-name-and-state)
   (run! 'no-message-box)
   (run! 'handle-call)
   (run! 'handle-delayed-cancellable-message)

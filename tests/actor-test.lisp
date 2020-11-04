@@ -30,6 +30,15 @@
           (ac:shutdown (ac:system (act:context cut))))
         (tell cut :stop)))))
 
+(test get-actor-name-and-state
+  "Tests that the actor has the proper name and state after creating it."
+  (let ((cut (make-actor (lambda (self msg state)
+                           (declare (ignore self msg state)) nil)
+                         :state '(1)
+                         :name "Foo")))
+    (is (string= "Foo" (act-cell:name cut)))
+    (is (equalp '(1) (act-cell:state cut)))))
+
 (test make-actor--has-no-msgbox-and-actor-context
   "Test constructor. actor should not have msgbox and attached actor-context."
 

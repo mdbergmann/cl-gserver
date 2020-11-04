@@ -76,7 +76,11 @@ Note: the `actor-cell' uses `call' and `cast' functions which translate to `ask'
               msgbox))))
 
 (defmethod initialize-instance :after ((obj actor-cell) &key)
-  (pre-start obj (slot-value obj 'state)))
+  (with-slots (name state) obj
+    (unless name
+      (setf name (string (gensym "actor-"))))
+    (log:debug "~a initialized: ~a" name obj)
+    (pre-start obj state)))
 
 ;; -----------------------------------------------
 ;; public functions / API
@@ -128,14 +132,14 @@ Error result: `(cons :handler-error <condition>)'
 In case of time-out the error condition is a bt:timeout."
   (when message
     (let ((result (submit-message actor-cell message t nil time-out)))
-      (log:debug "Message process result:" result)
+      (log:debug "~a: message process result: ~a" (name actor-cell) result)
       result)))
 
 (defun cast (actor-cell message)
   "Sends a message to a actor-cell asynchronously. There is no result."
   (when message
     (let ((result (submit-message actor-cell message nil nil nil)))
-      (log:debug "Message process result: ~a" result)
+      (log:debug "~a: message process result: ~a" (name actor-cell) result)
       result)))  
 
 (defun running-p (actor-cell)
@@ -144,7 +148,7 @@ In case of time-out the error condition is a bt:timeout."
     (slot-value internal-state 'running)))
 
 (defmethod stop ((self actor-cell))
-  (log:debug "Stopping on actor-cell: ~a" self)
+  (log:debug "~a: stopping on actor-cell: ~a" (name self) self)
   (with-slots (msgbox internal-state) self
     (when (slot-value internal-state 'running)
       (mesgb:stop msgbox)
@@ -161,10 +165,8 @@ In case of `withreply-p', the `response' is filled because submitting to the mes
 Otherwise submitting is asynchronous and `response' is just `t'.
 In case the actor-cell was stopped it will respond with just `:stopped'.
 In case no messge-box is configured this function respnds with `:no-message-handling'."
-  (log:debug "Submitting message: ~a" message)
-  (log:debug "Withreply: ~a" withreply-p)
-  (log:debug "Sender: ~a" sender)
-  (log:debug "Timeout: ~a" time-out)
+  (log:debug "~a: submitting message: ~a, withreply-p: ~a, sender: ~a, timeout: ~a"
+             (name actor-cell) message withreply-p sender time-out)
 
   (with-slots (internal-state msgbox) actor-cell
     (unless (actor-cell-state-running internal-state)
@@ -182,13 +184,13 @@ In case no messge-box is configured this function respnds with `:no-message-hand
                             (handle-message actor-cell message withreply-p)
                             sender))
     (utils:ask-timeout (c)
-      (log:warn "Ask timeout: ~a" c)
+      (log:warn "~a: ask timeout: ~a" (name actor-cell) c)
       (process-response actor-cell
                         (cons :handler-error c)
                         sender))))
 
 (defun process-response (actor-cell handle-result sender)
-  (log:debug "Processing handle-result: ~a" handle-result)
+  (log:debug "~a: processing handle-result: ~a" (name actor-cell) handle-result)
   (case handle-result
     (:stopping (progn
                  (stop actor-cell)
@@ -196,7 +198,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
     (t (progn
          (when sender
            (progn
-             (log:debug "We have a sender. Send the response back to: ~a" sender)
+             (log:debug "~a: we have a sender. Send the response back to: ~a" (name actor-cell) sender)
              (cast sender handle-result)))
          handle-result))))
 
@@ -210,28 +212,28 @@ In case no messge-box is configured this function respnds with `:no-message-hand
 (defmethod handle-message (actor-cell (message delayed-cancellable-message) withreply-p)
   "We check here if the message is of type `delayed-cancellable-message',
 and if it got cancelled, in which case we respond just with `:cancelled'."
-  (log:debug "Handling message: ~a" message)
+  (log:debug "~a: handling message: ~a" (name actor-cell) message)
   (when (cancelled-p message)
-    (log:info "Message got cancelled")
+    (log:info "~a: message got cancelled" (name actor-cell))
     (return-from handle-message :cancelled))
   (handle-message actor-cell (inner-msg message) withreply-p))
 
 (defmethod handle-message (actor-cell message withreply-p)
   "This function is submitted as `handler-fun' to message-box."
-  (log:debug "Handling message: ~a" message)
+  (log:debug "~a: handling message: ~a" (name actor-cell) message)
   (handler-case
-      (let ((internal-handle-result (handle-message-internal message)))
+      (let ((internal-handle-result (handle-message-internal actor-cell message)))
         (case internal-handle-result
           (:resume (handle-message-user actor-cell message withreply-p))
           (t internal-handle-result)))
     (t (c)
-      (log:warn "Error condition was raised: " c)
+      (log:warn "~a: error condition was raised: ~a" (name actor-cell) c)
       (cons :handler-error c))))
 
-(defun handle-message-internal (msg)
+(defun handle-message-internal (actor-cell msg)
   "A `:stop' message will response with `:stopping' and the user handlers are not called.
 Otherwise the result is `:resume' to resume user message handling."
-  (log:debug "Internal handle-call: ~a" msg)
+  (log:debug "~a: internal handle-call: ~a" (name actor-cell) msg)
   (case msg
     (:stop :stopping)
     (t :resume)))
@@ -246,25 +248,24 @@ Otherwise the result is `:resume' to resume user message handling."
 Effectively this calls the `handle-call' or `handle-cast' functions."))
 
 (defmethod handle-message-user :before (actor-cell message withreply-p)
-  (declare (ignore actor-cell withreply-p))
-  (log:debug "User handle message: ~a" message))
+  (declare (ignore withreply-p))
+  (log:debug "~a: user handle message: ~a" (name actor-cell) message))
 
 (defmethod handle-message-user (actor-cell message (withreply-p (eql t)))
-  (log:trace "Calling handle-call on: ~a" actor-cell)
   (process-handler-result
    (handle-call actor-cell message (state actor-cell))
    actor-cell))
 
 (defmethod handle-message-user (actor-cell message (withreply-p (eql nil)))
-  (log:trace "Calling handle-cast on: ~a" actor-cell)
   (process-handler-result
    (handle-cast actor-cell message (state actor-cell))
    actor-cell))
 
 (defun process-handler-result (handle-result actor-cell)
-  (log:debug "Message handled, result: ~a" handle-result)
+  (log:debug "~a: message handled, result: ~a" (name actor-cell) handle-result)
   (unless handle-result
-    (return-from process-handler-result (process-not-handled)))
+    (return-from process-handler-result
+      (process-not-handled actor-cell)))
   (cond
     ((consp handle-result)
      (progn
@@ -272,11 +273,11 @@ Effectively this calls the `handle-call' or `handle-cast' functions."))
        (reply-value handle-result)))
     (t
      (progn
-       (log:warn "handle-call result is no cons.")
+       (log:warn "~a: handle-call result is no cons." (name actor-cell))
        (cons :handler-error "handle-call result is no cons!")))))
 
-(defun process-not-handled ()
-  (log:debug "Message not handled.")
+(defun process-not-handled (actor-cell)
+  (log:debug "~a: message not handled" (name actor-cell))
   :unhandled)
 
 (defun update-state (actor-cell cons-result)

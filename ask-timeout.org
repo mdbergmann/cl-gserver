@@ -1,0 +1,74 @@
+*How is the ask timeout handled*
+
+Generally, the ~ask~ / ~async-ask~ timeout is resource intensive insofar that a separate thread is spawned
+which sleeps for the given timeout. If no result is there by when the thread awakes an =ask-timeout= condition is raised, and
+the message processing is cancelled, if possible.
+
+There are 4 scenarios:
+
+1. ask - =shared= dispatcher
+
+The ~ask~ message submit on the =shared= dispatcher is within the =current thread= until the message is put into
+the queue on one of the dispatcher actors by the dispatcher api.
+The call trace is (simplified):
+
+- ~ask~ (actor)
+- ~call~ (actor-cell)
+- ~submit~/~dispatch/reply/timeout~ (message-box/dp) => uses ~with-waitfor~
+- ~dispatch~ (dispatcher)
+  - ~ask~ (actor, worker)
+  - ~call~ (actor-cell, worker)
+  - ~submit/reply~ (message-box/bt, worker)
+
+The last step puts the message in a queue which is then handled by the queue thread of the =pinned= actor.
+Since the clock should start ticking almost immediately after calling ~ask~,
+we accept that the 'timer' thread is started at delivering the message to the dispatcher because it is still in the same local-thread. It is done at this place, because we still have access to the wrapped message object.
+This is needed to set the ~cancelled-p~ flag, even if the message object is already in the dispatcher processing queue.
+
+When the message already has been processed, but a reply couldn't be sent/received in time, then there is nothing we can do. An =ask-timeout= might have been issued at the calling side, but any state change or some other operation could still have happened.
+When the message has not been processed, then processing is bypassed due to the ~cancelled-p~ flag (see =dispatcher-exec-fun=).
+
+2. ask - =pinned=
+
+The call trace of the =pinned= ~ask~ process is a bit simpler:
+
+- ~ask~ (actor)
+- ~call~ (actor-cell)
+- ~submit/reply~ (message-box/bt) => uses ~sleep~
+
+The last step puts the message in the queue of the same actor.
+This scenario is very efficient. Since an ~ask~ operation blocks anyway we can just use a ~sleep~ here that blocks for the given timeout. If after the ~sleep~ the message hasn't been processed yet (no result is produced) an =ask-timeout= condition is raised and the ~cancelled-p~ flag of the wrapping message object is set which bypasses the message processing when it is due processing. Setting the ~cancelled-p~ flag doesn't actually fully bypass the message processing. The message is still popped from queue and looked at, but it is not given into the message handler if it was cancelled.
+
+3. async-ask - =shared= dispatcher
+
+The ~async-ask~ generally works by spawning a separate actor which then sends the message to the target actor and waits for a result. This has the effect that ~async-ask~ doesn't block, but instead a future object is received which can be consulted for when a response has been received (~on-complete~, etc.).
+The call stack is as follows:
+
+- ~async-ask~ (actor, waiting-actor) -> uses ~with-waitfor~
+  - ~tell~ (target-actor, waiting-actor sends itself as sender as part of the 'tell' and waits until a response is returned)
+  - ~cast~ (actor-cell, target-actor)
+  - ~submit~/~dispatch/noreply~ (message-box/dp, target-actor)
+  - ~dispatch-async~ (dispatcher)
+    - ~tell~ (actor, worker)
+    - ~cast~ (actor-cell, worker)
+    - ~submit/no-reply~ (message-box/bt, worker)
+
+For this scenario the 'timer' (thread using ~with-waitfor~) really has to be spawned at ~async-ask~, because due to the fact that the message is passed through a waiting actor it is otherwise not possible to intercept a message processing on the dispatcher.
+Additionally, a special message object is used here (~delayed-cancellable-message~) which does the following things: it wraps the actual message, it takes a seconds delay number, it has a ~cancelled-p~ flag. The ~cancelled-p~ flag is checked prior to handling the message. In order to toggle the flag while in transit, or while sitting in the dispatcher workers queue a 'timer' thread is spawed as part of the message object that can toggle the ~cancelled-p~ flag no matter where it is.
+If the message was cancelled is it not processed. This will additionally raise an =ask-timeout= in ~async-ask~.
+
+Clearly this is not very efficient. The 'waitor' actor uses a dipatcher, if a =system= exists so that it doesn't need a separate thread. But otherwise two additional threads are being spawed to allow cutting off this operation.
+
+The ~with-waitfor~ macro only wraps the =bt:with-timeout= macro. This created a separate thread. It would be good to have a thread-pool with a certain amount of threads that could do this instead.
+
+4. async-ask - =pinned=
+
+The call trace:
+
+- ~async-ask~ (actor, waiting-actor) -> uses ~with-waitfor~
+  - ~tell~ (target-actor, waiting-actor sends itself as 'sender' as part of the 'tell' and waits until a response is returned)
+  - ~cast~ (actor-cell, target-actor)
+  - ~submit/no-reply~ (message-box/bt, target-actor)
+
+As above, the 'timer' thread that waits and check for the delivered result is opened in ~async-ask~. This scenario also uses the ~delayed-cancellable-message~ and with that a 'timer' thread that can toggle the ~cancelled-p~ flag.
+As with the other =pinned= scenarios this is a bit more efficient than using the dispatcher, generally.

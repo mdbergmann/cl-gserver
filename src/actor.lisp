@@ -146,7 +146,8 @@ In any case stop the actor-cell."
                          ;; fullfil the future
                          (funcall promise-fun
                                   (cons :handler-error
-                                        (make-condition 'utils:ask-timeout :wait-time time-out :cause c))))))))))
+                                        (make-condition 'utils:ask-timeout :wait-time time-out
+                                                                           :cause c))))))))))
 
 
 ;; (defmacro with-actor (&rest body)

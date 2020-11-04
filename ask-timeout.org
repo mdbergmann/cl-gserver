@@ -6,7 +6,7 @@ the message processing is cancelled, if possible.
 
 There are 4 scenarios:
 
-1. ask - =shared= dispatcher
+**** ask - =shared= dispatcher
 
 The ~ask~ message submit on the =shared= dispatcher is within the =current thread= until the message is put into
 the queue on one of the dispatcher actors by the dispatcher api.
@@ -28,7 +28,7 @@ This is needed to set the ~cancelled-p~ flag, even if the message object is alre
 When the message already has been processed, but a reply couldn't be sent/received in time, then there is nothing we can do. An =ask-timeout= might have been issued at the calling side, but any state change or some other operation could still have happened.
 When the message has not been processed, then processing is bypassed due to the ~cancelled-p~ flag (see =dispatcher-exec-fun=).
 
-2. ask - =pinned=
+**** ask - =pinned=
 
 The call trace of the =pinned= ~ask~ process is a bit simpler:
 
@@ -39,7 +39,7 @@ The call trace of the =pinned= ~ask~ process is a bit simpler:
 The last step puts the message in the queue of the same actor.
 This scenario is very efficient. Since an ~ask~ operation blocks anyway we can just use a ~sleep~ here that blocks for the given timeout. If after the ~sleep~ the message hasn't been processed yet (no result is produced) an =ask-timeout= condition is raised and the ~cancelled-p~ flag of the wrapping message object is set which bypasses the message processing when it is due processing. Setting the ~cancelled-p~ flag doesn't actually fully bypass the message processing. The message is still popped from queue and looked at, but it is not given into the message handler if it was cancelled.
 
-3. async-ask - =shared= dispatcher
+**** async-ask - =shared= dispatcher
 
 The ~async-ask~ generally works by spawning a separate actor which then sends the message to the target actor and waits for a result. This has the effect that ~async-ask~ doesn't block, but instead a future object is received which can be consulted for when a response has been received (~on-complete~, etc.).
 The call stack is as follows:
@@ -61,7 +61,7 @@ Clearly this is not very efficient. The 'waitor' actor uses a dipatcher, if a =s
 
 The ~with-waitfor~ macro only wraps the =bt:with-timeout= macro. This created a separate thread. It would be good to have a thread-pool with a certain amount of threads that could do this instead.
 
-4. async-ask - =pinned=
+**** async-ask - =pinned=
 
 The call trace:
 

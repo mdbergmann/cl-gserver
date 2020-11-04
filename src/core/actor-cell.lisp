@@ -33,6 +33,7 @@
           "The name of the actor/actor-cell. If no name is specified a default one is applied.")
     (state :initarg :state
            :initform nil
+           :reader state
            :documentation
            "The encapsulated state.")
     (internal-state :initform (make-actor-cell-state)
@@ -235,27 +236,35 @@ Otherwise the result is `:resume' to resume user message handling."
     (:stop :stopping)
     (t :resume)))
 
-(defun handle-message-user (actor-cell message withreply-p)
-  "This will call the method 'handle-call' with the message."
-  (log:debug "User handle message: ~a" message)
-  (let* ((current-state (slot-value actor-cell 'state))
-         (handle-result
-           (if withreply-p
-               (progn
-                 (log:trace "Calling handle-call on: ~a" actor-cell)
-                 (handle-call actor-cell message current-state))
-               (progn
-                 (log:trace "Calling handle-cast on: ~a" actor-cell)
-                 (handle-cast actor-cell message current-state)))))
-    (log:debug "Current-state: ~a" (slot-value actor-cell 'state))
-    (cond
-      (handle-result
-       (process-handler-result handle-result actor-cell))
-      (t
-       (process-not-handled)))))
+;;
+;; playing a bit with CLOS multi-methods
+;;
+
+(defgeneric handle-message-user (actor-cell message withreply-p)
+  (:documentation
+   "The user defined message handler.
+Effectively this calls the `handle-call' or `handle-cast' functions."))
+
+(defmethod handle-message-user :before (actor-cell message withreply-p)
+  (declare (ignore actor-cell withreply-p))
+  (log:debug "User handle message: ~a" message))
+
+(defmethod handle-message-user (actor-cell message (withreply-p (eql t)))
+  (log:trace "Calling handle-call on: ~a" actor-cell)
+  (process-handler-result
+   (handle-call actor-cell message (state actor-cell))
+   actor-cell))
+
+(defmethod handle-message-user (actor-cell message (withreply-p (eql nil)))
+  (log:trace "Calling handle-cast on: ~a" actor-cell)
+  (process-handler-result
+   (handle-cast actor-cell message (state actor-cell))
+   actor-cell))
 
 (defun process-handler-result (handle-result actor-cell)
   (log:debug "Message handled, result: ~a" handle-result)
+  (unless handle-result
+    (return-from process-handler-result (process-not-handled)))
   (cond
     ((consp handle-result)
      (progn

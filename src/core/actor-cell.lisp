@@ -1,6 +1,11 @@
 (defpackage :cl-gserver.actor-cell
-  (:use :cl :cl-gserver.utils :cl-gserver.messageb)
+  (:use :cl :cl-gserver.utils)
   (:nicknames :act-cell)
+  (:import-from #:mesgb
+                #:delayed-cancellable-message
+                #:inner-msg
+                #:cancelled-p
+                #:with-submit-handler)
   (:export #:actor-cell
            #:cell
            #:name
@@ -197,18 +202,22 @@ In case no messge-box is configured this function respnds with `:no-message-hand
 ;; ------------------------------------------------
 ;; message handling ---------------------
 ;; ------------------------------------------------
+(defgeneric handle-message (actor-cell message withreply-p)
+  (:documentation
+   "The message handler which is usually called after the message was popped from a queue."))
 
-(defun handle-message (actor-cell message withreply-p)
-  "This function is submitted as `handler-fun' to message-box
-We check here if the message is of type `delayed-cancellable-message',
+(defmethod handle-message (actor-cell (message delayed-cancellable-message) withreply-p)
+  "We check here if the message is of type `delayed-cancellable-message',
 and if it got cancelled, in which case we respond just with `:cancelled'."
   (log:debug "Handling message: ~a" message)
-  (when (typep message 'delayed-cancellable-message)
-    (when (cancelled-p message)
-      (log:info "Message got cancelled")
-      (return-from handle-message :cancelled))
-    (setf message (inner-msg message)))
-    
+  (when (cancelled-p message)
+    (log:info "Message got cancelled")
+    (return-from handle-message :cancelled))
+  (handle-message actor-cell (inner-msg message) withreply-p))
+
+(defmethod handle-message (actor-cell message withreply-p)
+  "This function is submitted as `handler-fun' to message-box."
+  (log:debug "Handling message: ~a" message)
   (handler-case
       (let ((internal-handle-result (handle-message-internal message)))
         (case internal-handle-result
@@ -228,7 +237,7 @@ Otherwise the result is `:resume' to resume user message handling."
 
 (defun handle-message-user (actor-cell message withreply-p)
   "This will call the method 'handle-call' with the message."
-  (log:debug "User handle message: " message)
+  (log:debug "User handle message: ~a" message)
   (let* ((current-state (slot-value actor-cell 'state))
          (handle-result
            (if withreply-p

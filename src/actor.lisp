@@ -67,8 +67,8 @@ In any case stop the actor-cell."
 ;; actor protocol impl
 ;; -------------------------------
 
-(defmethod tell ((self actor) message)
-  (act-cell:cast self message))
+(defmethod tell ((self actor) message &optional sender)
+  (act-cell:cast self message sender))
 
 (defmethod ask ((self actor) message &key (time-out nil))
   (act-cell:call self message :time-out time-out))
@@ -117,7 +117,7 @@ In any case stop the actor-cell."
                                             (let ((,delayed-cancel-msg
                                                     (mesgb:make-delayed-cancellable-message
                                                      ,message ,time-out)))
-                                              ;; this will call the `tell' function
+                                              ;; this is effectively `tell'
                                               (act-cell::submit-message
                                                ,actor ,delayed-cancel-msg nil ,self ,time-out)))
                            :name (string (gensym "Async-ask-waiter-")))))

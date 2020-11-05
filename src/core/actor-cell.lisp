@@ -135,10 +135,11 @@ In case of time-out the error condition is a bt:timeout."
       (log:debug "~a: message process result: ~a" (name actor-cell) result)
       result)))
 
-(defun cast (actor-cell message)
-  "Sends a message to a actor-cell asynchronously. There is no result."
+(defun cast (actor-cell message &optional sender)
+  "Sends a message to a actor-cell asynchronously. There is no result.
+If a `sender' is specified the result will be sent to the sender."
   (when message
-    (let ((result (submit-message actor-cell message nil nil nil)))
+    (let ((result (submit-message actor-cell message nil sender nil)))
       (log:debug "~a: message process result: ~a" (name actor-cell) result)
       result)))  
 

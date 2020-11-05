@@ -26,9 +26,10 @@ I.e.: `(cons <my-response> <my-new-state>)'
 If the operation was an `ask' or `async-ask' then the `car' part of the `cons' will be sent back to the caller.
 In case of a `tell' operation there will be no response and the `car' of the `cons' is ignored."))
 
-(defgeneric tell (actor message)
+(defgeneric tell (actor message &optional sender)
   (:documentation
-   "Sends a message to the `actor'. `tell' is asynchronous. There is no result."))
+   "Sends a message to the `actor'. `tell' is asynchronous. There is no result.
+If a `sender' is specified a message result of the target actor of the `tell' will be sent back to the `sender'"))
 
 (defgeneric ask (actor message &key time-out)
   (:documentation

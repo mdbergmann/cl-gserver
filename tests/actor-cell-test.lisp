@@ -109,6 +109,26 @@
       (sleep 0.5)
       (is (string= :cancelled (call cut msg))))))
 
+(test cast-sends-result-back-to-sender
+  "Test that a cast, that specifies a 'sender' sends the result back to the 'sender'."
+  (with-fixture cell-fixture (nil
+                              (lambda (self msg state)
+                                (declare (ignore self))
+                                (case msg
+                                  (:ping (cons :pong state))))
+                              nil
+                              nil
+                              0)
+    (let* ((response-received nil)
+           (fake-sender (act:make-actor (lambda (self msg state)
+                                          (declare (ignore self))
+                                         (case msg
+                                           (:pong (setf response-received t)))
+                                         (cons msg state)))))
+      (setf (msgbox fake-sender) (make-instance 'mesgb:message-box/bt))
+      (cast cut :ping fake-sender)
+      (is (utils:assert-cond (lambda () response-received) 1)))))
+
 (test error-in-handler
   "testing error handling"
   (with-fixture cell-fixture ((lambda (cell message current-state)

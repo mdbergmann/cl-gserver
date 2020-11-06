@@ -230,15 +230,14 @@ The queue thread has processed the message."
       (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
       (queue:pushq queue push-item)
 
-      (when time-out
-        (sleep time-out)  ;; submit/reply is a blocking call anyway, so we can sleep
-        (when (eq 'no-result my-handler-result)
-          (log:warn "~a: rime-out elapsed but result not available yet!" (name msgbox))
-          (setf (slot-value push-item 'cancelled-p) t)
-          (error 'utils:ask-timeout :wait-time time-out)))
-
-      (bt:condition-wait withreply-cvar withreply-lock))
-      (log:trace "~a: withreply: result should be available: ~a" (name msgbox) my-handler-result)
+      (if time-out
+          (unless
+              (utils:assert-cond (lambda () (not (eq 'no-result my-handler-result))) time-out 0.05)
+            (log:warn "~a: time-out elapsed but result not available yet!" (name msgbox))
+            (setf (slot-value push-item 'cancelled-p) t)
+            (error 'utils:ask-timeout :wait-time time-out))
+          (bt:condition-wait withreply-cvar withreply-lock)))
+    (log:trace "~a: withreply: result should be available: ~a" (name msgbox) my-handler-result)
     my-handler-result))
 
 (defmethod stop ((self message-box/bt))

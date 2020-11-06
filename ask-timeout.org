@@ -37,7 +37,7 @@ The call trace of the =pinned= ~ask~ process is a bit simpler:
 - ~submit/reply~ (message-box/bt) => uses ~sleep~
 
 The last step puts the message in the queue of the same actor.
-This scenario is very efficient. Since an ~ask~ operation blocks anyway we can just use a ~sleep~ here that blocks for the given timeout. If after the ~sleep~ the message hasn't been processed yet (no result is produced) an =ask-timeout= condition is raised and the ~cancelled-p~ flag of the wrapping message object is set which bypasses the message processing when it is due processing. Setting the ~cancelled-p~ flag doesn't actually fully bypass the message processing. The message is still popped from queue and looked at, but it is not given into the message handler if it was cancelled.
+This scenario is very efficient. Since an ~ask~ operation blocks anyway we can just use a loop here that blocks for the given timeout and check repeatedly for the arrival of a result. If after the =timeout= the message hasn't been processed yet (no result is produced) an =ask-timeout= condition is raised and the ~cancelled-p~ flag of the wrapping message object is set which bypasses the message processing when it is (would be) due. Setting the ~cancelled-p~ flag doesn't actually fully bypass the message processing. The message is still popped from queue and looked at, but it is not given into the message handler if it was cancelled.
 
 **** async-ask - =shared= dispatcher
 

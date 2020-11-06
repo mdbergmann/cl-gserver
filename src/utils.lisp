@@ -19,12 +19,12 @@
   (with-output-to-string (stream)
     (dolist (a args) (princ a stream))))
 
-(defun assert-cond (assert-fun max-time)
-  (do ((wait-time 0.02 (+ wait-time 0.02))
+(defun assert-cond (assert-fun max-time &optional (sleep-time 0.1))
+  (do ((wait-time sleep-time (+ wait-time sleep-time))
        (fun-result nil (funcall assert-fun)))
       ((eq fun-result t) (return t))
     (if (> wait-time max-time) (return)
-        (sleep 0.02))))
+        (sleep sleep-time))))
 
 (defmacro filter (fun list)
   (with-gensyms (x)

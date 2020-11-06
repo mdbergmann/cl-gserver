@@ -1,4 +1,4 @@
-*How is the ask timeout handled*
+*** How is the ask timeout handled*
 
 Generally, the ~ask~ / ~async-ask~ timeout is resource intensive insofar that a separate thread is spawned
 which sleeps for the given timeout. If no result is there by when the thread awakes an =ask-timeout= condition is raised, and

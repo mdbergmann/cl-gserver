@@ -1,5 +1,7 @@
 (defpackage :cl-gserver.actor-context-test
-  (:use :cl :fiveam :cl-mock :cl-gserver.actor-context :act)
+  (:use :cl :fiveam :cl-mock :cl-gserver.actor-context)
+  (:import-from #:act
+                #:make-actor)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -45,7 +47,7 @@
     (is (not (eq cut (act:context actor))))
     (is (not (null (ac:system (act:context actor)))))
     ;; stop the :pinned actor
-    (act-cell:stop actor)))
+    (act:stop actor)))
 
 (test actor-of--dont-add-when-null-creator
   "Tests creating a new actor in the context."
@@ -68,14 +70,14 @@
     (let* ((cut (make-actor-context *test-actor-system*))
            (actor (actor-of cut (lambda () (make-actor (lambda ())))))
            (cell-stop-called nil))
-      (answer (act-cell:stop actor-to-stop)
+      (answer (act:stop actor-to-stop)
         (progn 
           (assert (eq actor-to-stop actor))
           (setf cell-stop-called t)
           nil))
       (stop cut actor)
       (is-true cell-stop-called)
-      (is (= 1 (length (invocations 'act-cell:stop)))))))
+      (is (= 1 (length (invocations 'act:stop)))))))
 
 (test retrieve-all-actors
   "Retrieves all actors"

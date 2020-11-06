@@ -132,14 +132,14 @@
     (with-mocks ()
       (let ((act (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
             (call-to-stop-done nil))
-        (answer (act-cell:stop actor-to-stop)
+        (answer (act:stop actor-to-stop)
           (progn
             (assert (eq actor-to-stop act))
             (setf call-to-stop-done t)
             nil))
         (ac:stop cut act)
         (is-true (assert-cond (lambda () call-to-stop-done) 1))
-        (is (= 1 (length (invocations 'act-cell:stop))))))))
+        (is (= 1 (length (invocations 'act:stop))))))))
 
 (test creating-some-actors--and-collect-responses
   "Creating many actors should not pose a problem."

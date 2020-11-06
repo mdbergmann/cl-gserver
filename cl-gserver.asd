@@ -62,7 +62,7 @@
 
 #|
 TODOs:
-- stopping an actor removes it from the parent actor context
+=> - stopping an actor removes it from the parent actor context
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - make sure that actor names are unique within their context.

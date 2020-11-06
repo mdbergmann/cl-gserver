@@ -125,7 +125,7 @@
                         (act:context cut)
                         (lambda () (make-actor (lambda (self msg state)
                                             (declare (ignore self msg state))))))))
-      (act-cell:stop cut)
+      (act:stop cut)
       (is (assert-cond (lambda ()
                          (notany
                           #'act-cell:running-p

@@ -6,8 +6,7 @@
                 #:pre-start
                 #:after-stop
                 #:handle-call
-                #:handle-cast
-                #:stop)
+                #:handle-cast)
   (:import-from #:alexandria
                 #:with-gensyms)
   (:import-from #:future
@@ -56,13 +55,6 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
   (dolist (watcher (watchers actor))
     (tell watcher (cons :stopped actor))))
 
-(defmethod stop ((self actor))
-  "If this actor has an `actor-context', also stop all children.
-In any case stop the actor-cell."
-  (stop-children self)
-  (call-next-method)
-  (notify-watchers self))
-
 ;; -------------------------------
 ;; actor protocol impl
 ;; -------------------------------
@@ -80,6 +72,13 @@ In any case stop the actor-cell."
 (defmethod unwatch ((self actor) watcher)
   (with-slots (watchers) self
     (setf watchers (utils:filter (lambda (w) (not (eq watcher w))) watchers))))
+
+(defmethod stop ((self actor))
+  "If this actor has an `actor-context', also stop all children.
+In any case stop the actor-cell."
+  (stop-children self)
+  (act-cell:stop self)
+  (notify-watchers self))
 
 ;; -------------------------------
 ;; Async handling

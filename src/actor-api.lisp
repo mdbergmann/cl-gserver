@@ -9,7 +9,8 @@
            #:context
            #:watch
            #:unwatch
-           #:watchers)
+           #:watchers
+           #:stop)
 )
 
 (in-package :cl-gserver.actor)
@@ -71,3 +72,7 @@ I.e.: when it stopped. The message being sent in this case is: `(cons :stopped a
 (defgeneric watchers (actor)
   (:documentation
    "Returns a list of watchers of `actor'."))
+
+(defgeneric stop (actor)
+  (:documentation
+   "Stops the actor and cleans up resources."))

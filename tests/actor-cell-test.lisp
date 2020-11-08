@@ -127,7 +127,8 @@
                                          (cons msg state)))))
       (setf (msgbox fake-sender) (make-instance 'mesgb:message-box/bt))
       (cast cut :ping fake-sender)
-      (is (utils:assert-cond (lambda () response-received) 1)))))
+      (is (utils:assert-cond (lambda () response-received) 1))
+      (call fake-sender :stop))))
 
 (test error-in-handler
   "testing error handling"
@@ -198,9 +199,12 @@
 
 (defun run-tests ()
   (run! 'get-cell-name-and-state)
+  (run! 'run-pre-start-fun)
+  (run! 'run-after-stop-fun)
   (run! 'no-message-box)
   (run! 'handle-call)
   (run! 'handle-delayed-cancellable-message)
+  (run! 'cast-sends-result-back-to-sender)
   (run! 'error-in-handler)
   (run! 'stack-cell)
   (run! 'stopping-cell))

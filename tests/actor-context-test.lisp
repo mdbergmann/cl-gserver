@@ -116,6 +116,8 @@
   (run! 'actor-of--shared)
   (run! 'actor-of--pinned)
   (run! 'actor-of--dont-add-when-null-creator)
+  (run! 'actor-of--adds-itself-as-watcher)
+  (run! 'notify--actor-stopped--remove-from-actors-list)
   (run! 'find-actors-test)
   (run! 'stop-actor--by-context)
   (run! 'retrieve-all-actors)

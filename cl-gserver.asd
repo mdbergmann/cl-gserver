@@ -62,7 +62,7 @@
 
 #|
 TODOs:
-- check what to do with the 'waiter-actor'. should it also use 'actor-of'?
+=> - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - make sure that actor names are unique within their context.
 OK - add 'behavior' instead of 'behavior' to actor and 'become' to switch the behavior.

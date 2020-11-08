@@ -299,6 +299,7 @@
 ;;       (is (equal 5 (ask self "get")))))
 
 (defun run-tests ()
+  (run! 'get-actor-name-and-state)
   (run! 'make-actor--has-no-msgbox-and-actor-context)
   (run! 'make-actor--with-msgbox)
   (run! 'actor-of--from-existing-actor-context)

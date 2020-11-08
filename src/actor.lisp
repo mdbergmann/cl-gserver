@@ -16,9 +16,9 @@
 (in-package :cl-gserver.actor)
 
 (defclass actor (actor-cell)
-  ((receive-fun :initarg :receive-fun
-                :initform (error "'receive-fun' must be specified!")
-                :reader receive-fun)
+  ((behavior :initarg :behavior
+                :initform (error "'behavior' must be specified!")
+                :reader behavior)
    (context :initform nil
             :accessor context)
    (watchers :initform '()
@@ -31,20 +31,20 @@ There is asynchronous `tell' (no response) and synchronous `ask' and asynchronou
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
 the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask')."))
 
-(defmethod make-actor (receive-fun &key name state)
+(defmethod make-actor (behavior &key name state)
   (make-instance 'actor
                  :name name
                  :state state
-                 :receive-fun receive-fun))
+                 :behavior behavior))
 
 ;; -------------------------------
 ;; actor-cell impls
 ;; -------------------------------
 
 (defmethod handle-call ((self actor) message state)
-  (funcall (receive-fun self) self message state))
+  (funcall (behavior self) self message state))
 (defmethod handle-cast ((self actor) message state)
-  (funcall (receive-fun self) self message state))
+  (funcall (behavior self) self message state))
 
 (defun stop-children (actor)
   (let ((context (context actor)))
@@ -105,7 +105,7 @@ In any case stop the actor-cell."
                         (make-instance 'mesgb:message-box/bt)))
            (,waiting-actor (make-instance
                            'async-waitor-actor
-                           :receive-fun (lambda (,self ,msg ,state)
+                           :behavior (lambda (,self ,msg ,state)
                                           (unwind-protect
                                                (progn
                                                  (funcall ,@body ,msg)
@@ -162,7 +162,7 @@ In any case stop the actor-cell."
 ;;           (state-sym (gensym)))
 ;;       `(make-actor "tmp-actor"
 ;;                    :state nil
-;;                    :receive-fun (lambda (,actor-sym ,msg-sym ,state-sym)
+;;                    :behavior (lambda (,actor-sym ,msg-sym ,state-sym)
 ;;                                   ,(let ((self actor-sym)
 ;;                                          (msg msg-sym)
 ;;                                          (state state-sym))

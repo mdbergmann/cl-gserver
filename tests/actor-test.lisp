@@ -14,9 +14,9 @@
 
 (in-suite actor-tests)
 
-(def-fixture actor-fixture (receive-fun state with-context)
+(def-fixture actor-fixture (behavior state with-context)
   (defclass test-actor (actor) ())
-  (let ((cut (make-actor receive-fun
+  (let ((cut (make-actor behavior
                          :state state)))
     (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt))
     (when with-context

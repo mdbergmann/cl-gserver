@@ -14,7 +14,7 @@
 
 (log:config :warn)
 
-(defvar *receive-fun* (lambda (self message current-state)
+(defvar *behavior* (lambda (self message current-state)
                         (declare (ignore self))
                         (match message
                           (:add
@@ -34,7 +34,7 @@
   (let* ((cut (make-instance 'counter-actor
                              :name "counter-actor"
                              :state 0
-                             :receive-fun *receive-fun*))
+                             :behavior *behavior*))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))
     (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt :max-queue-size queue-size))
@@ -45,7 +45,7 @@
   (let* ((system (asys:make-actor-system :shared-dispatcher-workers 4))
          (cut (ac:actor-of system (lambda ()
                                     (make-instance 'counter-actor :state 0
-                                                                  :receive-fun *receive-fun*))))
+                                                                  :behavior *behavior*))))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))
     (unwind-protect

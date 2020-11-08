@@ -62,7 +62,7 @@
 
 #|
 TODOs:
-- add 'behavior' instead of 'receive-fun' to actor and 'become' to switch the behavior.
+- add 'behavior' instead of 'behavior' to actor and 'become' to switch the behavior.
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - make sure that actor names are unique within their context.

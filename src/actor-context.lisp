@@ -20,6 +20,11 @@
   (vector-push-extend actor (actors context))
   actor)
 
+(defun remove-actor (context actor)
+  (with-slots (actors) context
+    (setf actors
+          (remove-if (lambda (a) (eq a actor)) actors))))
+
 (defun message-box-for-dispatch-type (dispatch-type context)
   (case dispatch-type
     (:pinned (make-instance 'mesgb:message-box/bt))
@@ -48,6 +53,10 @@
 
 (defmethod stop ((self actor-context) actor)
   (act-cell:stop actor))
+
+(defmethod notify ((self actor-context) actor notification)
+  (case notification
+    (:stopped (remove-actor self actor))))
 
 (defmethod shutdown ((self actor-context))
   (dolist (actor (all-actors self))

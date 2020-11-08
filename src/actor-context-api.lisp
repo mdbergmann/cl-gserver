@@ -6,6 +6,7 @@
            #:find-actors
            #:all-actors
            #:stop
+           #:notify
            #:shutdown
            #:system))
 (in-package :cl-gserver.actor-context)
@@ -30,6 +31,7 @@ because both an `actor-system' and an `actor' are composed of an `actor-context'
 When an `actor-system' is specified as context then the new actor will be a new root actor.
 When th new actor should be a child of another actor, then the `actor-context' of the (to be) parent
 `actor' should be specified.
+Creating an actor via `actor-of' will also add the `actor-context' as watcher of the actor.
 
 Specify the dispatcher type (`disp-type') as either:
 `:shared' to have this actor use the shared message dispatcher of the context
@@ -45,6 +47,12 @@ Specify the dispatcher type (`disp-type') as either:
   (:documentation
    "Stops the given actor on the context. 
 The context may either be an `actor-context', or an `actor-system'."))
+
+(defgeneric notify (context actor notification)
+  (:documentation
+   "Notify the actor context about something.
+Current exists:
+- `:stopped'"))
 
 (defgeneric shutdown (context)
   (:documentation

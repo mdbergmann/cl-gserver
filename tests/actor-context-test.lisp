@@ -63,6 +63,14 @@
                     (lambda (e) (eq e cut))
                     (act:watchers actor)))))))
 
+(test notify--actor-stopped--remove-from-actors-list
+  "Tests that the actor is removed from the actors list when a notification of `:stopped' is received."
+  (let* ((cut (make-actor-context *test-actor-system*))
+         (actor (actor-of cut (lambda () (make-actor (lambda ()) :name "foo")))))
+    (is (= 1 (length (all-actors cut))))
+    (notify cut actor :stopped)
+    (is (= 0 (length (all-actors cut))))))
+
 (test find-actors-test
   "Test for finding actors"
   (let ((context (make-actor-context *test-actor-system*)))

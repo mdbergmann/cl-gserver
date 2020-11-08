@@ -62,11 +62,11 @@
 
 #|
 TODOs:
-=> - stopping an actor removes it from the parent actor context
 - add 'behavior' instead of 'receive-fun' to actor and 'become' to switch the behavior.
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - make sure that actor names are unique within their context.
+OK - stopping an actor removes it from the parent actor context
 OK - find a way to cancel the execution for async-ask on shared dispatcher
 OK - use original bt, but make wrapper for bt:with-timeout and catch different timeout conditions.
 OK - think about cancellation of dispatched jobs

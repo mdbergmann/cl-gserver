@@ -52,9 +52,11 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
       (dolist (child (ac:all-actors context))
         (stop child)))))
 
-(defun notify-watchers (actor)
+(defun notify-watchers-about-stop (actor)
   (dolist (watcher (watchers actor))
-    (tell watcher (cons :stopped actor))))
+    (typecase watcher
+      (act:actor (tell watcher (cons :stopped actor)))
+      (ac:actor-context (ac:notify watcher actor :stopped)))))
 
 ;; -------------------------------
 ;; actor protocol impl
@@ -79,7 +81,7 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
 In any case stop the actor-cell."
   (stop-children self)
   (call-next-method)
-  (notify-watchers self))
+  (notify-watchers-about-stop self))
 
 ;; -------------------------------
 ;; Async handling

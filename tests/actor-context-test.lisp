@@ -47,13 +47,21 @@
     (is (not (eq cut (act:context actor))))
     (is (not (null (ac:system (act:context actor)))))
     ;; stop the :pinned actor
-    (act:stop actor)))
+    (act-cell:stop actor)))
 
 (test actor-of--dont-add-when-null-creator
   "Tests creating a new actor in the context."
-  (let* ((cut (make-actor-context *test-actor-system*)))
+  (let ((cut (make-actor-context *test-actor-system*)))
     (actor-of cut (lambda () nil))
     (is (= 0 (length (all-actors cut))))))
+
+(test actor-of--adds-itself-as-watcher
+  "Tests that when creating a new actor that the ac watches the actor."
+  (let* ((cut (make-actor-context *test-actor-system*))
+         (actor (actor-of cut (lambda () (make-actor (lambda ()) :name "foo")))))
+    (is (not (null (find-if
+                    (lambda (e) (eq e cut))
+                    (act:watchers actor)))))))
 
 (test find-actors-test
   "Test for finding actors"
@@ -70,14 +78,14 @@
     (let* ((cut (make-actor-context *test-actor-system*))
            (actor (actor-of cut (lambda () (make-actor (lambda ())))))
            (cell-stop-called nil))
-      (answer (act:stop actor-to-stop)
+      (answer (act-cell:stop actor-to-stop)
         (progn 
           (assert (eq actor-to-stop actor))
           (setf cell-stop-called t)
           nil))
       (stop cut actor)
       (is-true cell-stop-called)
-      (is (= 1 (length (invocations 'act:stop)))))))
+      (is (= 1 (length (invocations 'act-cell:stop)))))))
 
 (test retrieve-all-actors
   "Retrieves all actors"

@@ -6,7 +6,8 @@
                 #:pre-start
                 #:after-stop
                 #:handle-call
-                #:handle-cast)
+                #:handle-cast
+                #:stop)
   (:import-from #:alexandria
                 #:with-gensyms)
   (:import-from #:future
@@ -77,7 +78,7 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
   "If this actor has an `actor-context', also stop all children.
 In any case stop the actor-cell."
   (stop-children self)
-  (act-cell:stop self)
+  (call-next-method)
   (notify-watchers self))
 
 ;; -------------------------------
@@ -93,14 +94,14 @@ In any case stop the actor-cell."
   (with-slots (pre-start-fun) self
     (funcall pre-start-fun self state)))
 
-(defmacro with-waitor-actor (actor message system time-out &rest body)
-  (with-gensyms (self msg state msgbox waitor-actor delayed-cancel-msg)
+(defmacro with-waiting-actor (actor message system time-out &rest body)
+  (with-gensyms (self msg state msgbox waiting-actor delayed-cancel-msg)
     `(let ((,msgbox (if ,system
                         (make-instance 'mesgb:message-box/dp
                                        :dispatcher
                                        (getf (asys:dispatchers ,system) :shared))
                         (make-instance 'mesgb:message-box/bt)))
-           (,waitor-actor (make-instance
+           (,waiting-actor (make-instance
                            'async-waitor-actor
                            :receive-fun (lambda (,self ,msg ,state)
                                           (unwind-protect
@@ -120,7 +121,7 @@ In any case stop the actor-cell."
                                               (act-cell::submit-message
                                                ,actor ,delayed-cancel-msg nil ,self ,time-out)))
                            :name (string (gensym "Async-ask-waiter-")))))
-       (setf (act-cell:msgbox ,waitor-actor) ,msgbox))))
+       (setf (act-cell:msgbox ,waiting-actor) ,msgbox))))
 
 (defmethod async-ask ((self actor) message &key (time-out nil))
   (make-future (lambda (promise-fun)
@@ -129,7 +130,7 @@ In any case stop the actor-cell."
                         (system (if context (ac:system context) nil))
                         (timed-out nil)
                         (result-received nil))
-                   (with-waitor-actor self message system time-out
+                   (with-waiting-actor self message system time-out
                      (lambda (result)
                        (setf result-received t)
                        (log:info "Result: ~a, timed-out:~a" result timed-out)

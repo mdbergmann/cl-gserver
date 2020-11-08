@@ -37,6 +37,7 @@
 (defmethod actor-of ((self actor-context) create-fun &key (dispatch-type :shared))
   (let ((created (make-actor self create-fun dispatch-type)))
     (when created
+      (act:watch created self)
       (add-actor self created))))
 
 (defmethod find-actors ((self actor-context) test-fun)
@@ -46,8 +47,8 @@
   (coerce (actors self) 'list))
 
 (defmethod stop ((self actor-context) actor)
-  (act:stop actor))
+  (act-cell:stop actor))
 
 (defmethod shutdown ((self actor-context))
   (dolist (actor (all-actors self))
-    (act:stop actor)))
+    (act-cell:stop actor)))

@@ -94,7 +94,7 @@ Users should use `find-actors'."
   (%all-actors self :user))
 
 (defmethod stop ((self actor-system) actor)
-  (act:stop actor))
+  (act-cell:stop actor))
 
 (defmethod shutdown ((self actor-system))
   (disp:shutdown (getf (dispatchers self) :shared))

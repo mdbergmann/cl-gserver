@@ -62,10 +62,10 @@
 
 #|
 TODOs:
-- add 'behavior' instead of 'behavior' to actor and 'become' to switch the behavior.
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 - make sure that actor names are unique within their context.
+OK - add 'behavior' instead of 'behavior' to actor and 'become' to switch the behavior.
 OK - stopping an actor removes it from the parent actor context
 OK - find a way to cancel the execution for async-ask on shared dispatcher
 OK - use original bt, but make wrapper for bt:with-timeout and catch different timeout conditions.

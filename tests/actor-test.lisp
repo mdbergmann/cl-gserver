@@ -50,7 +50,6 @@
 
 (test make-actor--with-msgbox
   "Test contructor and attach a msgbox manually."
-
   (let ((cut (make-actor (lambda (self msg state)
                              (declare (ignore self))
                              (cond
@@ -268,6 +267,21 @@
       (is (eq :handler-error (car (get-result future))))
       (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
 
+(test become--a-different-behavior
+  "Test switching behaviors"
+  (let ((beh1 (lambda (self msg state)
+                (declare (ignore self msg))
+                (cons :behavior1 state)))
+        (beh2 (lambda (self msg state)
+                (declare (ignore self msg))
+                (cons :behavior2 state))))  
+    (with-fixture actor-fixture (beh1 0 t)
+      (is (eq :behavior1 (ask cut :some)))
+      (become cut beh2)
+      (is (eq :behavior2 (ask cut :some)))
+      (become cut beh1)
+      (is (eq :behavior1 (ask cut :some))))))
+
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."
 
@@ -291,6 +305,7 @@
   (run! 'watch-and-unwatch--new-actor)
   (run! 'watch--notify-about-stopped)
   (run! 'stop-actor--stopping-parent-stops-also-child)
+  (run! 'stop-actor--notifies-actor-context-as-watcher)
   (run! 'single-actor--handle-async-ask)
   (run! 'single-actor--handle-async-ask-2)
   (run! 'ask--shared--timeout)
@@ -298,5 +313,6 @@
   (run! 'async-ask--shared--timeout)
   (run! 'ask--pinned--timeout)
   (run! 'async-ask--pinned--timeout)
+  (run! 'become--a-different-behavior)
   ;;(run! 'with-actor-macro)
   )

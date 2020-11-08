@@ -6,6 +6,7 @@
            #:tell
            #:ask
            #:async-ask
+           #:become
            #:context
            #:watch
            #:unwatch
@@ -50,6 +51,11 @@ but instead an anonymous `actor' is started behind the scenes and this in fact m
 the message to the target `actor'. It does sent itself along as 'sender'.
 The target `actor' tells a response back to the initial `sender'. When that happens and the anonymous `actor'
 received the response the `future' will be fulfilled with the `promise'."))
+
+(defgeneric become (actor new-behavior)
+  (:documentation
+   "Changes the behavior of the actor to the given `new-behavior' function.
+The `new-behavior' function must accept 3 parameters: the actor instance, the message and the current state."))
 
 (defgeneric context (actor)
   (:documentation

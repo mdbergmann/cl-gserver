@@ -17,8 +17,8 @@
 
 (defclass actor (actor-cell)
   ((behavior :initarg :behavior
-                :initform (error "'behavior' must be specified!")
-                :reader behavior)
+             :initform (error "'behavior' must be specified!")
+             :reader behavior)
    (context :initform nil
             :accessor context)
    (watchers :initform '()
@@ -26,7 +26,7 @@
              :documentation "List of watchers of this actor."))
   (:documentation
    "This is the `actor' class.
-The `actor' does it's message handling in the `receive' function.
+The `actor' does it's message handling using the `behavior' function.
 There is asynchronous `tell' (no response) and synchronous `ask' and asynchronous `async-ask' (with response).
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
 the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask')."))
@@ -67,6 +67,10 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
 
 (defmethod ask ((self actor) message &key (time-out nil))
   (act-cell:call self message :time-out time-out))
+
+(defmethod become ((self actor) new-behavior)
+  (with-slots (behavior) self
+    (setf behavior new-behavior)))
 
 (defmethod watch ((self actor) watcher)
   (with-slots (watchers) self

@@ -2,11 +2,7 @@
   (:use :cl :cl-gserver.actor)
   (:nicknames :disp)
   (:import-from #:mesgb
-                #:message-box/bt)
-  (:export #:shared-dispatcher
-           #:make-dispatcher
-           #:make-dispatcher-worker
-           #:workers))
+                #:message-box/bt))
 
 (in-package :cl-gserver.dispatcher)
 

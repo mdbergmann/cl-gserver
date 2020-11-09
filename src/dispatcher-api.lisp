@@ -1,7 +1,11 @@
 (defpackage :cl-gserver.dispatcher
   (:use :cl)
   (:nicknames :disp)
-  (:export #:shutdown
+  (:export #:shared-dispatcher
+           #:make-dispatcher
+           #:make-dispatcher-worker
+           #:workers
+           #:shutdown
            #:dispatch
            #:dispatch-async))
 

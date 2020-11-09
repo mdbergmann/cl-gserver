@@ -110,6 +110,21 @@
     (shutdown context)
     (is (= 0 (length (find-actors context (lambda (a) (act-cell:running-p a))))))))
 
+(test enforce-unique-actor-names
+  "Test that all actors in a context have a unique name."
+  (let ((context (make-actor-context *test-actor-system*)))
+    (handler-case
+        (progn
+          (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+          (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+          (format t "Foo~%")
+          (fail))
+      (error (c)
+        (format t "cond: ~a~%" c)
+        (assert (string= "Actor with name 'foo' already exists!"
+                         (format nil "~a" c)))
+        (is-true t)))))
+
 (defun run-tests ()
   (run! 'create--with-default-constructor)
   (run! 'create--check-aggregated-components)

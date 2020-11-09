@@ -62,9 +62,13 @@
 
 #|
 TODOs:
-=> - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
+- check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
-- make sure that actor names are unique within their context.
+=> - fix the package problem on SBCL
+- make performance tests
+- write new readme
+- make use map to store actors in actor-context for better performance on name lookup
+OK - make sure that actor names are unique within their context.
 OK - add 'behavior' instead of 'behavior' to actor and 'become' to switch the behavior.
 OK - stopping an actor removes it from the parent actor context
 OK - find a way to cancel the execution for async-ask on shared dispatcher

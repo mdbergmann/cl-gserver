@@ -2,13 +2,16 @@
   (:use :cl)
   (:nicknames :ac)
   (:export #:actor-context
+           #:make-actor-context
            #:actor-of
            #:find-actors
            #:all-actors
            #:stop
            #:notify
            #:shutdown
-           #:system))
+           #:system
+           ;; conditions
+           #:actor-name-exists))
 (in-package :cl-gserver.actor-context)
 
 (defclass actor-context ()
@@ -59,3 +62,13 @@ Current exists:
    "Stops all actors in this context.
 When the context is an `actor-context' this still stop the actor context and all its actors.
 For the `actor-system' it will stop the whole system with all actors."))
+
+;; -------------------------------------
+;; Conditions
+;; -------------------------------------
+
+(define-condition actor-name-exists (error)
+  ((name :initarg :name
+         :reader name))
+  (:report (lambda (condition stream)
+             (format stream "Actor with name '~a' already exists!" (name condition)))))

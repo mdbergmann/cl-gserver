@@ -1,7 +1,3 @@
-(defpackage :cl-gserver.actor-context
-  (:use :cl)
-  (:nicknames :ac)
-  (:export #:make-actor-context))
 
 (in-package :cl-gserver.actor-context)
 
@@ -32,15 +28,27 @@
                               :dispatcher (get-shared-dispatcher (system context))
                               :max-queue-size 0))))
 
-(defun make-actor (actor-context create-fun dispatch-type)
+(defun verify-actor (context actor)
+  "Checks certain things on the actor before it is attached to the context."
+  (let* ((actor-name (act-cell:name actor))
+         (exists-actor-p (not (null (car
+                                     (find-actors context
+                                                  (lambda (a)
+                                                    (string= (act-cell:name a) actor-name))))))))
+    (when exists-actor-p
+      (log:error "Actor with name '~a' already exists!" actor-name)
+      (error (make-condition 'actor-name-exists :name actor-name)))))
+
+(defun create-actor (context create-fun dispatch-type)
   (let ((actor (funcall create-fun)))
     (when actor
-      (setf (act-cell:msgbox actor) (message-box-for-dispatch-type dispatch-type actor-context))
-      (setf (act:context actor) (make-actor-context (system actor-context))))
+      (verify-actor context actor)
+      (setf (act-cell:msgbox actor) (message-box-for-dispatch-type dispatch-type context))
+      (setf (act:context actor) (make-actor-context (system context))))
     actor))
 
 (defmethod actor-of ((self actor-context) create-fun &key (dispatch-type :shared))
-  (let ((created (make-actor self create-fun dispatch-type)))
+  (let ((created (create-actor self create-fun dispatch-type)))
     (when created
       (act:watch created self)
       (add-actor self created))))

@@ -1,19 +1,13 @@
-(defpackage :cl-gserver.actor
-  (:use :cl)
-  (:nicknames :act)
-  (:import-from #:act-cell
-                #:actor-cell
-                #:pre-start
-                #:after-stop
-                #:handle-call
-                #:handle-cast
-                #:stop)
-  (:import-from #:alexandria
-                #:with-gensyms)
-  (:import-from #:future
-                #:make-future))
 
 (in-package :cl-gserver.actor)
+
+(shadowing-import '(act-cell:actor-cell
+                    act-cell:pre-start
+                    act-cell:after-stop
+                    act-cell:handle-call
+                    act-cell:handle-cast
+                    act-cell:stop
+                    future:make-future))
 
 (defclass actor (actor-cell)
   ((behavior :initarg :behavior
@@ -101,7 +95,7 @@ In any case stop the actor-cell."
     (funcall pre-start-fun self state)))
 
 (defmacro with-waiting-actor (actor message system time-out &rest body)
-  (with-gensyms (self msg state msgbox waiting-actor delayed-cancel-msg)
+  (alexandria:with-gensyms (self msg state msgbox waiting-actor delayed-cancel-msg)
     `(let ((,msgbox (if ,system
                         (make-instance 'mesgb:message-box/dp
                                        :dispatcher

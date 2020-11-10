@@ -1,28 +1,23 @@
-(defpackage :cl-gserver.actor-system
-  (:use :cl)
-  (:nicknames :asys)
-  (:import-from #:disp
-                #:shared-dispatcher
-                #:make-dispatcher
-                #:make-dispatcher-worker)
-  (:import-from #:ac
-                #:make-actor-context
-                ;; actor-context protocol
-                #:actor-of
-                #:find-actors
-                #:all-actors
-                #:shutdown
-                #:stop))
 
 (in-package :cl-gserver.actor-system)
+
+(shadowing-import '(disp:shared-dispatcher
+                    disp:make-dispatcher
+                    disp:make-dispatcher-worker
+                    ac:make-actor-context
+                    ac:actor-of
+                    ac:find-actors
+                    ac:all-actors
+                    ac:shutdown
+                    ac:stop))
 
 (defclass actor-system ()
   ((dispatchers :initform '()
                 :reader dispatchers
                 :documentation "Internal API: contains a list of available message dispatchers.")
    (internal-actor-context :initform nil
-                         :reader internal-actor-context
-                         :documentation "Internal API: an actor context reserved for agents/actors used by the system.")
+                           :reader internal-actor-context
+                           :documentation "Internal API: an actor context reserved for agents/actors used by the system.")
    (user-actor-context :initform nil
                        :reader user-actor-context
                        :documentation "Internal API: an actor context for agents/actors created by the user."))

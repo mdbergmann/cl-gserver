@@ -1,10 +1,15 @@
-(defpackage :cl-gserver.dispatcher
-  (:use :cl :cl-gserver.actor)
-  (:nicknames :disp)
-  (:import-from #:mesgb
-                #:message-box/bt))
 
 (in-package :cl-gserver.dispatcher)
+
+(shadowing-import '(mesgb:message-box/bt
+                    act:actor
+                    act:tell
+                    act:ask))
+
+(export '(shared-dispatcher
+          make-dispatcher
+          make-dispatcher-worker
+          workers))
 
 (defun make-dispatcher (dispatcher-type &key (num-workers 1))
   "Default constructor."

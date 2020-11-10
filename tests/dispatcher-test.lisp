@@ -42,15 +42,20 @@
                                   (remove-if-not (lambda (x)
                                                    (str:starts-with-p "message-thread-mesgb" x))
                                                  (mapcar #'bt:thread-name (bt:all-threads))))))
+    ;; make sure there are no other message-box threads
+    (utils:wait-cond (lambda () (= 0 (len-message-threads))) 0.5 3)
     (let* ((len-message-threads-before (len-message-threads))
            (cut (make-test-dispatcher 4)))
       (mapcar (lambda (worker) (ask worker (cons :execute (lambda () )))) (workers cut))
-      (is (= (+ len-message-threads-before 4) (len-message-threads)))
+      (is-true (assert-cond
+                (lambda ()
+                  (= (+ len-message-threads-before 4) (len-message-threads)))
+                2))
       (shutdown cut)
-      (is (eq t (assert-cond
-                 (lambda ()
-                   (= len-message-threads-before (len-message-threads)))
-                 2))))))
+      (is-true (assert-cond
+                (lambda ()
+                  (= len-message-threads-before (len-message-threads)))
+                5)))))
 
 (defun run-tests ()
   (run! 'create-dispatcher)

@@ -1,9 +1,7 @@
 ;;(push #P"~/Development/MySources/cl-gserver/" asdf:*central-registry*)
 (asdf:load-system "cl-gserver")
 
-;;(use-package :bordeaux-threads)
-
-(log:config :info)
+(log:config :warn)
 
 (defparameter *starttime* 0)
 (defparameter *endtime* 0)
@@ -11,32 +9,23 @@
 (defparameter *withreply-p* nil)
 
 (defparameter *system* nil)
-(defparameter *msgbox* nil)
+(defparameter *actor* nil)
 (defparameter *counter* 0)
 (defparameter +threads+ 8)
-(defparameter +per-thread+ 10000)
+(defparameter +per-thread+ 200000)
 
 (defun max-loop () (* +per-thread+ +threads+))
 
 (format t "Times: ~a~%" (max-loop))
 
-(defun msg-submit ()
-  (cl-gserver.messageb:with-submit-handler (*msgbox* :foo *withreply-p*)
-                                           (progn
-                                             (incf *counter*)
-                                             *counter*)))
-
-(defun assert-cond (assert-fun max-time)
-  (do ((wait-time 0.02 (+ wait-time 0.02))
-       (fun-result nil (funcall assert-fun)))
-      ((eq fun-result t) (return t))
-    (if (> wait-time max-time) (return)
-        (sleep 0.02))))
-
-(defun runner-bt-dp (&optional (withreply-p nil) (queue-size 0))
-  (setf *system* (system:make-actor-system :num-workers 8))
-  (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box/dp
-                                :dispatcher (asys:dispatcher *system*)))
+(defun runner-bt (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
+  (setf *system* (asys:make-actor-system :shared-dispatcher-workers 0))
+  (setf *actor* (ac:actor-of *system*
+                             (lambda () (act:make-actor (lambda (self msg state)
+                                                     (declare (ignore self))
+                                                     (incf *counter*)
+                                                     (cons msg state))))
+                             :dispatch-type :pinned))
   (setf *withreply-p* withreply-p)
   (setf *counter* 0)
   (setf *starttime* (get-universal-time))
@@ -46,20 +35,29 @@
           (mapcar (lambda (x)
                     (bt:make-thread (lambda ()
                                       (dotimes (n +per-thread+)
-                                        (msg-submit)))
+                                        (if withreply-p
+                                            (if asyncask
+                                                (act:async-ask *actor* :foo)
+                                                (act:ask *actor* :foo))
+                                            (act:tell *actor* :foo))))
                                     :name x))
                   (mapcar (lambda (n) (format nil "thread-~a" n))
                           (loop for n from 1 to +threads+ collect n))))
-     (assert-cond (lambda () (= *counter* (max-loop))) 5)))
+     (utils:assert-cond (lambda () (= *counter* (max-loop))) 20)))
   (setf *endtime* (get-universal-time))
   (format t "Counter: ~a~%" *counter*)
   (format t "Elapsed: ~a~%" (- *endtime* *starttime*))
-  (cl-gserver.messageb:stop *msgbox*)
   (print *system*)
-  (asys:shutdown *system*))
+  (ac:shutdown *system*))
 
-(defun runner-bt-bt (&optional (withreply-p nil) (queue-size 0))
-  (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box/bt :max-queue-size queue-size))
+(defun runner-dp (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
+  (setf *system* (asys:make-actor-system :shared-dispatcher-workers 8))
+  (setf *actor* (ac:actor-of *system*
+                             (lambda () (act:make-actor (lambda (self msg state)
+                                                     (declare (ignore self))
+                                                     (incf *counter*)
+                                                     (cons msg state))))
+                             :dispatch-type :shared))
   (setf *withreply-p* withreply-p)
   (setf *counter* 0)
   (setf *starttime* (get-universal-time))
@@ -69,17 +67,20 @@
           (mapcar (lambda (x)
                     (bt:make-thread (lambda ()
                                       (dotimes (n +per-thread+)
-                                        (msg-submit)))
+                                        (if withreply-p
+                                            (if asyncask
+                                                (act:async-ask *actor* :foo)
+                                                (act:ask *actor* :foo))
+                                            (act:tell *actor* :foo))))
                                     :name x))
                   (mapcar (lambda (n) (format nil "thread-~a" n))
                           (loop for n from 1 to +threads+ collect n))))
-     (assert-cond (lambda () (= *counter* (max-loop))) 120)))
+     (utils:assert-cond (lambda () (= *counter* (max-loop))) 120)))
   (setf *endtime* (get-universal-time))
   (format t "Counter: ~a~%" *counter*)
   (format t "Elapsed: ~a~%" (- *endtime* *starttime*))
-  (cl-gserver.messageb:stop *msgbox*))
-
-
+  (print *system*)
+  (ac:shutdown *system*))
 
 
 ;; (defun runner-lp ()

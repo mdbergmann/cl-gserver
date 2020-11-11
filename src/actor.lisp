@@ -102,25 +102,20 @@ In any case stop the actor-cell."
                                        (getf (asys:dispatchers ,system) :shared))
                         (make-instance 'mesgb:message-box/bt)))
            (,waiting-actor (make-instance
-                           'async-waitor-actor
-                           :behavior (lambda (,self ,msg ,state)
-                                          (unwind-protect
-                                               (progn
-                                                 (funcall ,@body ,msg)
-                                                 (tell ,self :stop)
-                                                 (cons ,msg ,state))
-                                            (tell ,self :stop)))
-                           :pre-start-fun (lambda (,self ,state)
-                                            (declare (ignore ,state))
-                                            ;; wrap the message into
-                                            ;; delayed-cancellable-message
-                                            (let ((,delayed-cancel-msg
-                                                    (mesgb:make-delayed-cancellable-message
-                                                     ,message ,time-out)))
-                                              ;; this is effectively `tell'
-                                              (act-cell::submit-message
-                                               ,actor ,delayed-cancel-msg nil ,self ,time-out)))
-                           :name (string (gensym "Async-ask-waiter-")))))
+                            'async-waitor-actor
+                            :behavior (lambda (,self ,msg ,state)
+                                        (unwind-protect
+                                             (progn
+                                               (funcall ,@body ,msg)
+                                               (tell ,self :stop)
+                                               (cons ,msg ,state))
+                                          (tell ,self :stop)))
+                            :pre-start-fun (lambda (,self ,state)
+                                             (declare (ignore ,state))
+                                             ;; this is effectively `tell'
+                                             (act-cell::submit-message
+                                              ,actor ,message nil ,self ,time-out))
+                            :name (string (gensym "Async-ask-waiter-")))))
        (setf (act-cell:msgbox ,waiting-actor) ,msgbox))))
 
 (defmethod async-ask ((self actor) message &key (time-out nil))

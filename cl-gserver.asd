@@ -64,7 +64,7 @@
 TODOs:
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
-- make performance tests
+=> - make performance tests
 - write new readme
 - make use map to store actors in actor-context for better performance on name lookup
 OK - fix the package problem on SBCL

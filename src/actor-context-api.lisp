@@ -27,7 +27,7 @@ This is internal API. Use `all-actors' or `find-actors' instead.")
   (:documentation "`actor-context' deals with creating and maintaining actors.
 The `actor-system' and the `actor' itself are composed of an `actor-context'."))
 
-(defgeneric actor-of (context create-fun &key dispatch-type)
+(defgeneric actor-of (context create-fun &key dispatch-type queue-size)
   (:documentation "Creates and adds actors to the given context.
 The context can be an `actor-context', an `actor-system',
 because both an `actor-system' and an `actor' are composed of an `actor-context'.
@@ -38,7 +38,11 @@ Creating an actor via `actor-of' will also add the `actor-context' as watcher of
 
 Specify the dispatcher type (`disp-type') as either:
 `:shared' to have this actor use the shared message dispatcher of the context
-`:pinned' to have this actor run it's own message box thread (faster, but more resource are bound.)"))
+`:pinned' to have this actor run it's own message box thread (faster, but more resource are bound.)
+
+Specify `queue-size' with:
+0: for a unbounded queue
+>0: for a bounded queue (preferably a size > 100)"))
 
 (defgeneric find-actors (context test-fun)
   (:documentation "Returns actors where `test-fun' provides 'truth'."))

@@ -21,12 +21,12 @@
     (setf actors
           (remove-if (lambda (a) (eq a actor)) actors))))
 
-(defun message-box-for-dispatch-type (dispatch-type context)
+(defun message-box-for-dispatch-type (context dispatch-type queue-size)
   (case dispatch-type
     (:pinned (make-instance 'mesgb:message-box/bt))
     (otherwise (make-instance 'mesgb:message-box/dp
                               :dispatcher (get-shared-dispatcher (system context))
-                              :max-queue-size 0))))
+                              :max-queue-size queue-size))))
 
 (defun verify-actor (context actor)
   "Checks certain things on the actor before it is attached to the context."
@@ -39,16 +39,16 @@
       (log:error "Actor with name '~a' already exists!" actor-name)
       (error (make-condition 'actor-name-exists :name actor-name)))))
 
-(defun create-actor (context create-fun dispatch-type)
+(defun create-actor (context create-fun dispatch-type queue-size)
   (let ((actor (funcall create-fun)))
     (when actor
       (verify-actor context actor)
-      (setf (act-cell:msgbox actor) (message-box-for-dispatch-type dispatch-type context))
+      (setf (act-cell:msgbox actor) (message-box-for-dispatch-type context dispatch-type queue-size))
       (setf (act:context actor) (make-actor-context (system context))))
     actor))
 
-(defmethod actor-of ((self actor-context) create-fun &key (dispatch-type :shared))
-  (let ((created (create-actor self create-fun dispatch-type)))
+(defmethod actor-of ((self actor-context) create-fun &key (dispatch-type :shared) (queue-size 0))
+  (let ((created (create-actor self create-fun dispatch-type queue-size)))
     (when created
       (act:watch created self)
       (add-actor self created))))

@@ -56,9 +56,9 @@
 
 (defun runner-dp (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
   #+sbcl
-  (setf *per-thread* (if (or withreply-p asyncask) 10000 125000))
+  (setf *per-thread* (if (or withreply-p asyncask) 50000 125000))
   #+ccl
-  (setf *per-thread* (if (or withreply-p asyncask) 10000 125000))
+  (setf *per-thread* (if asyncask 10000 125000))
   (setf *system* (asys:make-actor-system :shared-dispatcher-workers
                                          (if asyncask 50 8)))
   (setf *actor* (ac:actor-of *system*
@@ -66,7 +66,9 @@
                                                      (declare (ignore self))
                                                      (incf *counter*)
                                                      (cons msg state))))
-                             :dispatch-type :shared))
+                             :dispatch-type :shared
+                             :queue-size queue-size))
+  (print *actor*)
   (setf *withreply-p* withreply-p)
   (setf *counter* 0)
   (setf *starttime* (get-universal-time))

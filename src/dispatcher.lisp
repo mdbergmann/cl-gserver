@@ -71,7 +71,8 @@ The strategy to choose worker is random."))
   (let ((worker (make-instance 'dispatch-worker
                                :behavior #'behavior
                                :name (utils:mkstr "dispatch-worker-" num))))
-    (setf (act-cell:msgbox worker)  (make-instance 'message-box/bt))
+    (setf (act-cell:msgbox worker)  (make-instance 'message-box/bt
+                                                   :max-queue-size 0))
     worker))
 
 (defun behavior (self message current-state)

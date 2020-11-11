@@ -59,7 +59,7 @@
             ((<= max-items 2) 0)
             ((<= max-items 10) 2)
             ((<= max-items 20) 8)
-            (t (* (/ max-items 100) 90))))  ; 90%
+            (t (* (/ max-items 100) 95))))  ; 95%
     (log:info "Yield threshold at: " yield-threshold)
 
     (setf queue (speedq:make-queue max-items))))
@@ -75,17 +75,17 @@
     
 
 (defun backpressure-if-necessary-on (queue yield-threshold)
-  (iter:iter (iter:for count
-                       initially (get-queue-count queue)
-                       then (get-queue-count queue))
-    (log:debug "Queue size (push): " count)
-    (if (> count yield-threshold)
-        (progn
-          (log:debug "back-pressure, doing thread-yield.")
-          (bt:thread-yield)
-          ;;(sleep .01)
-          ))
-    (iter:while (> count yield-threshold))))
+  (loop :for queue-count = (get-queue-count queue)
+        :for loop-count :from 0
+        :if (and (> loop-count 100) (> queue-count yield-threshold))
+          :do (progn
+                (log:warn "Unable to reduce queue pressure!")
+                (error "Unable to reduce queue pressure. Consider increasing queue-size or use more threads!"))
+        :while (> queue-count yield-threshold)
+        :do (progn
+              (log:debug "back-pressure, doing thread-yield (~a/~a)." queue-count yield-threshold)
+              (bt:thread-yield)
+              (sleep .01))))
 
 (defun get-queue-count (queue)
   (speedq:queue-count queue))

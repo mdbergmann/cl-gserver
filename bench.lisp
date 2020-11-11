@@ -12,14 +12,17 @@
 (defparameter *actor* nil)
 (defparameter *counter* 0)
 (defparameter +threads+ 8)
-(defparameter +per-thread+ 200000)
+(defparameter *per-thread* nil)
 
-(defun max-loop () (* +per-thread+ +threads+))
-
-(format t "Times: ~a~%" (max-loop))
+(defun max-loop () (* *per-thread* +threads+))
 
 (defun runner-bt (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
-  (setf *system* (asys:make-actor-system :shared-dispatcher-workers 0))
+  ;; dispatchers used for the async-ask
+  #+sbcl
+  (setf *per-thread* 100000)
+  #+ccl
+  (setf *per-thread* (if asyncask 10000 125000))
+  (setf *system* (asys:make-actor-system :shared-dispatcher-workers 8))
   (setf *actor* (ac:actor-of *system*
                              (lambda () (act:make-actor (lambda (self msg state)
                                                      (declare (ignore self))
@@ -29,12 +32,13 @@
   (setf *withreply-p* withreply-p)
   (setf *counter* 0)
   (setf *starttime* (get-universal-time))
+  (format t "Times: ~a~%" (max-loop))
   (time
    (progn
      (map nil #'bt:join-thread
           (mapcar (lambda (x)
                     (bt:make-thread (lambda ()
-                                      (dotimes (n +per-thread+)
+                                      (dotimes (n *per-thread*)
                                         (if withreply-p
                                             (if asyncask
                                                 (act:async-ask *actor* :foo)
@@ -51,7 +55,12 @@
   (ac:shutdown *system*))
 
 (defun runner-dp (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
-  (setf *system* (asys:make-actor-system :shared-dispatcher-workers 8))
+  #+sbcl
+  (setf *per-thread* (if (or withreply-p asyncask) 10000 125000))
+  #+ccl
+  (setf *per-thread* (if (or withreply-p asyncask) 10000 125000))
+  (setf *system* (asys:make-actor-system :shared-dispatcher-workers
+                                         (if asyncask 50 8)))
   (setf *actor* (ac:actor-of *system*
                              (lambda () (act:make-actor (lambda (self msg state)
                                                      (declare (ignore self))
@@ -61,12 +70,13 @@
   (setf *withreply-p* withreply-p)
   (setf *counter* 0)
   (setf *starttime* (get-universal-time))
+  (format t "Times: ~a~%" (max-loop))
   (time
    (progn
      (map nil #'bt:join-thread
           (mapcar (lambda (x)
                     (bt:make-thread (lambda ()
-                                      (dotimes (n +per-thread+)
+                                      (dotimes (n *per-thread*)
                                         (if withreply-p
                                             (if asyncask
                                                 (act:async-ask *actor* :foo)
@@ -110,7 +120,7 @@
 ;;           (map nil #'lparallel:force
 ;;                (mapcar (lambda (x)
 ;;                          (lparallel:future
-;;                            (dotimes (n +per-thread+)
+;;                            (dotimes (n *per-thread*)
 ;;                              (msg-submit))))
 ;;                        (mapcar (lambda (n) (format nil "thread-~a" n))
 ;;                                (loop for n from 1 to +threads+ collect n))))
@@ -131,7 +141,7 @@
 ;;                               (dotimes (n per-thread)
 ;;                                 (msg-submit)))
 ;;                         :parts 1
-;;                         (loop repeat +threads+ collect +per-thread+)))
+;;                         (loop repeat +threads+ collect *per-thread*)))
 ;;     (format t "Counter: ~a~%" *counter*)
 ;;     (lparallel:end-kernel)
 ;;     (cl-gserver.messageb::stop *msgbox*)))

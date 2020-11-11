@@ -285,7 +285,8 @@ The `dispatcher is kind of like a thread pool."))
         (bt:acquire-lock lock t)
         (unwind-protect
              (unless cancelled-p (funcall handler-fun message))
-          (bt:release-lock lock))))))
+          (bt:release-lock lock)
+          )))))
 
 (defmethod submit ((self message-box/dp) message withreply-p time-out handler-fun)
   "Submitting a message on a multi-threaded `dispatcher' is different as submitting on a single threaded message-box.

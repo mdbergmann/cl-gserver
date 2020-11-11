@@ -228,7 +228,7 @@ and if it got cancelled, in which case we respond just with `:cancelled'."
           (:resume (handle-message-user actor-cell message withreply-p))
           (t internal-handle-result)))
     (t (c)
-      (log:warn "~a: error condition was raised: ~a" (name actor-cell) c)
+      (log:error "~a: error condition was raised: ~a" (name actor-cell) c)
       (cons :handler-error c))))
 
 (defun handle-message-internal (actor-cell msg)

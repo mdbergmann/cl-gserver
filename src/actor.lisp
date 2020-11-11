@@ -85,17 +85,10 @@ In any case stop the actor-cell."
 ;; Async handling
 ;; -------------------------------
 
-(defclass async-waitor-actor (actor)
-  ((pre-start-fun :initarg :pre-start-fun)))
-
-(defmethod pre-start ((self async-waitor-actor) state)
-  (when (next-method-p)
-    (call-next-method))
-  (with-slots (pre-start-fun) self
-    (funcall pre-start-fun self state)))
+(defclass async-waitor-actor (actor) ())
 
 (defmacro with-waiting-actor (actor message system time-out &rest body)
-  (alexandria:with-gensyms (self msg state msgbox waiting-actor delayed-cancel-msg)
+  (alexandria:with-gensyms (self msg state msgbox waiting-actor)
     `(let ((,msgbox (if ,system
                         (make-instance 'mesgb:message-box/dp
                                        :dispatcher
@@ -107,16 +100,12 @@ In any case stop the actor-cell."
                                         (unwind-protect
                                              (progn
                                                (funcall ,@body ,msg)
-                                               (tell ,self :stop)
+                                               (act-cell:stop ,self)
                                                (cons ,msg ,state))
-                                          (tell ,self :stop)))
-                            :pre-start-fun (lambda (,self ,state)
-                                             (declare (ignore ,state))
-                                             ;; this is effectively `tell'
-                                             (act-cell::submit-message
-                                              ,actor ,message nil ,self ,time-out))
+                                          (act-cell:stop ,self)))
                             :name (string (gensym "Async-ask-waiter-")))))
-       (setf (act-cell:msgbox ,waiting-actor) ,msgbox))))
+       (setf (act-cell:msgbox ,waiting-actor) ,msgbox)
+       (act-cell::submit-message ,actor ,message nil ,waiting-actor ,time-out))))
 
 (defmethod async-ask ((self actor) message &key (time-out nil))
   (make-future (lambda (promise-fun)

@@ -62,6 +62,7 @@
 
 #|
 TODOs:
+- do error on async-wait but there are no dispatcher workers
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
 => - make performance tests

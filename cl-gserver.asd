@@ -62,12 +62,12 @@
 
 #|
 TODOs:
-- do error on async-wait but there are no dispatcher workers
+- do error on async-wait if there are no dispatcher workers
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 - add agent to system
-=> - make performance tests
-- write new readme
+=> - write new readme
 - make use map to store actors in actor-context for better performance on name lookup
+OK - make performance tests
 OK - fix the package problem on SBCL
 OK - make sure that actor names are unique within their context.
 OK - add 'behavior' instead of 'behavior' to actor and 'become' to switch the behavior.

@@ -1,0 +1,256 @@
+8443 => t: ~540
+10443 => t: ~666 ===> bail out
+
+RAM: 16GB 	=> still not working
+			=> not related to host mem.
+			
+-----------------------------------------------
+SBCL 2.0.10
+-----------------------------------------------
+
+* (runner-bt)
+=> shared workers 8, used only for async waiting actor
+=> pinned actor
+
+Times: 1000000
+Evaluation took:
+  1.149 seconds of real time
+  6.767837 seconds of total run time (6.692038 user, 0.075799 system)
+  [ Run times consist of 0.218 seconds GC time, and 6.550 seconds non-GC time. ]
+  589.03% CPU
+  3,670,169,358 processor cycles
+  143,922,592 bytes consed
+Counter: 1000000
+Elapsed: 1
+
+* (runner-bt t)
+Times: 1000000
+Evaluation took:
+  2.940 seconds of real time
+  15.289726 seconds of total run time (4.989670 user, 10.300056 system)
+  [ Run times consist of 0.312 seconds GC time, and 14.978 seconds non-GC time. ]
+  520.07% CPU
+  9,385,812,947 processor cycles
+  314,407,872 bytes consed
+Counter: 1000000
+Elapsed: 3
+
+* (runner-bt t t)
+Times: 1000000
+Evaluation took:
+  6.831 seconds of real time
+  21.050441 seconds of total run time (13.324707 user, 7.725734 system)
+  [ Run times consist of 4.381 seconds GC time, and 16.670 seconds non-GC time. ]
+  308.15% CPU
+  21,805,348,791 processor cycles
+  2 page faults
+  1,824,298,976 bytes consed
+Counter: 1000000
+Elapsed: 7
+
+--------------- shared ---------------
+
+* (runner-dp)
+=> shared workers 8
+=> shared actor
+Times: 1000000
+Evaluation took:
+  1.293 seconds of real time
+  12.001278 seconds of total run time (11.220945 user, 0.780333 system)
+  [ Run times consist of 0.193 seconds GC time, and 11.809 seconds non-GC time. ]
+  928.15% CPU
+  4,127,234,610 processor cycles
+  324,578,784 bytes consed
+Counter: 1000000
+Elapsed: 2
+
+* (runner-dp t)
+=> shared workers 8
+=> shared actor
+Times: 240000
+Evaluation took:
+  7.759 seconds of real time
+  15.923882 seconds of total run time (2.832515 user, 13.091367 system)
+  [ Run times consist of 0.007 seconds GC time, and 15.917 seconds non-GC time. ]
+  205.23% CPU
+  24,768,755,038 processor cycles
+  113,326,512 bytes consed
+
+Counter: 240000
+Elapsed: 8
+=> on the limit. using more messages SBCL will take expotentially longer to finish.
+
+* (runner-dp t t)
+=> shared workers 50
+=> shared actor
+Times: 400000
+Evaluation took:
+  4.383 seconds of real time
+  16.966884 seconds of total run time (8.290559 user, 8.676325 system)
+  [ Run times consist of 2.266 seconds GC time, and 14.701 seconds non-GC time. ]
+  387.11% CPU
+  13,990,936,949 processor cycles
+  2 page faults
+  766,938,832 bytes consed
+Counter: 400000
+Elapsed: 4
+
+
+-----------------------------------------------
+CCL 1.12
+-----------------------------------------------
+
+? (runner-bt)
+=> shared workers 8, used only for async waiting actor
+=> pinned actor
+
+Times: 1000000
+took  3,901,648 microseconds ( 3.901648 seconds) to run.
+        865,534 microseconds ( 0.865534 seconds, 22.18%) of which was spent in GC.
+During that period, and with 16 available CPU cores,
+      5,124,677 microseconds ( 5.124677 seconds) were spent in user mode
+     12,923,066 microseconds (12.923066 seconds) were spent in system mode
+ 23,808 bytes of memory allocated.
+ 41,405 minor page faults, 0 major page faults, 0 swaps.
+Counter: 1000000
+Elapsed: 3
+
+? (runner-bt t)
+Times: 1000000
+took  8,319,444 microseconds ( 8.319444 seconds) to run.
+        276,493 microseconds ( 0.276493 seconds, 3.32%) of which was spent in GC.
+During that period, and with 16 available CPU cores,
+      8,173,109 microseconds ( 8.173110 seconds) were spent in user mode
+     14,331,704 microseconds (14.331704 seconds) were spent in system mode
+ 23,520 bytes of memory allocated.
+ 521 minor page faults, 0 major page faults, 0 swaps.
+Counter: 1000000
+Elapsed: 8
+
+? (runner-bt t t)
+Times: 80000
+took 13,808,364 microseconds (13.808364 seconds) to run.
+     12,026,170 microseconds (12.026170 seconds, 87.09%) of which was spent in GC.
+During that period, and with 16 available CPU cores,
+     15,397,814 microseconds (15.397814 seconds) were spent in user mode
+      4,837,212 microseconds ( 4.837212 seconds) were spent in system mode
+ 23,808 bytes of memory allocated.
+ 27,405 minor page faults, 0 major page faults, 0 swaps.
+Counter: 80000
+Elapsed: 14
+=> brings system to it's limits regarding resources with segmentation faults, etc.
+
+-------------------- shared --------------------
+
+? (runner-dp)
+=> shared workers 8
+=> shared actor
+Times: 1000000
+took  5,332,663 microseconds ( 5.332663 seconds) to run.
+      2,533,410 microseconds ( 2.533410 seconds, 47.51%) of which was spent in GC.
+During that period, and with 16 available CPU cores,
+     12,616,837 microseconds (12.616837 seconds) were spent in user mode
+     20,254,917 microseconds (20.254915 seconds) were spent in system mode
+ 23,808 bytes of memory allocated.
+ 23,788 minor page faults, 0 major page faults, 0 swaps.
+Counter: 1000000
+Elapsed: 6
+
+? (runner-dp t)
+=> shared workers 8
+=> shared actor
+Times: 1000000
+took 10,035,938 microseconds (10.035938 seconds) to run.
+        446,813 microseconds ( 0.446813 seconds, 4.45%) of which was spent in GC.
+During that period, and with 16 available CPU cores,
+     16,254,141 microseconds (16.254140 seconds) were spent in user mode
+     33,006,477 microseconds (33.006477 seconds) were spent in system mode
+ 23,808 bytes of memory allocated.
+ 1,687 minor page faults, 0 major page faults, 0 swaps.
+Counter: 1000000
+Elapsed: 10
+
+? (runner-dp t t)
+=> shared workers 50
+=> shared actor
+Times: 80000
+took 111,954,132 microseconds (111.954124 seconds) to run.
+     103,158,500 microseconds (103.158500 seconds, 92.14%) of which was spent in GC.
+During that period, and with 16 available CPU cores,
+     114,825,191 microseconds (114.825195 seconds) were spent in user mode
+      43,729,565 microseconds ( 43.729565 seconds) were spent in system mode
+ 23,808 bytes of memory allocated.
+ 41,822 minor page faults, 0 major page faults, 0 swaps.
+Counter: 80000
+Elapsed: 112
+=> brings system to it's limits regarding resources with segmentation faults, etc.
+
+
+-----------------------------------------------
+ABCL 1.8.0
+-----------------------------------------------
+
+CL-USER(2): (runner-bt)
+=> shared workers 8, used only for async waiting actor
+=> pinned actor
+
+Times: 1000000
+7.455 seconds real time
+33313792 cons cells
+Counter: 1000000
+Elapsed: 7
+
+CL-USER(4): (runner-bt t)
+Times: 1000000
+6.956 seconds real time
+33546173 cons cells
+Counter: 1000000
+Elapsed: 7
+
+CL-USER(7): (runner-bt t t)
+Times: 1000000
+20.815 seconds real time
+181465619 cons cells
+Counter: 1000000
+Elapsed: 21
+
+-------------------- shared --------------------
+
+CL-USER(9): (runner-dp)
+=> shared workers 8
+=> shared actor
+Times: 1000000
+6.237 seconds real time
+54622191 cons cells
+Counter: 1000000
+Elapsed: 6
+
+CL-USER(11): (runner-dp t)
+=> shared workers 8
+=> shared actor
+Times: 1000000
+7.098 seconds real time
+57684205 cons cells
+Counter: 1000000
+Elapsed: 7
+
+CL-USER(14): (runner-dp t t)
+=> shared workers 50
+=> shared actor
+Times: 80000
+1.682 seconds real time
+14873001 cons cells
+Counter: 80000
+Elapsed: 2
+
+CL-USER(2): (runner-dp t t)
+=> shared workers 50
+=> shared actor
+Times: 1000000
+24.805 seconds real time
+194439752 cons cells
+Counter: 1000000
+Elapsed: 25
+
+=> ABCL makes overall a very good picture. 
+Probably because of the battle proven VM and the very efficient and proven GC.

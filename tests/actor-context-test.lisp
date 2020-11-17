@@ -125,6 +125,17 @@
                          (format nil "~a" c)))
         (is-true t)))))
 
+(test remove-and-add-actors
+  "Tests removing and again adding actors !!! this tests private API"
+  (let ((context (make-actor-context *test-actor-system*)))
+    (ac::add-actor context 'foo)
+    (is (member 'foo (coerce (ac::actors context) 'list)))
+    (ac::remove-actor context 'foo)
+    (is (= 0 (length (ac::actors context))))
+    (ac::add-actor context 'foo)
+    (is (member 'foo (coerce (ac::actors context) 'list)))
+  ))
+
 (defun run-tests ()
   (run! 'create--with-default-constructor)
   (run! 'create--check-aggregated-components)
@@ -137,4 +148,6 @@
   (run! 'stop-actor--by-context)
   (run! 'retrieve-all-actors)
   (run! 'shutdown-actor-context)
+  (run! 'enforce-unique-actor-names)
+  (run! 'remove-and-add-actors)
   )

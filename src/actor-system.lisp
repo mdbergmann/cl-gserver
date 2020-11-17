@@ -22,8 +22,7 @@
                        :reader user-actor-context
                        :documentation "Internal API: an actor context for agents/actors created by the user."))
   (:documentation
-   "An `actor-system' is opening facility. The first thing you do is to create an `actor-system'
-using the main constructor `make-actor-system'.
+   "An `actor-system' is the opening facility. The first thing you do is to create an `actor-system' using the main constructor `make-actor-system'.
 With the `actor-system' you can create actors via the `actor-context' protocol function: `actor-of'."))
 
 (defmethod print-object ((obj actor-system) stream)

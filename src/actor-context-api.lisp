@@ -14,19 +14,6 @@
            #:actor-name-exists))
 (in-package :cl-gserver.actor-context)
 
-(defclass actor-context ()
-  ((actors :initform (make-array 50 :adjustable t :fill-pointer 0)
-           :reader actors
-           :documentation
-           "A list of actors.
-This is internal API. Use `all-actors' or `find-actors' instead.")
-   (system :initform nil
-           :reader system
-           :documentation
-           "A reference to the `actor-system'."))
-  (:documentation "`actor-context' deals with creating and maintaining actors.
-The `actor-system' and the `actor' itself are composed of an `actor-context'."))
-
 (defgeneric actor-of (context create-fun &key dispatch-type queue-size)
   (:documentation "Creates and adds actors to the given context.
 The context can be an `actor-context', an `actor-system',

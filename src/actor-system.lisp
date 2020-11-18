@@ -58,7 +58,7 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
     (:internal (internal-actor-context system))
     (otherwise (user-actor-context system))))
 
-(defun %actor-of (system create-fun dispatch-type queue-size &key (context-key :user))
+(defun %actor-of (system create-fun dispatch-type &key (context-key :user) (queue-size 0))
   "Private API to create system actors. Context-key is either `:internal' or `:user'
 Users should use `actor-of'."
   (ac:actor-of
@@ -80,7 +80,7 @@ Users should use `find-actors'."
 ;; ----------------------------------------
 
 (defmethod actor-of ((self actor-system) create-fun &key (dispatch-type :shared) (queue-size 0))
-  (%actor-of self create-fun dispatch-type queue-size :context-key :user))
+  (%actor-of self create-fun dispatch-type :context-key :user :queue-size queue-size))
 
 (defmethod find-actors ((self actor-system) test-fun)
   (%find-actors self test-fun :context-key :user))

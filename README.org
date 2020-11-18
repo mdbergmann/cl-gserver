@@ -1,0 +1,197 @@
+
+#+title: Actor framework featuring actors and agents
+#+author: Manfred Bergmann
+
+** Introduction
+
+Version 1.0 of =cl-gserver= library comes with quite a few new features. One of the major new features is that an actor is not bound to it's own message dispatcher thread. Instead, when an =actor-system= is set-up, actors can use a shared pool of message dispatchers which effectively allows to create millions of actors.
+
+It is now possible to create actor hierarchies. An actor can have child actors. An actor now can also 'watch' another actor to get notified about it's termination.
+
+It is also possible to specify timeouts for the =ask= and =async-ask= functionality.
+
+This new version is closer to Akka (the actor model framework on the JVM) than to GenServer on Erlang. This is because Common Lisp from a runtime perspective is closer to JVM than to Erlang/OTP. Threads in Common Lisp are heavy weight OS threads rather than user-space low weight 'Erlang' threads (I'd like to avoid 'green threads', because threads in Erlang are not really green threads). While on Erlang it is easily possible to spawn millions of processes/threads and so each actor (GenServer) has its own process, this model is not possible when the threads are OS threads, because of OS resource limits.
+This is the main reason for working with the message dispatcher pool instead.
+
+But let's just right into it. I'll explain more later.
+
+** Getting hands-on
+
+*** Creating an actor-system
+
+To use the shared dispatcher pool we have to create an =actor-system= first.
+
+#+BEGIN_SRC lisp
+(defvar *system* (asys:make-actor-system))
+#+END_SRC
+
+When we eval ~*system*~ in the repl we see a bit of the structure:
+
+#+BEGIN_EXAMPLE
+#<ACTOR-SYSTEM shared-workers: 4, user actors: 0, internal actors: 0>
+#+END_EXAMPLE
+
+So the =actor-system= has by default four shared message dispatcher workers. Depending on how busy the system tends to be this default can of course be increased.
+
+*** Creating actors
+
+Actors kind of live within an =actor-context=. An ~actor-context~ is in fact a Common Lisp protocol that spawns a set of generic functions.
+
+There are two 'things' that host an =actor-context=. This is: 
+1. the =actor-system=. Creating actors on the =actor-system= will create root actors.
+2. the =actor=. Creating actors on the context of an actor will create a child actor.
+
+Here we now use the =actor-context= protocol/api nicknamed =ac=.
+
+#+BEGIN_SRC lisp
+(ac:actor-of *system* (lambda ()
+                        (act:make-actor 
+                             (lambda (self msg state)
+                               (let ((output (format nil "Hello ~a" msg)))
+                                 (format t "~a~%" output)
+                                 (cons output state)))
+                             :name "answerer")))
+#+END_SRC
+
+This creates a root actor on the ~*system*~. Notice that the actor is not assigned to a variable. It is now registered in the system. The main argument to the =actor-of= function is a 'creator-function' which when evaluated returns an actor created with the main actor constructor =make-actor=.
+
+=mke-actor= requires as main parameter a 'behavior' function which should look familiar. It is still the tuple of:
+1. =self= - the instance of the actor
+2. =msg= - the received message of when this 'behavior function is called
+3. =state= - the current state of the actor
+
+The return value of the 'behavior' function should also be familiar. It is the =cons= with =car= being sent back to sender (in case of ask/async-ask) and =cdr= that change into the new current state of the actor.
+
+The function (=actor-of=) still returns the actor as can be seen on the repl when this is executed. So it is of course possible to store the actor in a dynamic or lexical context. However, when the lexical context ends, the actor will still live as part of the actor context.
+
+Here we see a few details of the actor. Among which is the name and also the type of message-box it uses. By default it is a =message-box/dp= which is the type of a shared message dispatcher message-box.
+
+#+BEGIN_EXAMPLE
+#<ACTOR answerer, running: T, state: NIL, message-box: #<MESSAGE-BOX/DP mesgb-9541, processed messages: 0, max-queue-size: 0, queue: #<QUEUE-UNBOUNDED #x3020029918FD>>>
+#+END_EXAMPLE
+
+Had we stored the actor to a variable, say =*answerer*= we can create a child actor of that by doing:
+
+#+BEGIN_SRC lisp
+(ac:actor-of (act:context *answerer*) 
+                          (lambda ()
+                            (act:make-actor
+                             (lambda (self msg state)
+                               (let ((output (format nil "~a" "Hello-child ~a" msg)))
+                                 (format t "~a~%" output)
+                               (cons output state)))
+                             :name "child-answerer")))
+#+END_SRC
+
+*** Finding actors in the context
+
+If actors are not directly stored in a dynamic or lexical context they can still be looked up and used. The =actor-context= protocol contains a function =find-actors= which works like this:
+
+#+BEGIN_SRC lisp
+(first (ac:find-actors 
+                 *system*
+                 (lambda (actor) (string= "answerer" 
+                                          (act-cell:name actor)))))
+#+END_SRC
+
+=find-actors= takes as first parameter the actor context. This can be either the actor system, or the context of an actor. The second parameter is a test function. This example makes a string comparison on the actor name. So the above function will output:
+
+#+BEGIN_EXAMPLE
+#<ACTOR answerer, running: T, state: NIL, message-box: #<MESSAGE-BOX/DP mesgb-9687, processed messages: 0, max-queue-size: 0, queue: #<QUEUE-UNBOUNDED #x30200263C95D>>>
+#+END_EXAMPLE
+
+This function only does a simple flat search. The functionality of looking up an actor in the system generally will be expanded upon.
+
+*** tell, ask and async-ask
+
+Let's send some messages.
+
+**** tell
+
+=tell= is a fire-and-forget kind of send type. It doesn't expect a result in return.
+
+And because of that we added the string output with ~format~ side-effect in the actor behavior, because we couldn't otherwise =tell= if it was received and processed.
+
+#+BEGIN_SRC lisp
+CL-USER> (act:tell *answerer* "Foo")
+T
+CL-USER> 
+Hello Foo
+#+END_SRC
+
+So we see that =tell= returns immediately with ~T~. But to see the 'Hello Foo' it takes another hit on the return key, because the REPL is not asynchronous.
+
+**** tell with sender
+
+=tell= accepts a 'sender', which has to be an actor. So we can do like this:
+
+#+BEGIN_SRC lisp
+CL-USER> (act:tell *child-answerer* "Foo" *answerer*)
+T
+CL-USER> 
+Hello-child Foo
+Hello Hello-child Foo
+#+END_SRC
+
+This sends "Foo" to ~*child-answerer*~, but ~*child-answerer*~ sends the response to ~*answerer*~. So we see outputs of both actors.
+
+**** ask
+
+=ask= blocks until the message was processed by the actor. This call returns the ~car~ part of the ~cons~ return of the behavior function.
+Insofar an =ask= call is more resource intensive than just a =tell=.
+
+#+BEGIN_SRC lisp
+(act:ask *answerer* "Bar")
+#+END_SRC
+
+Will respond with: Hello Bar
+
+**** async-ask
+
+=async-ask= combines both =ask= and =tell=. From =ask= is 'inherits' returning a result, even though it's a future result. But internally it's implemented using =tell= in that a temporary actor is spawned that waits until it receives the result from the actor where the message was sent to.
+So =async-ask= is async, it returns immediately with a =future=. That =future= can be queried until it is fulfilled. Better is though to setup an ~on-completed~ function on it.
+
+So we can do:
+
+#+BEGIN_SRC lisp
+(future:on-completed
+          (act:async-ask *answerer* "Buzz")
+          (lambda (result)
+            (format t "Received result: ~a~%" result)))
+#+END_SRC
+
+Well, one step at a time:
+
+#+BEGIN_SRC lisp
+(act:async-ask *answerer* "Buzz")
+#+END_SRC
+
+Returns with:
+
+#+BEGIN_EXAMPLE
+#<FUTURE promise: #<PROMISE finished: NIL errored: NIL forward: NIL #x302002EAD6FD>>
+#+END_EXAMPLE
+
+Then we can setup a completion handler on the future:
+
+#+BEGIN_SRC lisp
+(future:on-completed 
+          *
+          (lambda (result)
+            (format t "Received result: ~a~%" result)))
+#+END_SRC
+
+Remember '*' is the last result in the REPL whcih is the future here.
+
+This will print after a bit:
+
+#+BEGIN_EXAMPLE
+Hello Buzz
+Received result: Hello Buzz
+#+END_EXAMPLE
+
+
+
+*** ask and async-ask with timeout
+
+*** Changing behavior

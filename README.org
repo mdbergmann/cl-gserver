@@ -13,7 +13,7 @@ It is also possible to specify timeouts for the =ask= and =async-ask= functional
 This new version is closer to Akka (the actor model framework on the JVM) than to GenServer on Erlang. This is because Common Lisp from a runtime perspective is closer to JVM than to Erlang/OTP. Threads in Common Lisp are heavy weight OS threads rather than user-space low weight 'Erlang' threads (I'd like to avoid 'green threads', because threads in Erlang are not really green threads). While on Erlang it is easily possible to spawn millions of processes/threads and so each actor (GenServer) has its own process, this model is not possible when the threads are OS threads, because of OS resource limits.
 This is the main reason for working with the message dispatcher pool instead.
 
-But let's just right into it. I'll explain more later.
+But let's jump right into it. I'll explain more later.
 
 ** Getting hands-on
 
@@ -148,7 +148,8 @@ Will respond with: Hello Bar
 
 **** async-ask
 
-=async-ask= combines both =ask= and =tell=. From =ask= is 'inherits' returning a result, even though it's a future result. But internally it's implemented using =tell= in that a temporary actor is spawned that waits until it receives the result from the actor where the message was sent to.
+=async-ask= combines both =ask= and =tell=. From =ask= it 'inherits' returning a result, even though it's a future result.
+Internally it is implemented using =tell=. In order to wait for a result a temporary actor is spawned that waits until it receives the result from the actor where the message was sent to. With this received result the future is fulfilled.
 So =async-ask= is async, it returns immediately with a =future=. That =future= can be queried until it is fulfilled. Better is though to setup an ~on-completed~ function on it.
 
 So we can do:
@@ -190,8 +191,41 @@ Hello Buzz
 Received result: Hello Buzz
 #+END_EXAMPLE
 
-
-
 *** ask and async-ask with timeout
 
+A timeout (in seconds) can be specified for both =ask= and =async-ask= and is done like so:
+
+To demonstrate this we could setup an example 'sleeper' actor:
+
+#+BEGIN_SRC lisp
+(ac:actor-of *system* 
+  (lambda () (act:make-actor 
+    (lambda (self msg state)
+      (sleep 5)))))
+#+END_SRC
+
+If we store this to ~*sleeper*~ and do the following the =ask= will return a =handler-error= with an =ask-timeout= condition.
+
+#+BEGIN_SRC lisp
+(act:ask *sleeper* "Foo" :time-out 2)
+#+END_SRC
+
+#+BEGIN_EXAMPLE
+(:HANDLER-ERROR . #<CL-GSERVER.UTILS:ASK-TIMEOUT #x30200319F97D>)
+#+END_EXAMPLE
+
+This works similar with the =async-ask= only that the future will be fulfilled with the =handler-error= ~cons~.
+
+To get a readable error message of the condition we can do:
+
+#+BEGIN_EXAMPLE
+CL-USER> (format t "~a" (cdr *))
+A timeout set to 2 seconds occurred. Cause: 
+#<BORDEAUX-THREADS:TIMEOUT #x302002FAB73D> 
+#+END_EXAMPLE
+
 *** Changing behavior
+
+*** Creating actors without a system
+
+** Benchmarks

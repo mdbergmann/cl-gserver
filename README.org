@@ -33,6 +33,17 @@ When we eval ~*system*~ in the repl we see a bit of the structure:
 
 So the =actor-system= has by default four shared message dispatcher workers. Depending on how busy the system tends to be this default can of course be increased.
 
+**** Shutting down the system
+
+Shutting down an actor system may be necessary depending on how it's used. It can be done by:
+
+#+BEGIN_SRC lisp
+(ac:shutdown *system*)
+#+END_SRC
+
+This will stop all dispatcher workers and all other actors that have been spawed in the system.
+
+
 *** Creating actors
 
 Actors kind of live within an =actor-context=. An ~actor-context~ is in fact a Common Lisp protocol that spawns a set of generic functions.
@@ -55,14 +66,14 @@ Here we now use the =actor-context= protocol/api nicknamed =ac=.
 
 This creates a root actor on the ~*system*~. Notice that the actor is not assigned to a variable. It is now registered in the system. The main argument to the =actor-of= function is a 'creator-function' which when evaluated returns an actor created with the main actor constructor =make-actor=.
 
-=make-actor= requires as main parameter a 'behavior' function which should look familiar. It is still the tuple of:
+=make-actor= requires as main parameter a 'behavior' function which should look familiar if you know the previous version of cl-gserver. The parameters to the 'behavior' function are still the tuple of:
 1. =self= - the instance of the actor
 2. =msg= - the received message of when this 'behavior function is called
 3. =state= - the current state of the actor
 
-The return value of the 'behavior' function should also be familiar. It is the =cons= with =car= being sent back to sender (in case of ask/async-ask) and =cdr= that change into the new current state of the actor.
+The return value of the 'behavior' function should also be familiar. It is the =cons= with =car= being sent back to sender (in case of ask/async-ask) and =cdr= that is set as the new current state of the actor.
 
-The function (=actor-of=) still returns the actor as can be seen on the repl when this is executed. So it is of course possible to store the actor in a dynamic or lexical context. However, when the lexical context ends, the actor will still live as part of the actor context.
+The function =actor-of= still returns the actor as can be seen on the repl when this is executed. So it is of course possible to store the actor in a dynamic or lexical context. However, when the lexical context ends, the actor will still live as part of the actor context.
 
 Here we see a few details of the actor. Among which is the name and also the type of message-box it uses. By default it is a =message-box/dp= which is the type of a shared message dispatcher message-box.
 
@@ -83,9 +94,11 @@ Had we stored the actor to a variable, say =*answerer*= we can create a child ac
                              :name "child-answerer")))
 #+END_SRC
 
+This will create a new actor on the context of the parent actor. The context is retrieved with ~(act:context *answerer*)~.
+
 **** ~:pinned~ vs. ~:shared~
  
-By default an actor created using ~actor-of~ is created as ~:shared~ dispatcher type which uses the shared message dispatchers. It is also possible to create actors with their own dispatcher thread, those are called ':pinned' actors. Just provide the ~:pinned~ value to the ~dispatcher-type~ key parameter.
+By default an actor, created using ~actor-of~, uses a ~:shared~ dispatcher type which uses the shared message dispatchers that are setup in the system. It is also possible to create actors with their own dispatcher thread, those are called ~:pinned~ actors. Just provide the ~:pinned~ value to the ~dispatcher-type~ key parameter.
 
 *** Finding actors in the context
 
@@ -114,7 +127,7 @@ Let's send some messages.
 
 =tell= is a fire-and-forget kind of send type. It doesn't expect a result in return.
 
-And because of that we added the string output with ~format~ side-effect in the actor behavior, because we couldn't otherwise =tell= if it was received and processed.
+And because of that, and in order to demonstrate it does something, it has to have a side-effect. So it dumps some string to the console using ~format~, because we couldn't otherwise =tell= if the message was received and processed (see the =*answerer*= actor definitions above).
 
 #+BEGIN_SRC lisp
 CL-USER> (act:tell *answerer* "Foo")
@@ -148,13 +161,13 @@ Insofar an =ask= call is more resource intensive than just a =tell=.
 (act:ask *answerer* "Bar")
 #+END_SRC
 
-Will respond with: Hello Bar
+Will respond with: 'Hello Bar'
 
 **** async-ask
 
 =async-ask= combines both =ask= and =tell=. From =ask= it 'inherits' returning a result, even though it's a future result.
 Internally it is implemented using =tell=. In order to wait for a result a temporary actor is spawned that waits until it receives the result from the actor where the message was sent to. With this received result the future is fulfilled.
-So =async-ask= is async, it returns immediately with a =future=. That =future= can be queried until it is fulfilled. Better is though to setup an ~on-completed~ function on it.
+So =async-ask= is async, it returns immediately with a =future=. That =future= can be queried until it is fulfilled. Better is though to setup an ~on-completed~ handler function on it.
 
 So we can do:
 
@@ -186,7 +199,7 @@ Then we can setup a completion handler on the future:
             (format t "Received result: ~a~%" result)))
 #+END_SRC
 
-Remember '*' is the last result in the REPL whcih is the future here.
+Remember '*' is the last result in the REPL which is the future here.
 
 This will print after a bit:
 
@@ -208,7 +221,7 @@ To demonstrate this we could setup an example 'sleeper' actor:
                              (sleep 5)))))
 #+END_SRC
 
-If we store this to ~*sleeper*~ and do the following the =ask= will return a =handler-error= with an =ask-timeout= condition.
+If we store this to ~*sleeper*~ and do the following, the =ask= will return a =handler-error= with an =ask-timeout= condition.
 
 #+BEGIN_SRC lisp
 (act:ask *sleeper* "Foo" :time-out 2)
@@ -266,6 +279,10 @@ It is still possible to create actors without a system. This is how you do it:
 #+END_SRC
 
 You have to take care yourself about stopping the actor and freeing resources.
+
+** Agents
+
+TODO
 
 ** Benchmarks
 

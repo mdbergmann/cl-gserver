@@ -14,13 +14,13 @@
 (defclass actor-system ()
   ((dispatchers :initform '()
                 :reader dispatchers
-                :documentation "Internal API: contains a list of available message dispatchers.")
+                :documentation "@b(Internal API:) contains a list of available message dispatchers.")
    (internal-actor-context :initform nil
                            :reader internal-actor-context
-                           :documentation "Internal API: an actor context reserved for agents/actors used by the system.")
+                           :documentation "@b(Internal API:) an actor context reserved for agents/actors used by the system.")
    (user-actor-context :initform nil
                        :reader user-actor-context
-                       :documentation "Internal API: an actor context for agents/actors created by the user."))
+                       :documentation "@b(Internal API:) an actor context for agents/actors created by the user."))
   (:documentation
    "An `actor-system' is the opening facility. The first thing you do is to create an `actor-system' using the main constructor `make-actor-system'.
 With the `actor-system' you can create actors via the `actor-context' protocol function: `actor-of'."))

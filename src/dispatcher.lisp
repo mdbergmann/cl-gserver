@@ -21,8 +21,7 @@
             :reader workers
             :documentation "The workers of this dispatcher."))
   (:documentation
-   "A `dispatcher' is a pool of `actors'.
-The strategy to choose worker is random."))
+   "A `dispatcher' contains a pool of `actors' that operate as workers where work is dispatched to."))
 
 (defmethod print-object ((obj dispatcher-base) stream)
   (print-unreadable-object (obj stream :type t)
@@ -46,7 +45,8 @@ The strategy to choose worker is random."))
 
 (defclass shared-dispatcher (dispatcher-base) ()
   (:documentation
-   "A shared dispatcher."))
+   "A shared dispatcher.
+The strategy to choose a worker is random."))
 
 (defmethod dispatch ((self shared-dispatcher) dispatch-exec-fun)
   (with-slots (workers) self
@@ -68,6 +68,7 @@ The strategy to choose worker is random."))
    "Specialized `actor' used as `worker' is the message `dispatcher'."))
 
 (defun make-dispatcher-worker (num)
+  "Constructor for creating a worker."
   (let ((worker (make-instance 'dispatch-worker
                                :behavior #'behavior
                                :name (utils:mkstr "dispatch-worker-" num))))

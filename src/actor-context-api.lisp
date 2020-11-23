@@ -29,12 +29,12 @@ The `actor-system' and the `actor' itself are composed of an `actor-context'."))
 
 (defgeneric actor-of (context create-fun &key dispatch-type queue-size)
   (:documentation "Creates and adds actors to the given context.
-The context can be an `actor-context', an `actor-system',
-because both an `actor-system' and an `actor' are composed of an `actor-context'.
-When an `actor-system' is specified as context then the new actor will be a new root actor.
-When th new actor should be a child of another actor, then the `actor-context' of the (to be) parent
-`actor' should be specified.
-Creating an actor via `actor-of' will also add the `actor-context' as watcher of the actor.
+
+Both an `actor-system' and an `actor' are composed of an `actor-context'.
+When an `actor-system' is specified as context (`actor-system' implements parts of the protocol) then the new actor will be a new root actor.
+
+When th new actor should be a child of another actor, then the `actor-context' of the (to be) parent `actor' should be specified.
+Creating an actor via `actor-of' will also add the `actor-context' as watcher of the actor. This watching can be used for different purposes. Right now the `actor' is removed from the context when it was stopped.
 
 Specify the dispatcher type (`disp-type') as either:
 `:shared' to have this actor use the shared message dispatcher of the context
@@ -45,10 +45,10 @@ Specify `queue-size' with:
 >0: for a bounded queue (preferably a size > 100)"))
 
 (defgeneric find-actors (context test-fun)
-  (:documentation "Returns actors where `test-fun' provides 'truth'."))
+  (:documentation "Returns actors of this context where `test-fun' provides 'truth'."))
 
 (defgeneric all-actors (context)
-  (:documentation "Retrieves all actors as a list"))
+  (:documentation "Retrieves all actors of this context as a list"))
 
 (defgeneric stop (context actor)
   (:documentation

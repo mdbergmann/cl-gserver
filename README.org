@@ -55,7 +55,7 @@ Here we now use the =actor-context= protocol/api nicknamed =ac=.
 
 This creates a root actor on the ~*system*~. Notice that the actor is not assigned to a variable. It is now registered in the system. The main argument to the =actor-of= function is a 'creator-function' which when evaluated returns an actor created with the main actor constructor =make-actor=.
 
-=mke-actor= requires as main parameter a 'behavior' function which should look familiar. It is still the tuple of:
+=make-actor= requires as main parameter a 'behavior' function which should look familiar. It is still the tuple of:
 1. =self= - the instance of the actor
 2. =msg= - the received message of when this 'behavior function is called
 3. =state= - the current state of the actor
@@ -82,6 +82,10 @@ Had we stored the actor to a variable, say =*answerer*= we can create a child ac
                                (cons output state)))
                              :name "child-answerer")))
 #+END_SRC
+
+**** ~:pinned~ vs. ~:shared~
+ 
+By default an actor created using ~actor-of~ is created as ~:shared~ dispatcher type which uses the shared message dispatchers. It is also possible to create actors with their own dispatcher thread, those are called ':pinned' actors. Just provide the ~:pinned~ value to the ~dispatcher-type~ key parameter.
 
 *** Finding actors in the context
 
@@ -199,9 +203,9 @@ To demonstrate this we could setup an example 'sleeper' actor:
 
 #+BEGIN_SRC lisp
 (ac:actor-of *system* 
-  (lambda () (act:make-actor 
-    (lambda (self msg state)
-      (sleep 5)))))
+             (lambda () (act:make-actor 
+                           (lambda (self msg state)
+                             (sleep 5)))))
 #+END_SRC
 
 If we store this to ~*sleeper*~ and do the following the =ask= will return a =handler-error= with an =ask-timeout= condition.
@@ -226,6 +230,71 @@ A timeout set to 2 seconds occurred. Cause:
 
 *** Changing behavior
 
+An actor can change behavior. The behavior is just a lambda that has to take three parameters: 
+1. the actor's instance - usually called ~self~
+2. the received message - maybe call ~msg~?
+3. the current state of the actor
+
+The behavior then can pattern match (or do some matching by other means) on the received message alone, or in combination with the current state.
+
+The default behavior of the actor is given on actor construction using the default constructor ~make-actor~.
+
+During the lifetime of an actor the behavior can be changed using ~become~.
+
+So we remember the ~*answerer*~ which responds with 'Hello Foo' when we send ~(act:ask *answerer* "Foo")~. We can now change the behavior with:
+
+#+BEGIN_SRC lisp
+(act:become *answerer* 
+            (lambda (self msg state)
+              (cons (format nil "my new behavior for: ~a" msg) state)))
+#+END_SRC
+
+When we now send ~(act:ask *answerer* "Foo")~ we will get the response: 'my new behavior for: Foo'.
+
 *** Creating actors without a system
 
+It is still possible to create actors without a system. This is how you do it:
+
+#+BEGIN_SRC lisp
+;; make an actor
+(defvar *my-actor* (act:make-actor (lambda (self msg state)
+                                     (cons "Foo" state))
+                                   :name "Lone-actor"))
+;; setup a thread based message box
+(setf (act-cell:msgbox *my-actor*) 
+      (make-instance 'mesgb:message-box/bt))
+#+END_SRC
+
+You have to take care yourself about stopping the actor and freeing resources.
+
 ** Benchmarks
+
+[[./docs/perf.png]]
+
+
+Hardware specs:
+
+- iMac Pro (2017) with 8 Core Xeon, 32 GB RAM
+
+*All*
+
+The benchmark was created by having 8 threads throwing each 125k (1m alltogether) messages at 1 actor.
+The timing was taken for when the actor did finish processing those 1m messages.
+The messages were sent by either all =tell=, =ask=, or =async-ask= to an actor whose message-box worked using a single thread (=:pinned=) or a dispatched message queue (=:shared= / =dispatched=).
+
+Of course a =tell= is in most cases the fastest one, because it's the least resource intensive and there is no place that blocks.
+
+*SBCL (v2.0.10)*
+
+Event though SBCL is by far the fastest one with =tell= on both =:pinned= and =dispatched=, it had massive problems on =dispatched - ask= where I had to lower the number of messages to 200k alltogether. Beyond that value SBCL didn't get it worked out.
+
+*CCL (v1.12)*
+
+CCL is on acceptable average speed. The problems CCL had was heap exhaustion for both the =async-ask= tasks where the number of messages had to be reduced to 80k. Which is not a lot. Beyond this value the runtime would crash.
+However, CCL for some reason had no problems where SBCL was struggling with the =dispatched - ask=.
+
+*ABCL (1.8)*
+
+The pleasant surprise was ABCL. While not being the fastest it is the most robust.
+Where SBCL and CCL were struggling you could throw anything at ABCL and it'll cope with it.
+I'm assuming that this is because of the massively battle proven Java Runtime.

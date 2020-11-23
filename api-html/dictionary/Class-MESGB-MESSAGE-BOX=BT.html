@@ -1,0 +1,73 @@
+<html>
+<!DOCTYPE HTML PUBLIC
+  "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<head>
+    <title>
+        Class
+        message-box/bt
+    </title>
+    <meta http-equiv="Content-Type"
+          content="text/html"
+          charset="UTF-8" />
+    <link rel="stylesheet" href="../helambdap.css" />
+</head>
+<body>
+    <h1>
+        <i>
+
+            Class
+        </i>
+        <strong>
+            message-box/bt
+        </strong>
+    </h1>
+    <h2>
+        Package:
+    </h2>
+    <p>
+        CL-GSERVER.MESSAGEB
+    </p>
+    <h2>
+        Class Precedence List:
+    </h2>
+    <p>
+        MESSAGE-BOX/BT &rarr; MESSAGE-BOX-BASE ... &rarr; T
+    </p>
+    <div>
+        <h2>
+            Slots:
+        </h2>
+        <p>
+            <dl>
+                <dt>
+                    QUEUE-THREAD
+                </dt>
+                <dd>
+                    The thread that pops queue items.
+                </dd>
+                <dt>
+                    SHOULD-RUN
+                </dt>
+                <dd>
+                    Initform:
+                    T
+                </dd>
+                <dd>
+                    Flag that indicates whether the message processing should commence.
+                </dd>
+            </dl>
+        </p>
+    </div>
+    <h2>
+        Description:
+    </h2>
+    <p>
+        Bordeaux-Threads based message-box with a single thread operating on a message queue.
+This is used when the gserver is created outside of the `system'.
+There is a limit on the maximum number of gservers/actors/agents that can be created with
+this kind of queue because each message-box requires exactly one thread.
+    </p>
+</body>
+</html>

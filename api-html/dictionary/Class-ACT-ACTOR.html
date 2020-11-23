@@ -1,0 +1,82 @@
+<html>
+<!DOCTYPE HTML PUBLIC
+  "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<head>
+    <title>
+        Class
+        actor
+    </title>
+    <meta http-equiv="Content-Type"
+          content="text/html"
+          charset="UTF-8" />
+    <link rel="stylesheet" href="../helambdap.css" />
+</head>
+<body>
+    <h1>
+        <i>
+
+            Class
+        </i>
+        <strong>
+            actor
+        </strong>
+    </h1>
+    <h2>
+        Package:
+    </h2>
+    <p>
+        CL-GSERVER.ACTOR
+    </p>
+    <h2>
+        Class Precedence List:
+    </h2>
+    <p>
+        ACTOR &rarr; ACTOR-CELL ... &rarr; T
+    </p>
+    <div>
+        <h2>
+            Slots:
+        </h2>
+        <p>
+            <dl>
+                <dt>
+                    BEHAVIOR
+                </dt>
+                <dd>
+                    Initarg:
+                    BEHAVIOR
+                </dd>
+                <dd>
+                    Initform:
+                    (ERROR 'behavior' must be specified!)
+                </dd>
+                <dt>
+                    CONTEXT
+                </dt>
+                <dt>
+                    WATCHERS
+                </dt>
+                <dd>
+                    Initform:
+                    'NIL
+                </dd>
+                <dd>
+                    List of watchers of this actor.
+                </dd>
+            </dl>
+        </p>
+    </div>
+    <h2>
+        Description:
+    </h2>
+    <p>
+        This is the `actor' class.
+The `actor' does it's message handling using the `behavior' function.
+There is asynchronous `tell' (no response) and synchronous `ask' and asynchronous `async-ask' (with response).
+To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
+the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
+    </p>
+</body>
+</html>

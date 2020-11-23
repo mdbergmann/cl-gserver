@@ -1,0 +1,78 @@
+<html>
+<!DOCTYPE HTML PUBLIC
+  "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<head>
+    <title>
+        Class
+        message-box/dp
+    </title>
+    <meta http-equiv="Content-Type"
+          content="text/html"
+          charset="UTF-8" />
+    <link rel="stylesheet" href="../helambdap.css" />
+</head>
+<body>
+    <h1>
+        <i>
+
+            Class
+        </i>
+        <strong>
+            message-box/dp
+        </strong>
+    </h1>
+    <h2>
+        Package:
+    </h2>
+    <p>
+        CL-GSERVER.MESSAGEB
+    </p>
+    <h2>
+        Class Precedence List:
+    </h2>
+    <p>
+        MESSAGE-BOX/DP &rarr; MESSAGE-BOX-BASE ... &rarr; T
+    </p>
+    <div>
+        <h2>
+            Slots:
+        </h2>
+        <p>
+            <dl>
+                <dt>
+                    DISPATCHER
+                </dt>
+                <dd>
+                    Initarg:
+                    DISPATCHER
+                </dd>
+                <dd>
+                    Initform:
+                    (ERROR Must be set!)
+                </dd>
+                <dd>
+                    The dispatcher from the system.
+                </dd>
+                <dt>
+                    LOCK
+                </dt>
+                <dd>
+                    Initform:
+                    (MAKE-LOCK)
+                </dd>
+            </dl>
+        </p>
+    </div>
+    <h2>
+        Description:
+    </h2>
+    <p>
+        This message box is a message-box that uses the `system's `dispatcher'.
+This has the advantage that an almost unlimited gservers/actors/agents can be created.
+This message-box doesn't 'own' a separate thread. It uses the `dispatcher' to handle the message processing.
+The `dispatcher is kind of like a thread pool.
+    </p>
+</body>
+</html>

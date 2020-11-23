@@ -1,0 +1,78 @@
+<head>
+    <title>
+        cl-gserver
+        :
+        Generic Function
+        dispatch-async
+    </title>
+    <meta http-equiv="Content-Type"
+          content="text/html"
+          charset="UTF-8" />
+    <link rel="stylesheet" href="../helambdap.css" />
+</head>
+<body>
+    <h1>
+        <i>
+
+            Generic Function
+        </i>
+        <strong>
+            dispatch-async
+        </strong>
+    </h1>
+    <h2>
+        Package:
+    </h2>
+    <p>
+        CL-GSERVER.DISPATCHER
+    </p>
+    <h2>
+        Syntax:
+    </h2>
+    <div>
+        <p>
+            <pre>
+  <strong style="color: red">dispatch-async</strong> <i>DISPATCHER</i> <i>DISPATCHER-EXEC-FUN</i> &rarr; <i>result</i></pre>
+        </p>
+    </div>
+    <h3>
+        Arguments and Values:
+    </h3>
+    <ul style="list-style-type: none">
+        <li style="list-style-type: none">
+            <i>
+                <code>
+                    DISPATCHER
+                </code>
+            </i>
+             :
+            a
+            T
+        </li>
+        <li style="list-style-type: none">
+            <i>
+                <code>
+                    DISPATCHER-EXEC-FUN
+                </code>
+            </i>
+             :
+            a
+            T
+        </li>
+        <li style="list-style-type: none">
+            <i>
+                <code>
+                    result
+                </code>
+            </i>
+             : a T.
+        </li>
+    </ul>
+    <h2>
+        Description:
+    </h2>
+    <p>
+        Dispatches a function to a worker of the dispatcher to execute there.
+`dispatch-async' does a `tell' to a `dispatcher' worker and is asynchronous.
+    </p>
+</body>

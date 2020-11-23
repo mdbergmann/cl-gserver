@@ -297,7 +297,7 @@ Hardware specs:
 
 The benchmark was created by having 8 threads throwing each 125k (1m alltogether) messages at 1 actor.
 The timing was taken for when the actor did finish processing those 1m messages.
-The messages were sent by either all =tell=, =ask=, or =async-ask= to an actor whose message-box worked using a single thread (=:pinned=) or a dispatched message queue (=:shared= / =dispatched=).
+The messages were sent by either all =tell=, =ask=, or =async-ask= to an actor whose message-box worked using a single thread (=:pinned=) or a dispatched message queue (=:shared= / =dispatched=) with 8 workers.
 
 Of course a =tell= is in most cases the fastest one, because it's the least resource intensive and there is no place that blocks.
 

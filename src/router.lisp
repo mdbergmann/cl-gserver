@@ -4,6 +4,7 @@
   (:export #:router
            #:make-router
            #:add-routee
+           #:stop
            #:routees)
   )
 
@@ -26,3 +27,7 @@ A router strategy defines how one of the actors is determined as the forwarding 
   "Adds a routee/actor to the router."
   (vector-push-extend routee (routees router))
   routee)
+
+(defun stop (router)
+  "Stops all routees."
+  (mapcar #'act-cell:stop (coerce (routees router) 'list)))

@@ -32,9 +32,9 @@
     (answer (ac:actor-of _ create-fun) (funcall create-fun))
     
     (let ((cut (make-router)))
-      (dotimes (i 2)
-        (add-routee cut (make-fake-actor))
-      (is (= 2 (length (routees cut))))))))
+      (dotimes (i 5)
+        (add-routee cut (make-fake-actor)))
+      (is (= 5 (length (routees cut)))))))
 
 (test router--stop
   "Stopping router stops routees."
@@ -49,3 +49,7 @@
       (is (equalp '(t t) (stop cut)))
     (is (= 2 (length (invocations 'act-cell:stop)))))))
 
+(defun run-tests ()
+  (run! 'router--create)
+  (run! 'router--add-routee)
+  (run! 'router--stop))

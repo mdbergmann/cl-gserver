@@ -46,7 +46,7 @@ This will stop all dispatcher workers and all other actors that have been spawed
 
 *** Creating actors
 
-Actors kind of live within an =actor-context=. An ~actor-context~ is in fact a Common Lisp protocol that spawns a set of generic functions.
+Actors kind of live within an =actor-context=. An ~actor-context~ contains a collection (of actors) and defines a Common Lisp protocol that spawns a set of generic functions.
 
 There are two 'things' that host an =actor-context=. This is: 
 1. the =actor-system=. Creating actors on the =actor-system= will create root actors.

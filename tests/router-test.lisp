@@ -11,11 +11,6 @@
 
 (in-suite router-tests)
 
-(test router--create
-  "Creates a plain router"
-  (is (not (null (make-router))))
-  (is (typep (make-router) 'router)))
-
 (defparameter *fake-context* "fake-context")
 
 (defun make-fake-actor ()
@@ -24,6 +19,12 @@
                  (act:make-actor (lambda (self msg state)
                                    (declare (ignore self))
                                    (cons msg state))))))
+
+(test router--create
+  "Creates a plain router"
+  (is (not (null (make-router))))
+  (is (typep (make-router) 'router))
+  (is (functionp (strategy (make-router)))))
 
 (test router--add-routee
   "Tests adding routees (actors)"

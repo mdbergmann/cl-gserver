@@ -1,5 +1,5 @@
 (defsystem "cl-gserver"
-  :version "1.0.0"
+  :version "1.1.0"
   :author "Manfred Bergmann"
   :license "MIT"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -25,6 +25,7 @@
                  (:file "fcomputation")
                  (:file "actor")
                  (:file "agent")
+                 (:file "router")
                  (:file "dispatcher")
                  (:file "actor-context")
                  (:file "actor-system"))))
@@ -45,6 +46,7 @@
                  (:file "actor-mp-test")
                  (:file "agent-test")
                  (:file "actor-test")
+                 (:file "router-test")
                  (:file "actor-context-test")
                  (:file "fcomputation-test")
                  (:file "dispatcher-test")

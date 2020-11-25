@@ -11,3 +11,8 @@
 
 (in-suite router-tests)
 
+(test create-router
+  "Creates a plain router"
+  (is (not (null (make-router))))
+  (is (typep (make-router) 'router))
+  )

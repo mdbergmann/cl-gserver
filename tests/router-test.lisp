@@ -36,6 +36,17 @@
         (add-routee cut (make-fake-actor)))
       (is (= 5 (length (routees cut)))))))
 
+(test router--provide-routees-at-contructor
+  "Provide routees when constructing."
+  (with-mocks ()
+    (answer (ac:actor-of _ create-fun) (funcall create-fun))
+    
+    (let ((cut (make-router :routees (list
+                                      (make-fake-actor)
+                                      (make-fake-actor)
+                                      (make-fake-actor)))))
+      (is (= 3 (length (routees cut)))))))
+
 (test router--stop
   "Stopping router stops routees."
   (with-mocks ()

@@ -27,6 +27,9 @@
       </div>
       <h2 id="org1dda1dc"><span class="section-number-2">1</span> Introduction</h2>
       <div class="outline-text-2" id="text-1">
+	<p>
+	  cl-gserver is a ‘message passing’ library/framework with actors similar to Erlang or Akka.
+	</p>
         <p>
           Version 1.0 of <code>cl-gserver</code> library comes with quite a few new features. One of the major new features is that an actor is not bound to it's own message dispatcher thread. Instead, when an <code>actor-system</code> is set-up, actors can use a shared pool of message dispatchers which effectively allows to create millions of actors.
         </p>

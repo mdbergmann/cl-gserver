@@ -60,7 +60,23 @@
       (is (equalp '(t t) (stop cut)))
     (is (= 2 (length (invocations 'act-cell:stop)))))))
 
+(test router--tell
+  "Tests 'tell' on the router which forwards to an actor chosen after the strategy."
+  (with-mocks ()
+    (answer (ac:actor-of _ create-fun) (funcall create-fun))
+    
+    (let ((cut (make-router :routees (list
+                                      (make-fake-actor)
+                                      (make-fake-actor)))))
+      (is (equalp (loop :repeat 5
+                        :collect :no-message-handling)
+                  (loop :repeat 5
+                        :collect (tell cut "Foo")))))))
+  
+
 (defun run-tests ()
   (run! 'router--create)
   (run! 'router--add-routee)
-  (run! 'router--stop))
+  (run! 'router--provide-routees-at-contructor)
+  (run! 'router--stop)
+  (run! 'router--tell))

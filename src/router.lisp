@@ -1,12 +1,15 @@
 (defpackage :cl-gserver.router
   (:use :cl)
   (:nicknames :router)
+  (:import-from #:act
+                #:tell)
   (:export #:router
            #:make-router
            #:add-routee
            #:stop
            #:routees
-           #:strategy)
+           #:strategy
+           #:tell)
   )
 
 (in-package :cl-gserver.router)
@@ -60,3 +63,14 @@ A router `strategy' defines how one of the actors is determined as the forwardin
 (defun stop (router)
   "Stops all routees."
   (mapcar #'act-cell:stop (coerce (routees router) 'list)))
+
+(defmethod tell ((self router) message &optional sender)
+  (let* ((routees (routees self))
+         (strategy (strategy self))
+         (actor-index (funcall strategy (length routees))))
+    (log:debug "Using index from stratety: ~a" actor-index)
+    (tell
+     (elt routees actor-index)
+     message
+     sender)))
+

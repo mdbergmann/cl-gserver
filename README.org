@@ -301,11 +301,11 @@ The benchmark was created by having 8 threads throwing each 125k (1m alltogether
 The timing was taken for when the actor did finish processing those 1m messages.
 The messages were sent by either all =tell=, =ask=, or =async-ask= to an actor whose message-box worked using a single thread (=:pinned=) or a dispatched message queue (=:shared= / =dispatched=) with 8 workers.
 
-Of course a =tell= is in most cases the fastest one, because it's the least resource intensive and there is no place that blocks.
+Of course a =tell= is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow.
 
 *SBCL (v2.0.10)*
 
-Event though SBCL is by far the fastest one with =tell= on both =:pinned= and =dispatched=, it had massive problems on =dispatched - ask= where I had to lower the number of messages to 200k alltogether. Beyond that value SBCL didn't get it worked out.
+Even though SBCL is by far the fastest one with =tell= on both =:pinned= and =dispatched=, it had massive problems on =dispatched - ask= where I had to lower the number of messages to 200k alltogether. Beyond that value SBCL didn't get it worked out.
 
 *CCL (v1.12)*
 

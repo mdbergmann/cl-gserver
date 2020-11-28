@@ -61,7 +61,7 @@
     (is (= 2 (length (invocations 'act-cell:stop)))))))
 
 (test router--tell
-  "Tests 'tell' on the router which forwards to an actor chosen after the strategy."
+  "Tests 'tell' on the router which forwards to an actor chosen by the strategy."
   (with-mocks ()
     (answer (ac:actor-of _ create-fun) (funcall create-fun))
     
@@ -72,11 +72,39 @@
                         :collect :no-message-handling)
                   (loop :repeat 5
                         :collect (tell cut "Foo")))))))
-  
+
+(test router--ask
+  "Tests 'ask' on the router which forwards to an actor chosen by the strategy."
+  (with-mocks ()
+    (answer (ac:actor-of _ create-fun) (funcall create-fun))
+    
+    (let ((cut (make-router :routees (list
+                                      (make-fake-actor)
+                                      (make-fake-actor)))))
+      (is (equalp (loop :repeat 5
+                        :collect :no-message-handling)
+                  (loop :repeat 5
+                        :collect (ask cut "Foo")))))))
+
+(test router--async-ask
+  "Tests 'async-ask' on the router which forwards to an actor chosen by the strategy."
+  (with-mocks ()
+    (answer (ac:actor-of _ create-fun) (funcall create-fun))
+    
+    (let ((cut (make-router :routees (list
+                                      (make-fake-actor)
+                                      (make-fake-actor)))))
+      (is (every (lambda (x) (typep x 'future:future))
+                 (loop :repeat 5
+                       :collect (async-ask cut "Foo")))))))
+
 
 (defun run-tests ()
   (run! 'router--create)
   (run! 'router--add-routee)
   (run! 'router--provide-routees-at-contructor)
   (run! 'router--stop)
-  (run! 'router--tell))
+  (run! 'router--tell)
+  (run! 'router--ask)
+  (run! 'router--async-ask)
+  )

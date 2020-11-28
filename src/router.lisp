@@ -2,19 +2,24 @@
   (:use :cl)
   (:nicknames :router)
   (:import-from #:act
-                #:tell)
+                #:tell
+                #:ask
+                #:async-ask)
   (:export #:router
            #:make-router
            #:add-routee
            #:stop
            #:routees
            #:strategy
-           #:tell)
+           #:tell
+           #:ask
+           #:async-ask)
   )
 
 (in-package :cl-gserver.router)
 
 (defun random-strategy (len)
+  "The default, built-in strategy: random."
   (random len))
 
 (defparameter *built-in-strategies*
@@ -42,7 +47,7 @@ Specify `routees' if you know them upfront."
   ((routees :initform (make-array 2 :adjustable t :fill-pointer 0)
             :reader routees
             :documentation "The routees.")
-   (strategy :initform (error "Strategy required!")
+   (strategy :initform (get-strategy :random)
              :initarg :strategy
              :reader strategy
              :documentation
@@ -53,6 +58,8 @@ The output represents the index of the routee to choose."))
   (:documentation
    "A router combines a pool of actors and implements the actor-api protocol.
 So a `tell', `ask' and `async-ask' is delegated to one of the routers routees.
+While a router implements parts of the actor protocol it doesn't implement all.
+I.e. a router cannot be `watch'ed.
 A router `strategy' defines how one of the actors is determined as the forwarding target of the message."))
 
 (defun add-routee (router routee)
@@ -64,13 +71,27 @@ A router `strategy' defines how one of the actors is determined as the forwardin
   "Stops all routees."
   (mapcar #'act-cell:stop (coerce (routees router) 'list)))
 
-(defmethod tell ((self router) message &optional sender)
-  (let* ((routees (routees self))
-         (strategy (strategy self))
+(defun get-strategy-index (router)
+  (let* ((routees (routees router))
+         (strategy (strategy router))
          (actor-index (funcall strategy (length routees))))
-    (log:debug "Using index from stratety: ~a" actor-index)
-    (tell
-     (elt routees actor-index)
-     message
-     sender)))
+    (log:debug "Using index from strategy: ~a" actor-index)
+    actor-index))
 
+(defmethod tell ((self router) message &optional sender)
+  (tell
+   (elt (routees self) (get-strategy-index self))
+   message
+   sender))
+
+(defmethod ask ((self router) message &key time-out)
+  (ask
+   (elt (routees self) (get-strategy-index self))
+   message
+   :time-out time-out))
+
+(defmethod async-ask ((self router) message &key time-out)
+  (async-ask
+   (elt (routees self) (get-strategy-index self))
+   message
+   :time-out time-out))

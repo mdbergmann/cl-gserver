@@ -1,0 +1,85 @@
+<html>
+<!DOCTYPE HTML PUBLIC
+  "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<head>
+    <title>
+        Class
+        router
+    </title>
+    <meta http-equiv="Content-Type"
+          content="text/html"
+          charset="UTF-8" />
+    <link rel="stylesheet" href="../helambdap.css" />
+</head>
+<body>
+    <h1>
+        <i>
+
+            Class
+        </i>
+        <strong>
+            router
+        </strong>
+    </h1>
+    <h2>
+        Package:
+    </h2>
+    <p>
+        CL-GSERVER.ROUTER
+    </p>
+    <h2>
+        Class Precedence List:
+    </h2>
+    <p>
+        ROUTER &rarr; ... &rarr; T
+    </p>
+    <div>
+        <h2>
+            Slots:
+        </h2>
+        <p>
+            <dl>
+                <dt>
+                    ROUTEES
+                </dt>
+                <dd>
+                    Initform:
+                    (MAKE-ARRAY 2 ADJUSTABLE T FILL-POINTER 0)
+                </dd>
+                <dd>
+                    The routees.
+                </dd>
+                <dt>
+                    STRATEGY
+                </dt>
+                <dd>
+                    Initarg:
+                    STRATEGY
+                </dd>
+                <dd>
+                    Initform:
+                    (GET-STRATEGY RANDOM)
+                </dd>
+                <dd>
+                    The router strategy.
+The `strategy' is a function with a `fixnum' as input and a `fixnum' as output.
+The input represents the number of routees.
+The output represents the index of the routee to choose.
+                </dd>
+            </dl>
+        </p>
+    </div>
+    <h2>
+        Description:
+    </h2>
+    <p>
+        A router combines a pool of actors and implements the actor-api protocol.
+So a `tell', `ask' and `async-ask' is delegated to one of the routers routees.
+While a router implements parts of the actor protocol it doesn't implement all.
+I.e. a router cannot be `watch'ed.
+A router `strategy' defines how one of the actors is determined as the forwarding target of the message.
+    </p>
+</body>
+</html>

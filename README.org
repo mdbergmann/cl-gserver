@@ -18,7 +18,6 @@ This is the main reason for working with the message dispatcher pool instead.
 But let's jump right into it. I'll explain more later.
 
 ** Getting hands-on
-
 *** Creating an actor-system
 
 To use the shared dispatcher pool we have to create an =actor-system= first.
@@ -44,7 +43,6 @@ Shutting down an actor system may be necessary depending on how it's used. It ca
 #+END_SRC
 
 This will stop all dispatcher workers and all other actors that have been spawed in the system.
-
 
 *** Creating actors
 
@@ -265,6 +263,10 @@ So we remember the ~*answerer*~ which responds with 'Hello Foo' when we send ~(a
 #+END_SRC
 
 When we now send ~(act:ask *answerer* "Foo")~ we will get the response: 'my new behavior for: Foo'.
+
+*Reverting =become= / =unbecome=*
+
+To revert back to the default behavior as defined by the =receive= function of the constructor you may call =unbecome=.
 
 *** Creating actors without a system
 

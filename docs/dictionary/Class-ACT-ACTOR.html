@@ -42,15 +42,28 @@
         <p>
             <dl>
                 <dt>
-                    BEHAVIOR
+                    RECEIVE
                 </dt>
                 <dd>
                     Initarg:
-                    BEHAVIOR
+                    RECEIVE
                 </dd>
                 <dd>
                     Initform:
-                    (ERROR 'behavior' must be specified!)
+                    (ERROR 'receive' must be specified!)
+                </dd>
+                <dd>
+                    `receive' is a function that has to take 3 parameters:
+- `self': the actor instance
+- `msg': the received message
+- `state': the current state of the actor
+                </dd>
+                <dt>
+                    BEHAVIOR
+                </dt>
+                <dd>
+                    Behavior function applied via `become' and reverted via `unbecome'
+`behavior' function takes the same parameters as `receive'.
                 </dd>
                 <dt>
                     CONTEXT
@@ -73,7 +86,7 @@
     </h2>
     <p>
         This is the `actor' class.
-The `actor' does it's message handling using the `behavior' function.
+The `actor' does it's message handling using the `receive' function.
 There is asynchronous `tell' (no response) and synchronous `ask' and asynchronous `async-ask' (with response).
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
 the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').

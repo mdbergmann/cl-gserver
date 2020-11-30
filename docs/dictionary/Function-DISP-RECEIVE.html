@@ -2,8 +2,8 @@
     <title>
         cl-gserver
         :
-        Generic Function
-        make-actor
+        FUNCTION
+        receive
     </title>
     <meta http-equiv="Content-Type"
           content="text/html"
@@ -13,18 +13,18 @@
 <body>
     <h1>
         <i>
-
-            Generic Function
+            Internal
+            Function
         </i>
         <strong>
-            make-actor
+            receive
         </strong>
     </h1>
     <h2>
         Package:
     </h2>
     <p>
-        CL-GSERVER.ACTOR
+        CL-GSERVER.DISPATCHER
     </p>
     <h2>
         Syntax:
@@ -32,7 +32,7 @@
     <div>
         <p>
             <pre>
-  <strong style="color: red">make-actor</strong> <i>RECEIVE</i> <span style="color: blue">&KEY</span> <i>NAME</i> <i>STATE</i> &rarr; <i>result</i></pre>
+  <strong style="color: red">receive</strong> <i>SELF</i> <i>MESSAGE</i> <i>CURRENT-STATE</i> &rarr; <i>result</i></pre>
         </p>
     </div>
     <h3>
@@ -42,7 +42,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    RECEIVE
+                    SELF
                 </code>
             </i>
              :
@@ -52,7 +52,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    NAME
+                    MESSAGE
                 </code>
             </i>
              :
@@ -62,7 +62,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    STATE
+                    CURRENT-STATE
                 </code>
             </i>
              :
@@ -82,14 +82,6 @@
         Description:
     </h2>
     <p>
-        Default constructor of an `actor'.
-The `receive' parameter is a function that should take 3 parameters.
-That is the actor instance itself, the message and the current state of the actor.
-The `receive' can then decide how to handle the message.
-In any case it has to return a `cons' of message to be sent back to caller (`car'), if applicable.
-And the new state of the actor.
-I.e.: `(cons &lt;my-response&gt; &lt;my-new-state&gt;)'
-If the operation was an `ask' or `async-ask' then the `car' part of the `cons' will be sent back to the caller.
-In case of a `tell' operation there will be no response and the `car' of the `cons' is ignored.
+        The worker receive function.
     </p>
 </body>

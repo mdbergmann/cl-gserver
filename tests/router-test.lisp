@@ -88,15 +88,19 @@
 
 (test router--async-ask
   "Tests 'async-ask' on the router which forwards to an actor chosen by the strategy."
-  (with-mocks ()
-    (answer (ac:actor-of _ create-fun) (funcall create-fun))
-    
-    (let ((cut (make-router :routees (list
-                                      (make-fake-actor)
-                                      (make-fake-actor)))))
+  (let* ((system (asys:make-actor-system))
+         (actor-creator (lambda ()
+                          (act:make-actor
+                           (lambda (self msg state)
+                             (declare (ignore self msg state))
+                             (cons :foo 1)))))
+         (cut (make-router :routees (list
+                                     (ac:actor-of system actor-creator)
+                                     (ac:actor-of system actor-creator)))))
       (is (every (lambda (x) (typep x 'future:future))
                  (loop :repeat 5
-                       :collect (async-ask cut "Foo")))))))
+                       :collect (async-ask cut "Foo"))))
+    (ac:shutdown system)))
 
 
 (defun run-tests ()

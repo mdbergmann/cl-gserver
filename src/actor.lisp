@@ -18,6 +18,10 @@
 - `self': the actor instance
 - `msg': the received message
 - `state': the current state of the actor")
+   (behavior :initform nil
+             :documentation
+             "Behavior function applied via `become' and reverted via `unbecome'
+`behavior' function takes the same parameters as `receive'.")
    (context :initform nil
             :accessor context)
    (watchers :initform '()
@@ -41,9 +45,14 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
 ;; -------------------------------
 
 (defmethod handle-call ((self actor) message state)
-  (funcall (receive self) self message state))
+  (with-slots (receive behavior) self
+    (let ((effective-behavior (if behavior behavior receive)))
+      (funcall effective-behavior self message state))))
+
 (defmethod handle-cast ((self actor) message state)
-  (funcall (receive self) self message state))
+  (with-slots (receive behavior) self
+    (let ((effective-behavior (if behavior behavior receive)))
+      (funcall effective-behavior self message state))))
 
 (defun stop-children (actor)
   (let ((context (context actor)))
@@ -68,8 +77,12 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
   (act-cell:call self message :time-out time-out))
 
 (defmethod become ((self actor) new-behavior)
-  (with-slots (receive) self
-    (setf receive new-behavior)))
+  (with-slots (behavior) self
+    (setf behavior new-behavior)))
+
+(defmethod unbecome ((self actor))
+  (with-slots (behavior) self
+    (setf behavior nil)))
 
 (defmethod watch ((self actor) watcher)
   (with-slots (watchers) self

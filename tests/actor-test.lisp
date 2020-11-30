@@ -269,18 +269,23 @@
 
 (test become-and-unbecome-a-different-behavior
   "Test switching behaviors"
-  (let ((beh1 (lambda (self msg state)
+  (let ((receive (lambda (self msg state)
+                   (declare (ignore self msg))
+                   (cons :receive state)))
+        (beh1 (lambda (self msg state)
                 (declare (ignore self msg))
                 (cons :behavior1 state)))
         (beh2 (lambda (self msg state)
                 (declare (ignore self msg))
                 (cons :behavior2 state))))  
-    (with-fixture actor-fixture (beh1 0 t)
+    (with-fixture actor-fixture (receive 0 t)
+      (is (eq :receive (ask cut :some)))
+      (become cut beh1)
       (is (eq :behavior1 (ask cut :some)))
       (become cut beh2)
       (is (eq :behavior2 (ask cut :some)))
-      (become cut beh1)
-      (is (eq :behavior1 (ask cut :some))))))
+      (unbecome cut)
+      (is (eq :receive (ask cut :some))))))
 
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."

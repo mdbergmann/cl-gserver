@@ -7,6 +7,7 @@
            #:ask
            #:async-ask
            #:become
+           #:unbecome
            #:context
            #:watch
            #:unwatch
@@ -56,6 +57,10 @@ received the response the `future' will be fulfilled with the `promise'."))
   (:documentation
    "Changes the receive of the actor to the given `new-behavior' function.
 The `new-behavior' function must accept 3 parameters: the actor instance, the message and the current state."))
+
+(defgeneric unbecome (actor)
+  (:documentation
+   "Reverts any behavior applied via `become' back to the default `receive' function."))
 
 (defgeneric context (actor)
   (:documentation

@@ -21,7 +21,7 @@ It is meant primarily to encapsulate state.
 To access state it provides `agent-get' and `agent-update' to update state.
 Stop an agent with `agent-stop' to free resources (threads)."))
 
-(defun behavior (self message current-state)
+(defun receive (self message current-state)
   "This is the agents actor receive function implementation.
 This rarely (if at all) needs to change because the agent is very specific."
   (declare (ignore self))
@@ -41,7 +41,7 @@ This rarely (if at all) needs to change because the agent is very specific."
   (let* ((state (funcall state-fun))
          (agent (make-instance 'agent :state state
                                       :name (string (gensym "agent-"))
-                                      :behavior #'behavior)))
+                                      :receive #'receive)))
     (setf (msgbox agent) (make-instance 'message-box/bt))
     agent))
 

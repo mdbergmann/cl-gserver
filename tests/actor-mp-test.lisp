@@ -34,7 +34,7 @@
   (let* ((cut (make-instance 'counter-actor
                              :name "counter-actor"
                              :state 0
-                             :behavior *behavior*))
+                             :receive *behavior*))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))
     (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt :max-queue-size queue-size))
@@ -45,7 +45,7 @@
   (let* ((system (asys:make-actor-system :shared-dispatcher-workers 4))
          (cut (ac:actor-of system (lambda ()
                                     (make-instance 'counter-actor :state 0
-                                                                  :behavior *behavior*))))
+                                                                  :receive *behavior*))))
          (max-loop 10000)
          (per-thread (/ max-loop 8)))
     (unwind-protect

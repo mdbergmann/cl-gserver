@@ -14,9 +14,9 @@
 
 (in-suite actor-tests)
 
-(def-fixture actor-fixture (behavior state with-context)
+(def-fixture actor-fixture (receive state with-context)
   (defclass test-actor (actor) ())
-  (let ((cut (make-actor behavior
+  (let ((cut (make-actor receive
                          :state state)))
     (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt))
     (when with-context
@@ -267,7 +267,7 @@
       (is (eq :handler-error (car (get-result future))))
       (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
 
-(test become--a-different-behavior
+(test become-and-unbecome-a-different-behavior
   "Test switching behaviors"
   (let ((beh1 (lambda (self msg state)
                 (declare (ignore self msg))
@@ -314,6 +314,6 @@
   (run! 'async-ask--shared--timeout)
   (run! 'ask--pinned--timeout)
   (run! 'async-ask--pinned--timeout)
-  (run! 'become--a-different-behavior)
+  (run! 'become-and-unbecome-a-different-behavior)
   ;;(run! 'with-actor-macro)
   )

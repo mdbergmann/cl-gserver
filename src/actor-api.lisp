@@ -14,12 +14,12 @@
 
 (in-package :cl-gserver.actor)
 
-(defgeneric make-actor (behavior &key name state)
+(defgeneric make-actor (receive &key name state)
   (:documentation
    "Default constructor of an `actor'.
-The `behavior' parameter is a function that should take 3 parameters.
+The `receive' parameter is a function that should take 3 parameters.
 That is the actor instance itself, the message and the current state of the actor.
-The `behavior' can then decide how to handle the message.
+The `receive' can then decide how to handle the message.
 In any case it has to return a `cons' of message to be sent back to caller (`car'), if applicable.
 And the new state of the actor.
 I.e.: `(cons <my-response> <my-new-state>)'
@@ -54,7 +54,7 @@ received the response the `future' will be fulfilled with the `promise'."))
 
 (defgeneric become (actor new-behavior)
   (:documentation
-   "Changes the behavior of the actor to the given `new-behavior' function.
+   "Changes the receive of the actor to the given `new-behavior' function.
 The `new-behavior' function must accept 3 parameters: the actor instance, the message and the current state."))
 
 (defgeneric context (actor)

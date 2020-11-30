@@ -157,7 +157,7 @@ First create a ping actor:
 ```lisp
 (defparameter *ping* (act:make-actor "ping" 
                                      :state 0 
-                                     :behavior
+                                     :receive
                                      (lambda (self msg state)
                                        (trivia:match msg
                                          ((cons :ping sender) (progn
@@ -169,7 +169,7 @@ First create a ping actor:
 ```
 
 The convenience `make-actor` function allows you to create a simple actor by specifying the `behavior` inline.
-Of course you may create a `defun` for the receive and specify it for `:behavior` like `#'my-receive`.  
+Of course you may create a `defun` for the receive and specify it for `:receive` like `#'my-receive`.  
 The important thing, it must accept three parameters. That is:
 
 - `self`: for the self instance
@@ -182,7 +182,7 @@ Now let's create the pong actor:
 
 ```lisp
 (defparameter *pong* (act:make-actor "pong" 
-                                     :behavior
+                                     :receive
                                      (lambda (self msg state)
                                      (trivia:match msg
                                        ((cons :pong sender) (progn

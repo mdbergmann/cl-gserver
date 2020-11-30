@@ -10,9 +10,14 @@
                     future:make-future))
 
 (defclass actor (actor-cell)
-  ((behavior :initarg :behavior
-             :initform (error "'behavior' must be specified!")
-             :reader behavior)
+  ((receive :initarg :receive
+            :initform (error "'receive' must be specified!")
+            :reader receive
+            :documentation
+            "`receive' is a function that has to take 3 parameters:
+- `self': the actor instance
+- `msg': the received message
+- `state': the current state of the actor")
    (context :initform nil
             :accessor context)
    (watchers :initform '()
@@ -20,25 +25,25 @@
              :documentation "List of watchers of this actor."))
   (:documentation
    "This is the `actor' class.
-The `actor' does it's message handling using the `behavior' function.
+The `actor' does it's message handling using the `receive' function.
 There is asynchronous `tell' (no response) and synchronous `ask' and asynchronous `async-ask' (with response).
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
 the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask')."))
 
-(defmethod make-actor (behavior &key name state)
+(defmethod make-actor (receive &key name state)
   (make-instance 'actor
                  :name name
                  :state state
-                 :behavior behavior))
+                 :receive receive))
 
 ;; -------------------------------
 ;; actor-cell impls
 ;; -------------------------------
 
 (defmethod handle-call ((self actor) message state)
-  (funcall (behavior self) self message state))
+  (funcall (receive self) self message state))
 (defmethod handle-cast ((self actor) message state)
-  (funcall (behavior self) self message state))
+  (funcall (receive self) self message state))
 
 (defun stop-children (actor)
   (let ((context (context actor)))
@@ -63,8 +68,8 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
   (act-cell:call self message :time-out time-out))
 
 (defmethod become ((self actor) new-behavior)
-  (with-slots (behavior) self
-    (setf behavior new-behavior)))
+  (with-slots (receive) self
+    (setf receive new-behavior)))
 
 (defmethod watch ((self actor) watcher)
   (with-slots (watchers) self
@@ -96,7 +101,7 @@ In any case stop the actor-cell."
                         (make-instance 'mesgb:message-box/bt)))
            (,waiting-actor (make-instance
                             'async-waitor-actor
-                            :behavior (lambda (,self ,msg ,state)
+                            :receive (lambda (,self ,msg ,state)
                                         (unwind-protect
                                              (progn
                                                (funcall ,@body ,msg)
@@ -144,7 +149,7 @@ In any case stop the actor-cell."
 ;;           (state-sym (gensym)))
 ;;       `(make-actor "tmp-actor"
 ;;                    :state nil
-;;                    :behavior (lambda (,actor-sym ,msg-sym ,state-sym)
+;;                    :receive (lambda (,actor-sym ,msg-sym ,state-sym)
 ;;                                   ,(let ((self actor-sym)
 ;;                                          (msg msg-sym)
 ;;                                          (state state-sym))

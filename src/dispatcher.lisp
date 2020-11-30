@@ -70,13 +70,13 @@ The strategy to choose a worker is random."))
 (defun make-dispatcher-worker (num)
   "Constructor for creating a worker."
   (let ((worker (make-instance 'dispatch-worker
-                               :behavior #'behavior
+                               :receive #'receive
                                :name (utils:mkstr "dispatch-worker-" num))))
     (setf (act-cell:msgbox worker)  (make-instance 'message-box/bt
                                                    :max-queue-size 0))
     worker))
 
-(defun behavior (self message current-state)
+(defun receive (self message current-state)
   "The worker receive function."
   (declare (ignore self))
   (case (car message)

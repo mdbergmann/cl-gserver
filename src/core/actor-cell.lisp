@@ -198,9 +198,8 @@ In case no messge-box is configured this function respnds with `:no-message-hand
                  :stopped))
     (t (progn
          (when sender
-           (progn
-             (log:debug "~a: we have a sender. Send the response back to: ~a" (name actor-cell) sender)
-             (cast sender handle-result)))
+           (log:debug "~a: we have a sender. Send the response back to: ~a" (name actor-cell) sender)
+           (cast sender handle-result))
          handle-result))))
 
 ;; ------------------------------------------------

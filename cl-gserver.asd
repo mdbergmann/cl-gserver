@@ -64,10 +64,9 @@
 
 #|
 TODOs:
+=> Allow no cons result from behavior function / add sender to receive context
 - do error on async-wait if there are no dispatcher workers
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
-- add agent to system
-- make use map to store actors in actor-context for better performance on name lookup
 OK - implement router
 OK - write new readme
 OK - make performance tests

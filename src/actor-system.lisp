@@ -35,8 +35,8 @@ With the `actor-system' you can create actors via the `actor-context' protocol f
 
 (defmethod initialize-instance :after ((self actor-system) &key)
   (with-slots (user-actor-context internal-actor-context) self
-    (setf user-actor-context (make-actor-context self))
-    (setf internal-actor-context (make-actor-context self))))
+    (setf user-actor-context (make-actor-context self "user"))
+    (setf internal-actor-context (make-actor-context self "internal"))))
 
 (defun make-actor-system (&key (shared-dispatcher-workers 4))
   "Creates an `actor-system'.

@@ -54,8 +54,8 @@ The call stack is as follows:
     - ~submit/no-reply~ (message-box/bt, worker)
 
 For this scenario the 'timer' (thread using ~with-waitfor~) really has to be spawned at ~async-ask~, because due to the fact that the message is passed through a waiting actor it is otherwise not possible to intercept a message processing on the dispatcher.
-Additionally, a special message object is used here (~delayed-cancellable-message~) which does the following things: it wraps the actual message, it takes a seconds delay number, it has a ~cancelled-p~ flag. The ~cancelled-p~ flag is checked prior to handling the message. In order to toggle the flag while in transit, or while sitting in the dispatcher workers queue a 'timer' thread is spawed as part of the message object that can toggle the ~cancelled-p~ flag no matter where it is.
-If the message was cancelled is it not processed. This will additionally raise an =ask-timeout= in ~async-ask~.
+(*Not any more because too resource intensive* Additionally, a special message object is used here (~delayed-cancellable-message~) which does the following things: it wraps the actual message, it takes a seconds delay number, it has a ~cancelled-p~ flag. The ~cancelled-p~ flag is checked prior to handling the message. In order to toggle the flag while in transit, or while sitting in the dispatcher workers queue a 'timer' thread is spawed as part of the message object that can toggle the ~cancelled-p~ flag no matter where it is.
+If the message was cancelled is it not processed. This will additionally raise an =ask-timeout= in ~async-ask~.)
 
 Clearly this is not very efficient. The 'waitor' actor uses a dipatcher, if a =system= exists so that it doesn't need a separate thread. But otherwise two additional threads are being spawed to allow cutting off this operation.
 
@@ -70,5 +70,5 @@ The call trace:
   - ~cast~ (actor-cell, target-actor)
   - ~submit/no-reply~ (message-box/bt, target-actor)
 
-As above, the 'timer' thread that waits and check for the delivered result is opened in ~async-ask~. This scenario also uses the ~delayed-cancellable-message~ and with that a 'timer' thread that can toggle the ~cancelled-p~ flag.
+As above, the 'timer' thread that waits and check for the delivered result is opened in ~async-ask~. (*Not any more because too resource intennsive* This scenario also uses the ~delayed-cancellable-message~ and with that a 'timer' thread that can toggle the ~cancelled-p~ flag.)
 As with the other =pinned= scenarios this is a bit more efficient than using the dispatcher, generally.

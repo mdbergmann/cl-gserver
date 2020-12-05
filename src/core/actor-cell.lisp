@@ -11,6 +11,7 @@
            #:name
            #:msgbox
            #:state
+           #:sender
            ;; API
            #:handle-call
            #:handle-cast
@@ -39,6 +40,10 @@
     (internal-state :initform (make-actor-cell-state)
                     :documentation
                     "The internal state of the server.")
+    (sender :initform nil
+            :reader sender
+            :documentation
+            "`cast' can use a `sender' whic is stored here to be access when needed.")
     (msgbox :initform nil
             :accessor msgbox
             :documentation
@@ -181,9 +186,13 @@ In case no messge-box is configured this function respnds with `:no-message-hand
            message
            withreply-p
            time-out)
-          (process-response actor-cell
-                            (handle-message actor-cell message withreply-p)
-                            sender))
+          ;; inject the sender and 'self' here
+          (prog2
+              (setf (slot-value actor-cell 'sender) sender)
+              (process-response actor-cell
+                                (handle-message actor-cell message withreply-p)
+                                sender)
+            (setf (slot-value actor-cell 'sender) nil)))
     (utils:ask-timeout (c)
       (log:warn "~a: ask timeout: ~a" (name actor-cell) c)
       (process-response actor-cell
@@ -191,6 +200,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
                         sender))))
 
 (defun process-response (actor-cell handle-result sender)
+  "This function is called on the queue thread, so it's thread safe!"
   (log:debug "~a: processing handle-result: ~a" (name actor-cell) handle-result)
   (case handle-result
     (:stopping (progn

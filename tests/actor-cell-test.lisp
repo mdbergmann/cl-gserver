@@ -187,6 +187,22 @@
     (is (= 1 (call cut :pop)))
     (is (null (call cut :pop)))))
 
+(test cast--store-sender
+  "Test that the 'sender' is stored and deleted in the cell for each use of `cast'."
+  (with-fixture cell-fixture (nil
+                              (lambda (self msg state)
+                                (assert (not (null (act-cell:sender self))))
+                                (case msg
+                                  (:ping (cons :pong state))))
+                              nil
+                              nil
+                              0)
+    (let ((fake-sender (act:make-actor (lambda (self msg state)
+                                         (declare (ignore self))
+                                         (cons msg state)))))
+      (cast cut :ping fake-sender)
+      (is-true t))))
+
 (defclass stopping-cell (actor-cell) ())
 (defmethod handle-call ((cell stopping-cell) message current-state)
   (cons message current-state))
@@ -207,4 +223,5 @@
   (run! 'cast-sends-result-back-to-sender)
   (run! 'error-in-handler)
   (run! 'stack-cell)
+  (run! 'cast--store-sender)
   (run! 'stopping-cell))

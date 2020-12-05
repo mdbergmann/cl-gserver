@@ -2,8 +2,8 @@
     <title>
         cl-gserver
         :
-        Generic Function
-        ask
+        FUNCTION
+        process-response
     </title>
     <meta http-equiv="Content-Type"
           content="text/html"
@@ -13,18 +13,18 @@
 <body>
     <h1>
         <i>
-
-            Generic Function
+            Internal
+            Function
         </i>
         <strong>
-            ask
+            process-response
         </strong>
     </h1>
     <h2>
         Package:
     </h2>
     <p>
-        CL-GSERVER.ACTOR
+        CL-GSERVER.ACTOR-CELL
     </p>
     <h2>
         Syntax:
@@ -32,7 +32,7 @@
     <div>
         <p>
             <pre>
-  <strong style="color: red">ask</strong> <i>ACTOR</i> <i>MESSAGE</i> <span style="color: blue">&KEY</span> <i>TIME-OUT</i> &rarr; <i>result</i></pre>
+  <strong style="color: red">process-response</strong> <i>ACTOR-CELL</i> <i>HANDLE-RESULT</i> <i>SENDER</i> &rarr; <i>result</i></pre>
         </p>
     </div>
     <h3>
@@ -42,7 +42,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    ACTOR
+                    ACTOR-CELL
                 </code>
             </i>
              :
@@ -52,7 +52,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    MESSAGE
+                    HANDLE-RESULT
                 </code>
             </i>
              :
@@ -62,7 +62,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    TIME-OUT
+                    SENDER
                 </code>
             </i>
              :
@@ -82,11 +82,6 @@
         Description:
     </h2>
     <p>
-        Sends a message to the `actor'. `ask' is synchronous and waits for a result.
-Specify `timeout' if a message is to be expected after a certain time.
-An `:handler-error' with `timeout' condition will be returned is the call timed out.
-    </p>
-    <p>
-        =ask= assumes, no matter if =ask= is issued from outside or inside an actor, that the response is delivered back to the caller. That's why =ask= does block the execution until the result is available. The 'receive' function handler must specify the result as the ~car~ of the ~cons~ result.
+        This function is called on the queue thread, so it's thread safe!
     </p>
 </body>

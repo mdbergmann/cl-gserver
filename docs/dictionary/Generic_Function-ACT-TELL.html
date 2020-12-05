@@ -85,4 +85,29 @@
         Sends a message to the `actor'. `tell' is asynchronous. There is no result.
 If a `sender' is specified a message result of the target actor of the `tell' will be sent back to the `sender'
     </p>
+    <p>
+        Generally =tell= does not expect a response. But a 'sender' can be specified as optionl parameter to =tell=.
+If a 'sender' is specified, then the message handling behavior will send the ~car~ of the ~cons~ result to the specified 'sender'.
+    </p>
+    <p>
+        A 'sender' can also be part of the message contract.
+    </p>
+    <p>
+        =tell= can be used in two environments:
+    </p>
+    <p>
+        1. outside an actor
+    </p>
+    <p>
+        By default this sends a message as fire & forget. Since this is not inside an actor, no actor can be inferred as 'sender'. A 'sender' can be defined as optional parameter as part of =tell=.
+    </p>
+    <p>
+        2. inside an actors as part of the 'receive' function
+    </p>
+    <p>
+        As 'sender' can be specified when =tell= is used inside of an actor. Currently the framework doesn't automatically infer the 'sender' when no 'sender' is explicitly specified.
+    </p>
+    <p>
+        =&gt; This is a future enhancement.
+    </p>
 </body>

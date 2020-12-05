@@ -11,12 +11,18 @@
            #:notify
            #:shutdown
            #:system
+           #:name
            ;; conditions
            #:actor-name-exists))
 (in-package :cl-gserver.actor-context)
 
 (defclass actor-context ()
-  ((actors :initform (hamt:empty-dict)
+  ((name :initarg :name
+         :initform nil
+         :reader name
+         :documentation
+         "The name of the actor-system.")
+   (actors :initform (hamt:empty-dict)
            :reader actors
            :documentation
            "A list of actors.

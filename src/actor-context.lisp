@@ -1,10 +1,10 @@
 
 (in-package :cl-gserver.actor-context)
 
-(defun make-actor-context (actor-system)
+(defun make-actor-context (actor-system &optional (name nil))
   "Creates an `actor-context'. Requires a reference to `system'."
   (assert (not (null actor-system)) nil "Requires an actor-system!")
-  (let ((context (make-instance 'actor-context)))
+  (let ((context (make-instance 'actor-context :name name)))
     (with-slots (system) context
       (setf system actor-system))
     context))

@@ -17,7 +17,9 @@
 
 (test create--with-default-constructor
   "Test if the default constructor creates a context."
-  (is (not (null (make-actor-context *test-actor-system*)))))
+  (is (not (null (make-actor-context *test-actor-system*))))
+  (is (null (name (make-actor-context *test-actor-system*))))
+  (is (string= "foo" (name (make-actor-context *test-actor-system* "foo")))))
 
 (test create--check-aggregated-components
   "Tests creating a context."

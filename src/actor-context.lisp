@@ -62,7 +62,11 @@
   (hamt:dict-lookup (actors self) name))
 
 (defmethod all-actors ((self actor-context))
-  (mapcar #'cdr (hamt:dict->alist (actors self))))
+  (hamt:dict-reduce (lambda (acc key val)
+                      (declare (ignore key))
+                      (cons val acc))
+                    (actors self)
+                    '()))
 
 (defmethod stop ((self actor-context) actor)
   (act-cell:stop actor))

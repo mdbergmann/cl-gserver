@@ -5,6 +5,7 @@
            #:make-actor-context
            #:actor-of
            #:find-actors
+           #:find-by-name
            #:all-actors
            #:stop
            #:notify
@@ -15,7 +16,7 @@
 (in-package :cl-gserver.actor-context)
 
 (defclass actor-context ()
-  ((actors :initform (make-array 50 :adjustable t :fill-pointer 0)
+  ((actors :initform (hamt:empty-dict)
            :reader actors
            :documentation
            "A list of actors.
@@ -46,6 +47,9 @@ Specify `queue-size' with:
 
 (defgeneric find-actors (context test-fun)
   (:documentation "Returns actors of this context where `test-fun' provides 'truth'."))
+
+(defgeneric find-by-name (context name)
+  (:documentation "Returns an actor for the given name, when it exists."))
 
 (defgeneric all-actors (context)
   (:documentation "Retrieves all actors of this context as a list"))

@@ -123,8 +123,8 @@
     (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
           (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")))))
       (is (= 2 (length (ac:all-actors cut))))
-      (is (eq act1 (first (ac:all-actors cut))))
-      (is (eq act2 (second (ac:all-actors cut)))))))
+      (is (some (lambda (x) (eq act1 x)) (ac:all-actors cut)))
+      (is (some (lambda (x) (eq act2 x)) (ac:all-actors cut))))))
 
 (test stop-actor--in-system
   "Tests stopping an actor. This pretty much does the same as the method in actor-context."

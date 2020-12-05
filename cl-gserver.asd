@@ -1,5 +1,5 @@
 (defsystem "cl-gserver"
-  :version "1.1.2"
+  :version "1.1.3"
   :author "Manfred Bergmann"
   :license "MIT"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -8,7 +8,8 @@
                "log4cl"
                "iterate"
                "str"
-               "blackbird")
+               "blackbird"
+               "cl-hamt")
   :components ((:module "src"
                 :serial t
                 :components

@@ -125,15 +125,15 @@
                          (format nil "~a" c)))
         (is-true t)))))
 
-(test remove-and-add-actors
+(test remove-and-add-actors--find-by-name
   "Tests removing and again adding actors !!! this tests private API"
   (let ((context (make-actor-context *test-actor-system*)))
-    (ac::add-actor context 'foo)
-    (is (member 'foo (coerce (ac::actors context) 'list)))
-    (ac::remove-actor context 'foo)
-    (is (= 0 (length (ac::actors context))))
-    (ac::add-actor context 'foo)
-    (is (member 'foo (coerce (ac::actors context) 'list)))
+    (ac::add-actor context (make-instance 'act-cell:actor-cell :name :foo))
+    (is (find-by-name context :foo))
+    (ac::remove-actor context (make-instance 'act-cell:actor-cell :name :foo))
+    (is (= 0 (length (all-actors context))))
+    (ac::add-actor context (make-instance 'act-cell:actor-cell :name :foo))
+    (is (find-by-name context :foo))
   ))
 
 (defun run-tests ()

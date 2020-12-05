@@ -13,13 +13,15 @@
   (getf (asys:dispatchers system) :shared))
 
 (defun add-actor (context actor)
-  (vector-push-extend actor (actors context))
+  (with-slots (actors) context
+    (setf actors
+          (hamt:dict-insert actors (act-cell:name actor) actor)))
   actor)
 
 (defun remove-actor (context actor)
   (with-slots (actors) context
     (setf actors
-          (delete-if (lambda (a) (eq a actor)) actors))))
+          (hamt:dict-remove actors (act-cell:name actor)))))
 
 (defun message-box-for-dispatch-type (context dispatch-type queue-size)
   (case dispatch-type
@@ -56,8 +58,11 @@
 (defmethod find-actors ((self actor-context) test-fun)
   (utils:filter test-fun (all-actors self)))
 
+(defmethod find-by-name ((self actor-context) name)
+  (hamt:dict-lookup (actors self) name))
+
 (defmethod all-actors ((self actor-context))
-  (coerce (actors self) 'list))
+  (mapcar #'cdr (hamt:dict->alist (actors self))))
 
 (defmethod stop ((self actor-context) actor)
   (act-cell:stop actor))

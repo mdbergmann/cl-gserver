@@ -18,14 +18,22 @@
 (test create--with-default-constructor
   "Test if the default constructor creates a context."
   (is (not (null (make-actor-context *test-actor-system*))))
-  (is (null (name (make-actor-context *test-actor-system*))))
-  (is (string= "foo" (name (make-actor-context *test-actor-system* "foo")))))
+  (is (null (id (make-actor-context *test-actor-system*))))
+  (is (string= "foo" (id (make-actor-context *test-actor-system* "foo")))))
 
 (test create--check-aggregated-components
   "Tests creating a context."
   (let ((cut (make-actor-context *test-actor-system*)))
     (is (not (null cut)))
     (is (not (null (system cut))))))
+
+(test actor-of--creates-actor-path-and-context-id
+  "Tests that when actors are created using `actor-of' that they get an expanded path from the context `id'."
+  (let* ((cut (make-actor-context *test-actor-system* "/foo"))
+         (actor (actor-of cut (lambda () (make-actor (lambda ()) :name "bar")))))
+    (print actor)
+    (is (string= "/foo/bar" (act:path actor)))
+    (is (string= "/foo/bar" (id (act:context actor))))))
 
 (test actor-of--shared
   "Tests creating a new actor in the context with shared dispatcher"
@@ -141,6 +149,7 @@
 (defun run-tests ()
   (run! 'create--with-default-constructor)
   (run! 'create--check-aggregated-components)
+  (run! 'actor-of--creates-actor-path-and-context-id)
   (run! 'actor-of--shared)
   (run! 'actor-of--pinned)
   (run! 'actor-of--dont-add-when-null-creator)

@@ -1,10 +1,10 @@
 
 (in-package :cl-gserver.actor-context)
 
-(defun make-actor-context (actor-system &optional (name nil))
+(defun make-actor-context (actor-system &optional (id nil))
   "Creates an `actor-context'. Requires a reference to `system'."
   (assert (not (null actor-system)) nil "Requires an actor-system!")
-  (let ((context (make-instance 'actor-context :name name)))
+  (let ((context (make-instance 'actor-context :id id)))
     (with-slots (system) context
       (setf system actor-system))
     context))
@@ -46,7 +46,8 @@
     (when actor
       (verify-actor context actor)
       (setf (act-cell:msgbox actor) (message-box-for-dispatch-type context dispatch-type queue-size))
-      (setf (act:context actor) (make-actor-context (system context))))
+      (let ((context-id (utils:mkstr (id context) "/" (act-cell:name actor))))
+        (setf (act:context actor) (make-actor-context (system context) context-id))))
     actor))
 
 (defmethod actor-of ((self actor-context) create-fun &key (dispatch-type :shared) (queue-size 0))

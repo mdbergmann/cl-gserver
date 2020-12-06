@@ -9,6 +9,7 @@
            #:become
            #:unbecome
            #:context
+           #:path
            #:watch
            #:unwatch
            #:watchers))
@@ -86,6 +87,11 @@ The `new-behavior' function must accept 3 parameters: the actor instance, the me
    "This is the `actor-context' every actor is composed of.
 When the actor is created from scratch it has no `actor-context'.
 When created through the `actor-context's, or system's `actor-of' function an `actor-context' will be set."))
+
+(defgeneric path (actor)
+  (:documentation
+   "The path of the actor, including the actor itself.
+The path denotes a tree which starts at the system context."))
 
 (defgeneric watch (actor watcher)
   (:documentation

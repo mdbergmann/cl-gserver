@@ -11,17 +11,17 @@
            #:notify
            #:shutdown
            #:system
-           #:name
+           #:id
            ;; conditions
            #:actor-name-exists))
 (in-package :cl-gserver.actor-context)
 
 (defclass actor-context ()
-  ((name :initarg :name
-         :initform nil
-         :reader name
-         :documentation
-         "The name of the actor-system.")
+  ((id :initarg :id
+       :initform nil
+       :reader id
+       :documentation
+       "The id of this actor-system.")
    (actors :initform (hamt:empty-dict)
            :reader actors
            :documentation

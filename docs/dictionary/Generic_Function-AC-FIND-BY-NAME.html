@@ -2,8 +2,8 @@
     <title>
         cl-gserver
         :
-        FUNCTION
-        make-actor-context
+        Generic Function
+        find-by-name
     </title>
     <meta http-equiv="Content-Type"
           content="text/html"
@@ -14,10 +14,10 @@
     <h1>
         <i>
 
-            Function
+            Generic Function
         </i>
         <strong>
-            make-actor-context
+            find-by-name
         </strong>
     </h1>
     <h2>
@@ -32,7 +32,7 @@
     <div>
         <p>
             <pre>
-  <strong style="color: red">make-actor-context</strong> <i>ACTOR-SYSTEM</i> <span style="color: blue">&OPTIONAL</span> <i>ID</i> &rarr; <i>result</i></pre>
+  <strong style="color: red">find-by-name</strong> <i>CONTEXT</i> <i>NAME</i> &rarr; <i>result</i></pre>
         </p>
     </div>
     <h3>
@@ -42,7 +42,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    ACTOR-SYSTEM
+                    CONTEXT
                 </code>
             </i>
              :
@@ -52,7 +52,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    ID
+                    NAME
                 </code>
             </i>
              :
@@ -72,6 +72,6 @@
         Description:
     </h2>
     <p>
-        Creates an `actor-context'. Requires a reference to `system'.
+        Returns an actor for the given name, when it exists.
     </p>
 </body>

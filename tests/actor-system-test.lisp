@@ -31,10 +31,10 @@
   (let ((system (make-actor-system :shared-dispatcher-workers 4)))
     (is (not (null system)))
     (is (not (null (asys::internal-actor-context system))))
-    (is (string= "internal" (ac:name (asys::internal-actor-context system))))
+    (is (string= "/internal" (ac:id (asys::internal-actor-context system))))
     (is (typep (asys::internal-actor-context system) 'ac:actor-context))
     (is (not (null (asys::user-actor-context system))))
-    (is (string= "user" (ac:name (asys::user-actor-context system))))
+    (is (string= "/user" (ac:id (asys::user-actor-context system))))
     (is (typep (asys::user-actor-context system) 'ac:actor-context))
     (ac:shutdown system)
     (sleep 0.5)))
@@ -60,6 +60,13 @@
       (is-true (typep (getf dispatchers :shared) 'shared-dispatcher))
       (is (= 4 (length (workers (getf dispatchers :shared))))))
     (ac:shutdown system)))
+
+(test actor-of--verify-proper-root-path
+  "Tests whether actors and contexts are created with proper paths."
+  (with-fixture test-system ()
+    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :dispatch-type :shared)))
+      (is (string= "/user/foo" (act:path actor)))
+      (is (string= "/user/foo" (ac:id (act:context actor)))))))
 
 (test actor-of--shared--user
   "Creates actors in the system in user context with shared dispatcher."
@@ -165,6 +172,7 @@
 (defun run-tests ()
   (run! 'create-system)
   (run! 'shutdown-system)
+  (run! 'actor-of--verify-proper-root-path)
   (run! 'actor-of--shared--user)
   (run! 'actor-of--shared--internal)
   (run! 'actor-of--pinned--user)

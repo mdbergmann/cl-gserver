@@ -2,8 +2,8 @@
     <title>
         cl-gserver
         :
-        FUNCTION
-        make-actor-context
+        Generic Function
+        path
     </title>
     <meta http-equiv="Content-Type"
           content="text/html"
@@ -14,17 +14,17 @@
     <h1>
         <i>
 
-            Function
+            Generic Function
         </i>
         <strong>
-            make-actor-context
+            path
         </strong>
     </h1>
     <h2>
         Package:
     </h2>
     <p>
-        CL-GSERVER.ACTOR-CONTEXT
+        CL-GSERVER.ACTOR
     </p>
     <h2>
         Syntax:
@@ -32,7 +32,7 @@
     <div>
         <p>
             <pre>
-  <strong style="color: red">make-actor-context</strong> <i>ACTOR-SYSTEM</i> <span style="color: blue">&OPTIONAL</span> <i>ID</i> &rarr; <i>result</i></pre>
+  <strong style="color: red">path</strong> <i>ACTOR</i> &rarr; <i>result</i></pre>
         </p>
     </div>
     <h3>
@@ -42,17 +42,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    ACTOR-SYSTEM
-                </code>
-            </i>
-             :
-            a
-            T
-        </li>
-        <li style="list-style-type: none">
-            <i>
-                <code>
-                    ID
+                    ACTOR
                 </code>
             </i>
              :
@@ -72,6 +62,7 @@
         Description:
     </h2>
     <p>
-        Creates an `actor-context'. Requires a reference to `system'.
+        The path of the actor, including the actor itself.
+The path denotes a tree which starts at the system context.
     </p>
 </body>

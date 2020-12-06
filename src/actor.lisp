@@ -40,6 +40,14 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
                  :state state
                  :receive receive))
 
+(defmethod print-object ((obj actor) stream)
+  (print-unreadable-object (obj stream :type t)
+    (let ((string-stream (make-string-output-stream)))
+      (call-next-method obj string-stream)
+      (format stream "path:~a, cell:~a"
+              (path obj)
+              (get-output-stream-string string-stream)))))
+
 ;; -------------------------------
 ;; actor-cell impls
 ;; -------------------------------
@@ -83,6 +91,9 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
 (defmethod unbecome ((self actor))
   (with-slots (behavior) self
     (setf behavior nil)))
+
+(defmethod path ((self actor))
+  (ac:id (context self)))
 
 (defmethod watch ((self actor) watcher)
   (with-slots (watchers) self

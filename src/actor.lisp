@@ -44,7 +44,7 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
   (print-unreadable-object (obj stream :type t)
     (let ((string-stream (make-string-output-stream)))
       (call-next-method obj string-stream)
-      (format stream "path:~a, cell:~a"
+      (format stream "path: ~a, cell: ~a"
               (path obj)
               (get-output-stream-string string-stream)))))
 

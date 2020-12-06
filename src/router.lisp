@@ -45,7 +45,6 @@ Specify `routees' if you know them upfront."
 
 (defclass router ()
   ((routees :initform (make-array 2 :adjustable t :fill-pointer 0)
-            :reader routees
             :documentation "The routees.")
    (strategy :initform (get-strategy :random)
              :initarg :strategy
@@ -64,7 +63,7 @@ A router `strategy' defines how one of the actors is determined as the forwardin
 
 (defun add-routee (router routee)
   "Adds a routee/actor to the router."
-  (vector-push-extend routee (routees router))
+  (vector-push-extend routee (slot-value router 'routees))
   routee)
 
 (defun stop (router)
@@ -72,26 +71,30 @@ A router `strategy' defines how one of the actors is determined as the forwardin
   (mapcar #'act-cell:stop (coerce (routees router) 'list)))
 
 (defun get-strategy-index (router)
-  (let* ((routees (routees router))
+  (let* ((routees (slot-value router 'routees))
          (strategy (strategy router))
          (actor-index (funcall strategy (length routees))))
     (log:debug "Using index from strategy: ~a" actor-index)
     actor-index))
 
+(defun routees (router)
+  "Returns the routees as list."
+  (copy-list (coerce (slot-value router 'routees) 'list)))
+
 (defmethod tell ((self router) message &optional sender)
   (tell
-   (elt (routees self) (get-strategy-index self))
+   (elt (slot-value self 'routees) (get-strategy-index self))
    message
    sender))
 
 (defmethod ask ((self router) message &key time-out)
   (ask
-   (elt (routees self) (get-strategy-index self))
+   (elt (slot-value self 'routees) (get-strategy-index self))
    message
    :time-out time-out))
 
 (defmethod async-ask ((self router) message &key time-out)
   (async-ask
-   (elt (routees self) (get-strategy-index self))
+   (elt (slot-value self 'routees) (get-strategy-index self))
    message
    :time-out time-out))

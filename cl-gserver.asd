@@ -51,7 +51,8 @@
                  (:file "actor-context-test")
                  (:file "fcomputation-test")
                  (:file "dispatcher-test")
-                 (:file "actor-system-test"))))
+                 (:file "actor-system-test")
+                 (:file "actor-tree-test"))))
   :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run!
                                         (uiop:find-symbol* '#:test-suite
@@ -65,7 +66,6 @@
 
 #|
 TODOs:
-=> Allow no cons result from behavior function / add sender to receive context
 - do error on async-wait if there are no dispatcher workers
 - check what to do with the 'waiter-actor'. should it also use 'actor-of'?
 OK - implement router

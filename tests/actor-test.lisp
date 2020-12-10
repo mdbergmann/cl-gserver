@@ -15,9 +15,9 @@
 (in-suite actor-tests)
 
 (def-fixture actor-fixture (receive state with-context)
-  (defclass test-actor (actor) ())
   (let ((cut (make-actor receive
-                         :state state)))
+                         :state state
+                         :name "test-actor")))
     (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt))
     (when with-context
       (setf (act:context cut)
@@ -267,6 +267,22 @@
       (is (eq :handler-error (car (get-result future))))
       (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
 
+(test allow--no-reply--response
+  "Tests to allow `:no-reply' for `tell', `ask' and `async-ask'"
+  (with-fixture actor-fixture ((lambda (self msg state)
+                                 (declare (ignore msg))
+                                 (if (act-cell:sender self)
+                                     (tell (act-cell:sender self) :manual-reply))
+                                 (cons :no-reply state))
+                               0
+                               t)
+    (is-true (tell cut :foo))
+    (is (eq :no-reply (ask cut :foo)))
+    (let ((fut (async-ask cut :foo)))
+      (assert-cond (lambda () (complete-p fut)) 1.0)
+      (is (eq :manual-reply (get-result fut))))
+  ))
+
 (test become-and-unbecome-a-different-behavior
   "Test switching behaviors"
   (let ((receive (lambda (self msg state)
@@ -319,6 +335,7 @@
   (run! 'async-ask--shared--timeout)
   (run! 'ask--pinned--timeout)
   (run! 'async-ask--pinned--timeout)
+  (run! 'allow--no-reply--response)
   (run! 'become-and-unbecome-a-different-behavior)
   ;;(run! 'with-actor-macro)
   )

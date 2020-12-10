@@ -93,7 +93,8 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
     (setf behavior nil)))
 
 (defmethod path ((self actor))
-  (ac:id (context self)))
+  (when (context self)
+    (ac:id (context self))))
 
 (defmethod watch ((self actor) watcher)
   (with-slots (watchers) self

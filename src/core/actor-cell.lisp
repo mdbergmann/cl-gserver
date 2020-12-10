@@ -165,6 +165,12 @@ If a `sender' is specified the result will be sent to the sender."
 ;; internal functions
 ;; -----------------------------------------------
 
+(defmacro with-sender (actor-cell sender &rest body)
+  `(prog2
+       (setf (slot-value ,actor-cell ',sender) ,sender)
+       ,@body
+     (setf (slot-value ,actor-cell ',sender) nil)))
+
 (defun submit-message (actor-cell message withreply-p sender time-out)
   "Submitting a message.
 In case of `withreply-p', the `response' is filled because submitting to the message-box is synchronous.
@@ -186,13 +192,11 @@ In case no messge-box is configured this function respnds with `:no-message-hand
            message
            withreply-p
            time-out)
-          ;; inject the sender and 'self' here
-          (prog2
-              (setf (slot-value actor-cell 'sender) sender)
-              (process-response actor-cell
-                                (handle-message actor-cell message withreply-p)
-                                sender)
-            (setf (slot-value actor-cell 'sender) nil)))
+          (macroexpand
+           (with-sender actor-cell sender
+             (process-response actor-cell
+                               (handle-message actor-cell message withreply-p)
+                               sender))))
     (utils:ask-timeout (c)
       (log:warn "~a: ask timeout: ~a" (name actor-cell) c)
       (process-response actor-cell
@@ -207,7 +211,9 @@ In case no messge-box is configured this function respnds with `:no-message-hand
                  (stop actor-cell)
                  :stopped))
     (t (progn
-         (when sender
+         (when (and
+                sender
+                (not (eq :no-reply handle-result)))
            (log:debug "~a: we have a sender. Send the response back to: ~a" (name actor-cell) sender)
            (cast sender handle-result))
          handle-result))))
@@ -215,6 +221,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
 ;; ------------------------------------------------
 ;; message handling ---------------------
 ;; ------------------------------------------------
+
 (defgeneric handle-message (actor-cell message withreply-p)
   (:documentation
    "The message handler which is usually called after the message was popped from a queue."))

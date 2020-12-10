@@ -78,6 +78,6 @@ The strategy to choose a worker is random."))
 
 (defun receive (self message current-state)
   "The worker receive function."
-  (declare (ignore self))
+  (assert (consp message) nil (format t "~a: Message must be a `cons'!" (act-cell:name self)))
   (case (car message)
     (:execute (cons (funcall (cdr message)) current-state))))

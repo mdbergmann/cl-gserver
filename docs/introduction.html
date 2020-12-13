@@ -25,8 +25,8 @@
           Make sure to check the 'Dictionary' link on the top for the API documentation!
         </p>
       </div>
-<div id="outline-container-org4f2ec78" class="outline-2">
-<h2 id="org4f2ec78"><span class="section-number-2">1</span> Introduction</h2>
+<div id="outline-container-org2b57bc5" class="outline-2">
+<h2 id="org2b57bc5"><span class="section-number-2">1</span> Introduction</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka.
@@ -55,12 +55,12 @@ But let's jump right into it. I'll explain more later.
 </div>
 </div>
 
-<div id="outline-container-orgb2fd03c" class="outline-2">
-<h2 id="orgb2fd03c"><span class="section-number-2">2</span> Getting hands-on</h2>
+<div id="outline-container-org580fb1b" class="outline-2">
+<h2 id="org580fb1b"><span class="section-number-2">2</span> Getting hands-on</h2>
 <div class="outline-text-2" id="text-2">
 </div>
-<div id="outline-container-orga43ec90" class="outline-3">
-<h3 id="orga43ec90"><span class="section-number-3">2.1</span> Creating an actor-system</h3>
+<div id="outline-container-org89ca967" class="outline-3">
+<h3 id="org89ca967"><span class="section-number-3">2.1</span> Creating an actor-system</h3>
 <div class="outline-text-3" id="text-2-1">
 <p>
 To use the shared dispatcher pool we have to create an <code>actor-system</code> first.
@@ -84,8 +84,8 @@ So the <code>actor-system</code> has by default four shared message dispatcher w
 </p>
 </div>
 
-<div id="outline-container-orgb49a572" class="outline-4">
-<h4 id="orgb49a572"><span class="section-number-4">2.1.1</span> Shutting down the system</h4>
+<div id="outline-container-org0280a24" class="outline-4">
+<h4 id="org0280a24"><span class="section-number-4">2.1.1</span> Shutting down the system</h4>
 <div class="outline-text-4" id="text-2-1-1">
 <p>
 Shutting down an actor system may be necessary depending on how it's used. It can be done by:
@@ -103,8 +103,8 @@ This will stop all dispatcher workers and all other actors that have been spawed
 </div>
 </div>
 
-<div id="outline-container-org5728612" class="outline-3">
-<h3 id="org5728612"><span class="section-number-3">2.2</span> Creating actors</h3>
+<div id="outline-container-org0733b49" class="outline-3">
+<h3 id="org0733b49"><span class="section-number-3">2.2</span> Creating actors</h3>
 <div class="outline-text-3" id="text-2-2">
 <p>
 Actors kind of live within an <code>actor-context</code>. An <code>actor-context</code> contains a collection (of actors) and defines a Common Lisp protocol that spawns a set of generic functions.
@@ -147,7 +147,7 @@ This creates a root actor on the <code>*system*</code>. Notice that the actor is
 </ol>
 
 <p>
-The return value of the 'behavior' function should also be familiar. It is the <code>cons</code> with <code>car</code> being sent back to sender (in case of ask/async-ask) and <code>cdr</code> that is set as the new current state of the actor.
+The return value of the 'behavior' function should also be familiar. It is the <code>cons</code> with <code>car</code> being sent back to sender (in case of ask/async-ask) and <code>cdr</code> set as the new state of the actor.
 </p>
 
 <p>
@@ -183,8 +183,8 @@ This will create a new actor on the context of the parent actor. The context is 
 </p>
 </div>
 
-<div id="outline-container-org3de5986" class="outline-4">
-<h4 id="org3de5986"><span class="section-number-4">2.2.1</span> <code>:pinned</code> vs. <code>:shared</code></h4>
+<div id="outline-container-orgdb83872" class="outline-4">
+<h4 id="orgdb83872"><span class="section-number-4">2.2.1</span> <code>:pinned</code> vs. <code>:shared</code></h4>
 <div class="outline-text-4" id="text-2-2-1">
 <p>
 By default an actor, created using <code>actor-of</code>, uses a <code>:shared</code> dispatcher type which uses the shared message dispatchers that are setup in the system. It is also possible to create actors with their own dispatcher thread, those are called <code>:pinned</code> actors. Just provide the <code>:pinned</code> value to the <code>dispatcher-type</code> key parameter.
@@ -193,8 +193,8 @@ By default an actor, created using <code>actor-of</code>, uses a <code>:shared</
 </div>
 </div>
 
-<div id="outline-container-org8a944c1" class="outline-3">
-<h3 id="org8a944c1"><span class="section-number-3">2.3</span> Finding actors in the context</h3>
+<div id="outline-container-orgb969fd3" class="outline-3">
+<h3 id="orgb969fd3"><span class="section-number-3">2.3</span> Finding actors in the context</h3>
 <div class="outline-text-3" id="text-2-3">
 <p>
 If actors are not directly stored in a dynamic or lexical context they can still be looked up and used. The <code>actor-context</code> protocol contains a function <code>find-actors</code> which works like this:
@@ -222,16 +222,16 @@ This function only does a simple flat search. The functionality of looking up an
 </div>
 </div>
 
-<div id="outline-container-orgb2f665f" class="outline-3">
-<h3 id="orgb2f665f"><span class="section-number-3">2.4</span> tell, ask and async-ask</h3>
+<div id="outline-container-org04f7b56" class="outline-3">
+<h3 id="org04f7b56"><span class="section-number-3">2.4</span> tell, ask and async-ask</h3>
 <div class="outline-text-3" id="text-2-4">
 <p>
 Let's send some messages.
 </p>
 </div>
 
-<div id="outline-container-org885320c" class="outline-4">
-<h4 id="org885320c"><span class="section-number-4">2.4.1</span> tell</h4>
+<div id="outline-container-org6a223ee" class="outline-4">
+<h4 id="org6a223ee"><span class="section-number-4">2.4.1</span> tell</h4>
 <div class="outline-text-4" id="text-2-4-1">
 <p>
 <code>tell</code> is a fire-and-forget kind of send type. It doesn't expect a result in return.
@@ -255,8 +255,8 @@ So we see that <code>tell</code> returns immediately with <code>T</code>. But to
 </div>
 </div>
 
-<div id="outline-container-org6946ef8" class="outline-4">
-<h4 id="org6946ef8"><span class="section-number-4">2.4.2</span> tell with sender</h4>
+<div id="outline-container-orgf36ef6a" class="outline-4">
+<h4 id="orgf36ef6a"><span class="section-number-4">2.4.2</span> tell with sender</h4>
 <div class="outline-text-4" id="text-2-4-2">
 <p>
 <code>tell</code> accepts a 'sender', which has to be an actor. So we can do like this:
@@ -277,8 +277,8 @@ This sends "Foo" to <code>*child-answerer*</code>, but <code>*child-answerer*</c
 </div>
 </div>
 
-<div id="outline-container-orgdf10e44" class="outline-4">
-<h4 id="orgdf10e44"><span class="section-number-4">2.4.3</span> ask</h4>
+<div id="outline-container-org9f2bfe8" class="outline-4">
+<h4 id="org9f2bfe8"><span class="section-number-4">2.4.3</span> ask</h4>
 <div class="outline-text-4" id="text-2-4-3">
 <p>
 <code>ask</code> blocks until the message was processed by the actor. This call returns the <code>car</code> part of the <code>cons</code> return of the behavior function.
@@ -296,8 +296,8 @@ Will respond with: 'Hello Bar'
 </div>
 </div>
 
-<div id="outline-container-org42dd9ec" class="outline-4">
-<h4 id="org42dd9ec"><span class="section-number-4">2.4.4</span> async-ask</h4>
+<div id="outline-container-org2a278c3" class="outline-4">
+<h4 id="org2a278c3"><span class="section-number-4">2.4.4</span> async-ask</h4>
 <div class="outline-text-4" id="text-2-4-4">
 <p>
 <code>async-ask</code> combines both <code>ask</code> and <code>tell</code>. From <code>ask</code> it 'inherits' returning a result, even though it's a future result.
@@ -362,8 +362,8 @@ Received result: Hello Buzz
 </div>
 </div>
 
-<div id="outline-container-orgc0c0e6b" class="outline-3">
-<h3 id="orgc0c0e6b"><span class="section-number-3">2.5</span> ask and async-ask with timeout</h3>
+<div id="outline-container-org10e7c7d" class="outline-3">
+<h3 id="org10e7c7d"><span class="section-number-3">2.5</span> ask and async-ask with timeout</h3>
 <div class="outline-text-3" id="text-2-5">
 <p>
 A timeout (in seconds) can be specified for both <code>ask</code> and <code>async-ask</code> and is done like so:
@@ -410,9 +410,31 @@ A timeout set to 2 seconds occurred. Cause:
 </div>
 </div>
 
-<div id="outline-container-orgf8682be" class="outline-3">
-<h3 id="orgf8682be"><span class="section-number-3">2.6</span> Changing behavior</h3>
+<div id="outline-container-org0fd233e" class="outline-3">
+<h3 id="org0fd233e"><span class="section-number-3">2.6</span> Long running operations in <code>receive</code></h3>
 <div class="outline-text-3" id="text-2-6">
+<p>
+Be careful with doing long running computations in the <code>receive</code> function message handler, because it will block message processing.
+It is advised to use a third-party thread-pool or a library like <i>lparallel</i> to do the computations with and return early from the <code>receive</code> message handler.
+</p>
+
+<p>
+Considering the required <code>cons</code> return result of the <code>receive</code> function, in case a result computation is delegated to a thread-pool the <code>receive</code> function should return with <code>(cons :no-reply &lt;state&gt;)</code>. The <code>:no-reply</code> will instruct the actor to <i>not</i> send a result to a sender automatically should a sender be available (for the cases of <code>tell</code> or <code>async-ask</code>). The computation result can be 'awaited' for in an asynchronous manner and a response to <code>*sender*</code> can be sent manually by just doing a <code>(tell *sender* &lt;my-computation-result&gt;)</code>. The sender of the original message is set to the dynamic variable <code>*sender*</code>. 
+</p>
+
+<p>
+Due to an asynchronous callback of a computation running is a separate thread, the <code>*sender*</code> must be copied into a lexical environment because at the time of when the callback is executed the <code>*sender*</code> can have a different value.
+</p>
+
+<p>
+This behavior must be part of the messaging protocol that is being defined for the actors at play.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org0baef1f" class="outline-3">
+<h3 id="org0baef1f"><span class="section-number-3">2.7</span> Changing behavior</h3>
+<div class="outline-text-3" id="text-2-7">
 <p>
 An actor can change behavior. The behavior is just a lambda that has to take three parameters: 
 </p>
@@ -459,9 +481,9 @@ To revert back to the default behavior as defined by the <code>receive</code> fu
 </div>
 </div>
 
-<div id="outline-container-org505350a" class="outline-3">
-<h3 id="org505350a"><span class="section-number-3">2.7</span> Creating actors without a system</h3>
-<div class="outline-text-3" id="text-2-7">
+<div id="outline-container-org4915075" class="outline-3">
+<h3 id="org4915075"><span class="section-number-3">2.8</span> Creating actors without a system</h3>
+<div class="outline-text-3" id="text-2-8">
 <p>
 It is still possible to create actors without a system. This is how you do it:
 </p>
@@ -484,8 +506,8 @@ You have to take care yourself about stopping the actor and freeing resources.
 </div>
 </div>
 
-<div id="outline-container-org37d02ff" class="outline-2">
-<h2 id="org37d02ff"><span class="section-number-2">3</span> Agents</h2>
+<div id="outline-container-org4a9ea32" class="outline-2">
+<h2 id="org4a9ea32"><span class="section-number-2">3</span> Agents</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 TODO
@@ -493,8 +515,8 @@ TODO
 </div>
 </div>
 
-<div id="outline-container-org8f0c688" class="outline-2">
-<h2 id="org8f0c688"><span class="section-number-2">4</span> Router</h2>
+<div id="outline-container-org12b1351" class="outline-2">
+<h2 id="org12b1351"><span class="section-number-2">4</span> Router</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 A <code>Router</code> is a facade over a set of actors. Routers are either created with a set of actors using the default constructor <code>router:make-router</code> or actors can be added later.

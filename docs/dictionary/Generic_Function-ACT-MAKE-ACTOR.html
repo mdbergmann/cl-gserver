@@ -84,12 +84,22 @@
     <p>
         Default constructor of an `actor'.
 The `receive' parameter is a function that should take 3 parameters.
-That is the actor instance itself, the message and the current state of the actor.
-The `receive' can then decide how to handle the message.
+That is 1. the actor `instance' itself, 2. the `message' and 3. the `current-state' of the actor.
+    </p>
+    <p>
+        The `receive' can then decide how to handle the message.
 In any case it has to return a `cons' of message to be sent back to caller (`car'), if applicable.
 And the new state of the actor.
 I.e.: `(cons &lt;my-response&gt; &lt;my-new-state&gt;)'
-If the operation was an `ask' or `async-ask' then the `car' part of the `cons' will be sent back to the caller.
-In case of a `tell' operation there will be no response and the `car' of the `cons' is ignored.
+    </p>
+    <p>
+        If the operation was an `ask' or `async-ask' then the `car' part of the `cons' will be sent back to the caller.
+In case of a `tell' operation there will be no response and the `car' of the `cons' is ignored,
+if there is no sender. If there is a sender defined, then the `car' of the `cons' is sent to the sender.
+It is possible to specify `:no-reply' in this case which has the effect that this result is _not_ sent to the sender even if one exists. This is for the case that the user wants to handle the state and the any notifications to a sender himself. It is useful when the `receive' message handler is executed in a special thread-pool, because long running operations within `receive' will block the message handling of the actor.
+    </p>
+    <p>
+        The `:no-reply' result works for `async-ask' and `tell', because also `async-ask' is based on `tell'.
+`ask' is really only useful if a synchronous result is required and should be avoided otherwise.
     </p>
 </body>

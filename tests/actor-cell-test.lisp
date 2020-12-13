@@ -188,10 +188,11 @@
     (is (null (call cut :pop)))))
 
 (test cast--store-sender
-  "Test that the 'sender' is stored and deleted in the cell for each use of `cast'."
+  "Test that the 'sender' is stored and deleted in `*sender*' for each use of `cast'."
   (with-fixture cell-fixture (nil
                               (lambda (self msg state)
-                                (assert (not (null (act-cell:sender self))))
+                                (assert (not (null act-cell:*sender*)))
+                                (assert (not (eq self act-cell:*sender*)))
                                 (case msg
                                   (:ping (cons :pong state))))
                               nil

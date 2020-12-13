@@ -70,7 +70,7 @@ This creates a root actor on the ~*system*~. Notice that the actor is not assign
 2. =msg= - the received message of when this 'behavior function is called
 3. =state= - the current state of the actor
 
-The return value of the 'behavior' function should also be familiar. It is the =cons= with =car= being sent back to sender (in case of ask/async-ask) and =cdr= that is set as the new current state of the actor.
+The return value of the 'behavior' function should also be familiar. It is the =cons= with =car= being sent back to sender (in case of ask/async-ask) and =cdr= set as the new state of the actor.
 
 The function =actor-of= still returns the actor as can be seen on the repl when this is executed. So it is of course possible to store the actor in a dynamic or lexical context. However, when the lexical context ends, the actor will still live as part of the actor context.
 
@@ -243,9 +243,12 @@ A timeout set to 2 seconds occurred. Cause:
 *** Long running operations in =receive=
 
 Be careful with doing long running computations in the =receive= function message handler, because it will block message processing.
-It is adviced to use a thord-party thread-pool or a library like /lparallel/ to do the computations with and return early from the =receive= message handler.
+It is advised to use a third-party thread-pool or a library like /lparallel/ to do the computations with and return early from the =receive= message handler.
 
-Considering the required ~cons~ return result of the =receive= function, in case a result computation is delegated to a thread-pool the =receive= function should be returned with ~(cons :no-reply <state>)~. The ~:no-reply~ in particular will instruct the actor to /not/ send a result to a sender should a sender be available (for the cases of =tell= or =async-ask=). The computation result can be sent to the sender when it is available by just doing a ~(tell <sender> <my-computation-result>)~.
+Considering the required ~cons~ return result of the =receive= function, in case a result computation is delegated to a thread-pool the =receive= function should return with ~(cons :no-reply <state>)~. The ~:no-reply~ will instruct the actor to /not/ send a result to a sender automatically should a sender be available (for the cases of =tell= or =async-ask=). The computation result can be 'awaited' for in an asynchronous manner and a response to ~*sender*~ can be sent manually by just doing a ~(tell *sender* <my-computation-result>)~. The sender of the original message is set to the dynamic variable ~*sender*~. 
+
+Due to an asynchronous callback of a computation running is a separate thread, the ~*sender*~ must be copied into a lexical environment because at the time of when the callback is executed the ~*sender*~ can have a different value.
+
 This behavior must be part of the messaging protocol that is being defined for the actors at play.
 
 *** Changing behavior

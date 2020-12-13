@@ -17,7 +17,8 @@
             "`receive' is a function that has to take 3 parameters:
 - `self': the actor instance
 - `msg': the received message
-- `state': the current state of the actor")
+- `state': the current state of the actor
+The `sender' of the message, if available, is accessible with `*sender*'.")
    (behavior :initform nil
              :documentation
              "Behavior function applied via `become' and reverted via `unbecome'

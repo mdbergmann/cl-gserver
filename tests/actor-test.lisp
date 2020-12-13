@@ -270,9 +270,9 @@
 (test allow--no-reply--response
   "Tests to allow `:no-reply' for `tell', `ask' and `async-ask'"
   (with-fixture actor-fixture ((lambda (self msg state)
-                                 (declare (ignore msg))
-                                 (if (act-cell:sender self)
-                                     (tell (act-cell:sender self) :manual-reply))
+                                 (declare (ignore self msg))
+                                 (if act-cell:*sender*
+                                     (tell act-cell:*sender* :manual-reply))
                                  (cons :no-reply state))
                                0
                                t)

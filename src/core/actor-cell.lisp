@@ -11,7 +11,7 @@
            #:name
            #:msgbox
            #:state
-           #:sender
+           #:*sender*
            ;; API
            #:handle-call
            #:handle-cast
@@ -23,6 +23,9 @@
            #:running-p))
 
 (in-package :cl-gserver.actor-cell)
+
+(defvar *sender* nil
+  "The `sender' is dynamically bound and available in `receive' function, when it is known.")
 
 (defstruct actor-cell-state (running t :type boolean))
 
@@ -40,10 +43,6 @@
     (internal-state :initform (make-actor-cell-state)
                     :documentation
                     "The internal state of the server.")
-    (sender :initform nil
-            :reader sender
-            :documentation
-            "`cast' can use a `sender' whic is stored here to be access when needed.")
     (msgbox :initform nil
             :accessor msgbox
             :documentation
@@ -165,11 +164,9 @@ If a `sender' is specified the result will be sent to the sender."
 ;; internal functions
 ;; -----------------------------------------------
 
-(defmacro with-sender (actor-cell sender &rest body)
-  `(prog2
-       (setf (slot-value ,actor-cell ',sender) ,sender)
-       ,@body
-     (setf (slot-value ,actor-cell ',sender) nil)))
+(defmacro with-sender (sender &rest body)
+  `(let ((*sender* ,sender))
+     ,@body))
 
 (defun submit-message (actor-cell message withreply-p sender time-out)
   "Submitting a message.
@@ -193,7 +190,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
            withreply-p
            time-out)
           (macroexpand
-           (with-sender actor-cell sender
+           (with-sender sender
              (process-response actor-cell
                                (handle-message actor-cell message withreply-p)
                                sender))))

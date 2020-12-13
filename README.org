@@ -1,4 +1,3 @@
-
 #+title: Actor framework featuring actors and agents
 #+author: Manfred Bergmann
 
@@ -240,6 +239,14 @@ CL-USER> (format t "~a" (cdr *))
 A timeout set to 2 seconds occurred. Cause: 
 #<BORDEAUX-THREADS:TIMEOUT #x302002FAB73D> 
 #+END_EXAMPLE
+
+*** Long running operations in =receive=
+
+Be careful with doing long running computations in the =receive= function message handler, because it will block message processing.
+It is adviced to use a thord-party thread-pool or a library like /lparallel/ to do the computations with and return early from the =receive= message handler.
+
+Considering the required ~cons~ return result of the =receive= function, in case a result computation is delegated to a thread-pool the =receive= function should be returned with ~(cons :no-reply <state>)~. The ~:no-reply~ in particular will instruct the actor to /not/ send a result to a sender should a sender be available (for the cases of =tell= or =async-ask=). The computation result can be sent to the sender when it is available by just doing a ~(tell <sender> <my-computation-result>)~.
+This behavior must be part of the messaging protocol that is being defined for the actors at play.
 
 *** Changing behavior
 

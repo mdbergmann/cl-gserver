@@ -31,9 +31,9 @@ The `sender' of the message, if available, is accessible with `*sender*'.")
   (:documentation
    "This is the `actor' class.
 The `actor' does it's message handling using the `receive' function.
-There is asynchronous `tell' (no response) and synchronous `ask' and asynchronous `async-ask' (with response).
-To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask')
-the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask')."))
+There is asynchronous `tell' (no response) and synchronous `ask-s' and asynchronous `ask' (with response).
+To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask-s')
+the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask-s')."))
 
 (defmethod make-actor (receive &key name state)
   (make-instance 'actor
@@ -82,7 +82,7 @@ the `:stop' message. It will respond with `:stopped' (in case of `[async-]ask').
 (defmethod tell ((self actor) message &optional sender)
   (act-cell:cast self message sender))
 
-(defmethod ask ((self actor) message &key (time-out nil))
+(defmethod ask-s ((self actor) message &key (time-out nil))
   (act-cell:call self message :time-out time-out))
 
 (defmethod become ((self actor) new-behavior)
@@ -134,11 +134,11 @@ In any case stop the actor-cell."
                                                (act-cell:stop ,self)
                                                (cons ,msg ,state))
                                           (act-cell:stop ,self)))
-                            :name (string (gensym "Async-ask-waiter-")))))
+                            :name (string (gensym "Ask-Waiter-")))))
        (setf (act-cell:msgbox ,waiting-actor) ,msgbox)
        (act-cell::submit-message ,actor ,message nil ,waiting-actor ,time-out))))
 
-(defmethod async-ask ((self actor) message &key (time-out nil))
+(defmethod ask ((self actor) message &key (time-out nil))
   (make-future (lambda (promise-fun)
                  (log:debug "Executing future function...")
                  (let* ((context (context self))

@@ -4,7 +4,7 @@
 (shadowing-import '(mesgb:message-box/bt
                     act:actor
                     act:tell
-                    act:ask))
+                    act:ask-s))
 
 (export '(shared-dispatcher
           make-dispatcher
@@ -51,7 +51,7 @@ The strategy to choose a worker is random."))
 (defmethod dispatch ((self shared-dispatcher) dispatch-exec-fun)
   (with-slots (workers) self
     (when workers
-      (ask (nth (random (length workers)) workers) (cons :execute dispatch-exec-fun)))))
+      (ask-s (nth (random (length workers)) workers) (cons :execute dispatch-exec-fun)))))
 
 (defmethod dispatch-async ((self shared-dispatcher) dispatch-exec-fun)
   (with-slots (workers) self

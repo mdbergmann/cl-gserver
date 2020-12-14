@@ -165,7 +165,7 @@
       (time (setf ask-result
                   (every (lambda (x) (string= "reply: test" x))
                          (mapcar (lambda (actor)
-                                   (act:ask actor "test"))
+                                   (act:ask-s actor "test"))
                                  actors))))
       (is-true ask-result))))
 

@@ -82,11 +82,18 @@
         Description:
     </h2>
     <p>
-        Sends a message to the `actor'. `ask' is synchronous and waits for a result.
+        This returns a `future'.
 Specify `timeout' if a message is to be expected after a certain time.
 An `:handler-error' with `timeout' condition will be returned is the call timed out.
     </p>
     <p>
-        =ask= assumes, no matter if =ask= is issued from outside or inside an actor, that the response is delivered back to the caller. That's why =ask= does block the execution until the result is available. The 'receive' function handler must specify the result as the ~car~ of the ~cons~ result.
+        An `ask' is similar to a `ask-s' in that the caller gets back a result 
+but it doesn't have to actively wait for it. Instead a `future' wraps the result.
+However, the internal message handling is based on `tell'.
+How this works is that the message to the target `actor' is not 'sent' using the callers thread
+but instead an anonymous `actor' is started behind the scenes and this in fact makes tells
+the message to the target `actor'. It does sent itself along as 'sender'.
+The target `actor' tells a response back to the initial `sender'. When that happens and the anonymous `actor'
+received the response the `future' will be fulfilled with the `promise'.
     </p>
 </body>

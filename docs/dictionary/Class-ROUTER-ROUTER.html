@@ -76,7 +76,7 @@ The output represents the index of the routee to choose.
     </h2>
     <p>
         A router combines a pool of actors and implements the actor-api protocol.
-So a `tell', `ask' and `async-ask' is delegated to one of the routers routees.
+So a `tell', `ask-s' and `ask' is delegated to one of the routers routees.
 While a router implements parts of the actor protocol it doesn't implement all.
 I.e. a router cannot be `watch'ed.
 A router `strategy' defines how one of the actors is determined as the forwarding target of the message.

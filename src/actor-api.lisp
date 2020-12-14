@@ -4,8 +4,8 @@
   (:export #:make-actor
            #:actor
            #:tell
+           #:ask-s
            #:ask
-           #:async-ask
            #:become
            #:unbecome
            #:context
@@ -27,13 +27,13 @@ In any case it has to return a `cons' of message to be sent back to caller (`car
 And the new state of the actor.
 I.e.: `(cons <my-response> <my-new-state>)'
 
-If the operation was an `ask' or `async-ask' then the `car' part of the `cons' will be sent back to the caller.
+If the operation was an `ask-s' or `ask' then the `car' part of the `cons' will be sent back to the caller.
 In case of a `tell' operation there will be no response and the `car' of the `cons' is ignored,
 if there is no sender. If there is a sender defined, then the `car' of the `cons' is sent to the sender.
 It is possible to specify `:no-reply' in this case which has the effect that this result is _not_ sent to the sender even if one exists. This is for the case that the user wants to handle the state and the any notifications to a sender himself. It is useful when the `receive' message handler is executed in a special thread-pool, because long running operations within `receive' will block the message handling of the actor.
 
-The `:no-reply' result works for `async-ask' and `tell', because also `async-ask' is based on `tell'.
-`ask' is really only useful if a synchronous result is required and should be avoided otherwise."))
+The `:no-reply' result works for `ask' and `tell', because also `ask' is based on `tell'.
+`ask-s' is really only useful if a synchronous result is required and should be avoided otherwise."))
 
 (defgeneric tell (actor message &optional sender)
   (:documentation
@@ -57,21 +57,21 @@ As 'sender' can be specified when =tell= is used inside of an actor. Currently t
 
 => This is a future enhancement."))
 
-(defgeneric ask (actor message &key time-out)
+(defgeneric ask-s (actor message &key time-out)
   (:documentation
-   "Sends a message to the `actor'. `ask' is synchronous and waits for a result.
+   "Sends a message to the `actor'. `ask-s' is synchronous and waits for a result.
 Specify `timeout' if a message is to be expected after a certain time.
 An `:handler-error' with `timeout' condition will be returned is the call timed out.
 
-=ask= assumes, no matter if =ask= is issued from outside or inside an actor, that the response is delivered back to the caller. That's why =ask= does block the execution until the result is available. The 'receive' function handler must specify the result as the ~car~ of the ~cons~ result."))
+=ask-s= assumes, no matter if =ask-s= is issued from outside or inside an actor, that the response is delivered back to the caller. That's why =ask-s= does block the execution until the result is available. The 'receive' function handler must specify the result as the ~car~ of the ~cons~ result."))
 
-(defgeneric async-ask (actor message &key time-out)
+(defgeneric ask (actor message &key time-out)
   (:documentation
    "This returns a `future'.
 Specify `timeout' if a message is to be expected after a certain time.
 An `:handler-error' with `timeout' condition will be returned is the call timed out.
 
-An `async-ask' is similar to a `ask' in that the caller gets back a result 
+An `ask' is similar to a `ask-s' in that the caller gets back a result 
 but it doesn't have to actively wait for it. Instead a `future' wraps the result.
 However, the internal message handling is based on `tell'.
 How this works is that the message to the target `actor' is not 'sent' using the callers thread

@@ -73,8 +73,8 @@
                   (loop :repeat 5
                         :collect (tell cut "Foo")))))))
 
-(test router--ask
-  "Tests 'ask' on the router which forwards to an actor chosen by the strategy."
+(test router--ask-s
+  "Tests 'ask-s' on the router which forwards to an actor chosen by the strategy."
   (with-mocks ()
     (answer (ac:actor-of _ create-fun) (funcall create-fun))
     
@@ -84,10 +84,10 @@
       (is (equalp (loop :repeat 5
                         :collect :no-message-handling)
                   (loop :repeat 5
-                        :collect (ask cut "Foo")))))))
+                        :collect (ask-s cut "Foo")))))))
 
-(test router--async-ask
-  "Tests 'async-ask' on the router which forwards to an actor chosen by the strategy."
+(test router--ask
+  "Tests 'ask' on the router which forwards to an actor chosen by the strategy."
   (let* ((system (asys:make-actor-system))
          (actor-creator (lambda ()
                           (act:make-actor
@@ -99,7 +99,7 @@
                                      (ac:actor-of system actor-creator)))))
       (is (every (lambda (x) (typep x 'future:future))
                  (loop :repeat 5
-                       :collect (async-ask cut "Foo"))))
+                       :collect (ask cut "Foo"))))
     (ac:shutdown system)))
 
 
@@ -109,6 +109,6 @@
   (run! 'router--provide-routees-at-contructor)
   (run! 'router--stop)
   (run! 'router--tell)
+  (run! 'router--ask-s)
   (run! 'router--ask)
-  (run! 'router--async-ask)
   )

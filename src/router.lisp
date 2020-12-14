@@ -3,8 +3,8 @@
   (:nicknames :router)
   (:import-from #:act
                 #:tell
-                #:ask
-                #:async-ask)
+                #:ask-s
+                #:ask)
   (:export #:router
            #:make-router
            #:add-routee
@@ -12,8 +12,8 @@
            #:routees
            #:strategy
            #:tell
-           #:ask
-           #:async-ask)
+           #:ask-s
+           #:ask)
   )
 
 (in-package :cl-gserver.router)
@@ -56,7 +56,7 @@ The input represents the number of routees.
 The output represents the index of the routee to choose."))
   (:documentation
    "A router combines a pool of actors and implements the actor-api protocol.
-So a `tell', `ask' and `async-ask' is delegated to one of the routers routees.
+So a `tell', `ask-s' and `ask' is delegated to one of the routers routees.
 While a router implements parts of the actor protocol it doesn't implement all.
 I.e. a router cannot be `watch'ed.
 A router `strategy' defines how one of the actors is determined as the forwarding target of the message."))
@@ -87,14 +87,14 @@ A router `strategy' defines how one of the actors is determined as the forwardin
    message
    sender))
 
-(defmethod ask ((self router) message &key time-out)
-  (ask
+(defmethod ask-s ((self router) message &key time-out)
+  (ask-s
    (elt (slot-value self 'routees) (get-strategy-index self))
    message
    :time-out time-out))
 
-(defmethod async-ask ((self router) message &key time-out)
-  (async-ask
+(defmethod ask ((self router) message &key time-out)
+  (ask
    (elt (slot-value self 'routees) (get-strategy-index self))
    message
    :time-out time-out))

@@ -299,7 +299,7 @@ The `time-out' with the 'dispatcher mailbox' assumes that the message received t
 and the handler in a reasonable amount of time, so that the effective time-out applies on the actual
 handling of the message on the dispatcher queue thread.
 
-!!! attention: the `async-ask' uses no reply (here a `dispatch-async')."
+!!! attention: the `ask' uses no reply (here a `dispatch-async')."
   (with-slots (name
                queue
                processed-messages
@@ -339,7 +339,7 @@ handling of the message on the dispatcher queue thread.
   (dispatch dispatcher dispatcher-fun))
 
 (defun dispatch/noreply (msgbox dispatcher dispatcher-fun)
-  "Used by `async-ask'."
+  "Used by `ask'."
   (declare (ignore msgbox))
   (dispatch-async dispatcher dispatcher-fun))
 

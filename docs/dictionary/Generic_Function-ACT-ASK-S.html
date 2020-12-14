@@ -3,7 +3,7 @@
         cl-gserver
         :
         Generic Function
-        async-ask
+        ask-s
     </title>
     <meta http-equiv="Content-Type"
           content="text/html"
@@ -17,7 +17,7 @@
             Generic Function
         </i>
         <strong>
-            async-ask
+            ask-s
         </strong>
     </h1>
     <h2>
@@ -32,7 +32,7 @@
     <div>
         <p>
             <pre>
-  <strong style="color: red">async-ask</strong> <i>ACTOR</i> <i>MESSAGE</i> <span style="color: blue">&KEY</span> <i>TIME-OUT</i> &rarr; <i>result</i></pre>
+  <strong style="color: red">ask-s</strong> <i>ACTOR</i> <i>MESSAGE</i> <span style="color: blue">&KEY</span> <i>TIME-OUT</i> &rarr; <i>result</i></pre>
         </p>
     </div>
     <h3>
@@ -82,18 +82,11 @@
         Description:
     </h2>
     <p>
-        This returns a `future'.
+        Sends a message to the `actor'. `ask-s' is synchronous and waits for a result.
 Specify `timeout' if a message is to be expected after a certain time.
 An `:handler-error' with `timeout' condition will be returned is the call timed out.
     </p>
     <p>
-        An `async-ask' is similar to a `ask' in that the caller gets back a result 
-but it doesn't have to actively wait for it. Instead a `future' wraps the result.
-However, the internal message handling is based on `tell'.
-How this works is that the message to the target `actor' is not 'sent' using the callers thread
-but instead an anonymous `actor' is started behind the scenes and this in fact makes tells
-the message to the target `actor'. It does sent itself along as 'sender'.
-The target `actor' tells a response back to the initial `sender'. When that happens and the anonymous `actor'
-received the response the `future' will be fulfilled with the `promise'.
+        =ask-s= assumes, no matter if =ask-s= is issued from outside or inside an actor, that the response is delivered back to the caller. That's why =ask-s= does block the execution until the result is available. The 'receive' function handler must specify the result as the ~car~ of the ~cons~ result.
     </p>
 </body>

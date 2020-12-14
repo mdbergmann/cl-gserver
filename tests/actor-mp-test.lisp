@@ -39,7 +39,7 @@
          (per-thread (/ max-loop 8)))
     (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt :max-queue-size queue-size))
     (&body)
-    (ask cut :stop))
+    (ask-s cut :stop))
   (format t "Running non-system tests...done~%")
   (format t "Running system tests...~%")
   (let* ((system (asys:make-actor-system :shared-dispatcher-workers 4))
@@ -50,7 +50,7 @@
          (per-thread (/ max-loop 8)))
     (unwind-protect
          (&body)
-    (ask cut :stop)
+    (ask-s cut :stop)
     (ac:shutdown system)))
   (format t "Running system tests...~%")
   
@@ -67,11 +67,11 @@
                    (declare (ignore x))
                    (lparallel:future
                      (dotimes (n (1+ per-thread))
-                       (ask cut :add))
+                       (ask-s cut :add))
                      (dotimes (n per-thread)
-                       (ask cut :sub))))
+                       (ask-s cut :sub))))
                  (loop repeat 8 collect "n")))
-    (is (= 8 (ask cut :get)))))
+    (is (= 8 (ask-s cut :get)))))
 
 (test counter-mp-bounded
   "Counter server - multi processors - bounded queue"
@@ -83,11 +83,11 @@
                    (declare (ignore x))
                    (lparallel:future
                      (dotimes (n (1+ per-thread))
-                       (ask cut :add))
+                       (ask-s cut :add))
                      (dotimes (n per-thread)
-                       (ask cut :sub))))
+                       (ask-s cut :sub))))
                  (loop repeat 8 collect "n")))
-    (is (= 8 (ask cut :get)))))
+    (is (= 8 (ask-s cut :get)))))
 
 (defun run-tests ()
   (time (run! 'counter-mp-unbounded))

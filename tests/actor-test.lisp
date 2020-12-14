@@ -59,10 +59,10 @@
     (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt))
     (is (not (null cut)))
     (is (eq t (tell cut "foo")))
-    (is (eq t (assert-cond (lambda () (= 1 (ask cut "get"))) 1)))
-    (is (= 5 (ask cut "bar")))
-    (is (= 5 (ask cut "get")))
-    (ask cut :stop)))
+    (is (eq t (assert-cond (lambda () (= 1 (ask-s cut "get"))) 1)))
+    (is (= 5 (ask-s cut "bar")))
+    (is (= 5 (ask-s cut "get")))
+    (ask-s cut :stop)))
 
 (test actor-of--from-existing-actor-context
   "Tests that a new 'child' actor can be created from an actor context."
@@ -149,8 +149,8 @@
         (act-cell:stop cut)
         (is (= 1 (length (invocations 'ac:notify))))))))
 
-(test single-actor--handle-async-ask
-  "Tests the async ask function."
+(test single-actor--handle-ask
+  "Tests the async ask-s function."
 
   (with-fixture actor-fixture ((lambda (self msg state)
                                  (declare (ignore self))
@@ -160,13 +160,13 @@
                                     (cons (+ (second msg) (third msg)) state))))
                                0
                                nil)
-    (let ((future (async-ask cut '(:add 0 5))))
+    (let ((future (ask cut '(:add 0 5))))
       (is (eq :not-ready (get-result future)))
       (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
       (is (= 5 (get-result future))))))
 
 
-(test single-actor--handle-async-ask-2
+(test single-actor--handle-ask-2
   "Test handle a composable asynchronous call. on-completed before completion."
 
   (with-fixture actor-fixture ((lambda (self msg state)
@@ -177,7 +177,7 @@
                                            (cons (+ (second msg) (third msg)) state))))
                                0
                                nil)
-    (let ((future (async-ask cut '(:add 0 5)))
+    (let ((future (ask cut '(:add 0 5)))
           (on-completed-result nil))
       (is (eq :not-ready (get-result future)))
       (on-completed future (lambda (result)
@@ -185,8 +185,8 @@
       (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
       (is (= 5 (get-result future))))))
 
-(test ask--shared--timeout
-  "Tests for ask timeout."
+(test ask-s--shared--timeout
+  "Tests for ask-s timeout."
   (with-fixture actor-fixture ((lambda ())
                                0
                                t)
@@ -197,14 +197,14 @@
                                     (declare (ignore self msg))
                                     (sleep 2)
                                     (cons :my-result state))))))
-           (result (ask actor "foo" :time-out 0.5)))
+           (result (ask-s actor "foo" :time-out 0.5)))
       ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
       (is (eq :handler-error (car result)))
       (is (typep (cdr result) 'utils:ask-timeout))
-      (is (eq :stopped (ask actor :stop))))))
+      (is (eq :stopped (ask-s actor :stop))))))
 
-(test ask--shared--timeout-in-dispatcher
-  "Tests for ask timeout."
+(test ask-s--shared--timeout-in-dispatcher
+  "Tests for ask-s timeout."
   (with-fixture actor-fixture ((lambda ())
                                0
                                t)
@@ -218,14 +218,14 @@
                                    (make-actor
                                     (lambda (self msg state)
                                       (declare (ignore self msg state)))))))
-             (result (ask actor "foo" :time-out 0.5)))
+             (result (ask-s actor "foo" :time-out 0.5)))
         ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
         (is (eq :handler-error (car result)))
         (is (typep (cdr result) 'utils:ask-timeout))
         (is (= 1 (length (invocations 'disp:dispatch))))))))
 
-(test async-ask--shared--timeout
-  "Tests for async-ask timeout."
+(test ask--shared--timeout
+  "Tests for ask timeout."
   (with-fixture actor-fixture ((lambda ())
                                0
                                t)
@@ -236,10 +236,23 @@
                                     (declare (ignore self msg))
                                     (sleep 2)
                                     (cons :my-result state))))))
-           (future (async-ask actor "foo" :time-out 0.5)))
+           (future (ask actor "foo" :time-out 0.5)))
       (utils:wait-cond (lambda () (complete-p future)))
       (is (eq :handler-error (car (get-result future))))
       (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
+
+(test ask-s--pinned--timeout
+  "Tests for ask-s timeout."
+  (with-fixture actor-fixture ((lambda (self msg state)
+                                 (declare (ignore self msg))
+                                 (sleep 2)
+                                 (cons :my-result state))
+                               0
+                               nil)
+    (let ((result (ask-s cut "foo" :time-out 0.5)))
+      (is (eq :handler-error (car result)))
+      (is (typep (cdr result) 'utils:ask-timeout))
+      (is (eq :stopped (ask-s cut :stop))))))
 
 (test ask--pinned--timeout
   "Tests for ask timeout."
@@ -249,26 +262,13 @@
                                  (cons :my-result state))
                                0
                                nil)
-    (let ((result (ask cut "foo" :time-out 0.5)))
-      (is (eq :handler-error (car result)))
-      (is (typep (cdr result) 'utils:ask-timeout))
-      (is (eq :stopped (ask cut :stop))))))
-
-(test async-ask--pinned--timeout
-  "Tests for async-ask timeout."
-  (with-fixture actor-fixture ((lambda (self msg state)
-                                 (declare (ignore self msg))
-                                 (sleep 2)
-                                 (cons :my-result state))
-                               0
-                               nil)
-    (let ((future (async-ask cut "foo" :time-out 0.5)))
+    (let ((future (ask cut "foo" :time-out 0.5)))
       (utils:wait-cond (lambda () (complete-p future)))
       (is (eq :handler-error (car (get-result future))))
       (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
 
 (test allow--no-reply--response
-  "Tests to allow `:no-reply' for `tell', `ask' and `async-ask'"
+  "Tests to allow `:no-reply' for `tell', `ask-s' and `ask'"
   (with-fixture actor-fixture ((lambda (self msg state)
                                  (declare (ignore self msg))
                                  (if act-cell:*sender*
@@ -277,8 +277,8 @@
                                0
                                t)
     (is-true (tell cut :foo))
-    (is (eq :no-reply (ask cut :foo)))
-    (let ((fut (async-ask cut :foo)))
+    (is (eq :no-reply (ask-s cut :foo)))
+    (let ((fut (ask cut :foo)))
       (assert-cond (lambda () (complete-p fut)) 1.0)
       (is (eq :manual-reply (get-result fut))))
   ))
@@ -295,13 +295,13 @@
                 (declare (ignore self msg))
                 (cons :behavior2 state))))  
     (with-fixture actor-fixture (receive 0 t)
-      (is (eq :receive (ask cut :some)))
+      (is (eq :receive (ask-s cut :some)))
       (become cut beh1)
-      (is (eq :behavior1 (ask cut :some)))
+      (is (eq :behavior1 (ask-s cut :some)))
       (become cut beh2)
-      (is (eq :behavior2 (ask cut :some)))
+      (is (eq :behavior2 (ask-s cut :some)))
       (unbecome cut)
-      (is (eq :receive (ask cut :some))))))
+      (is (eq :receive (ask-s cut :some))))))
 
 ;; (test with-actor-macro
 ;;   "Test the with-actor macro."
@@ -315,9 +315,9 @@
       
 ;;       (is (eq t (tell self "foo")))
 ;;       (sleep 0.1)
-;;       (is (equal 1 (ask self "get")))
-;;       (is (equal 5 (ask self "bar")))
-;;       (is (equal 5 (ask self "get")))))
+;;       (is (equal 1 (ask-s self "get")))
+;;       (is (equal 5 (ask-s self "bar")))
+;;       (is (equal 5 (ask-s self "get")))))
 
 (defun run-tests ()
   (run! 'get-actor-name-and-state)
@@ -328,13 +328,13 @@
   (run! 'watch--notify-about-stopped)
   (run! 'stop-actor--stopping-parent-stops-also-child)
   (run! 'stop-actor--notifies-actor-context-as-watcher)
-  (run! 'single-actor--handle-async-ask)
-  (run! 'single-actor--handle-async-ask-2)
+  (run! 'single-actor--handle-ask)
+  (run! 'single-actor--handle-ask-2)
+  (run! 'ask-s--shared--timeout)
+  (run! 'ask-s--shared--timeout-in-dispatcher)
   (run! 'ask--shared--timeout)
-  (run! 'ask--shared--timeout-in-dispatcher)
-  (run! 'async-ask--shared--timeout)
+  (run! 'ask-s--pinned--timeout)
   (run! 'ask--pinned--timeout)
-  (run! 'async-ask--pinned--timeout)
   (run! 'allow--no-reply--response)
   (run! 'become-and-unbecome-a-different-behavior)
   ;;(run! 'with-actor-macro)

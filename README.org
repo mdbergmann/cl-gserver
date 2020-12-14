@@ -5,11 +5,19 @@
 
 cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka.
 
-Version 1.0 of =cl-gserver= library comes with quite a few new features. One of the major new features is that an actor is not bound to it's own message dispatcher thread. Instead, when an =actor-system= is set-up, actors can use a shared pool of message dispatchers which effectively allows to create millions of actors.
+*Version 1.2 introduces a breaking change*
+
+=ask= has been renamed to =ask-s=.
+
+=async-ask= has been renamed to =ask=.
+
+The proposed default way to query for a result from another actor should be an asynchronous =ask=. =ask-s= (synchronous) is of course still possible. 
+
+*Version 1.0* of =cl-gserver= library comes with quite a few new features. One of the major new features is that an actor is not bound to it's own message dispatcher thread. Instead, when an =actor-system= is set-up, actors can use a shared pool of message dispatchers which effectively allows to create millions of actors.
 
 It is now possible to create actor hierarchies. An actor can have child actors. An actor now can also 'watch' another actor to get notified about it's termination.
 
-It is also possible to specify timeouts for the =ask= and =async-ask= functionality.
+It is also possible to specify timeouts for the =ask-s= and =ask= functionality.
 
 This new version is closer to Akka (the actor model framework on the JVM) than to GenServer on Erlang. This is because Common Lisp from a runtime perspective is closer to JVM than to Erlang/OTP. Threads in Common Lisp are heavy weight OS threads rather than user-space low weight 'Erlang' threads (I'd like to avoid 'green threads', because threads in Erlang are not really green threads). While on Erlang it is easily possible to spawn millions of processes/threads and so each actor (GenServer) has its own process, this model is not possible when the threads are OS threads, because of OS resource limits.
 This is the main reason for working with the message dispatcher pool instead.
@@ -70,7 +78,7 @@ This creates a root actor on the ~*system*~. Notice that the actor is not assign
 2. =msg= - the received message of when this 'behavior function is called
 3. =state= - the current state of the actor
 
-The return value of the 'behavior' function should also be familiar. It is the =cons= with =car= being sent back to sender (in case of ask/async-ask) and =cdr= set as the new state of the actor.
+The return value of the 'behavior' function should also be familiar. It is the =cons= with =car= being sent back to sender (in case of ask/ask) and =cdr= set as the new state of the actor.
 
 The function =actor-of= still returns the actor as can be seen on the repl when this is executed. So it is of course possible to store the actor in a dynamic or lexical context. However, when the lexical context ends, the actor will still live as part of the actor context.
 
@@ -118,7 +126,7 @@ If actors are not directly stored in a dynamic or lexical context they can still
 
 This function only does a simple flat search. The functionality of looking up an actor in the system generally will be expanded upon.
 
-*** tell, ask and async-ask
+*** tell, ask-s and ask
 
 Let's send some messages.
 
@@ -151,28 +159,28 @@ Hello Hello-child Foo
 
 This sends "Foo" to ~*child-answerer*~, but ~*child-answerer*~ sends the response to ~*answerer*~. So we see outputs of both actors.
 
-**** ask
+**** ask-s
 
-=ask= blocks until the message was processed by the actor. This call returns the ~car~ part of the ~cons~ return of the behavior function.
-Insofar an =ask= call is more resource intensive than just a =tell=.
+=ask-s= blocks until the message was processed by the actor. This call returns the ~car~ part of the ~cons~ return of the behavior function.
+Insofar an =ask-s= call is more resource intensive than just a =tell=.
 
 #+BEGIN_SRC lisp
-(act:ask *answerer* "Bar")
+(act:ask-s *answerer* "Bar")
 #+END_SRC
 
 Will respond with: 'Hello Bar'
 
-**** async-ask
+**** ask
 
-=async-ask= combines both =ask= and =tell=. From =ask= it 'inherits' returning a result, even though it's a future result.
+=ask= combines both =ask-s= and =tell=. From =ask-s= it 'inherits' returning a result, even though it's a future result.
 Internally it is implemented using =tell=. In order to wait for a result a temporary actor is spawned that waits until it receives the result from the actor where the message was sent to. With this received result the future is fulfilled.
-So =async-ask= is async, it returns immediately with a =future=. That =future= can be queried until it is fulfilled. Better is though to setup an ~on-completed~ handler function on it.
+So =ask= is async, it returns immediately with a =future=. That =future= can be queried until it is fulfilled. Better is though to setup an ~on-completed~ handler function on it.
 
 So we can do:
 
 #+BEGIN_SRC lisp
 (future:on-completed
-          (act:async-ask *answerer* "Buzz")
+          (act:ask *answerer* "Buzz")
           (lambda (result)
             (format t "Received result: ~a~%" result)))
 #+END_SRC
@@ -180,7 +188,7 @@ So we can do:
 Well, one step at a time:
 
 #+BEGIN_SRC lisp
-(act:async-ask *answerer* "Buzz")
+(act:ask *answerer* "Buzz")
 #+END_SRC
 
 Returns with:
@@ -207,9 +215,9 @@ Hello Buzz
 Received result: Hello Buzz
 #+END_EXAMPLE
 
-*** ask and async-ask with timeout
+*** ask-s and ask with timeout
 
-A timeout (in seconds) can be specified for both =ask= and =async-ask= and is done like so:
+A timeout (in seconds) can be specified for both =ask-s= and =ask= and is done like so:
 
 To demonstrate this we could setup an example 'sleeper' actor:
 
@@ -220,17 +228,17 @@ To demonstrate this we could setup an example 'sleeper' actor:
                              (sleep 5)))))
 #+END_SRC
 
-If we store this to ~*sleeper*~ and do the following, the =ask= will return a =handler-error= with an =ask-timeout= condition.
+If we store this to ~*sleeper*~ and do the following, the =ask-s= will return a =handler-error= with an =ask-timeout= condition.
 
 #+BEGIN_SRC lisp
-(act:ask *sleeper* "Foo" :time-out 2)
+(act:ask-s *sleeper* "Foo" :time-out 2)
 #+END_SRC
 
 #+BEGIN_EXAMPLE
 (:HANDLER-ERROR . #<CL-GSERVER.UTILS:ASK-TIMEOUT #x30200319F97D>)
 #+END_EXAMPLE
 
-This works similar with the =async-ask= only that the future will be fulfilled with the =handler-error= ~cons~.
+This works similar with the =ask= only that the future will be fulfilled with the =handler-error= ~cons~.
 
 To get a readable error message of the condition we can do:
 
@@ -245,7 +253,7 @@ A timeout set to 2 seconds occurred. Cause:
 Be careful with doing long running computations in the =receive= function message handler, because it will block message processing.
 It is advised to use a third-party thread-pool or a library like /lparallel/ to do the computations with and return early from the =receive= message handler.
 
-Considering the required ~cons~ return result of the =receive= function, in case a result computation is delegated to a thread-pool the =receive= function should return with ~(cons :no-reply <state>)~. The ~:no-reply~ will instruct the actor to /not/ send a result to a sender automatically should a sender be available (for the cases of =tell= or =async-ask=). The computation result can be 'awaited' for in an asynchronous manner and a response to ~*sender*~ can be sent manually by just doing a ~(tell *sender* <my-computation-result>)~. The sender of the original message is set to the dynamic variable ~*sender*~. 
+Considering the required ~cons~ return result of the =receive= function, in case a result computation is delegated to a thread-pool the =receive= function should return with ~(cons :no-reply <state>)~. The ~:no-reply~ will instruct the actor to /not/ send a result to a sender automatically should a sender be available (for the cases of =tell= or =ask=). The computation result can be 'awaited' for in an asynchronous manner and a response to ~*sender*~ can be sent manually by just doing a ~(tell *sender* <my-computation-result>)~. The sender of the original message is set to the dynamic variable ~*sender*~. 
 
 Due to an asynchronous callback of a computation running is a separate thread, the ~*sender*~ must be copied into a lexical environment because at the time of when the callback is executed the ~*sender*~ can have a different value.
 
@@ -264,7 +272,7 @@ The default behavior of the actor is given on actor construction using the defau
 
 During the lifetime of an actor the behavior can be changed using ~become~.
 
-So we remember the ~*answerer*~ which responds with 'Hello Foo' when we send ~(act:ask *answerer* "Foo")~. We can now change the behavior with:
+So we remember the ~*answerer*~ which responds with 'Hello Foo' when we send ~(act:ask-s *answerer* "Foo")~. We can now change the behavior with:
 
 #+BEGIN_SRC lisp
 (act:become *answerer* 
@@ -272,7 +280,7 @@ So we remember the ~*answerer*~ which responds with 'Hello Foo' when we send ~(a
               (cons (format nil "my new behavior for: ~a" msg) state)))
 #+END_SRC
 
-When we now send ~(act:ask *answerer* "Foo")~ we will get the response: 'my new behavior for: Foo'.
+When we now send ~(act:ask-s *answerer* "Foo")~ we will get the response: 'my new behavior for: Foo'.
 
 *Reverting =become= / =unbecome=*
 
@@ -302,7 +310,7 @@ TODO
 
 A =Router= is a facade over a set of actors. Routers are either created with a set of actors using the default constructor ~router:make-router~ or actors can be added later.
 
-Routers implement part of the actor protocol, so it allows to use =tell=, =ask= or =async-ask= which it forwards to a 'routee' (one of the actors of a router) by passing all of the given parameters. The routee is chosen by applying a =strategy=. By the built-in default strategy a routee is chosen randomly.
+Routers implement part of the actor protocol, so it allows to use =tell=, =ask-s= or =ask= which it forwards to a 'routee' (one of the actors of a router) by passing all of the given parameters. The routee is chosen by applying a =strategy=. By the built-in default strategy a routee is chosen randomly.
 
 The =strategy= can be configured when creating a router using the constructors =&key= parameter ~:strategy~. The =strategy= is just a function that takes the number of routees and returns a routee index to be chosen for the next operation.
 
@@ -321,18 +329,18 @@ Hardware specs:
 
 The benchmark was created by having 8 threads throwing each 125k (1m alltogether) messages at 1 actor.
 The timing was taken for when the actor did finish processing those 1m messages.
-The messages were sent by either all =tell=, =ask=, or =async-ask= to an actor whose message-box worked using a single thread (=:pinned=) or a dispatched message queue (=:shared= / =dispatched=) with 8 workers.
+The messages were sent by either all =tell=, =ask-s=, or =ask= to an actor whose message-box worked using a single thread (=:pinned=) or a dispatched message queue (=:shared= / =dispatched=) with 8 workers.
 
 Of course a =tell= is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow.
 
 *SBCL (v2.0.10)*
 
-Even though SBCL is by far the fastest one with =tell= on both =:pinned= and =dispatched=, it had massive problems on =dispatched - ask= where I had to lower the number of messages to 200k alltogether. Beyond that value SBCL didn't get it worked out.
+Even though SBCL is by far the fastest one with =tell= on both =:pinned= and =dispatched=, it had massive problems on =dispatched - ask-s= where I had to lower the number of messages to 200k alltogether. Beyond that value SBCL didn't get it worked out.
 
 *CCL (v1.12)*
 
-CCL is on acceptable average speed. The problems CCL had was heap exhaustion for both the =async-ask= tasks where the number of messages had to be reduced to 80k. Which is not a lot. Beyond this value the runtime would crash.
-However, CCL for some reason had no problems where SBCL was struggling with the =dispatched - ask=.
+CCL is on acceptable average speed. The problems CCL had was heap exhaustion for both the =ask= tasks where the number of messages had to be reduced to 80k. Which is not a lot. Beyond this value the runtime would crash.
+However, CCL for some reason had no problems where SBCL was struggling with the =dispatched - ask-s=.
 
 *ABCL (1.8)*
 

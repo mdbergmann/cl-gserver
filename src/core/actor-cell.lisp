@@ -68,7 +68,7 @@ To stop an `actor' message handling and you can send the `:stop' message
 either via `call' (which will respond with `:stopped') or `cast'.
 This is to cleanup thread resources when the Gserver is not needed anymore.
 
-Note: the `actor-cell' uses `call' and `cast' functions which translate to `ask' and `tell' on the `actor'."))
+Note: the `actor-cell' uses `call' and `cast' functions which translate to `ask-s' and `tell' on the `actor'."))
 
 (defmethod print-object ((obj actor-cell) stream)
   (print-unreadable-object (obj stream :type t)
@@ -195,7 +195,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
                                (handle-message actor-cell message withreply-p)
                                sender))))
     (utils:ask-timeout (c)
-      (log:warn "~a: ask timeout: ~a" (name actor-cell) c)
+      (log:warn "~a: ask-s timeout: ~a" (name actor-cell) c)
       (process-response actor-cell
                         (cons :handler-error c)
                         sender))))

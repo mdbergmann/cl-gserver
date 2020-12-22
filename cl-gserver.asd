@@ -52,7 +52,8 @@
                  (:file "fcomputation-test")
                  (:file "dispatcher-test")
                  (:file "actor-system-test")
-                 (:file "actor-tree-test"))))
+                 (:file "actor-tree-test")
+                 (:file "spawn-in-receive-test"))))
   :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run!
                                         (uiop:find-symbol* '#:test-suite
@@ -91,5 +92,13 @@ OK - verify system shutdown
 OK - add 'pre-start' handler instead of 'pre-start'
 OK - see how to mingle in a 'pinned' dispatcher which uses the 'bt' based message box.
 OK - put all '-api' packages first in asd
+
+ (defmacro with-sym-find ()
+       (let ((sym (gensym)))
+         `(do-symbols (,sym)
+            (if (and (boundp ,sym) (typep (symbol-value ,sym) 'act:actor))
+                (progn
+                  (format t "bound symbol that is actor: ~a~%" ,sym))))))
+
 |#
 

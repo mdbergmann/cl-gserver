@@ -80,7 +80,7 @@ This creates a root actor on the ~*system*~. Notice that the actor is not assign
 2. =msg= - the received message of when this 'behavior function is called
 3. =state= - the current state of the actor
 
-The return value of the 'behavior' function should also be familiar. It is the =cons= with =car= being sent back to sender (in case of ask/ask) and =cdr= set as the new state of the actor.
+The return value of the 'behavior' function should also be familiar. It is the =cons= with =car= being sent back to sender (in case of ask/ask-s) and =cdr= set as the new state of the actor.
 
 The function =actor-of= still returns the actor as can be seen on the repl when this is executed. So it is of course possible to store the actor in a dynamic or lexical context. However, when the lexical context ends, the actor will still live as part of the actor context.
 

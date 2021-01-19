@@ -1,9 +1,9 @@
 <head>
     <title>
-        cl-gserver
+        HE&Lambda;P Untitled Documentation
         :
         FUNCTION
-        agent-get
+        agent-stop
     </title>
     <meta http-equiv="Content-Type"
           content="text/html"
@@ -17,7 +17,7 @@
             Function
         </i>
         <strong>
-            agent-get
+            agent-stop
         </strong>
     </h1>
     <h2>
@@ -32,7 +32,7 @@
     <div>
         <p>
             <pre>
-  <strong style="color: red">agent-get</strong> <i>AGENT</i> <i>GET-FUN</i> &rarr; <i>result</i></pre>
+  <strong style="color: red">agent-stop</strong> <i>AGENT</i> &rarr; <i>result</i></pre>
         </p>
     </div>
     <h3>
@@ -52,16 +52,6 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    GET-FUN
-                </code>
-            </i>
-             :
-            a
-            T
-        </li>
-        <li style="list-style-type: none">
-            <i>
-                <code>
                     result
                 </code>
             </i>
@@ -72,11 +62,6 @@
         Description:
     </h2>
     <p>
-        Gets the current state of the `agent'.
-`get-fun' must accept one parameter. That is the current-state of the `agent'.
-To return the current state `get-fun' may be just the `identity' function.
-Beware that this function does directly access the state of the agent for performance reasons.
-It does not go through message processing.
-See `agent-test' for examples.
+        Stops the message handling of the agent.
     </p>
 </body>

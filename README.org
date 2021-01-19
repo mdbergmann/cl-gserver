@@ -5,6 +5,8 @@
 
 cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka.
 
+*Version 1.3 adds: agents can be created in actor-system*
+
 *Version 1.2 introduces a breaking change*
 
 =ask= has been renamed to =ask-s=.
@@ -303,8 +305,75 @@ It is still possible to create actors without a system. This is how you do it:
 You have to take care yourself about stopping the actor and freeing resources.
 
 ** Agents
+    
+An Agent is a specialized Actor. It is meant primarily for maintaining state and comes with some conveniences to do that.
+    
+To use an Agent import ~cl-gserver.agent~ package.
 
-TODO
+There is no need to subclass an Agent. Rather create a facade to customermize an agent. See below.
+
+An Agent provides three functions to use it.
+
+- ~make-agent~ creates a new agent
+- ~agent-get~ retrieves the current state of the agent. This directly delivers the state of the agent for performance reasons. There is no message handling involved.
+- ~agent-update~ updates the state of the agent
+
+All three take a lambda.  
+The lambda for ~make-agent~ does not take a parameter. It should return the initial state of the agent.  
+~agent-get~ and ~agent-update~ both take a lambda that must support one parameter. This parameter represents the current state of the agent.
+
+Let's make a simple example:
+
+First create an agent with an initial state of ~0~.
+
+#+BEGIN_SRC lisp
+(defparameter *my-agent* (make-agent (lambda () 0)))
+#+END_SRC
+
+Now update the state several times (~agent-update~ is asynchronous and returns ~t~ immediately):
+
+#+BEGIN_SRC lisp
+(agent-update *my-agent* (lambda (state) (1+ state)))
+#+END_SRC
+
+Finally get the state:
+
+#+BEGIN_SRC lisp
+(agent-get *my-agent* #'identity)
+#+END_SRC
+
+This ~agent-get~ just uses the ~identity~ function to return the state as is.
+
+So this simple agent represents a counter.
+
+It is important to note that the retrieves state, i.e. with ~identity~ should not be modified outside the agent.
+
+*** Using an agent within an actor-system
+
+     The ~make-agent~ constructor function allows to provides an optional ~system~ argument that, when given, makes the constructor create the agent within the given actor-system. This implies that the systems shared messages dispatcher is used for the agent and no separate thread is created for the agents message box.
+
+     It also implies that the agent is destroyed then the actor-system is destroyed.
+
+     However, while actors can create hierarchies, agents can not. Also the API for creating agents in systems is different to actors. This is to make explicit that agents are treated slightly differently than actors even though under the hood agents are actors.
+
+*** Wrapping an agent
+
+While you can use the agent as in the example above it is usually advised to wrap an agent behind a more simple facade that doesn't work with lambdas.
+
+For example could a facade for the counter above look like this:
+
+#+BEGIN_SRC lisp
+(defvar *counter-agent* nil)
+
+(defun init-agent (initial-value)
+  (setf *counter-agent* (make-agent (lambda () initial-value))))
+
+(defun increment () (agent-update *counter-agent* #'1+))
+(defun decrement () (agent-update *counter-agent* #'1-))
+(defun counter-value () (agent-get *counter-agent* #'identity))
+#+END_SRC
+
+Alternatively, one can wrap an agent inside a class and provide methods for simplified access to it.
 
 ** Router
 

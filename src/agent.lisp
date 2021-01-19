@@ -1,5 +1,6 @@
 (defpackage :cl-gserver.agent
   (:use :cl :cl-gserver.actor)
+  (:nicknames :agt)
   (:import-from #:cl-gserver.actor-cell
                 #:running-p
                 #:state
@@ -35,14 +36,20 @@ This rarely (if at all) needs to change because the agent is very specific."
                  current-state
                  (funcall (cdr message) current-state)))))))
 
-(defun make-agent (state-fun)
+(defun make-agent (state-fun &optional system)
   "Makes a new `agent' instance.
-`state-fun' is a function that takes no parameter and provides the initial state of the `agent' as return value."
+`state-fun' is a function that takes no parameter and provides the initial state of the `agent' as return value.
+
+Optionally an `actor-system' can be specified. If specified the agent will be registered in the `system' and destroyed with it should the actor-system be destroyed. In addition the agent will use the systems shared message dispatcher and will _not_ create it's own."
   (let* ((state (funcall state-fun))
-         (agent (make-instance 'agent :state state
-                                      :name (string (gensym "agent-"))
-                                      :receive #'receive)))
-    (setf (msgbox agent) (make-instance 'message-box/bt))
+         (creator-fun (lambda () (make-instance 'agent :state state
+                                                  :name (string (gensym "agent-"))
+                                                  :receive #'receive)))
+         (agent (if system
+                    (ac:actor-of system creator-fun)
+                    (funcall creator-fun))))
+    (unless system
+      (setf (msgbox agent) (make-instance 'message-box/bt)))
     agent))
 
 (defun agent-get (agent get-fun)

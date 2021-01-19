@@ -1,9 +1,9 @@
 <head>
     <title>
-        cl-gserver
+        HE&Lambda;P Untitled Documentation
         :
         FUNCTION
-        receive
+        make-agent
     </title>
     <meta http-equiv="Content-Type"
           content="text/html"
@@ -13,11 +13,11 @@
 <body>
     <h1>
         <i>
-            Internal
+
             Function
         </i>
         <strong>
-            receive
+            make-agent
         </strong>
     </h1>
     <h2>
@@ -32,7 +32,7 @@
     <div>
         <p>
             <pre>
-  <strong style="color: red">receive</strong> <i>SELF</i> <i>MESSAGE</i> <i>CURRENT-STATE</i> &rarr; <i>result</i></pre>
+  <strong style="color: red">make-agent</strong> <i>STATE-FUN</i> <span style="color: blue">&OPTIONAL</span> <i>&OPTIONAL</i> <i>SYSTEM</i> &rarr; <i>result</i></pre>
         </p>
     </div>
     <h3>
@@ -42,7 +42,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    SELF
+                    STATE-FUN
                 </code>
             </i>
              :
@@ -52,7 +52,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    MESSAGE
+                    &OPTIONAL
                 </code>
             </i>
              :
@@ -62,7 +62,7 @@
         <li style="list-style-type: none">
             <i>
                 <code>
-                    CURRENT-STATE
+                    SYSTEM
                 </code>
             </i>
              :
@@ -82,7 +82,10 @@
         Description:
     </h2>
     <p>
-        This is the agents actor receive function implementation.
-This rarely (if at all) needs to change because the agent is very specific.
+        Makes a new `agent' instance.
+`state-fun' is a function that takes no parameter and provides the initial state of the `agent' as return value.
+    </p>
+    <p>
+        Optionally an `actor-system' can be specified. If specified the agent will be registered in the `system' and destroyed with it should the actor-system be destroyed. In addition the agent will use the systems shared message dispatcher and will _not_ create it's own.
     </p>
 </body>

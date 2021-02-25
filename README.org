@@ -5,6 +5,8 @@
 
 cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka.
 
+*Version 1.3.1 adds: round-robin strategy for router*
+
 *Version 1.3 adds: agents can be created in actor-system*
 
 *Version 1.2 introduces a breaking change*
@@ -379,11 +381,13 @@ Alternatively, one can wrap an agent inside a class and provide methods for simp
 
 A =Router= is a facade over a set of actors. Routers are either created with a set of actors using the default constructor ~router:make-router~ or actors can be added later.
 
-Routers implement part of the actor protocol, so it allows to use =tell=, =ask-s= or =ask= which it forwards to a 'routee' (one of the actors of a router) by passing all of the given parameters. The routee is chosen by applying a =strategy=. By the built-in default strategy a routee is chosen randomly.
+Routers implement part of the actor protocol, so it allows to use =tell=, =ask-s= or =ask= which it forwards to a 'routee' (one of the actors of a router) by passing all of the given parameters. The routee is chosen by applying a =strategy=. The built-in default strategy a routee is chosen randomly.
 
 The =strategy= can be configured when creating a router using the constructors =&key= parameter ~:strategy~. The =strategy= is just a function that takes the number of routees and returns a routee index to be chosen for the next operation.
 
-Possible alternatives to the =:random= strategy is for example 'round robin'.
+Currently available strategies: =:random= and =:round-robin=.
+
+Custom strategies can be implemented.
 
 ** Benchmarks
 

@@ -52,21 +52,21 @@
                     The routees.
                 </dd>
                 <dt>
-                    STRATEGY
+                    STRATEGY-FUN
                 </dt>
                 <dd>
                     Initarg:
-                    STRATEGY
+                    STRATEGY-FUN
                 </dd>
                 <dd>
                     Initform:
-                    (GET-STRATEGY RANDOM)
+                    (GET-STRATEGY-FUN RANDOM)
                 </dd>
                 <dd>
-                    The router strategy.
+                    The router strategy function.
 The `strategy' is a function with a `fixnum' as input and a `fixnum' as output.
 The input represents the number of routees.
-The output represents the index of the routee to choose.
+The output represents the index of the routee to choose by calling the function.
                 </dd>
             </dl>
         </p>

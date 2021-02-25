@@ -137,4 +137,5 @@
   (run! 'router--ask-s)
   (run! 'router--ask)
   (run! 'router--round-robin-strategy)
+  (run! 'router--tell--with-round-robin-strategy)
   )

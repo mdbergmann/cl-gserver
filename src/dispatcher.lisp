@@ -36,7 +36,7 @@ The strategy to choose a worker is random."))
     (with-slots (router) obj
       (format stream "workers: ~a, strategy: ~a"
               (length (router:routees router))
-              (router:strategy router)))))
+              (router:strategy-fun router)))))
 
 (defmethod workers ((self shared-dispatcher))
   (with-slots (router) self

@@ -24,7 +24,7 @@
   "Creates a plain router"
   (is (not (null (make-router))))
   (is (typep (make-router) 'router))
-  (is (functionp (strategy (make-router)))))
+  (is (functionp (strategy-fun (make-router)))))
 
 (test router--add-routee
   "Tests adding routees (actors)"
@@ -102,6 +102,31 @@
                        :collect (ask cut "Foo"))))
     (ac:shutdown system)))
 
+(test router--round-robin-strategy
+  "Tests the router round-robin strategy"
+
+  (let ((rr-strategy (router::make-round-robin-strategy)))
+    (is (= 1 (funcall rr-strategy 3)))
+    (is (= 2 (funcall rr-strategy 3)))
+    (is (= 0 (funcall rr-strategy 3)))
+    (is (= 1 (funcall rr-strategy 3)))
+    (is (= 2 (funcall rr-strategy 3)))
+    (is (= 0 (funcall rr-strategy 3)))))
+
+(test router--tell--with-round-robin-strategy
+  "Tests 'tell' with round-robin strategy"
+  (with-mocks ()
+    (answer (ac:actor-of _ create-fun) (funcall create-fun))
+    
+    (let ((cut (make-router :strategy :round-robin
+                            :routees (list
+                                      (make-fake-actor)
+                                      (make-fake-actor)))))
+      (is (equalp (loop :repeat 5
+                        :collect :no-message-handling)
+                  (loop :repeat 5
+                        :collect (tell cut "Foo")))))))
+
 
 (defun run-tests ()
   (run! 'router--create)
@@ -111,4 +136,5 @@
   (run! 'router--tell)
   (run! 'router--ask-s)
   (run! 'router--ask)
+  (run! 'router--round-robin-strategy)
   )

@@ -1,8 +1,7 @@
 
 (in-package :cl-gserver.actor-system)
 
-(shadowing-import '(disp:shared-dispatcher
-                    disp:make-dispatcher
+(shadowing-import '(disp:make-dispatcher
                     disp:make-dispatcher-worker
                     ac:make-actor-context
                     ac:actor-of

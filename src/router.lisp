@@ -10,7 +10,7 @@
            #:add-routee
            #:stop
            #:routees
-           #:strategy
+           #:strategy-fun
            #:tell
            #:ask-s
            #:ask)
@@ -18,26 +18,39 @@
 
 (in-package :cl-gserver.router)
 
-(defun random-strategy (len)
+(defun make-random-strategy ()
   "The default, built-in strategy: random."
-  (random len))
+  (lambda (len) (random len)))
+
+(defun make-round-robin-strategy ()
+  "Returns a let-over-lambda that implements a round-robin strategy."
+  (let ((index 0))
+    (lambda (len)
+      (incf index)
+      (if (= len index)
+          (setf index 0))
+      index)))
 
 (defparameter *built-in-strategies*
-  (list :random #'random-strategy))
+  (list
+   :random (make-random-strategy)
+   :round-robin (make-round-robin-strategy)))
 
-(defun get-strategy (strategy)
+(defun get-strategy-fun (strategy)
   (cond
     ((eq :random strategy) (getf *built-in-strategies* strategy))
+    ((eq :round-robin strategy) (getf *built-in-strategies* strategy))
     ((functionp strategy) strategy)
     (t (error "Unknown strategy!"))))
 
 (defun make-router (&key (strategy :random) (routees nil))
   "Default constructor of router.
-Built-in strategies: `:random'.
-Specify your own strategy by providing a function that takes a `fixnum' as parameter and returns a `fixnum' that represents the index of the routee to choose.
+Built-in strategies: `:random', `:round-robin'.
+Specify your own strategy by providing a function that takes a `fixnum' as parameter 
+and returns a `fixnum' that represents the index of the routee to choose.
 Specify `routees' if you know them upfront."
   (let ((router (make-instance 'router
-                               :strategy (get-strategy strategy))))
+                               :strategy-fun (get-strategy-fun strategy))))
     (when routees
       (dolist (routee routees)
         (add-routee router routee)))
@@ -46,14 +59,14 @@ Specify `routees' if you know them upfront."
 (defclass router ()
   ((routees :initform (make-array 2 :adjustable t :fill-pointer 0)
             :documentation "The routees.")
-   (strategy :initform (get-strategy :random)
-             :initarg :strategy
-             :reader strategy
-             :documentation
-             "The router strategy.
+   (strategy-fun :initform (get-strategy-fun :random)
+                 :initarg :strategy-fun
+                 :reader strategy-fun
+                 :documentation
+                 "The router strategy function.
 The `strategy' is a function with a `fixnum' as input and a `fixnum' as output.
 The input represents the number of routees.
-The output represents the index of the routee to choose."))
+The output represents the index of the routee to choose by calling the function."))
   (:documentation
    "A router combines a pool of actors and implements the actor-api protocol.
 So a `tell', `ask-s' and `ask' is delegated to one of the routers routees.
@@ -72,8 +85,8 @@ A router `strategy' defines how one of the actors is determined as the forwardin
 
 (defun get-strategy-index (router)
   (let* ((routees (slot-value router 'routees))
-         (strategy (strategy router))
-         (actor-index (funcall strategy (length routees))))
+         (strategy-fun (strategy-fun router))
+         (actor-index (funcall strategy-fun (length routees))))
     (log:debug "Using index from strategy: ~a" actor-index)
     actor-index))
 

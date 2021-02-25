@@ -8,55 +8,54 @@
 
 (export '(shared-dispatcher
           make-dispatcher
-          make-dispatcher-worker
-          workers))
+          make-dispatcher-worker))
 
 (defun make-dispatcher (dispatcher-type &key (num-workers 1))
   "Default constructor."
   (make-instance dispatcher-type
                  :num-workers num-workers))
 
-(defclass dispatcher-base ()
-  ((workers :initform nil
-            :reader workers
-            :documentation "The workers of this dispatcher."))
+(defclass dispatcher-base () ()
   (:documentation
    "A `dispatcher' contains a pool of `actors' that operate as workers where work is dispatched to."))
-
-(defmethod print-object ((obj dispatcher-base) stream)
-  (print-unreadable-object (obj stream :type t)
-    (with-slots (workers) obj
-      (format stream "workers: ~a" (length workers)))))
-
-(defmethod initialize-instance :after ((self dispatcher-base) &key (num-workers 1))
-  (with-slots (workers) self
-    (setf workers 
-          (loop for x from 1 to num-workers
-                collect (make-dispatcher-worker x)))))
-
-(defmethod shutdown ((self dispatcher-base))
-  "Stops all workers."
-  (with-slots (workers) self
-    (mapcar (lambda (worker) (tell worker :stop)) workers)))
 
 ;; ---------------------------------
 ;; Shared dispatcher
 ;; ---------------------------------
 
-(defclass shared-dispatcher (dispatcher-base) ()
+(defclass shared-dispatcher (dispatcher-base)
+  ((router :initform (router:make-router)))
   (:documentation
    "A shared dispatcher.
 The strategy to choose a worker is random."))
 
+(defmethod initialize-instance :after ((self shared-dispatcher) &key (num-workers 1))
+  (with-slots (router) self
+    (loop :for n :from 1 :to num-workers
+          :do (router:add-routee router (make-dispatcher-worker n)))))
+
+(defmethod print-object ((obj shared-dispatcher) stream)
+  (print-unreadable-object (obj stream :type t)
+    (with-slots (router) obj
+      (format stream "workers: ~a, strategy: ~a"
+              (length (router:routees router))
+              (router:strategy router)))))
+
+(defmethod workers ((self shared-dispatcher))
+  (with-slots (router) self
+    (router:routees router)))
+
+(defmethod shutdown ((self shared-dispatcher))
+  (with-slots (router) self
+    (router:stop router)))
+
 (defmethod dispatch ((self shared-dispatcher) dispatch-exec-fun)
-  (with-slots (workers) self
-    (when workers
-      (ask-s (nth (random (length workers)) workers) (cons :execute dispatch-exec-fun)))))
+  (with-slots (router) self
+    (router:ask-s router (cons :execute dispatch-exec-fun))))
 
 (defmethod dispatch-async ((self shared-dispatcher) dispatch-exec-fun)
-  (with-slots (workers) self
-    (when workers
-      (tell (nth (random (length workers)) workers) (cons :execute dispatch-exec-fun)))))
+  (with-slots (router) self
+    (router:tell router (cons :execute dispatch-exec-fun))))
 
 
 ;; ---------------------------------

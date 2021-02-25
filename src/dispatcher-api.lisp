@@ -1,11 +1,18 @@
 (defpackage :cl-gserver.dispatcher
   (:use :cl)
   (:nicknames :disp)
-  (:export #:shutdown
+  (:export #:workers
+           #:shutdown
            #:dispatch
            #:dispatch-async))
 
 (in-package :cl-gserver.dispatcher)
+
+(defgeneric workers (dispatcher)
+  (:documentation
+   "Returns the number of workers of this dispatcher.
+But better do not touch them.
+Only use the defined interface here to talk to them."))
 
 (defgeneric shutdown (dispatcher)
   (:documentation

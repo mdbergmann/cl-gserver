@@ -100,5 +100,8 @@ OK - put all '-api' packages first in asd
                 (progn
                   (format t "bound symbol that is actor: ~a~%" ,sym))))))
 
+create helambdap docs:
+(hlp:document (asdf:find-system :cl-gserver) :only-exported t)
+
 |#
 

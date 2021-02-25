@@ -6,13 +6,12 @@
                     act:tell
                     act:ask-s))
 
-(export '(shared-dispatcher
-          make-dispatcher
+(export '(make-dispatcher
           make-dispatcher-worker))
 
-(defun make-dispatcher (dispatcher-type &key (num-workers 1))
+(defun make-dispatcher (&key (num-workers 1))
   "Default constructor."
-  (make-instance dispatcher-type
+  (make-instance 'shared-dispatcher
                  :num-workers num-workers))
 
 (defclass dispatcher-base () ()

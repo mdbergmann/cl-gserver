@@ -15,8 +15,7 @@
 (in-suite dispatcher-tests)
 
 (defun make-test-dispatcher (num-workers)
-  (make-dispatcher 'shared-dispatcher
-                   :num-workers num-workers))
+  (make-dispatcher :num-workers num-workers))
 
 (test create-dispatcher
   "Checks creating a dispatcher"

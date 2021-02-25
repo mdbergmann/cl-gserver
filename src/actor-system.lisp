@@ -47,7 +47,6 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
   (let ((system (make-instance 'actor-system)))
     (with-slots (dispatchers) system
       (setf dispatchers (list :shared (make-dispatcher
-                                       'shared-dispatcher
                                        :num-workers shared-dispatcher-workers))))
     (log:info system)
     system))

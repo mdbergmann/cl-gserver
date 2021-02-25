@@ -2,9 +2,7 @@
 (in-package :cl-gserver.dispatcher)
 
 (shadowing-import '(mesgb:message-box/bt
-                    act:actor
-                    act:tell
-                    act:ask-s))
+                    act:actor))
 
 (export '(make-dispatcher
           make-dispatcher-worker))
@@ -23,7 +21,7 @@
 ;; ---------------------------------
 
 (defclass shared-dispatcher (dispatcher-base)
-  ((router :initform (router:make-router)))
+  ((router :initform (router:make-router :strategy :random)))
   (:documentation
    "A shared dispatcher.
 The strategy to choose a worker is random."))

@@ -18,7 +18,7 @@
 
 (defun runner-bt (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
   ;; dispatchers used for the async-ask
-  #+(or sbcl abcl clasp)
+  #+(or sbcl abcl clasp lispworks7)
   (setf *per-thread* 125000)
   #+ccl
   (setf *per-thread* (if asyncask 10000 125000))
@@ -41,8 +41,8 @@
                                       (dotimes (n *per-thread*)
                                         (if withreply-p
                                             (if asyncask
-                                                (act:async-ask *actor* :foo)
-                                                (act:ask *actor* :foo))
+                                                (act:ask *actor* :foo)
+                                                (act:ask-s *actor* :foo))
                                             (act:tell *actor* :foo))))
                                     :name x))
                   (mapcar (lambda (n) (format nil "thread-~a" n))
@@ -83,8 +83,8 @@
                                       (dotimes (n *per-thread*)
                                         (if withreply-p
                                             (if asyncask
-                                                (act:async-ask *actor* :foo)
-                                                (act:ask *actor* :foo))
+                                                (act:ask *actor* :foo)
+                                                (act:ask-s *actor* :foo))
                                             (act:tell *actor* :foo))))
                                     :name x))
                   (mapcar (lambda (n) (format nil "thread-~a" n))

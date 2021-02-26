@@ -1,8 +1,6 @@
 (defpackage :cl-gserver.queue
   (:use :cl)
   (:nicknames :queue)
-  (:local-nicknames (:lparq :lparallel.cons-queue)
-                    (:speedq :cl-speedy-queue))
   (:export #:queue-unbounded
            #:queue-bounded
            #:pushq
@@ -26,16 +24,16 @@
 ;; ----------------------------------------
 
 (defclass queue-unbounded (queue-base)
-  ((queue :initform (lparq:make-cons-queue)))
+  ((queue :initform (lparallel.cons-queue:make-cons-queue)))
   (:documentation "Unbounded queue based on lparallels cons-queue."))
 
 (defmethod pushq ((self queue-unbounded) element)
   (with-slots (queue) self
-    (lparq:push-cons-queue element queue)))
+    (lparallel.cons-queue:push-cons-queue element queue)))
 
 (defmethod popq ((self queue-unbounded))
   (with-slots (queue) self
-    (lparq:pop-cons-queue queue)))
+    (lparallel.cons-queue:pop-cons-queue queue)))
 
 
 ;; ----------------------------------------
@@ -62,7 +60,7 @@
             (t (* (/ max-items 100) 95))))  ; 95%
     (log:info "Yield threshold at: " yield-threshold)
 
-    (setf queue (speedq:make-queue max-items))))
+    (setf queue (cl-speedy-queue:make-queue max-items))))
 
 (defmethod pushq ((self queue-bounded) element)
   (with-slots (queue lock cvar yield-threshold) self
@@ -70,7 +68,7 @@
     (backpressure-if-necessary-on queue yield-threshold)
 
     (bt:with-lock-held (lock)
-      (speedq:enqueue element queue)
+      (cl-speedy-queue:enqueue element queue)
       (bt:condition-notify cvar))))
     
 
@@ -88,7 +86,7 @@
               (sleep .01))))
 
 (defun get-queue-count (queue)
-  (speedq:queue-count queue))
+  (cl-speedy-queue:queue-count queue))
 
 (defmethod popq ((self queue-bounded))
   (with-slots (queue lock cvar) self
@@ -102,10 +100,10 @@
 
 (defun dequeue/no-wait (queue)
   (log:debug "Dequeue without wait...")
-  (speedq:dequeue queue))
+  (cl-speedy-queue:dequeue queue))
 
 (defun dequeue/wait (queue cvar lock)
   (log:debug "Going to sleep...")
   (bt:condition-wait cvar lock)
   (log:debug "Awoken, processing queue...")
-  (speedq:dequeue queue))
+  (cl-speedy-queue:dequeue queue))

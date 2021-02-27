@@ -17,9 +17,14 @@
 
 (in-package :cl-gserver.actor)
 
-(defgeneric make-actor (receive &key name state)
+(defgeneric make-actor (receive &key name state type)
   (:documentation
    "Default constructor of an `actor'.
+Specify a custom actor class as the `:type' key which defaults to 'actor.
+Say you have a custom actor `custom-actor' and want `make-actor' create an instance of it.
+Then specify `:type 'custom-actor' on `make-actor' function.
+If you have additional initializations to make you can do so in `initialize-instance'.
+
 The `receive' parameter is a function that should take 3 parameters.
 That is 1. the actor `instance' itself, 2. the `message' and 3. the `current-state' of the actor.
 
@@ -121,14 +126,15 @@ I.e.: when it stopped. The message being sent in this case is: `(cons :stopped a
 
 (defmacro defactor ((context
                      &optional (name nil)
-                     &key (dispatcher :shared) (state nil))
+                     &key (dispatcher :shared) (state nil) (type 'actor))
                     &body body)
   "Simple interface for creating an actor.
 `context' is either an `actor-system' or an `actor-context'.
 `name' is optional. Specify when a static name is needed.
 `:state' key can be used to initialize with a state.
 `:dispatcher' key can be used to define the message dispatcher manually.
-  Options are `:shared' (default) and `:pinned'."
+  Options are `:shared' (default) and `:pinned'.
+`:type' can specify a custom actor class. See `make-actor' for more info."
   `(ac:actor-of ,context
-                (lambda () (act:make-actor ,@body :state ,state :name ,name))
+                (lambda () (act:make-actor ,@body :state ,state :name ,name :type ',type))
                 :dispatch-type ,dispatcher))

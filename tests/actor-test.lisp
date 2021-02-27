@@ -39,6 +39,11 @@
     (is (string= "Foo" (act-cell:name cut)))
     (is (equalp '(1) (act-cell:state cut)))))
 
+(defclass custom-actor (actor) ())
+(test make-actor--custom-type
+  "Tests making an actor instance that is not the default 'actor type."
+  (is (typep (make-actor "foo" :type 'custom-actor) 'custom-actor)))
+
 (test make-actor--has-no-msgbox-and-actor-context
   "Test constructor. actor should not have msgbox and attached actor-context."
 
@@ -315,8 +320,23 @@
            (is (string= "Bar" (ask-s actor "Foo"))))
       (ac:shutdown sys))))
 
+(test defactor-macro--custom-type
+  "Tests the convenience defactor macro. Specify a custom actor type."
+  (let ((sys (asys:make-actor-system)))
+    (unwind-protect
+         (let ((actor (defactor (sys)
+                        (lambda (self msg state)
+                          (declare (ignore self))
+                          (when (string= "Foo" msg)
+                            (cons "Bar" state)))
+                        :type 'custom-actor)))
+           (is (typep actor 'custom-actor))
+           (is (string= "Bar" (ask-s actor "Foo"))))
+      (ac:shutdown sys))))
+
 (defun run-tests ()
   (run! 'get-actor-name-and-state)
+  (run! 'make-actor--custom-type)
   (run! 'make-actor--has-no-msgbox-and-actor-context)
   (run! 'make-actor--with-msgbox)
   (run! 'actor-of--from-existing-actor-context)
@@ -334,4 +354,5 @@
   (run! 'allow--no-reply--response)
   (run! 'become-and-unbecome-a-different-behavior)
   (run! 'defactor-macro)
+  (run! 'defactor-macro--custom-type)
   )

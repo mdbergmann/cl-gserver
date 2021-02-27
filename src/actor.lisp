@@ -35,8 +35,8 @@ There is asynchronous `tell' (no response) and synchronous `ask-s' and asynchron
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask-s')
 the `:stop' message. It will respond with `:stopped' (in case of `ask[-s]')."))
 
-(defmethod make-actor (receive &key name state)
-  (make-instance 'actor
+(defmethod make-actor (receive &key name state (type 'actor))
+  (make-instance type
                  :name name
                  :state state
                  :receive receive))

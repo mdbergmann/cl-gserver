@@ -32,7 +32,7 @@
     <div>
         <p>
             <pre>
-  <strong style="color: red">make-actor</strong> <i>RECEIVE</i> <span style="color: blue">&KEY</span> <i>&KEY</i> <i>NAME</i> <i>STATE</i> &rarr; <i>result</i></pre>
+  <strong style="color: red">make-actor</strong> <i>RECEIVE</i> <span style="color: blue">&KEY</span> <i>&KEY</i> <i>NAME</i> <i>STATE</i> <i>TYPE</i> &rarr; <i>result</i></pre>
         </p>
     </div>
     <h3>
@@ -82,6 +82,16 @@
         <li style="list-style-type: none">
             <i>
                 <code>
+                    TYPE
+                </code>
+            </i>
+             :
+            a
+            T
+        </li>
+        <li style="list-style-type: none">
+            <i>
+                <code>
                     result
                 </code>
             </i>
@@ -93,7 +103,13 @@
     </h2>
     <p>
         Default constructor of an `actor'.
-The `receive' parameter is a function that should take 3 parameters.
+Specify a custom actor class as the `:type' key which defaults to 'actor.
+Say you have a custom actor `custom-actor' and want `make-actor' create an instance of it.
+Then specify `:type 'custom-actor' on `make-actor' function.
+If you have additional initializations to make you can do so in `initialize-instance'.
+    </p>
+    <p>
+        The `receive' parameter is a function that should take 3 parameters.
 That is 1. the actor `instance' itself, 2. the `message' and 3. the `current-state' of the actor.
     </p>
     <p>

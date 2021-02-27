@@ -25,11 +25,15 @@
           Make sure to check the 'Dictionary' link on the top for the API documentation!
         </p>
       </div>
-<div id="outline-container-org35612df" class="outline-2">
-<h2 id="org35612df"><span class="section-number-2">1</span> Introduction</h2>
+<div id="outline-container-orga50c176" class="outline-2">
+<h2 id="orga50c176"><span class="section-number-2">1</span> Introduction</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka.
+</p>
+
+<p>
+<b>Version 1.4 adds: convenience macro for creating actor. See below for more details</b>
 </p>
 
 <p>
@@ -79,12 +83,12 @@ But let's jump right into it. I'll explain more later.
 </div>
 </div>
 
-<div id="outline-container-orgc3be503" class="outline-2">
-<h2 id="orgc3be503"><span class="section-number-2">2</span> Getting hands-on</h2>
+<div id="outline-container-orgaa4c19c" class="outline-2">
+<h2 id="orgaa4c19c"><span class="section-number-2">2</span> Getting hands-on</h2>
 <div class="outline-text-2" id="text-2">
 </div>
-<div id="outline-container-org87dc7ac" class="outline-3">
-<h3 id="org87dc7ac"><span class="section-number-3">2.1</span> Creating an actor-system</h3>
+<div id="outline-container-org6d04be8" class="outline-3">
+<h3 id="org6d04be8"><span class="section-number-3">2.1</span> Creating an actor-system</h3>
 <div class="outline-text-3" id="text-2-1">
 <p>
 To use the shared dispatcher pool we have to create an <code>actor-system</code> first.
@@ -108,8 +112,8 @@ So the <code>actor-system</code> has by default four shared message dispatcher w
 </p>
 </div>
 
-<div id="outline-container-org6ade691" class="outline-4">
-<h4 id="org6ade691"><span class="section-number-4">2.1.1</span> Shutting down the system</h4>
+<div id="outline-container-orgeb2787d" class="outline-4">
+<h4 id="orgeb2787d"><span class="section-number-4">2.1.1</span> Shutting down the system</h4>
 <div class="outline-text-4" id="text-2-1-1">
 <p>
 Shutting down an actor system may be necessary depending on how it's used. It can be done by:
@@ -127,8 +131,8 @@ This will stop all dispatcher workers and all other actors that have been spawed
 </div>
 </div>
 
-<div id="outline-container-orgda3e2a7" class="outline-3">
-<h3 id="orgda3e2a7"><span class="section-number-3">2.2</span> Creating actors</h3>
+<div id="outline-container-org27dbdfb" class="outline-3">
+<h3 id="org27dbdfb"><span class="section-number-3">2.2</span> Creating actors</h3>
 <div class="outline-text-3" id="text-2-2">
 <p>
 Actors kind of live within an <code>actor-context</code>. An <code>actor-context</code> contains a collection (of actors) and defines a Common Lisp protocol that spawns a set of generic functions.
@@ -162,16 +166,20 @@ This creates a root actor on the <code>*system*</code>. Notice that the actor is
 </p>
 
 <p>
-<code>make-actor</code> requires as main parameter a 'behavior' function which should look familiar if you know the previous version of cl-gserver. The parameters to the 'behavior' function are still the tuple of:
+<code>make-actor</code> requires as main parameter a 'receive' function which should look familiar if you know the previous version of cl-gserver. The parameters to the 'receive' function are still the tuple of:
 </p>
 <ol class="org-ol">
 <li><code>self</code> - the instance of the actor</li>
-<li><code>msg</code> - the received message of when this 'behavior function is called</li>
+<li><code>msg</code> - the received message of when this 'receive' function is called</li>
 <li><code>state</code> - the current state of the actor</li>
 </ol>
 
 <p>
-The return value of the 'behavior' function should also be familiar. It is the <code>cons</code> with <code>car</code> being sent back to sender (in case of ask/ask) and <code>cdr</code> set as the new state of the actor.
+<code>make-actor</code> also allows to specify the initial state, a name, and a custom actor type. By default a standard actor of type <code>'actor</code> is created. But you can subclass <code>'actor</code> and specify your own. <code>make-actor</code> is still the facility to create them. If you require custom initialization for the custom actor do so in specializing <code>initialize-instance</code> function.
+</p>
+
+<p>
+The return value of the 'receive' function should also be familiar. It is the <code>cons</code> with <code>car</code> being sent back to sender (in case of ask/ask-s) and <code>cdr</code> set as the new state of the actor.
 </p>
 
 <p>
@@ -207,9 +215,32 @@ This will create a new actor on the context of the parent actor. The context is 
 </p>
 </div>
 
-<div id="outline-container-org1a450ce" class="outline-4">
-<h4 id="org1a450ce"><span class="section-number-4">2.2.1</span> <code>:pinned</code> vs. <code>:shared</code></h4>
+<div id="outline-container-org1b709db" class="outline-4">
+<h4 id="org1b709db"><span class="section-number-4">2.2.1</span> Convenience macro for creating actors</h4>
 <div class="outline-text-4" id="text-2-2-1">
+<p>
+The macro <code>actor-of</code> in the <code>actor</code> package allows creating actors more easily. Internally it uses <code>ac:actor-of</code> and <code>act:make-actor</code> functions. But is removes a bit of typing. It also allows to specify either an actor-system, an actor-context or just an actor as <code>context</code> argument. The macro figures out the real context required to create the actor. Similarly as for <code>make-actor</code> it is possible to specify state, name and a custom actor type to the macro.
+</p>
+
+<p>
+Here is an example:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-lisp">(act:actor-of *system* (lambda (self msg state)
+                         (cons "Hello world" state)))
+</pre>
+</div>
+
+<p>
+It is sufficient to just specify the 'receive' lambda. The macro will add the rest.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org6973528" class="outline-4">
+<h4 id="org6973528"><span class="section-number-4">2.2.2</span> <code>:pinned</code> vs. <code>:shared</code></h4>
+<div class="outline-text-4" id="text-2-2-2">
 <p>
 By default an actor, created using <code>actor-of</code>, uses a <code>:shared</code> dispatcher type which uses the shared message dispatchers that are setup in the system. It is also possible to create actors with their own dispatcher thread, those are called <code>:pinned</code> actors. Just provide the <code>:pinned</code> value to the <code>dispatcher-type</code> key parameter.
 </p>
@@ -217,8 +248,8 @@ By default an actor, created using <code>actor-of</code>, uses a <code>:shared</
 </div>
 </div>
 
-<div id="outline-container-orgbce9a5a" class="outline-3">
-<h3 id="orgbce9a5a"><span class="section-number-3">2.3</span> Finding actors in the context</h3>
+<div id="outline-container-orge1a28fd" class="outline-3">
+<h3 id="orge1a28fd"><span class="section-number-3">2.3</span> Finding actors in the context</h3>
 <div class="outline-text-3" id="text-2-3">
 <p>
 If actors are not directly stored in a dynamic or lexical context they can still be looked up and used. The <code>actor-context</code> protocol contains a function <code>find-actors</code> which works like this:
@@ -246,16 +277,16 @@ This function only does a simple flat search. The functionality of looking up an
 </div>
 </div>
 
-<div id="outline-container-org6b65d83" class="outline-3">
-<h3 id="org6b65d83"><span class="section-number-3">2.4</span> tell, ask-s and ask</h3>
+<div id="outline-container-org458f39f" class="outline-3">
+<h3 id="org458f39f"><span class="section-number-3">2.4</span> tell, ask-s and ask</h3>
 <div class="outline-text-3" id="text-2-4">
 <p>
 Let's send some messages.
 </p>
 </div>
 
-<div id="outline-container-org95442da" class="outline-4">
-<h4 id="org95442da"><span class="section-number-4">2.4.1</span> tell</h4>
+<div id="outline-container-org5a4775f" class="outline-4">
+<h4 id="org5a4775f"><span class="section-number-4">2.4.1</span> tell</h4>
 <div class="outline-text-4" id="text-2-4-1">
 <p>
 <code>tell</code> is a fire-and-forget kind of send type. It doesn't expect a result in return.
@@ -279,8 +310,8 @@ So we see that <code>tell</code> returns immediately with <code>T</code>. But to
 </div>
 </div>
 
-<div id="outline-container-orgf4a0a2a" class="outline-4">
-<h4 id="orgf4a0a2a"><span class="section-number-4">2.4.2</span> tell with sender</h4>
+<div id="outline-container-orgc0a344a" class="outline-4">
+<h4 id="orgc0a344a"><span class="section-number-4">2.4.2</span> tell with sender</h4>
 <div class="outline-text-4" id="text-2-4-2">
 <p>
 <code>tell</code> accepts a 'sender', which has to be an actor. So we can do like this:
@@ -301,8 +332,8 @@ This sends "Foo" to <code>*child-answerer*</code>, but <code>*child-answerer*</c
 </div>
 </div>
 
-<div id="outline-container-org6989275" class="outline-4">
-<h4 id="org6989275"><span class="section-number-4">2.4.3</span> ask-s</h4>
+<div id="outline-container-orgcd586ee" class="outline-4">
+<h4 id="orgcd586ee"><span class="section-number-4">2.4.3</span> ask-s</h4>
 <div class="outline-text-4" id="text-2-4-3">
 <p>
 <code>ask-s</code> blocks until the message was processed by the actor. This call returns the <code>car</code> part of the <code>cons</code> return of the behavior function.
@@ -320,8 +351,8 @@ Will respond with: 'Hello Bar'
 </div>
 </div>
 
-<div id="outline-container-org7c7c3c0" class="outline-4">
-<h4 id="org7c7c3c0"><span class="section-number-4">2.4.4</span> ask</h4>
+<div id="outline-container-orge01d289" class="outline-4">
+<h4 id="orge01d289"><span class="section-number-4">2.4.4</span> ask</h4>
 <div class="outline-text-4" id="text-2-4-4">
 <p>
 <code>ask</code> combines both <code>ask-s</code> and <code>tell</code>. From <code>ask-s</code> it 'inherits' returning a result, even though it's a future result.
@@ -386,8 +417,8 @@ Received result: Hello Buzz
 </div>
 </div>
 
-<div id="outline-container-org3107f92" class="outline-3">
-<h3 id="org3107f92"><span class="section-number-3">2.5</span> ask-s and ask with timeout</h3>
+<div id="outline-container-orgb6bb36d" class="outline-3">
+<h3 id="orgb6bb36d"><span class="section-number-3">2.5</span> ask-s and ask with timeout</h3>
 <div class="outline-text-3" id="text-2-5">
 <p>
 A timeout (in seconds) can be specified for both <code>ask-s</code> and <code>ask</code> and is done like so:
@@ -434,8 +465,8 @@ A timeout set to 2 seconds occurred. Cause:
 </div>
 </div>
 
-<div id="outline-container-org105f3bc" class="outline-3">
-<h3 id="org105f3bc"><span class="section-number-3">2.6</span> Long running operations in <code>receive</code></h3>
+<div id="outline-container-org2818048" class="outline-3">
+<h3 id="org2818048"><span class="section-number-3">2.6</span> Long running operations in <code>receive</code></h3>
 <div class="outline-text-3" id="text-2-6">
 <p>
 Be careful with doing long running computations in the <code>receive</code> function message handler, because it will block message processing.
@@ -456,8 +487,8 @@ This behavior must be part of the messaging protocol that is being defined for t
 </div>
 </div>
 
-<div id="outline-container-org8828b64" class="outline-3">
-<h3 id="org8828b64"><span class="section-number-3">2.7</span> Changing behavior</h3>
+<div id="outline-container-org0bdee71" class="outline-3">
+<h3 id="org0bdee71"><span class="section-number-3">2.7</span> Changing behavior</h3>
 <div class="outline-text-3" id="text-2-7">
 <p>
 An actor can change behavior. The behavior is just a lambda that has to take three parameters: 
@@ -505,8 +536,8 @@ To revert back to the default behavior as defined by the <code>receive</code> fu
 </div>
 </div>
 
-<div id="outline-container-org8165a1d" class="outline-3">
-<h3 id="org8165a1d"><span class="section-number-3">2.8</span> Creating actors without a system</h3>
+<div id="outline-container-org3996c0d" class="outline-3">
+<h3 id="org3996c0d"><span class="section-number-3">2.8</span> Creating actors without a system</h3>
 <div class="outline-text-3" id="text-2-8">
 <p>
 It is still possible to create actors without a system. This is how you do it:
@@ -530,8 +561,8 @@ You have to take care yourself about stopping the actor and freeing resources.
 </div>
 </div>
 
-<div id="outline-container-org1878c49" class="outline-2">
-<h2 id="org1878c49"><span class="section-number-2">3</span> Agents</h2>
+<div id="outline-container-orgf588581" class="outline-2">
+<h2 id="orgf588581"><span class="section-number-2">3</span> Agents</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 An Agent is a specialized Actor. It is meant primarily for maintaining state and comes with some conveniences to do that.
@@ -605,8 +636,8 @@ It is important to note that the retrieves state, i.e. with <code>identity</code
 </p>
 </div>
 
-<div id="outline-container-org34660c3" class="outline-3">
-<h3 id="org34660c3"><span class="section-number-3">3.1</span> Using an agent within an actor-system</h3>
+<div id="outline-container-org694123c" class="outline-3">
+<h3 id="org694123c"><span class="section-number-3">3.1</span> Using an agent within an actor-system</h3>
 <div class="outline-text-3" id="text-3-1">
 <p>
 The <code>make-agent</code> constructor function allows to provides an optional <code>system</code> argument that, when given, makes the constructor create the agent within the given actor-system. This implies that the systems shared messages dispatcher is used for the agent and no separate thread is created for the agents message box.
@@ -622,8 +653,8 @@ However, while actors can create hierarchies, agents can not. Also the API for c
 </div>
 </div>
 
-<div id="outline-container-org6eee9a4" class="outline-3">
-<h3 id="org6eee9a4"><span class="section-number-3">3.2</span> Wrapping an agent</h3>
+<div id="outline-container-org7f7da7b" class="outline-3">
+<h3 id="org7f7da7b"><span class="section-number-3">3.2</span> Wrapping an agent</h3>
 <div class="outline-text-3" id="text-3-2">
 <p>
 While you can use the agent as in the example above it is usually advised to wrap an agent behind a more simple facade that doesn't work with lambdas.
@@ -652,8 +683,8 @@ Alternatively, one can wrap an agent inside a class and provide methods for simp
 </div>
 </div>
 
-<div id="outline-container-org5a2b582" class="outline-2">
-<h2 id="org5a2b582"><span class="section-number-2">4</span> Router</h2>
+<div id="outline-container-orgbabaad5" class="outline-2">
+<h2 id="orgbabaad5"><span class="section-number-2">4</span> Router</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 A <code>Router</code> is a facade over a set of actors. Routers are either created with a set of actors using the default constructor <code>router:make-router</code> or actors can be added later.

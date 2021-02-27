@@ -308,11 +308,11 @@
       (unbecome cut)
       (is (eq :receive (ask-s cut :some))))))
 
-(test defactor-macro
-  "Tests the convenience defactor macro"
+(test actor-of-macro
+  "Tests the convenience actor-of macro"
   (let ((sys (asys:make-actor-system)))
     (unwind-protect
-         (let ((actor (defactor (sys)
+         (let ((actor (actor-of (sys)
                         (lambda (self msg state)
                           (declare (ignore self))
                           (when (string= "Foo" msg)
@@ -320,11 +320,11 @@
            (is (string= "Bar" (ask-s actor "Foo"))))
       (ac:shutdown sys))))
 
-(test defactor-macro--custom-type
-  "Tests the convenience defactor macro. Specify a custom actor type."
+(test actor-of-macro--custom-type
+  "Tests the convenience actor-of macro. Specify a custom actor type."
   (let ((sys (asys:make-actor-system)))
     (unwind-protect
-         (let ((actor (defactor (sys)
+         (let ((actor (actor-of (sys)
                         (lambda (self msg state)
                           (declare (ignore self))
                           (when (string= "Foo" msg)
@@ -353,6 +353,6 @@
   (run! 'ask--pinned--timeout)
   (run! 'allow--no-reply--response)
   (run! 'become-and-unbecome-a-different-behavior)
-  (run! 'defactor-macro)
-  (run! 'defactor-macro--custom-type)
+  (run! 'actor-of-macro)
+  (run! 'actor-of-macro--custom-type)
   )

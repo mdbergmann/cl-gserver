@@ -2,7 +2,7 @@
   (:use :cl)
   (:nicknames :act)
   (:export #:make-actor
-           #:defactor
+           #:actor-of
            #:actor
            #:tell
            #:ask-s
@@ -124,11 +124,13 @@ I.e.: when it stopped. The message being sent in this case is: `(cons :stopped a
 ;; Convenience macro for creating actors
 ;; --------------------------------------
 
-(defmacro defactor ((context
+(defmacro actor-of ((context
                      &optional (name nil)
                      &key (dispatcher :shared) (state nil) (type 'actor))
                     &body body)
   "Simple interface for creating an actor.
+This macro is not to confuse with the actor-context function `actor-of'.
+Internally it calls `ac:actor-of'.
 `context' is either an `actor-system' or an `actor-context'.
 `name' is optional. Specify when a static name is needed.
 `:state' key can be used to initialize with a state.

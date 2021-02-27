@@ -362,4 +362,5 @@
   (run! 'allow--no-reply--response)
   (run! 'become-and-unbecome-a-different-behavior)
   (run! 'actor-of-macro)
+  (run! 'actor-of-macro--figure-context)
   )

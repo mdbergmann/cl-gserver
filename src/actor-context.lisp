@@ -79,3 +79,4 @@
 (defmethod shutdown ((self actor-context))
   (dolist (actor (all-actors self))
     (act-cell:stop actor)))
+

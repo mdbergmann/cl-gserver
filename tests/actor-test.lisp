@@ -303,21 +303,17 @@
       (unbecome cut)
       (is (eq :receive (ask-s cut :some))))))
 
-;; (test with-actor-macro
-;;   "Test the with-actor macro."
-
-;;   (with-actor
-;;       (receive
-;;        (cond
-;;          ((string= msg "foo") (cons 1 1))
-;;          ((string= msg "bar") (cons 5 5))
-;;          ((string= msg "get") (cons state state))))
-      
-;;       (is (eq t (tell self "foo")))
-;;       (sleep 0.1)
-;;       (is (equal 1 (ask-s self "get")))
-;;       (is (equal 5 (ask-s self "bar")))
-;;       (is (equal 5 (ask-s self "get")))))
+(test defactor-macro
+  "Tests the convenience defactor macro"
+  (let ((sys (asys:make-actor-system)))
+    (unwind-protect
+         (let ((actor (defactor (sys)
+                        (lambda (self msg state)
+                          (declare (ignore self))
+                          (when (string= "Foo" msg)
+                            (cons "Bar" state))))))
+           (is (string= "Bar" (ask-s actor "Foo"))))
+      (ac:shutdown sys))))
 
 (defun run-tests ()
   (run! 'get-actor-name-and-state)
@@ -337,5 +333,5 @@
   (run! 'ask--pinned--timeout)
   (run! 'allow--no-reply--response)
   (run! 'become-and-unbecome-a-different-behavior)
-  ;;(run! 'with-actor-macro)
+  (run! 'defactor-macro)
   )

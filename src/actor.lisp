@@ -163,24 +163,3 @@ In any case stop the actor-cell."
                                   (cons :handler-error
                                         (make-condition 'utils:ask-timeout :wait-time time-out
                                                                            :cause c))))))))))
-
-
-;; (defmacro with-actor (&rest body)
-;;   (format t "body: ~a~%" body)
-;;   (labels ((filter-fun (x) (equal (car x) 'receive)))
-;;     (let ((recv-form (cdr (car (fset:filter #'filter-fun body))))
-;;           (rest-body (remove-if #'filter-fun body))
-;;           (actor-sym (gensym))
-;;           (msg-sym (gensym))
-;;           (state-sym (gensym)))
-;;       `(make-actor "tmp-actor"
-;;                    :state nil
-;;                    :receive (lambda (,actor-sym ,msg-sym ,state-sym)
-;;                                   ,(let ((self actor-sym)
-;;                                          (msg msg-sym)
-;;                                          (state state-sym))
-;;                                      (car recv-form)))
-;;                    :pre-start-fun (lambda (,actor-sym ,state-sym)
-;;                                      ,(let ((self actor-sym)
-;;                                             (state state-sym))
-;;                                         (car rest-body)))))))

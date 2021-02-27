@@ -2,6 +2,7 @@
   (:use :cl)
   (:nicknames :act)
   (:export #:make-actor
+           #:defactor
            #:actor
            #:tell
            #:ask-s
@@ -113,3 +114,21 @@ I.e.: when it stopped. The message being sent in this case is: `(cons :stopped a
 (defgeneric watchers (actor)
   (:documentation
    "Returns a list of watchers of `actor'."))
+
+;; --------------------------------------
+;; Convenience macro for creating actors
+;; --------------------------------------
+
+(defmacro defactor ((context
+                     &optional (name nil)
+                     &key (dispatcher :shared) (state nil))
+                    &body body)
+  "Simple interface for creating an actor.
+`context' is either an `actor-system' or an `actor-context'.
+`name' is optional. Specify when a static name is needed.
+`:state' key can be used to initialize with a state.
+`:dispatcher' key can be used to define the message dispatcher manually.
+  Options are `:shared' (default) and `:pinned'."
+  `(ac:actor-of ,context
+                (lambda () (act:make-actor ,@body :state ,state :name ,name))
+                :dispatch-type ,dispatcher))

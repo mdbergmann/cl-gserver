@@ -118,8 +118,9 @@ This will create a new actor on the context of the parent actor. The context is 
      Here is an example:
 
 #+BEGIN_SRC lisp
-(act:actor-of *system* (lambda (self msg state)
-                         (cons "Hello world" state)))
+(act:actor-of (*system*) 
+  (lambda (self msg state)
+    (cons "Hello world" state)))
 #+END_SRC
 
 It is sufficient to just specify the 'receive' lambda. The macro will add the rest.

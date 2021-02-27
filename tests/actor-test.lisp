@@ -312,26 +312,34 @@
   "Tests the convenience actor-of macro"
   (let ((sys (asys:make-actor-system)))
     (unwind-protect
-         (let ((actor (actor-of (sys)
-                        (lambda (self msg state)
+         (let* ((receive-fun (lambda (self msg state)
                           (declare (ignore self))
                           (when (string= "Foo" msg)
-                            (cons "Bar" state))))))
-           (is (string= "Bar" (ask-s actor "Foo"))))
+                            (cons "Bar" state))))
+                (actor (actor-of (sys) receive-fun))
+                (custom-actor (actor-of (sys) receive-fun :type 'custom-actor)))
+           (is (string= "Bar" (ask-s actor "Foo")))
+           (is (string= "Bar" (ask-s custom-actor "Foo")))
+           (is (typep custom-actor 'custom-actor)))
       (ac:shutdown sys))))
 
-(test actor-of-macro--custom-type
-  "Tests the convenience actor-of macro. Specify a custom actor type."
+(test actor-of-macro--figure-context
+  "Tests to conveniently specify three types as context: asys, ac and actor"
   (let ((sys (asys:make-actor-system)))
     (unwind-protect
-         (let ((actor (actor-of (sys)
-                        (lambda (self msg state)
+         (let* ((receive-fun (lambda (self msg state)
                           (declare (ignore self))
                           (when (string= "Foo" msg)
-                            (cons "Bar" state)))
-                        :type 'custom-actor)))
-           (is (typep actor 'custom-actor))
-           (is (string= "Bar" (ask-s actor "Foo"))))
+                            (cons "Bar" state))))
+                (system-actor (actor-of (sys) receive-fun :name "foo1"))
+                (ac-actor (actor-of ((act:context system-actor)) receive-fun :name "foo2"))
+                (actor-actor (actor-of (ac-actor) receive-fun :name "foo3")))
+           (is (string= "Bar" (ask-s system-actor "Foo")))
+           (is (string= "/user/foo1" (path system-actor)))
+           (is (string= "Bar" (ask-s ac-actor "Foo")))
+           (is (string= "/user/foo1/foo2" (path ac-actor)))
+           (is (string= "Bar" (ask-s actor-actor "Foo")))
+           (is (string= "/user/foo1/foo2/foo3" (path actor-actor))))
       (ac:shutdown sys))))
 
 (defun run-tests ()
@@ -354,5 +362,4 @@
   (run! 'allow--no-reply--response)
   (run! 'become-and-unbecome-a-different-behavior)
   (run! 'actor-of-macro)
-  (run! 'actor-of-macro--custom-type)
   )

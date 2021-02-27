@@ -131,12 +131,18 @@ I.e.: when it stopped. The message being sent in this case is: `(cons :stopped a
   "Simple interface for creating an actor.
 This macro is not to confuse with the actor-context function `actor-of'.
 Internally it calls `ac:actor-of'.
-`context' is either an `actor-system' or an `actor-context'.
+`context' is either an `actor-system', an `actor-context', or an `actor' (any type of actor).
+The new actor is created in the given context.
 `name' is optional. Specify when a static name is needed.
 `:state' key can be used to initialize with a state.
 `:dispatcher' key can be used to define the message dispatcher manually.
   Options are `:shared' (default) and `:pinned'.
 `:type' can specify a custom actor class. See `make-actor' for more info."
-  `(ac:actor-of ,context
-                (lambda () (act:make-actor ,@body :state ,state :name ,name :type ',type))
-                :dispatch-type ,dispatcher))
+  (let ((unwrapped-context (gensym)))
+    `(let ((,unwrapped-context (etypecase ,context
+                                 (asys:actor-system ,context)
+                                 (ac:actor-context ,context)
+                                 (act:actor (act:context ,context)))))
+           (ac:actor-of ,unwrapped-context
+             (lambda () (act:make-actor ,@body :state ,state :name ,name :type ',type))
+             :dispatch-type ,dispatcher))))

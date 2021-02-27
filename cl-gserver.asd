@@ -66,32 +66,6 @@
 ;; (asdf:test-system "cl-gserver/tests")
 
 #|
-TODOs:
-- do error on async-wait if there are no dispatcher workers
-- check what to do with the 'waiter-actor'. should it also use 'actor-of'?
-OK - implement router
-OK - write new readme
-OK - make performance tests
-OK - fix the package problem on SBCL
-OK - make sure that actor names are unique within their context.
-OK - add 'behavior' instead of 'behavior' to actor and 'become' to switch the behavior.
-OK - stopping an actor removes it from the parent actor context
-OK - find a way to cancel the execution for async-ask on shared dispatcher
-OK - use original bt, but make wrapper for bt:with-timeout and catch different timeout conditions.
-OK - think about cancellation of dispatched jobs
-OK - async-ask timeout should be measured from within the waiting actor.
-OK - add timeouts for ask, async-ask and all cases that use those.
-OK - add watching (parent to child) which will notify of termination
-OK - shutdown of actor-context should stop actors and recursively also shutdown child acs
-OK - add 'stop' actor to the actor-context protocol.
-OK - add actor-context as composition to system (twice for 'user' and 'system') and actor
-OK - extract actor api to separate api
-OK - cleanup all the doc strings
-OK - stop 'user' actors first on shutdown
-OK - verify system shutdown
-OK - add 'pre-start' handler instead of 'pre-start'
-OK - see how to mingle in a 'pinned' dispatcher which uses the 'bt' based message box.
-OK - put all '-api' packages first in asd
 
  (defmacro with-sym-find ()
        (let ((sym (gensym)))

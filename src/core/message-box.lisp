@@ -292,7 +292,7 @@ The `dispatcher is kind of like a thread pool."))
 On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads.
 On the `dispatcher' this is not the case. The order cannot be guaranteed when messages are processed by different 
 `dispatcher' threads. However, we still guarantee a 'single-threadedness' regarding the state of the actor.
-This is archieved here by protecting the `handler-fun' executation by a lock.
+This is archieved here by protecting the `handler-fun' execution by a lock.
 
 The `time-out' with the 'dispatcher mailbox' assumes that the message received the dispatcher queue
 and the handler in a reasonable amount of time, so that the effective time-out applies on the actual

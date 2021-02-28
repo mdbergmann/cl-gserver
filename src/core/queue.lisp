@@ -4,7 +4,8 @@
   (:export #:queue-unbounded
            #:queue-bounded
            #:pushq
-           #:popq))
+           #:popq
+           #:emptyq-p))
 
 (in-package :cl-gserver.queue)
 
@@ -18,6 +19,8 @@
 (defgeneric popq (queue-base)
   (:documentation "Pops the first element. Blocks until an element arrives."))
 
+(defgeneric emptyq-p (queue-base)
+  (:documentation "Returns `T' if there is no element in the queue."))
 
 ;; ----------------------------------------
 ;; ----------- lparallel cons-queue -------
@@ -35,6 +38,9 @@
   (with-slots (queue) self
     (lparallel.cons-queue:pop-cons-queue queue)))
 
+(defmethod emptyq-p ((self queue-unbounded))
+  (with-slots (queue) self
+    (lparallel.cons-queue:cons-queue-empty-p queue)))
 
 ;; ----------------------------------------
 ;; ----------- cl-speedy-queue ------------
@@ -107,3 +113,7 @@
   (bt:condition-wait cvar lock)
   (log:debug "Awoken, processing queue...")
   (cl-speedy-queue:dequeue queue))
+
+(defmethod emptyq-p ((self queue-bounded))
+  (with-slots (queue) self
+    (cl-speedy-queue:queue-empty-p queue)))

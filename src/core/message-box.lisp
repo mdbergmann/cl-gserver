@@ -133,8 +133,8 @@ When `nil' no timer is created and this is treated as an ordinary wrapped messag
                "Flag that indicates whether the message processing should commence."))
   (:documentation
    "Bordeaux-Threads based message-box with a single thread operating on a message queue.
-This is used when the gserver is created outside of the `system'.
-There is a limit on the maximum number of gservers/actors/agents that can be created with
+This is used when the actor is created outside of the `system'.
+There is a limit on the maximum number of actors/agents that can be created with
 this kind of queue because each message-box requires exactly one thread."))
 
 (defmethod initialize-instance :after ((self message-box/bt) &key)
@@ -277,7 +277,7 @@ The `dispatcher is kind of like a thread pool."))
   (log:trace "~a: popping message..." (name msgbox))
   (let ((popped-item (popq queue)))
     (with-slots (message cancelled-p handler-fun) popped-item
-      (log:debug "~a: popping message: ~a" (name msgbox) popped-item)
+      (log:debug "~a: popped message: ~a" (name msgbox) popped-item)
       (when cancelled-p
         (log:warn "~a: item got cancelled: ~a" (name msgbox) popped-item))
       (unless cancelled-p
@@ -285,8 +285,7 @@ The `dispatcher is kind of like a thread pool."))
         (bt:acquire-lock lock t)
         (unwind-protect
              (unless cancelled-p (funcall handler-fun message))
-          (bt:release-lock lock)
-          )))))
+          (bt:release-lock lock))))))
 
 (defmethod submit ((self message-box/dp) message withreply-p time-out handler-fun)
   "Submitting a message on a multi-threaded `dispatcher' is different as submitting on a single threaded message-box.

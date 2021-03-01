@@ -57,6 +57,7 @@
                      ,@body)
        (bt:timeout (,c)
          (error ,c))
+       ;; the below is not needed anymore with SBCL 2.1. Will keep it anyway for compatibility.
        #+sbcl
        (sb-ext:timeout (,c)
          (log:warn "sb-ext:timeout, wrapping to 'expired'.")

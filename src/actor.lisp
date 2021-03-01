@@ -18,7 +18,8 @@
 - `self': the actor instance
 - `msg': the received message
 - `state': the current state of the actor
-The `sender' of the message, if available, is accessible with `*sender*'.")
+The `sender' of the message, if available, is accessible with `*sender*' from within
+the receive function or a behavior.")
    (behavior :initform nil
              :documentation
              "Behavior function applied via `become' and reverted via `unbecome'
@@ -30,7 +31,7 @@ The `sender' of the message, if available, is accessible with `*sender*'.")
              :documentation "List of watchers of this actor."))
   (:documentation
    "This is the `actor' class.
-The `actor' does it's message handling using the `receive' function.
+The `actor' does its message handling using the `receive' function.
 There is asynchronous `tell' (no response) and synchronous `ask-s' and asynchronous `ask' (with response).
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask-s')
 the `:stop' message. It will respond with `:stopped' (in case of `ask[-s]')."))

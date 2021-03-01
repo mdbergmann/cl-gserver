@@ -254,32 +254,67 @@ The queue thread has processed the message."
 (defstruct message-item/dp
   (message nil)
   (cancelled-p nil :type boolean)
-  (handler-fun nil :type function))
+  (handler-fun nil :type function)
+  (withreply-p nil :type boolean))
 
 (defclass message-box/dp (message-box-base)
   ((dispatcher :initarg :dispatcher
                :initform (error "Must be set!")
                :reader dispatcher
-               :documentation "The dispatcher from the system.")
+               :documentation
+               "The dispatcher from the system.")
+   (throughput :initarg :throughput
+               :initform 5
+               :documentation
+               "The maximum number of messages to process before moving on to the next dispatcher.
+The `throughput' slot allows the dispatcher to work on more message of the actors queue.
+This only works if the queue is not empty and if the message at hand doesn't require 
+a reply (ask-s). This we find such a message we have to handle it and return.")
    (lock :initform (bt:make-lock)))
   (:documentation
    "This message box is a message-box that uses the `system's `dispatcher'.
-This has the advantage that an almost unlimited gservers/actors/agents can be created.
-This message-box doesn't 'own' a separate thread. It uses the `dispatcher' to handle the message processing.
-The `dispatcher is kind of like a thread pool."))
+This has the advantage that an almost unlimited actors/agents can be created.
+This message-box doesn't 'own' a thread. It uses the `dispatcher' to handle the message processing.
+The `dispatcher' is kind of like a thread pool."))
 
 (defmethod initialize-instance :after ((self message-box/dp) &key)
   (when (next-method-p)
     (call-next-method)))
 
-(defun dispatcher-exec-fun (msgbox lock queue)
-  "This function is effectively executed on a dispatcher actor."
-  (log:trace "~a: popping message..." (name msgbox))
-  (let ((popped-item (popq queue)))
+(defun dispatcher-exec-fun (msgbox)
+  "This function is effectively executed on a dispatcher actor.
+It knows the message-box of the origin actor and acts on it.
+It pops the ,essage from the message-boxes queue and calls the `handler-fun' on it.
+The `handler-fun' is part of the message item.
+See `throughput' slot documentation for more info."
+  (with-slots (box-name queue) msgbox
+    (log:trace "~a: popping message..." box-name)
+    (let ((popped-item (popq queue)))
+      (if (slot-value popped-item 'withreply-p)
+          (handle-popped-item popped-item msgbox)
+          (progn
+            (handle-popped-item popped-item msgbox)
+            (loop-throughput msgbox))))))
+
+(defun loop-throughput (msgbox)
+  "Loop for `throughput' if we can."
+  (with-slots (throughput queue lock) msgbox
+    (loop :repeat throughput
+          :until (emptyq-p queue)
+          :for popped-item = (popq queue)
+          :do
+             (if (slot-value popped-item 'withreply-p)
+                 (return-from loop-throughput
+                   (handle-popped-item popped-item msgbox))
+                 (handle-popped-item popped-item msgbox)))))
+
+(defun handle-popped-item (popped-item msgbox)
+  "Handles the popped message. Means: calls the `handler-fun' on the message."
+  (with-slots (box-name lock) msgbox
     (with-slots (message cancelled-p handler-fun) popped-item
-      (log:debug "~a: popped message: ~a" (name msgbox) popped-item)
+      (log:debug "~a: popped message: ~a" box-name popped-item)
       (when cancelled-p
-        (log:warn "~a: item got cancelled: ~a" (name msgbox) popped-item))
+        (log:warn "~a: item got cancelled: ~a" box-name popped-item))
       (unless cancelled-p
         ;; protect the actor from concurrent state changes on the shared dispatcher
         (bt:acquire-lock lock t)
@@ -302,14 +337,14 @@ handling of the message on the dispatcher queue thread.
   (with-slots (name
                queue
                processed-messages
-               dispatcher
-               lock) self
+               dispatcher) self
     (incf processed-messages)
     (let ((push-item (make-message-item/dp
                       :message message
                       :cancelled-p nil
-                      :handler-fun handler-fun))
-          (dispatcher-fun (lambda () (funcall #'dispatcher-exec-fun self lock queue))))
+                      :handler-fun handler-fun
+                      :withreply-p withreply-p))
+          (dispatcher-fun (lambda () (funcall #'dispatcher-exec-fun self))))
 
       (log:info "~a: enqueuing... withreply-p: ~a, time-out: ~a, message: ~a"
                 (name self) withreply-p time-out message)

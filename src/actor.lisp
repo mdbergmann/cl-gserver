@@ -123,9 +123,11 @@ In any case stop the actor-cell."
   (alexandria:with-gensyms (self msg state msgbox waiting-actor)
     `(let ((,msgbox (if ,system
                         (make-instance 'mesgb:message-box/dp
+                                       :name (string (gensym "waiter-mb/dp-"))
                                        :dispatcher
                                        (getf (asys:dispatchers ,system) :shared))
-                        (make-instance 'mesgb:message-box/bt)))
+                        (make-instance 'mesgb:message-box/bt
+                                       :name (string (gensym "waiter-mb/bt-")))))
            (,waiting-actor (make-instance
                             'async-waitor-actor
                             :receive (lambda (,self ,msg ,state)

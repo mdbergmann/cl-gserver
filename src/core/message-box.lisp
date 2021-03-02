@@ -18,6 +18,7 @@
 
 (defclass message-box-base ()
   ((name :initform (string (gensym "mesgb-"))
+         :initarg :name
          :reader name)
    (processed-messages :initform 0)
    (queue :initform nil
@@ -264,7 +265,7 @@ The queue thread has processed the message."
                :documentation
                "The dispatcher from the system.")
    (throughput :initarg :throughput
-               :initform 5
+               :initform 2
                :documentation
                "The maximum number of messages to process before moving on to the next dispatcher.
 The `throughput' slot allows the dispatcher to work on more message of the actors queue.
@@ -289,9 +290,12 @@ The `handler-fun' is part of the message item.
 See `throughput' slot documentation for more info."
   (with-slots (box-name queue) msgbox
     (log:trace "~a: popping message..." box-name)
-    (let ((popped-item (popq queue)))
-      (if (slot-value popped-item 'withreply-p)
+    (let* ((popped-item (popq queue))
+           (withreply-p (slot-value popped-item 'withreply-p)))
+      (if withreply-p
+          ;; we have to provide a reply synchronously
           (handle-popped-item popped-item msgbox)
+          ;; we may need to return if in the processed message is a withreply-p
           (progn
             (handle-popped-item popped-item msgbox)
             (loop-throughput msgbox))))))
@@ -299,14 +303,16 @@ See `throughput' slot documentation for more info."
 (defun loop-throughput (msgbox)
   "Loop for `throughput' if we can."
   (with-slots (throughput queue lock) msgbox
-    (loop :repeat throughput
+    (loop :repeat (1- throughput)
           :until (emptyq-p queue)
-          :for popped-item = (popq queue)
           :do
-             (if (slot-value popped-item 'withreply-p)
-                 (return-from loop-throughput
-                   (handle-popped-item popped-item msgbox))
-                 (handle-popped-item popped-item msgbox)))))
+             (let* ((popped-item (popq queue))
+                    (withreply-p (slot-value popped-item 'withreply-p)))
+               (log:warn "another through put...")
+               (if withreply-p
+                   (return-from loop-throughput
+                     (handle-popped-item popped-item msgbox))
+                   (handle-popped-item popped-item msgbox))))))
 
 (defun handle-popped-item (popped-item msgbox)
   "Handles the popped message. Means: calls the `handler-fun' on the message."
@@ -327,7 +333,7 @@ See `throughput' slot documentation for more info."
 On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads.
 On the `dispatcher' this is not the case. The order cannot be guaranteed when messages are processed by different 
 `dispatcher' threads. However, we still guarantee a 'single-threadedness' regarding the state of the actor.
-This is archieved here by protecting the `handler-fun' execution by a lock.
+This is achieved here by protecting the `handler-fun' execution by a lock.
 
 The `time-out' with the 'dispatcher mailbox' assumes that the message received the dispatcher queue
 and the handler in a reasonable amount of time, so that the effective time-out applies on the actual
@@ -355,6 +361,7 @@ handling of the message on the dispatcher queue thread.
           (dispatch/noreply self dispatcher dispatcher-fun)))))
 
 (defun dispatch/reply (msgbox push-item dispatcher dispatcher-fun time-out)
+  "Used by `ask-s'"
   (if time-out
       (dispatch/reply/timeout msgbox time-out push-item dispatcher dispatcher-fun)
       (dispatch/reply/no-timeout msgbox dispatcher dispatcher-fun)))

@@ -83,23 +83,20 @@
               (declare (ignore x))
               (bt:make-thread
                (lambda ()
-                 (loop :repeat 10
+                 (loop :repeat (1+ per-thread)
                        :for async = (random 2)
                        :if (= async 1)
                          :do (ask cut :add)
                        :else
-                         :do (ask cut :add))
-                 (loop :repeat 9
+                         :do (ask-s cut :add))
+                 (loop :repeat per-thread
                        :for async = (random 2)
                        :if (= async 1)
                          :do (ask cut :sub)
                        :else
-                         :do (ask cut :sub)))))
-            (loop repeat 2 collect "n"))
-    (sleep 1)
-    (let ((fut (ask cut :get)))
-      (is (utils:assert-cond (lambda () (future:complete-p fut)) 3))
-      (is (= 2 (future:get-result fut))))))
+                         :do (ask-s cut :sub)))))
+            (loop repeat 8 collect "n"))
+    (is (utils:assert-cond (lambda () (= 8 (ask-s cut :get))) 3 0.2))))
 
 (test counter-mp-bounded
   "Counter server - multi processors - bounded queue"
@@ -118,4 +115,5 @@
 
 (defun run-tests ()
   (time (run! 'counter-mp-unbounded))
+  (time (run! 'counter-mp-unbounded--mixed))
   (time (run! 'counter-mp-bounded)))

@@ -46,20 +46,20 @@ The `:no-reply' result works for `ask' and `tell', because also `ask' is based o
    "Sends a message to the `actor'. `tell' is asynchronous. There is no result.
 If a `sender' is specified a message result of the target actor of the `tell' will be sent back to the `sender'
 
-Generally =tell= does not expect a response. But a 'sender' can be specified as optionl parameter to =tell=.
-If a 'sender' is specified, then the message handling behavior will send the ~car~ of the ~cons~ result to the specified 'sender'.
+Generally `tell' does not expect a response. But a `sender' can be specified as optionl parameter to `tell'.
+If a `sender' is specified, then the message handling behavior will send the `car' of the `cons' result to the specified `sender'.
 
-A 'sender' can also be part of the message contract.
+A `sender' can also be part of the message contract.
 
-=tell= can be used in two environments:
+`tell' can be used in two environments:
 
 1. outside an actor
 
-By default this sends a message as fire & forget. Since this is not inside an actor, no actor can be inferred as 'sender'. A 'sender' can be defined as optional parameter as part of =tell=.
+By default this sends a message as fire & forget. Since this is not inside an actor, no actor can be inferred as `sender'. A `sender' can be defined as optional parameter as part of `tell'.
 
-2. inside an actors as part of the 'receive' function
+2. inside an actors as part of the `receive' function
 
-As 'sender' can be specified when =tell= is used inside of an actor. Currently the framework doesn't automatically infer the 'sender' when no 'sender' is explicitly specified.
+As `sender' can be specified when `tell' is used inside of an actor. Currently the framework doesn't automatically infer the `sender' when no `sender' is explicitly specified.
 
 => This is a future enhancement."))
 
@@ -69,7 +69,7 @@ As 'sender' can be specified when =tell= is used inside of an actor. Currently t
 Specify `timeout' if a message is to be expected after a certain time.
 An `:handler-error' with `timeout' condition will be returned is the call timed out.
 
-=ask-s= assumes, no matter if =ask-s= is issued from outside or inside an actor, that the response is delivered back to the caller. That's why =ask-s= does block the execution until the result is available. The 'receive' function handler must specify the result as the ~car~ of the ~cons~ result."))
+`ask-s' assumes, no matter if `ask-s' is issued from outside or inside an actor, that the response is delivered back to the caller. That's why `ask-s' does block the execution until the result is available. The `receive' function handler must specify the result as the `car' of the cons result."))
 
 (defgeneric ask (actor message &key time-out)
   (:documentation

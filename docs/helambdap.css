@@ -16,7 +16,7 @@ body {
     background: #ffffff;
     font-family: Verdana, Arial, Helvetica;
     font-weight: normal;
-    font-size: 12px;
+    font-size: 13px;
     color: black;
 }
 
@@ -75,7 +75,7 @@ a:hover {
 /* P element styles. */
 p {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: #000000;
     font-weight: normal;
 }
@@ -83,7 +83,7 @@ p {
 p.navindex {
     /*
       font-family: Verdana, Arial, Helvetica;
-      font-size: 12px;
+      font-size: 13px;
       color: #000000;
       font-weight: normal;
       */
@@ -110,7 +110,7 @@ p.navindex {
     right: 5px;
     text-align: right;
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: #ffffff;
     font-weight: normal;
     word-spacing: 0px;
@@ -118,7 +118,7 @@ p.navindex {
 
 .sidebar {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: #000000;
     font-weight: normal;
     padding-left: 15px;
@@ -130,7 +130,7 @@ p.navindex {
 
 .text {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: #000000;
     font-weight: normal;
     margin-left: 5cm;
@@ -140,7 +140,7 @@ p.navindex {
 
 .label {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: #000000;
     text-align: center;
     font-style: italic;
@@ -148,7 +148,7 @@ p.navindex {
 
 .command {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: #000000;
     background: #eae8e3;
     font-weight: normal;
@@ -199,14 +199,14 @@ p.navindex {
 
 .centerblock {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: black;
     font-weight: normal;
 }
 
 .tableheader {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: white;
     font-weight: bold;
     background: #505050;
@@ -215,7 +215,7 @@ p.navindex {
 
 .tablerow1 {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: black;
     font-weight: normal;
     background: #e0e0e0;
@@ -224,7 +224,7 @@ p.navindex {
 
 .tablerow2 {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: black;
     font-weight: normal;
     background: #f0f0f0;
@@ -233,7 +233,7 @@ p.navindex {
 
 .tablerow_style {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: black;
     font-weight: normal;
     background: #f0f0f0;
@@ -262,7 +262,7 @@ p.navindex {
 /* LI element style. */
 li {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: #000000;
     font-weight: normal;
 }
@@ -293,14 +293,14 @@ h2 {
 
 h3 {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 14px;
+    font-size: 13px;
     color: #41286f;
     font-weight: bold;
 }
 
 h4 {
     font-family: Verdana, Arial, Helvetica;
-    font-size: 12px;
+    font-size: 13px;
     color: #41286f;
     font-weight: bold;
 }

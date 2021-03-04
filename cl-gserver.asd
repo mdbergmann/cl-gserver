@@ -59,6 +59,14 @@
                                         (uiop:find-symbol* '#:test-suite
                                                            '#:cl-gserver.tests))))
 
+(defsystem "cl-gserver/docs"
+  :author "Manfred Bergmann"
+  :license "AGPL"
+  :description "Documentation for cl-gserver"
+  :depends-on ("cl-gserver"
+               "mgl-pax")
+  :components ((:file "documentation")))
+
 ;; load system
 ;; (asdf:load-system "cl-gserver")
 ;;

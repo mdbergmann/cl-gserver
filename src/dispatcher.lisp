@@ -4,11 +4,10 @@
 (shadowing-import '(mesgb:message-box/bt
                     act:actor))
 
-(export '(make-dispatcher
-          make-dispatcher-worker))
-
 (defun make-dispatcher (&key (num-workers 1))
-  "Default constructor."
+  "Default constructor.
+This creates a `shared-dispatcher` with `num-workers` number of workers.
+Each worker is based on a `:pinned` actor meaning that it has it's own thread."
   (make-instance 'shared-dispatcher
                  :num-workers num-workers))
 
@@ -64,7 +63,8 @@ The strategy to choose a worker is random."))
    "Specialized `actor' used as `worker' is the message `dispatcher'."))
 
 (defun make-dispatcher-worker (num)
-  "Constructor for creating a worker."
+  "Constructor for creating a worker.
+`num` only has the purpose to give the worker a name which includes a number."
   (let ((worker (make-instance 'dispatch-worker
                                :receive #'receive
                                :name (utils:mkstr "dispatch-worker-" num))))

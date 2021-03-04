@@ -40,7 +40,7 @@
   "This is a description for the actor api."
   (act:actor class)
   (act:make-actor generic-function)
-  (actor-of pax:macro)
+  (act:actor-of pax:macro)
   (act:tell generic-function)
   (act:ask-s generic-function)
   (act:ask generic-function)

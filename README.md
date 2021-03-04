@@ -1,3 +1,5 @@
+# Actor framework featuring actors and agents
+
 ## Introduction
 
 cl-gserver is a \'message passing\' library/framework with actors

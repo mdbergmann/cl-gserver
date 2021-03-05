@@ -6,7 +6,7 @@
                     ac:make-actor-context
                     ac:actor-of
                     ac:find-actors
-                    ac:find-by-name
+                    ac:find-actor-by-name
                     ac:all-actors
                     ac:shutdown
                     ac:stop))
@@ -63,20 +63,19 @@ Allows to configure the amount of workers for the `shared-dispatcher`."
 (defun %actor-of (system create-fun dispatch-type &key (context-key :user) (queue-size 0))
   "Private API to create system actors. Context-key is either `:internal` or `:user`
 Users should use `actor-of`."
-  (ac:actor-of
-   (actor-context-for-key context-key system)
-   create-fun
-   :dispatch-type dispatch-type
-   :queue-size queue-size))
+  (ac:actor-of (actor-context-for-key context-key system)
+    create-fun
+    :dispatch-type dispatch-type
+    :queue-size queue-size))
 
 (defun %find-actors (system test-fun &key context-key)
   "Private API to find actors in both contexts the actor-system supports.
 Users should use `find-actors`."
   (ac:find-actors (actor-context-for-key context-key system) test-fun))
 
-(defun %find-by-name (system name &key context-key)
+(defun %find-actor-by-name (system name &key context-key)
   "Private API to find an actor by name in the specified context."
-  (ac:find-by-name (actor-context-for-key context-key system) name))
+  (ac:find-actor-by-name (actor-context-for-key context-key system) name))
 
 (defun %all-actors (system context-key)
   (ac:all-actors (actor-context-for-key context-key system)))
@@ -91,8 +90,8 @@ Users should use `find-actors`."
 (defmethod find-actors ((self actor-system) test-fun)
   (%find-actors self test-fun :context-key :user))
 
-(defmethod find-by-name ((self actor-system) name)
-  (%find-by-name self name :context-key :user))
+(defmethod find-actor-by-name ((self actor-system) name)
+  (%find-actor-by-name self name :context-key :user))
 
 (defmethod all-actors ((self actor-system))
   (%all-actors self :user))

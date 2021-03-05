@@ -5,12 +5,12 @@
   ;;(asys:dispatchers (pax:reader actor-system))
   (asys:make-actor-system function)
   ;; ac protocol
-  (asys:actor-of generic-function)
-  (asys:find-actors generic-function)
-  (asys:find-by-name generic-function)
-  (asys:all-actors generic-function)
-  (asys:stop generic-function)
-  (asys:shutdown generic-function)
+  (ac:actor-of generic-function)
+  (ac:find-actors generic-function)
+  (ac:find-actor-by-name generic-function)
+  (ac:all-actors generic-function)
+  (ac:stop generic-function)
+  (ac:shutdown generic-function)
   )
 
 (in-package :ac)
@@ -20,14 +20,14 @@
   ;; ac protocol
   (ac:actor-of generic-function)
   (ac:find-actors generic-function)
-  (ac:find-by-name generic-function)
+  (ac:find-actor-by-name generic-function)
   (ac:all-actors generic-function)
   (ac:stop generic-function)
   (ac:shutdown generic-function)
   ;;
   (ac:notify generic-function)
-  (ac:system generic-function)
-  (ac:id generic-function)
+  (ac:system (pax:reader actor-context))
+  (ac:id (pax:reader actor-context))
   (ac:actor-name-exists condition))
 
 (in-package :act-cell)

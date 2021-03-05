@@ -25,7 +25,7 @@
 (in-package :cl-gserver.actor-cell)
 
 (defvar *sender* nil
-  "The `sender' is dynamically bound and available in `receive' function, when it is known.")
+  "The `*sender*` is dynamically bound and available in `receive` function, when it is known.")
 
 (defstruct actor-cell-state (running t :type boolean))
 
@@ -46,29 +46,29 @@
     (msgbox :initform nil
             :accessor msgbox
             :documentation
-            "The `message-box'. By default the `actor'/`actor-cell' has no message-box.
-When the actor is created through the `actor-context' of an actor, or the `actor-system'
+            "The `message-box`. By default the `actor`/`actor-cell` has no message-box.
+When the actor is created through the `actor-context` of an actor, or the `actor-system`
 then it will be populated with a message-box."))
   (:documentation
-   "`actor-cell' is the base of the `actor'.
+   "`actor-cell` is the base of the `actor`.
 It is meant to encapsulate state, but also to execute async operations.
-State can be changed by calling into the server via `call' or `cast'.
-Where `call' is waiting for a result and `cast' does not.
-For each `call' and `cast' handlers must be implemented by subclasses.
+State can be changed by calling into the server via `call` or `cast`.
+Where `call` is waiting for a result and `cast` does not.
+For each `call` and `cast` handlers must be implemented by subclasses.
 
-It uses a `message-box' to processes the received messages.
-When the `actor'/`actor-cell' was created ad-hoc (out of the `actor-system'/`actor-context'),
+It uses a `message-box` to processes the received messages.
+When the `actor`/`actor-cell` was created ad-hoc (out of the `actor-system`/`actor-context`),
 it will not have a message-box and can't process messages.
-When the `actor' is created through the `actor-system' or `actor-context',
-one can decide what kind of message-box/dispatcher should be used for the new `actor'.
+When the `actor` is created through the `actor-system` or `actor-context`,
+one can decide what kind of message-box/dispatcher should be used for the new `actor`.
 
-See `actor-context' `actor-of' method for more information on this.
+See `actor-context` `actor-of` method for more information on this.
 
-To stop an `actor' message handling and you can send the `:stop' message 
-either via `call' (which will respond with `:stopped') or `cast'.
+To stop an `actor` message handling and you can send the `:stop` message 
+either via `call` (which will respond with `:stopped`) or `cast`.
 This is to cleanup thread resources when the Gserver is not needed anymore.
 
-Note: the `actor-cell' uses `call' and `cast' functions which translate to `ask-s' and `tell' on the `actor'."))
+Note: the `actor-cell` uses `call` and `cast` functions which translate to `ask-s` and `tell` on the `actor`."))
 
 (defmethod print-object ((obj actor-cell) stream)
   (print-unreadable-object (obj stream :type t)
@@ -92,7 +92,7 @@ Note: the `actor-cell' uses `call' and `cast' functions which translate to `ask-
 
 (defgeneric pre-start (actor-cell state)
   (:documentation
-   "Generic function definition that called from `initialize-instance'."))
+   "Generic function definition that called from `initialize-instance`."))
 
 (defgeneric after-stop (actor-cell)
   (:documentation
@@ -101,8 +101,8 @@ Note: the `actor-cell' uses `call' and `cast' functions which translate to `ask-
 (defgeneric handle-call (actor-cell message current-state)
   (:documentation
    "Handles calls to the server. Must be implemented by subclasses.
-The convention here is to return a `cons' with values to be returned to caller as `car', and the new state as `cdr'.
-`handle-call' is executed in the default message dispatcher thread."))
+The convention here is to return a `cons` with values to be returned to caller as `car`, and the new state as `cdr`.
+`handle-call` is executed in the default message dispatcher thread."))
 
 (defgeneric handle-cast (actor-cell message current-state)
   (:documentation
@@ -131,7 +131,7 @@ Specify a timeout in seconds if you require a result within a certain period of 
 Be aware though that this is a resource intensive wait based on a waiting thread.
 The result can be of different types.
 Success result: <returned-state>
-Unhandled result: `:unhandled'
+Unhandled result: `:unhandled`
 Error result: `(cons :handler-error <condition>)'
 In case of time-out the error condition is a bt:timeout."
   (when message
@@ -148,7 +148,7 @@ If a `sender' is specified the result will be sent to the sender."
       result)))  
 
 (defun running-p (actor-cell)
-  "Returns true if this server is running. `nil' otherwise."
+  "Returns true if this server is running. `nil` otherwise."
   (with-slots (internal-state) actor-cell
     (slot-value internal-state 'running)))
 
@@ -170,10 +170,10 @@ If a `sender' is specified the result will be sent to the sender."
 
 (defun submit-message (actor-cell message withreply-p sender time-out)
   "Submitting a message.
-In case of `withreply-p', the `response' is filled because submitting to the message-box is synchronous.
-Otherwise submitting is asynchronous and `response' is just `t'.
-In case the actor-cell was stopped it will respond with just `:stopped'.
-In case no messge-box is configured this function respnds with `:no-message-handling'."
+In case of `withreply-p`, the `response` is filled because submitting to the message-box is synchronous.
+Otherwise submitting is asynchronous and `response` is just `t`.
+In case the actor-cell was stopped it will respond with just `:stopped`.
+In case no messge-box is configured this function respnds with `:no-message-handling`."
   (log:debug "~a: submitting message: ~a, withreply-p: ~a, sender: ~a, timeout: ~a"
              (name actor-cell) message withreply-p sender time-out)
 
@@ -224,8 +224,8 @@ In case no messge-box is configured this function respnds with `:no-message-hand
    "The message handler which is usually called after the message was popped from a queue."))
 
 (defmethod handle-message (actor-cell (message delayed-cancellable-message) withreply-p)
-  "We check here if the message is of type `delayed-cancellable-message',
-and if it got cancelled, in which case we respond just with `:cancelled'."
+  "We check here if the message is of type `delayed-cancellable-message`,
+and if it got cancelled, in which case we respond just with `:cancelled`."
   (log:debug "~a: handling message: ~a" (name actor-cell) message)
   (when (cancelled-p message)
     (log:info "~a: message got cancelled" (name actor-cell))
@@ -233,7 +233,7 @@ and if it got cancelled, in which case we respond just with `:cancelled'."
   (handle-message actor-cell (inner-msg message) withreply-p))
 
 (defmethod handle-message (actor-cell message withreply-p)
-  "This function is submitted as `handler-fun' to message-box."
+  "This function is submitted as `handler-fun` to message-box."
   (log:debug "~a: handling message: ~a" (name actor-cell) message)
   (handler-case
       (let ((internal-handle-result (handle-message-internal actor-cell message)))
@@ -245,8 +245,8 @@ and if it got cancelled, in which case we respond just with `:cancelled'."
       (cons :handler-error c))))
 
 (defun handle-message-internal (actor-cell msg)
-  "A `:stop' message will response with `:stopping' and the user handlers are not called.
-Otherwise the result is `:resume' to resume user message handling."
+  "A `:stop` message will response with `:stopping` and the user handlers are not called.
+Otherwise the result is `:resume` to resume user message handling."
   (log:debug "~a: internal handle-call: ~a" (name actor-cell) msg)
   (case msg
     (:stop :stopping)
@@ -259,7 +259,7 @@ Otherwise the result is `:resume' to resume user message handling."
 (defgeneric handle-message-user (actor-cell message withreply-p)
   (:documentation
    "The user defined message handler.
-Effectively this calls the `handle-call' or `handle-cast' functions."))
+Effectively this calls the `handle-call` or `handle-cast` functions."))
 
 (defmethod handle-message-user :before (actor-cell message withreply-p)
   (declare (ignore withreply-p))

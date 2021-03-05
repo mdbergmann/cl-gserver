@@ -13,8 +13,7 @@
            #:strategy-fun
            #:tell
            #:ask-s
-           #:ask)
-  )
+           #:ask))
 
 (in-package :cl-gserver.router)
 
@@ -45,10 +44,10 @@
 
 (defun make-router (&key (strategy :random) (routees nil))
   "Default constructor of router.
-Built-in strategies: `:random', `:round-robin'.
-Specify your own strategy by providing a function that takes a `fixnum' as parameter 
-and returns a `fixnum' that represents the index of the routee to choose.
-Specify `routees' if you know them upfront."
+Built-in strategies: `:random`, `:round-robin`.
+Specify your own strategy by providing a function that takes a `fixnum` as parameter 
+and returns a `fixnum` that represents the index of the routee to choose.
+Specify `routees` if you know them upfront."
   (let ((router (make-instance 'router
                                :strategy-fun (get-strategy-fun strategy))))
     (when routees
@@ -64,15 +63,15 @@ Specify `routees' if you know them upfront."
                  :reader strategy-fun
                  :documentation
                  "The router strategy function.
-The `strategy' is a function with a `fixnum' as input and a `fixnum' as output.
+The `strategy` is a function with a `fixnum` as input and a `fixnum` as output.
 The input represents the number of routees.
 The output represents the index of the routee to choose by calling the function."))
   (:documentation
    "A router combines a pool of actors and implements the actor-api protocol.
-So a `tell', `ask-s' and `ask' is delegated to one of the routers routees.
+So a `tell`, `ask-s` and `ask` is delegated to one of the routers routees.
 While a router implements parts of the actor protocol it doesn't implement all.
-I.e. a router cannot be `watch'ed.
-A router `strategy' defines how one of the actors is determined as the forwarding target of the message."))
+I.e. a router cannot be `watch`ed.
+A router `strategy` defines how one of the actors is determined as the forwarding target of the message."))
 
 (defun add-routee (router routee)
   "Adds a routee/actor to the router."

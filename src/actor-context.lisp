@@ -2,7 +2,8 @@
 (in-package :cl-gserver.actor-context)
 
 (defun make-actor-context (actor-system &optional (id nil))
-  "Creates an `actor-context'. Requires a reference to `system'."
+  "Creates an `actor-context`. Requires a reference to `actor-system`
+`id` is an optional value that can identify the `actor-context`."
   (assert (not (null actor-system)) nil "Requires an actor-system!")
   (let ((context (make-instance 'actor-context :id id)))
     (with-slots (system) context
@@ -59,7 +60,7 @@
 (defmethod find-actors ((self actor-context) test-fun)
   (utils:filter test-fun (all-actors self)))
 
-(defmethod find-by-name ((self actor-context) name)
+(defmethod find-actor-by-name ((self actor-context) name)
   (hamt:dict-lookup (actors self) name))
 
 (defmethod all-actors ((self actor-context))

@@ -25,10 +25,10 @@ Only use the defined interface here to talk to them."))
 
 (defgeneric dispatch (dispatcher dispatcher-exec-fun)
   (:documentation
-   "Dispatches a function (`dispatch-exec-fun') to a worker of the dispatcher to execute there.
-`dispatch' does a `ask-s' to a `dispatcher' worker, which means this call will block."))
+   "Dispatches a function (`dispatch-exec-fun`) to a worker of the dispatcher to execute there.
+`dispatch` does a `ask-s` to a `dispatcher` worker, which means this call will block."))
 
 (defgeneric dispatch-async (dispatcher dispatcher-exec-fun)
   (:documentation
    "Dispatches a function to a worker of the dispatcher to execute there.
-`dispatch-async' does a `tell' to a `dispatcher' worker and is asynchronous."))
+`dispatch-async` does a `tell` to a `dispatcher` worker and is asynchronous."))

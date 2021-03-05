@@ -14,27 +14,27 @@
             :initform (error "'receive' must be specified!")
             :reader receive
             :documentation
-            "`receive' is a function that has to take 3 parameters:
-- `self': the actor instance
-- `msg': the received message
-- `state': the current state of the actor
-The `sender' of the message, if available, is accessible with `*sender*' from within
+            "`receive` is a function that has to take 3 parameters:
+- `self`: the actor instance
+- `msg`: the received message
+- `state`: the current state of the actor
+The `sender` of the message, if available, is accessible with `*sender*` from within
 the receive function or a behavior.")
    (behavior :initform nil
              :documentation
-             "Behavior function applied via `become' and reverted via `unbecome'
-`behavior' function takes the same parameters as `receive'.")
+             "Behavior function applied via `become` and reverted via `unbecome`
+`behavior' function takes the same parameters as `receive`.")
    (context :initform nil
             :accessor context)
    (watchers :initform '()
              :reader watchers
              :documentation "List of watchers of this actor."))
   (:documentation
-   "This is the `actor' class.
-The `actor' does its message handling using the `receive' function.
-There is asynchronous `tell' (no response) and synchronous `ask-s' and asynchronous `ask' (with response).
-To stop an actors message processing in order to cleanup resouces you should tell (either `tell' or `ask-s')
-the `:stop' message. It will respond with `:stopped' (in case of `ask[-s]')."))
+   "This is the `actor` class.
+The `actor` does its message handling using the `receive` function.
+There is asynchronous `tell` (no response) and synchronous `ask-s` and asynchronous `ask` (with response).
+To stop an actors message processing in order to cleanup resouces you should tell (either `tell` or `ask-s`)
+the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
 
 (defmethod make-actor (receive &key name state (type 'actor))
   (make-instance type
@@ -107,7 +107,7 @@ the `:stop' message. It will respond with `:stopped' (in case of `ask[-s]')."))
     (setf watchers (utils:filter (lambda (w) (not (eq watcher w))) watchers))))
 
 (defmethod stop ((self actor))
-  "If this actor has an `actor-context', also stop all children.
+  "If this actor has an `actor-context`, also stop all children.
 In any case stop the actor-cell."
   (stop-children self)
   (call-next-method)

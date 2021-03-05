@@ -13,7 +13,7 @@ Each worker is based on a `:pinned` actor meaning that it has it's own thread."
 
 (defclass dispatcher-base () ()
   (:documentation
-   "A `dispatcher' contains a pool of `actors' that operate as workers where work is dispatched to."))
+   "A `dispatcher` contains a pool of `actors` that operate as workers where work is dispatched to."))
 
 ;; ---------------------------------
 ;; Shared dispatcher
@@ -60,7 +60,7 @@ The strategy to choose a worker is random."))
 
 (defclass dispatch-worker (actor) ()
   (:documentation
-   "Specialized `actor' used as `worker' is the message `dispatcher'."))
+   "Specialized `actor` used as `worker` is the message `dispatcher`."))
 
 (defun make-dispatcher-worker (num)
   "Constructor for creating a worker.

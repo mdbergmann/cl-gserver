@@ -28,7 +28,7 @@
                    :initarg :max-queue-size
                    :documentation
                    "0 or nil will make an unbounded queue. 
-A value > 0 will make a bounded queue. 
+A value > 0 will make a bounded queue.
 Don't make it too small. A queue size of 1000 might be a good choice.")))
 
 (defmethod initialize-instance :after ((self message-box-base) &key)

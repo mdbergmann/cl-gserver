@@ -6,6 +6,7 @@
                     ac:make-actor-context
                     ac:actor-of
                     ac:find-actors
+                    ac:find-by-name
                     ac:all-actors
                     ac:shutdown
                     ac:stop))
@@ -24,8 +25,8 @@
                        :documentation
                        "Internal API: an actor context for agents/actors created by the user."))
   (:documentation
-   "An `actor-system' is the opening facility. The first thing you do is to create an `actor-system' using the main constructor `make-actor-system'.
-With the `actor-system' you can create actors via the `actor-context' protocol function: `actor-of'."))
+   "An `actor-system` is the opening facility. The first thing you do is to create an `actor-system` using the main constructor `make-actor-system`.
+With the `actor-system` you can create actors via the `actor-context` protocol function: `actor-of`."))
 
 (defmethod print-object ((obj actor-system) stream)
   (print-unreadable-object (obj stream :type t)
@@ -41,8 +42,8 @@ With the `actor-system' you can create actors via the `actor-context' protocol f
     (setf internal-actor-context (make-actor-context self "/internal"))))
 
 (defun make-actor-system (&key (shared-dispatcher-workers 4))
-  "Creates an `actor-system'.
-Allows to configure the amount of workers for the `shared-dispatcher'."
+  "Creates an `actor-system`.
+Allows to configure the amount of workers for the `shared-dispatcher`."
   (let ((system (make-instance 'actor-system)))
     (with-slots (dispatchers) system
       (setf dispatchers (list :shared (make-dispatcher
@@ -60,8 +61,8 @@ Allows to configure the amount of workers for the `shared-dispatcher'."
     (otherwise (user-actor-context system))))
 
 (defun %actor-of (system create-fun dispatch-type &key (context-key :user) (queue-size 0))
-  "Private API to create system actors. Context-key is either `:internal' or `:user'
-Users should use `actor-of'."
+  "Private API to create system actors. Context-key is either `:internal` or `:user`
+Users should use `actor-of`."
   (ac:actor-of
    (actor-context-for-key context-key system)
    create-fun
@@ -70,8 +71,12 @@ Users should use `actor-of'."
 
 (defun %find-actors (system test-fun &key context-key)
   "Private API to find actors in both contexts the actor-system supports.
-Users should use `find-actors'."
+Users should use `find-actors`."
   (ac:find-actors (actor-context-for-key context-key system) test-fun))
+
+(defun %find-by-name (system name &key context-key)
+  "Private API to find an actor by name in the specified context."
+  (ac:find-by-name (actor-context-for-key context-key system) name))
 
 (defun %all-actors (system context-key)
   (ac:all-actors (actor-context-for-key context-key system)))
@@ -85,6 +90,9 @@ Users should use `find-actors'."
 
 (defmethod find-actors ((self actor-system) test-fun)
   (%find-actors self test-fun :context-key :user))
+
+(defmethod find-by-name ((self actor-system) name)
+  (%find-by-name self name :context-key :user))
 
 (defmethod all-actors ((self actor-system))
   (%all-actors self :user))

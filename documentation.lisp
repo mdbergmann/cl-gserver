@@ -3,19 +3,29 @@
 (pax:defsection @actor-system (:title "Actor-System")
   (asys:actor-system class)
   ;;(asys:dispatchers (pax:reader actor-system))
-  (asys:make-actor-system function))
+  (asys:make-actor-system function)
+  ;; ac protocol
+  (asys:actor-of generic-function)
+  (asys:find-actors generic-function)
+  (asys:find-by-name generic-function)
+  (asys:all-actors generic-function)
+  (asys:stop generic-function)
+  (asys:shutdown generic-function)
+  )
 
 (in-package :ac)
 (pax:defsection @actor-context (:title "Actor-Context")
   (ac:actor-context class)
   (ac:make-actor-context function)
+  ;; ac protocol
   (ac:actor-of generic-function)
   (ac:find-actors generic-function)
   (ac:find-by-name generic-function)
   (ac:all-actors generic-function)
   (ac:stop generic-function)
-  (ac:notify generic-function)
   (ac:shutdown generic-function)
+  ;;
+  (ac:notify generic-function)
   (ac:system generic-function)
   (ac:id generic-function)
   (ac:actor-name-exists condition))
@@ -90,9 +100,7 @@
 (in-package :cl-gserver.docs)
 
 (pax:defsection @cl-gserver (:title "cl-gserver documentation")
-  "The main documentation of cl-gserver
-
-Please see this [Introduction](https://github.com/mdbergmann/cl-gserver/blob/master/README.md)
+"Please see this [Introduction](https://github.com/mdbergmann/cl-gserver/blob/master/README.md)
 for a basic walk through."
 
   (asys:@actor-system pax:section)

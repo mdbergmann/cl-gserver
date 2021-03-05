@@ -126,6 +126,14 @@
       (is (eq nil (ac:find-actors cut (lambda (x) (declare (ignore x))))))
       (is (= 2 (length (ac:find-actors cut #'identity)))))))
 
+(test find-by-name--in-system
+  "Tests finding an actor by name."
+  (with-fixture test-system ()
+    (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
+          (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")))))
+      (is (eq act1 (ac:find-by-name cut "foo")))
+      (is (eq act2 (ac:find-by-name cut "foo2"))))))
+
 (test all-actors--in-system-user-context
   "Retrieves all actors in user actor context of system."
   (with-fixture test-system ()
@@ -178,6 +186,7 @@
   (run! 'actor-of--pinned--user)
   (run! 'actor-of--pinned--internal)
   (run! 'find-actors--in-system)
+  (run! 'find-by-name--in-system)
   (run! 'all-actors--in-system-user-context)
   (run! 'stop-actor--in-system)
   (run! 'creating-some-actors--and-collect-responses))

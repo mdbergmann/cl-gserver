@@ -5,30 +5,41 @@
   ;;(asys:dispatchers (pax:reader actor-system))
   (asys:make-actor-system function)
   ;; ac protocol
-  (ac:actor-of generic-function)
-  (ac:find-actors generic-function)
-  (ac:find-actor-by-name generic-function)
-  (ac:all-actors generic-function)
-  (ac:stop generic-function)
-  (ac:shutdown generic-function)
+  (ac:actor-of (pax:method () (asys:actor-system t)))
+  (ac:find-actors (pax:method () (asys:actor-system t)))
+  (ac:find-actor-by-name (pax:method () (asys:actor-system t)))
+  (ac:all-actors (pax:method () (asys:actor-system)))
+  (ac:stop (pax:method () (asys:actor-system t)))
+  (ac:shutdown (pax:method () (asys:actor-system)))
   )
 
 (in-package :ac)
-(pax:defsection @actor-context (:title "Actor-Context")
-  (ac:actor-context class)
-  (ac:make-actor-context function)
-  ;; ac protocol
+(pax:defsection @ac-protocol (:title "Actor-Context protocol")
   (ac:actor-of generic-function)
   (ac:find-actors generic-function)
   (ac:find-actor-by-name generic-function)
   (ac:all-actors generic-function)
   (ac:stop generic-function)
-  (ac:shutdown generic-function)
-  ;;
+  (ac:shutdown generic-function))
+
+(pax:defsection @actor-context (:title "Actor-Context")
+  (ac:actor-context class)
+  (ac:make-actor-context function)
+
+  (ac:actor-of (pax:method () (ac:actor-context t)))
+  (ac:find-actors (pax:method () (ac:actor-context t)))
+  (ac:find-actor-by-name (pax:method () (ac:actor-context t)))
+  (ac:all-actors (pax:method () (ac:actor-context)))
+  (ac:stop (pax:method () (ac:actor-context t)))
+  (ac:shutdown (pax:method () (ac:actor-context)))
+
   (ac:notify generic-function)
+
   (ac:system (pax:reader actor-context))
   (ac:id (pax:reader actor-context))
-  (ac:actor-name-exists condition))
+  (ac:actor-name-exists condition)
+
+  (@ac-protocol pax:section))
 
 (in-package :act-cell)
 (pax:defsection @actor-cell (:title "Actor-Cell")

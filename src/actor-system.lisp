@@ -85,21 +85,27 @@ Users should use `find-actors`."
 ;; ----------------------------------------
 
 (defmethod actor-of ((self actor-system) create-fun &key (dispatch-type :shared) (queue-size 0))
+  "See `ac:actor-of`"
   (%actor-of self create-fun dispatch-type :context-key :user :queue-size queue-size))
 
 (defmethod find-actors ((self actor-system) test-fun)
+  "See `ac:find-actors`"
   (%find-actors self test-fun :context-key :user))
 
 (defmethod find-actor-by-name ((self actor-system) name)
+  "See `ac:find-actor-by-name`"
   (%find-actor-by-name self name :context-key :user))
 
 (defmethod all-actors ((self actor-system))
+  "See `ac:all-actors`"
   (%all-actors self :user))
 
 (defmethod stop ((self actor-system) actor)
+  "See `ac:stop`"
   (act-cell:stop actor))
 
 (defmethod shutdown ((self actor-system))
+  "See `ac:shutdown`"
   (disp:shutdown (getf (dispatchers self) :shared))
   (ac:shutdown (user-actor-context self))
   (ac:shutdown (internal-actor-context self)))

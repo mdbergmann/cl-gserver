@@ -52,18 +52,22 @@
     actor))
 
 (defmethod actor-of ((self actor-context) create-fun &key (dispatch-type :shared) (queue-size 0))
+  "See `ac:actor-of`"
   (let ((created (create-actor self create-fun dispatch-type queue-size)))
     (when created
       (act:watch created self)
       (add-actor self created))))
 
 (defmethod find-actors ((self actor-context) test-fun)
+  "See `ac:find-actors`"
   (utils:filter test-fun (all-actors self)))
 
 (defmethod find-actor-by-name ((self actor-context) name)
+  "See `ac:find-actor-by-name`"
   (hamt:dict-lookup (actors self) name))
 
 (defmethod all-actors ((self actor-context))
+  "See `ac:all-actors`"
   (hamt:dict-reduce (lambda (acc key val)
                       (declare (ignore key))
                       (cons val acc))
@@ -71,13 +75,14 @@
                     '()))
 
 (defmethod stop ((self actor-context) actor)
+  "See `ac:stop`"
   (act-cell:stop actor))
+
+(defmethod shutdown ((self actor-context))
+  "See `ac:shutdown`"
+  (dolist (actor (all-actors self))
+    (act-cell:stop actor)))
 
 (defmethod notify ((self actor-context) actor notification)
   (case notification
     (:stopped (remove-actor self actor))))
-
-(defmethod shutdown ((self actor-context))
-  (dolist (actor (all-actors self))
-    (act-cell:stop actor)))
-

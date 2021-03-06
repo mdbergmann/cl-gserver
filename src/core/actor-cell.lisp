@@ -241,8 +241,11 @@ and if it got cancelled, in which case we respond just with `:cancelled`."
           (:resume (handle-message-user actor-cell message withreply-p))
           (t internal-handle-result)))
     (t (c)
-      (log:error "~a: error condition was raised: ~a" (name actor-cell) c)
-      (cons :handler-error c))))
+      (let ((backtrace (make-string-output-stream)))
+        (trivial-backtrace:print-backtrace c :output backtrace)
+        (log:error "~a: error condition was raised: ~a"
+                   (name actor-cell) (get-output-stream-string backtrace))
+        (cons :handler-error c)))))
 
 (defun handle-message-internal (actor-cell msg)
   "A `:stop` message will response with `:stopping` and the user handlers are not called.

@@ -107,6 +107,16 @@ Here we now use the `actor-context` protocol/api nicknamed
                              :name "answerer")))
 ```
 
+The convenience version is just this, which you can generally use instead of `ac:actor-of`:
+
+```elisp
+(act:actor-of (*system* "answerer")
+  (lambda (self msg state)
+    (let ((output (format nil "Hello ~a" msg)))
+      (format t "~a~%" output)
+      (cons output state))))
+```
+
 This creates a root actor on the `*system*`. Notice that the actor is
 not assigned to a variable. It is now registered in the system. The main
 argument to the `actor-of` function is a 'creator-function'

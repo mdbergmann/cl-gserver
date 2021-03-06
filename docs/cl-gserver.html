@@ -173,6 +173,14 @@ will create a child actor.</li>
                                  <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> output state</span>)</span></span>)</span></span>)</span>
                              <span class="keyword">:name</span> <span class="string">"answerer"</span></span>)</span></span>)</span></span>)</span></span></code></pre>
 
+<p>The convenience version is just this, which you can generally use instead of <code>ac:actor-of</code>:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">act:actor-of <span class="paren2">(<span class="code"><span class="special">*system*</span> <span class="string">"answerer"</span></span>)</span>
+  <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
+    <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">output <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"Hello ~a"</span> msg</span>)</span></span>)</span></span>)</span>
+      <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"~a~%"</span> output</span>)</span>
+      <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> output state</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
 <p>This creates a root actor on the <code>*system*</code>. Notice that the actor is
 not assigned to a variable. It is now registered in the system. The main
 argument to the <code>actor-of</code> function is a 'creator-function'

@@ -51,6 +51,7 @@
 <li><a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-BASE-20MGL-PAX-3ASECTION-29" title="Message-box base class">2.3.2 Message-box base class</a></li>
 <li><a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FBT-20MGL-PAX-3ASECTION-29" title="Message-box threaded">2.3.3 Message-box threaded</a></li>
 <li><a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FDP-20MGL-PAX-3ASECTION-29" title="Message-box dispatched">2.3.4 Message-box dispatched</a></li>
+<li><a href="#x-28CL-GSERVER-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29" title="Future (delayed-computation)">2.3.5 Future (delayed-computation)</a></li>
 </ul></li>
 <li><a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">2.4 Agent</a></li>
 <li><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">2.5 Dispatcher</a></li>
@@ -1337,7 +1338,7 @@ The <code>handler-fun</code> argument here will be <code>funcall</code>ed when t
 
 <p><a id='x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FDP-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FBT-20MGL-PAX-3ASECTION-29" title="Message-box threaded">&#8592;</a> <a href="#x-28CL-GSERVER-2EACTOR-3A-40ACTOR-20MGL-PAX-3ASECTION-29" title="Actor">&#8593;</a> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8594;</a> <a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FDP-20MGL-PAX-3ASECTION-29" title="Message-box dispatched">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FBT-20MGL-PAX-3ASECTION-29" title="Message-box threaded">&#8592;</a> <a href="#x-28CL-GSERVER-2EACTOR-3A-40ACTOR-20MGL-PAX-3ASECTION-29" title="Actor">&#8593;</a> <a href="#x-28CL-GSERVER-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29" title="Future (delayed-computation)">&#8594;</a> <a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FDP-20MGL-PAX-3ASECTION-29" title="Message-box dispatched">&#8634;</a></span></span></p>
 
 <h4><a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FDP-20MGL-PAX-3ASECTION-29">2.3.4 Message-box dispatched</a></h4>
 
@@ -1366,9 +1367,76 @@ and the handler in a reasonable amount of time, so that the effective time-out a
 handling of the message on the dispatcher queue thread.</p></li>
 </ul>
 
+<p><a id='x-28CL-GSERVER-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29'></a></p>
+
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FDP-20MGL-PAX-3ASECTION-29" title="Message-box dispatched">&#8592;</a> <a href="#x-28CL-GSERVER-2EACTOR-3A-40ACTOR-20MGL-PAX-3ASECTION-29" title="Actor">&#8593;</a> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8594;</a> <a href="#x-28CL-GSERVER-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29" title="Future (delayed-computation)">&#8634;</a></span></span></p>
+
+<h4><a href="#x-28CL-GSERVER-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29">2.3.5 Future (delayed-computation)</a></h4>
+
+<h6>[in package CL-GSERVER.FUTURE with nicknames FUTURE]</h6>
+
+<p><a id='x-28CL-GSERVER-2EFUTURE-3AFUTURE-20CLASS-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EFUTURE-3AFUTURE-20CLASS-29" >FUTURE</a></span></span></span></p>
+
+<p>The wrapped <a href="https://orthecreedence.github.io/blackbird/" >blackbird</a> <code>promise</code>, here called <code>future</code>.<br/>
+Not all features of blackbird's <code>promise</code> are supported.<br/>
+This <code>future</code> wrapper changes the terminology. A <code>future</code> is a delayed computation.
+A <code>promise</code> is the fulfillment of the delayed computation.</p>
+
+<p>The <code>future</code> is used as part of <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>act:ask</code></a> but is available as a general utility.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EFUTURE-3AMAKE-FUTURE-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EFUTURE-3AMAKE-FUTURE-20FUNCTION-29" >MAKE-FUTURE</a></span></span> <span class="locative-args">EXECUTE-FUN</span></span></p>
+
+<p>Creates a future. <code>execute-fun</code> is the lambda that is executed when the future is created.
+<code>execute-fun</code> takes a parameter which is the <code>resolve-fun</code> funtion. <code>resolve-fun</code> function
+takes the <code>promise</code> as parameter which is the computed value. Calling <code>resolve-fun</code> with the promise
+will fulfill the <a href="#x-28CL-GSERVER-2EFUTURE-3AFUTURE-20CLASS-29" title="(CL-GSERVER.FUTURE:FUTURE CLASS)"><code>future</code></a>.<br/>
+Manually calling <code>resolve-fun</code> to fulfill the <a href="#x-28CL-GSERVER-2EFUTURE-3AFUTURE-20CLASS-29" title="(CL-GSERVER.FUTURE:FUTURE CLASS)"><code>future</code></a> is in contrast to just fulfill the <a href="#x-28CL-GSERVER-2EFUTURE-3AFUTURE-20CLASS-29" title="(CL-GSERVER.FUTURE:FUTURE CLASS)"><code>future</code></a> from a return value. The benefit of the <code>resolve-fun</code> is flexibility. In  a multi-threaded environment <code>execute-fun</code> could spawn a thread, in which case <code>execute-fun</code> would return immediately but no promise can be given at that time. The <code>resolve-fun</code> can be called from a thread and provide the promise.</p>
+
+<p>Create a future with:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">make-future <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">resolve-fun</span>)</span> 
+               <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">promise <span class="paren6">(<span class="code">delayed-computation</span>)</span></span>)</span></span>)</span>
+                 <span class="paren4">(<span class="code">bt:make-thread <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren6">(<span class="code"></span>)</span>
+                   <span class="paren6">(<span class="code">sleep 0.5</span>)</span>
+                   <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_232.html#IDX618" class="symbol">funcall</a> resolve-fun promise</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EFUTURE-3ACOMPLETE-P-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EFUTURE-3ACOMPLETE-P-20FUNCTION-29" >COMPLETE-P</a></span></span> <span class="locative-args">FUTURE</span></span></p>
+
+<p>Is <code>future</code> completed? Returns either <code>t</code> or <code>nil</code>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EFUTURE-3AON-COMPLETED-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EFUTURE-3AON-COMPLETED-20FUNCTION-29" >ON-COMPLETED</a></span></span> <span class="locative-args">FUTURE COMPLETED-FUN</span></span></p>
+
+<p>Install an on-completion handler function on the given <code>future</code>.
+If the <code>future</code> is already complete then the <code>completed-fun</code> function is called immediately.
+<code>completed-fun</code> takes a parameter which represents the fulfilled promise (the value with which the <code>future</code> was fulfilled).</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EFUTURE-3AGET-RESULT-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EFUTURE-3AGET-RESULT-20FUNCTION-29" >GET-RESULT</a></span></span> <span class="locative-args">FUTURE</span></span></p>
+
+<p>Get the computation result. If not yet available <code>:not-ready</code> is returned.</p></li>
+</ul>
+
 <p><a id='x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FDP-20MGL-PAX-3ASECTION-29" title="Message-box dispatched">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29" title="Future (delayed-computation)">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8634;</a></span></span></p>
 
 <h3><a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29">2.4 Agent</a></h3>
 

@@ -75,6 +75,14 @@
   (mesgb:message-box/dp class)
   (mesgb:submit (pax:method () (mesgb:message-box/dp t t t t))))
 
+(in-package :future)
+(pax:defsection @future (:title "Future (delayed-computation)")
+  (future:future class)
+  (future:make-future function)
+  (future:complete-p function)
+  (future:on-completed function)
+  (future:get-result function))
+
 (in-package :act)
 (pax:defsection @actor (:title "Actor")
   (act:actor class)
@@ -94,7 +102,8 @@
   (act-cell:@actor-cell pax:section)
   (mesgb:@message-box-base pax:section)
   (mesgb:@message-box/bt pax:section)
-  (mesgb:@message-box/dp pax:section))
+  (mesgb:@message-box/dp pax:section)
+  (future:@future pax:section))
 
 (in-package :agt)
 (pax:defsection @agent (:title "Agent")

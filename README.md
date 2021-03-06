@@ -566,6 +566,7 @@ Custom strategies can be implemented.
 ### Benchmarks
 
 ![](./docs/perf.png)
+![](perf.png)
 
 Hardware specs:
 

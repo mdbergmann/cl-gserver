@@ -34,7 +34,7 @@
 
 (defsystem "cl-gserver/tests"
   :author "Manfred Bergmann"
-  :license "MIT"
+  :license "AGPL"
   :depends-on ("cl-gserver"
                "fiveam"
                "cl-mock"
@@ -74,15 +74,6 @@
 ;; (asdf:test-system "cl-gserver/tests")
 
 #|
-
- (defmacro with-sym-find ()
-       (let ((sym (gensym)))
-         `(do-symbols (,sym)
-            (if (and (boundp ,sym) (typep (symbol-value ,sym) 'act:actor))
-                (progn
-                  (format t "bound symbol that is actor: ~a~%" ,sym))))))
-
-create helambdap docs:
 (hlp:document (asdf:find-system :cl-gserver) :only-exported t)
 (pax:update-asdf-system-html-docs cl-gserver.docs:@cl-gserver :cl-gserver :target-dir #P"docs/")
 |#

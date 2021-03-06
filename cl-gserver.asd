@@ -84,6 +84,6 @@
 
 create helambdap docs:
 (hlp:document (asdf:find-system :cl-gserver) :only-exported t)
-(pax:update-asdf-system-html-docs cl-gserver.docs:@cl-gserver :cl-gserver :target-dir #P"docs/mgl-pax/")
+(pax:update-asdf-system-html-docs cl-gserver.docs:@cl-gserver :cl-gserver :target-dir #P"docs/")
 |#
 

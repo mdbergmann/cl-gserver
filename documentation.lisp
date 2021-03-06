@@ -110,14 +110,34 @@
 (defpackage :cl-gserver.docs)
 (in-package :cl-gserver.docs)
 
-(pax:defsection @cl-gserver (:title "cl-gserver documentation")
-"Please see this [Introduction](https://github.com/mdbergmann/cl-gserver/blob/master/README.md)
-for a basic walk through."
+(defmacro defsection-extmd (name path
+                            (&key
+                               title
+                               (package '*package*)
+                               (readtable '*readtable*)))
+  (alexandria:with-gensyms (file-content entries)
+    `(progn
+       (let* ((,file-content (str:from-file ,path))
+              (,entries (list ,file-content)))
+         (pax::export-some-symbols ',name ,entries ,package)
+         (defparameter ,name
+           (make-instance 'pax:section
+                          :name ',name
+                          :package ,package
+                          :readtable ,readtable
+                          :title ,title
+                          :entries (pax::transform-entries ,entries)))))))
 
+(defsection-extmd @readme #P"README.md" (:title "Introduction"))
+
+(pax:defsection @api (:title "API documentation")
   (asys:@actor-system pax:section)
   (ac:@actor-context pax:section)
   (act:@actor pax:section)
   (agt:@agent pax:section)
   (disp:@dispatcher pax:section)
-  (router:@router pax:section)
-  )
+  (router:@router pax:section))
+
+(pax:defsection @cl-gserver (:title "cl-gserver documentation")
+  (@readme pax:section)
+  (@api pax:section))

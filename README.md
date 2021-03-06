@@ -1,8 +1,6 @@
-# Actor framework featuring actors and agents
+### Introduction - Actor framework featuring actors and agents
 
-## Introduction
-
-cl-gserver is a \'message passing\' library/framework with actors
+cl-gserver is a 'message passing' library/framework with actors
 similar to Erlang or Akka.
 
 **Version 1.4 adds: convenience macro for creating actor. See below for
@@ -24,14 +22,14 @@ of course still possible.
 
 **Version 1.0** of `cl-gserver` library comes with quite a
 few new features. One of the major new features is that an actor is not
-bound to it\'s own message dispatcher thread. Instead, when an
+bound to it's own message dispatcher thread. Instead, when an
 `actor-system` is set-up, actors can use a shared pool of
 message dispatchers which effectively allows to create millions of
 actors.
 
 It is now possible to create actor hierarchies. An actor can have child
-actors. An actor now can also \'watch\' another actor to get notified
-about it\'s termination.
+actors. An actor now can also 'watch' another actor to get notified
+about it's termination.
 
 It is also possible to specify timeouts for the `ask-s` and
 `ask` functionality.
@@ -40,18 +38,18 @@ This new version is closer to Akka (the actor model framework on the
 JVM) than to GenServer on Erlang. This is because Common Lisp from a
 runtime perspective is closer to JVM than to Erlang/OTP. Threads in
 Common Lisp are heavy weight OS threads rather than user-space low
-weight \'Erlang\' threads (I\'d like to avoid \'green threads\', because
+weight 'Erlang' threads (I'd like to avoid 'green threads', because
 threads in Erlang are not really green threads). While on Erlang it is
 easily possible to spawn millions of processes/threads and so each actor
 (GenServer) has its own process, this model is not possible when the
 threads are OS threads, because of OS resource limits. This is the main
 reason for working with the message dispatcher pool instead.
 
-But let\'s jump right into it. I\'ll explain more later.
+But let's jump right into it. I'll explain more later.
 
-## Getting hands-on
+### Getting hands-on
 
-### Creating an actor-system
+#### Creating an actor-system
 
 To use the shared dispatcher pool we have to create an
 `actor-system` first.
@@ -73,7 +71,7 @@ default can of course be increased.
 1.  Shutting down the system
 
     Shutting down an actor system may be necessary depending on how
-    it\'s used. It can be done by:
+    it's used. It can be done by:
 
     ```elisp
     (ac:shutdown *system*)
@@ -82,13 +80,13 @@ default can of course be increased.
     This will stop all dispatcher workers and all other actors that have
     been spawed in the system.
 
-### Creating actors
+#### Creating actors
 
 Actors kind of live within an `actor-context`. An
 `actor-context` contains a collection (of actors) and defines a Common
 Lisp protocol that spawns a set of generic functions.
 
-There are two \'things\' that host an `actor-context`. This
+There are two 'things' that host an `actor-context`. This
 is:
 
 1.  the `actor-system`. Creating actors on the
@@ -111,17 +109,17 @@ Here we now use the `actor-context` protocol/api nicknamed
 
 This creates a root actor on the `*system*`. Notice that the actor is
 not assigned to a variable. It is now registered in the system. The main
-argument to the `actor-of` function is a \'creator-function\'
+argument to the `actor-of` function is a 'creator-function'
 which when evaluated returns an actor created with the main actor
 constructor `make-actor`.
 
-`make-actor` requires as main parameter a \'receive\'
+`make-actor` requires as main parameter a 'receive'
 function which should look familiar if you know the previous version of
-cl-gserver. The parameters to the \'receive\' function are still the
+cl-gserver. The parameters to the 'receive' function are still the
 tuple of:
 
 1.  `self` - the instance of the actor
-2.  `msg` - the received message of when this \'receive\'
+2.  `msg` - the received message of when this 'receive'
     function is called
 3.  `state` - the current state of the actor
 
@@ -132,7 +130,7 @@ and specify your own. `make-actor` is still the facility to
 create them. If you require custom initialization for the custom actor
 do so in specializing `initialize-instance` function.
 
-The return value of the \'receive\' function should also be familiar. It
+The return value of the 'receive' function should also be familiar. It
 is the `cons` with `car` being sent back to sender
 (in case of ask/ask-s) and `cdr` set as the new state of the
 actor.
@@ -183,14 +181,13 @@ context is retrieved with `(act:context *answerer*)`.
 
     Here is an example:
 
-    ```elisp
-    (act:actor-of (*system*) 
-      (lambda (self msg state)
-        (cons "Hello world" state)))
-    ```
+```elisp
+(act:actor-of (*system*) 
+  (lambda (self msg state)
+    (cons "Hello world" state)))
+```
 
-    It is sufficient to just specify the \'receive\' lambda. The macro
-    will add the rest.
+It is sufficient to just specify the 'receive' lambda. The macro will add the rest.
 
 2.  `:pinned` vs. `:shared`
 
@@ -200,7 +197,7 @@ context is retrieved with `(act:context *answerer*)`.
     own dispatcher thread, those are called `:pinned` actors. Just
     provide the `:pinned` value to the `dispatcher-type` key parameter.
 
-### Finding actors in the context
+#### Finding actors in the context
 
 If actors are not directly stored in a dynamic or lexical context they
 can still be looked up and used. The `actor-context` protocol
@@ -225,18 +222,18 @@ comparison on the actor name. So the above function will output:
 This function only does a simple flat search. The functionality of
 looking up an actor in the system generally will be expanded upon.
 
-### tell, ask-s and ask
+#### tell, ask-s and ask
 
-Let\'s send some messages.
+Let's send some messages.
 
 1.  tell
 
     `tell` is a fire-and-forget kind of send type. It
-    doesn\'t expect a result in return.
+    doesn't expect a result in return.
 
     And because of that, and in order to demonstrate it does something,
     it has to have a side-effect. So it dumps some string to the console
-    using `format`, because we couldn\'t otherwise `tell` if
+    using `format`, because we couldn't otherwise `tell` if
     the message was received and processed (see the
     `*answerer*` actor definitions above).
 
@@ -248,12 +245,12 @@ Let\'s send some messages.
     ```
 
     So we see that `tell` returns immediately with `T`. But
-    to see the \'Hello Foo\' it takes another hit on the return key,
+    to see the 'Hello Foo' it takes another hit on the return key,
     because the REPL is not asynchronous.
 
 2.  tell with sender
 
-    `tell` accepts a \'sender\', which has to be an actor. So
+    `tell` accepts a 'sender', which has to be an actor. So
     we can do like this:
 
     ```elisp
@@ -279,13 +276,13 @@ Let\'s send some messages.
     (act:ask-s *answerer* "Bar")
     ```
 
-    Will respond with: \'Hello Bar\'
+    Will respond with: 'Hello Bar'
 
 4.  ask
 
     `ask` combines both `ask-s` and
-    `tell`. From `ask-s` it \'inherits\' returning
-    a result, even though it\'s a future result. Internally it is
+    `tell`. From `ask-s` it 'inherits' returning
+    a result, even though it's a future result. Internally it is
     implemented using `tell`. In order to wait for a result a
     temporary actor is spawned that waits until it receives the result
     from the actor where the message was sent to. With this received
@@ -324,7 +321,7 @@ Let\'s send some messages.
                 (format t "Received result: ~a~%" result)))
     ```
 
-    Remember \'\*\' is the last result in the REPL which is the future
+    Remember '\*' is the last result in the REPL which is the future
     here.
 
     This will print after a bit:
@@ -334,12 +331,12 @@ Let\'s send some messages.
     Received result: Hello Buzz
     ```
 
-### ask-s and ask with timeout
+#### ask-s and ask with timeout
 
 A timeout (in seconds) can be specified for both `ask-s` and
 `ask` and is done like so:
 
-To demonstrate this we could setup an example \'sleeper\' actor:
+To demonstrate this we could setup an example 'sleeper' actor:
 
 ```elisp
 (ac:actor-of *system* 
@@ -371,7 +368,7 @@ A timeout set to 2 seconds occurred. Cause:
 #<BORDEAUX-THREADS:TIMEOUT #x302002FAB73D> 
 ```
 
-### Long running operations in `receive`
+#### Long running operations in `receive`
 
 Be careful with doing long running computations in the
 `receive` function message handler, because it will block
@@ -385,7 +382,7 @@ to a thread-pool the `receive` function should return with
 `(cons :no-reply <state>)`. The `:no-reply` will instruct the actor to
 *not* send a result to a sender automatically should a sender be
 available (for the cases of `tell` or `ask`). The
-computation result can be \'awaited\' for in an asynchronous manner and
+computation result can be 'awaited' for in an asynchronous manner and
 a response to `*sender*` can be sent manually by just doing a
 `(tell *sender* <my-computation-result>)`. The sender of the original
 message is set to the dynamic variable `*sender*`.
@@ -398,12 +395,12 @@ different value.
 This behavior must be part of the messaging protocol that is being
 defined for the actors at play.
 
-### Changing behavior
+#### Changing behavior
 
 An actor can change behavior. The behavior is just a lambda that has to
 take three parameters:
 
-1.  the actor\'s instance - usually called `self`
+1.  the actor's instance - usually called `self`
 2.  the received message - maybe call `msg`?
 3.  the current state of the actor
 
@@ -416,7 +413,7 @@ the default constructor `make-actor`.
 During the lifetime of an actor the behavior can be changed using
 `become`.
 
-So we remember the `*answerer*` which responds with \'Hello Foo\' when
+So we remember the `*answerer*` which responds with 'Hello Foo' when
 we send `(act:ask-s *answerer* "Foo")`. We can now change the behavior
 with:
 
@@ -427,7 +424,7 @@ with:
 ```
 
 When we now send `(act:ask-s *answerer* "Foo")` we will get the
-response: \'my new behavior for: Foo\'.
+response: 'my new behavior for: Foo'.
 
 **Reverting `become` / `unbecome`**
 
@@ -435,7 +432,7 @@ To revert back to the default behavior as defined by the
 `receive` function of the constructor you may call
 `unbecome`.
 
-### Creating actors without a system
+#### Creating actors without a system
 
 It is still possible to create actors without a system. This is how you
 do it:
@@ -453,7 +450,7 @@ do it:
 You have to take care yourself about stopping the actor and freeing
 resources.
 
-## Agents
+### Agents
 
 An Agent is a specialized Actor. It is meant primarily for maintaining
 state and comes with some conveniences to do that.
@@ -476,7 +473,7 @@ parameter. It should return the initial state of the agent. `agent-get`
 and `agent-update` both take a lambda that must support one parameter.
 This parameter represents the current state of the agent.
 
-Let\'s make a simple example:
+Let's make a simple example:
 
 First create an agent with an initial state of `0`.
 
@@ -505,7 +502,7 @@ So this simple agent represents a counter.
 It is important to note that the retrieves state, i.e. with `identity`
 should not be modified outside the agent.
 
-### Using an agent within an actor-system
+#### Using an agent within an actor-system
 
 The `make-agent` constructor function allows to provides an optional
 `system` argument that, when given, makes the constructor create the
@@ -521,10 +518,10 @@ API for creating agents in systems is different to actors. This is to
 make explicit that agents are treated slightly differently than actors
 even though under the hood agents are actors.
 
-### Wrapping an agent
+#### Wrapping an agent
 
 While you can use the agent as in the example above it is usually
-advised to wrap an agent behind a more simple facade that doesn\'t work
+advised to wrap an agent behind a more simple facade that doesn't work
 with lambdas.
 
 For example could a facade for the counter above look like this:
@@ -543,7 +540,7 @@ For example could a facade for the counter above look like this:
 Alternatively, one can wrap an agent inside a class and provide methods
 for simplified access to it.
 
-## Router
+### Router
 
 A `Router` is a facade over a set of actors. Routers are
 either created with a set of actors using the default constructor
@@ -551,7 +548,7 @@ either created with a set of actors using the default constructor
 
 Routers implement part of the actor protocol, so it allows to use
 `tell`, `ask-s` or `ask` which it
-forwards to a \'routee\' (one of the actors of a router) by passing all
+forwards to a 'routee' (one of the actors of a router) by passing all
 of the given parameters. The routee is chosen by applying a
 `strategy`. The built-in default strategy a routee is chosen
 randomly.
@@ -566,7 +563,7 @@ Currently available strategies: `:random` and
 
 Custom strategies can be implemented.
 
-## Benchmarks
+### Benchmarks
 
 ![](./docs/perf.png)
 
@@ -585,7 +582,7 @@ an actor whose message-box worked using a single thread
 (`:shared` / `dispatched`) with 8 workers.
 
 Of course a `tell` is in most cases the fastest one, because
-it\'s the least resource intensive and there is no place that is
+it's the least resource intensive and there is no place that is
 blocking in this workflow.
 
 **SBCL (v2.0.10)**
@@ -593,7 +590,7 @@ blocking in this workflow.
 Even though SBCL is by far the fastest one with `tell` on
 both `:pinned` and `dispatched`, it had massive
 problems on `dispatched - ask-s` where I had to lower the
-number of messages to 200k alltogether. Beyond that value SBCL didn\'t
+number of messages to 200k alltogether. Beyond that value SBCL didn't
 get it worked out.
 
 **CCL (v1.12)**
@@ -608,5 +605,5 @@ where SBCL was struggling with the `dispatched - ask-s`.
 
 The pleasant surprise was ABCL. While not being the fastest it is the
 most robust. Where SBCL and CCL were struggling you could throw anything
-at ABCL and it\'ll cope with it. I\'m assuming that this is because of
+at ABCL and it'll cope with it. I'm assuming that this is because of
 the massively battle proven Java Runtime.

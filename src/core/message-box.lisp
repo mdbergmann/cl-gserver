@@ -19,17 +19,21 @@
 (defclass message-box-base ()
   ((name :initform (string (gensym "mesgb-"))
          :initarg :name
-         :reader name)
+         :reader name
+         :documentation "The name of the message-box.
+The default name is concatenated of \"mesgb-\" and a `gensym` generated random number.")
    (processed-messages :initform 0)
    (queue :initform nil
           :documentation
-          "Which type of queue will be used depends on the `max-queue-size' setting.")
+          "Which type of queue will be used depends on the `max-queue-size` setting.")
    (max-queue-size :initform 0
                    :initarg :max-queue-size
+                   :reader max-queue-size
                    :documentation
                    "0 or nil will make an unbounded queue. 
-A value > 0 will make a bounded queue.
-Don't make it too small. A queue size of 1000 might be a good choice.")))
+A value `> 0` will make a bounded queue.
+Don't make it too small. A queue size of 1000 might be a good choice."))
+  (:documentation "The user does not need to create a message-box manually. It is automatically created and added to the `actor` when the actor is created through `act:actor-of` or `ac:actor-of`."))
 
 (defmethod initialize-instance :after ((self message-box-base) &key)
   (with-slots (queue max-queue-size) self
@@ -65,7 +69,7 @@ Don't make it too small. A queue size of 1000 might be a good choice.")))
 
 (defmacro with-submit-handler ((msgbox message withreply-p time-out) &rest body)
   "Macro to let the caller specify a message handler function.
-Use this instead of `submit'."
+Use this instead of `submit`."
   `(submit ,msgbox ,message ,withreply-p ,time-out (lambda (message) ,@body)))
 
 
@@ -89,7 +93,7 @@ Use this instead of `submit'."
                  :documentation
                  "Delay after which the message gets cancelled and will not be processed.
 If it has not been processed yet.
-When `nil' no timer is created and this is treated as an ordinary wrapped message.")))
+When `nil` no timer is created and this is treated as an ordinary wrapped message.")))
 
 (defmethod initialize-instance :after ((self delayed-cancellable-message) &key)
   (when (cancel-delay self)
@@ -134,9 +138,9 @@ When `nil' no timer is created and this is treated as an ordinary wrapped messag
                "Flag that indicates whether the message processing should commence."))
   (:documentation
    "Bordeaux-Threads based message-box with a single thread operating on a message queue.
-This is used when the actor is created outside of the `system'.
+This is used when the actor is created using a `:pinned` dispatcher type.
 There is a limit on the maximum number of actors/agents that can be created with
-this kind of queue because each message-box requires exactly one thread."))
+this kind of queue because each message-box (and with that each actor) requires exactly one thread."))
 
 (defmethod initialize-instance :after ((self message-box/bt) &key)
   (with-slots (name queue-thread) self
@@ -184,8 +188,8 @@ This should happen in conjunction with the outer time-out in `submit/reply'."
           (funcall handler-fun message)))))
 
 (defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun)
-"Alternatively use `with-submit-handler' from your code to handle the message after it was 'popped' from the queue.
-The `handler-fun' argument here will be `funcall'ed when the message was 'popped'."
+"Alternatively use `with-submit-handler` from your code to handle the message after it was 'popped' from the queue.
+The `handler-fun` argument here will be `funcall`ed when the message was 'popped'."
   (log:trace "~a: submit message: ~a" (name self) message)
   (with-slots (queue) self
     (if withreply-p
@@ -265,10 +269,10 @@ The queue thread has processed the message."
                "The dispatcher from the system.")
    (lock :initform (bt:make-lock)))
   (:documentation
-   "This message box is a message-box that uses the `system's `dispatcher'.
+   "This message box is a message-box that uses the `system`s `dispatcher`.
 This has the advantage that an almost unlimited actors/agents can be created.
-This message-box doesn't 'own' a thread. It uses the `dispatcher' to handle the message processing.
-The `dispatcher' is kind of like a thread pool."))
+This message-box doesn't 'own' a thread. It uses the `dispatcher` to handle the message processing.
+The `dispatcher` is kind of like a thread pool."))
 
 (defmethod initialize-instance :after ((self message-box/dp) &key)
   (when (next-method-p)
@@ -277,7 +281,7 @@ The `dispatcher' is kind of like a thread pool."))
 (defun dispatcher-exec-fun (msgbox)
   "This function is effectively executed on a dispatcher actor.
 It knows the message-box of the origin actor and acts on it.
-It pops the ,essage from the message-boxes queue and calls the `handler-fun' on it.
+It pops the ,essage from the message-boxes queue and calls the `handler-fun` on it.
 The `handler-fun' is part of the message item."
   (with-slots (box-name queue) msgbox
     (log:trace "~a: popping message..." box-name)
@@ -285,7 +289,7 @@ The `handler-fun' is part of the message item."
       (handle-popped-item popped-item msgbox))))
 
 (defun handle-popped-item (popped-item msgbox)
-  "Handles the popped message. Means: calls the `handler-fun' on the message."
+  "Handles the popped message. Means: calls the `handler-fun` on the message."
   (with-slots (box-name lock) msgbox
     (with-slots (message cancelled-p handler-fun) popped-item
       (log:debug "~a: popped message: ~a" box-name popped-item)
@@ -299,17 +303,11 @@ The `handler-fun' is part of the message item."
           (bt:release-lock lock))))))
 
 (defmethod submit ((self message-box/dp) message withreply-p time-out handler-fun)
-  "Submitting a message on a multi-threaded `dispatcher' is different as submitting on a single threaded message-box.
-On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads.
-On the `dispatcher' this is not the case. The order cannot be guaranteed when messages are processed by different 
-`dispatcher' threads. However, we still guarantee a 'single-threadedness' regarding the state of the actor.
-This is achieved here by protecting the `handler-fun' execution by a lock.
+  "Submitting a message on a multi-threaded `dispatcher` is different as submitting on a single threaded message-box. On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads. On the `dispatcher` this is not the case. The order cannot be guaranteed when messages are processed by different `dispatcher` threads. However, we still guarantee a 'single-threadedness' regarding the state of the actor. This is achieved here by protecting the `handler-fun` execution with a lock.
 
-The `time-out' with the 'dispatcher mailbox' assumes that the message received the dispatcher queue
+The `time-out` with the 'dispatcher mailbox' assumes that the message received the dispatcher queue
 and the handler in a reasonable amount of time, so that the effective time-out applies on the actual
-handling of the message on the dispatcher queue thread.
-
-!!! attention: the `ask' uses no reply (here a `dispatch-async')."
+handling of the message on the dispatcher queue thread."
   (with-slots (name
                queue
                processed-messages

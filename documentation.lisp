@@ -47,7 +47,6 @@
   (act-cell:name (pax:reader actor-cell))
   (act-cell:state (pax:reader actor-cell))
   (act-cell:msgbox (pax:accessor actor-cell))
-  (act-cell:msgbox (pax:accessor actor-cell))
   (act-cell:*sender* variable)
   (act-cell:handle-call generic-function)
   (act-cell:handle-cast generic-function)
@@ -57,6 +56,24 @@
   (act-cell:call function)
   (act-cell:cast function)
   (act-cell:running-p function))
+
+(in-package :mesgb)
+(pax:defsection @message-box-base (:title "Message-box base class")
+  (mesgb::message-box-base class)
+  (mesgb::name (pax:reader mesgb::message-box-base))
+  (mesgb::max-queue-size (pax:reader mesgb::message-box-base))
+  (mesgb:submit generic-function)
+  (mesgb:stop generic-function)
+  (mesgb:stop (pax:method () (mesgb::message-box-base)))
+  (mesgb:with-submit-handler pax:macro))
+
+(pax:defsection @message-box/bt (:title "Message-box threaded")
+  (mesgb:message-box/bt class)
+  (mesgb:submit (pax:method () (mesgb:message-box/bt t t t t))))
+
+(pax:defsection @message-box/dp (:title "Message-box dispatched")
+  (mesgb:message-box/dp class)
+  (mesgb:submit (pax:method () (mesgb:message-box/dp t t t t))))
 
 (in-package :act)
 (pax:defsection @actor (:title "Actor")
@@ -74,7 +91,10 @@
   (act:unwatch generic-function)
   (act:watchers generic-function)
 
-  (act-cell:@actor-cell pax:section))
+  (act-cell:@actor-cell pax:section)
+  (mesgb:@message-box-base pax:section)
+  (mesgb:@message-box/bt pax:section)
+  (mesgb:@message-box/dp pax:section))
 
 (in-package :agt)
 (pax:defsection @agent (:title "Agent")
@@ -110,25 +130,8 @@
 (defpackage :cl-gserver.docs)
 (in-package :cl-gserver.docs)
 
-(defmacro defsection-extmd (name path
-                            (&key
-                               title
-                               (package '*package*)
-                               (readtable '*readtable*)))
-  (alexandria:with-gensyms (file-content entries)
-    `(progn
-       (let* ((,file-content (str:from-file ,path))
-              (,entries (list ,file-content)))
-         (pax::export-some-symbols ',name ,entries ,package)
-         (defparameter ,name
-           (make-instance 'pax:section
-                          :name ',name
-                          :package ,package
-                          :readtable ,readtable
-                          :title ,title
-                          :entries (pax::transform-entries ,entries)))))))
-
-(defsection-extmd @readme #P"README.md" (:title "Introduction"))
+(pax:defsection @readme (:title "Introduction")
+  (README.md (pax:include #.(asdf:system-relative-pathname :cl-gserver "README.md"))))
 
 (pax:defsection @api (:title "API documentation")
   (asys:@actor-system pax:section)

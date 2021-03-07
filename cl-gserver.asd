@@ -9,8 +9,7 @@
                "iterate"
                "str"
                "blackbird"
-               "cl-hamt"
-               "trivial-backtrace")
+               "cl-hamt")
   :components ((:module "src"
                 :serial t
                 :components

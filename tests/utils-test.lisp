@@ -20,3 +20,7 @@
   (let ((run-ok nil))
     (make-timer 0.1 (lambda () (setf run-ok t)))
     (is-true (assert-cond (lambda () (eq t run-ok)) 1))))
+
+(test print-condition-backtrace
+  "Check printing condition backtrace"
+  (is (> (length (collect-backtrace (make-condition 'error))) 0)))

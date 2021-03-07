@@ -10,7 +10,8 @@
            #:ask-timeout
            #:with-waitfor
            #:cause
-           #:make-timer))
+           #:make-timer
+           #:collect-backtrace))
 
 (in-package :cl-gserver.utils)
 
@@ -68,3 +69,8 @@
                     (sleep delay)
                     (funcall run-fun))
                   :name (string (gensym "timer-"))))
+
+(defun collect-backtrace (condition)
+  (let ((backtrace (make-string-output-stream)))
+    (uiop:print-condition-backtrace condition :stream backtrace)
+    (get-output-stream-string backtrace)))

@@ -8,9 +8,9 @@
   (:export #:router
            #:make-router
            #:add-routee
-           #:stop
            #:routees
            #:strategy-fun
+           #:stop
            #:tell
            #:ask-s
            #:ask))
@@ -45,8 +45,8 @@
 (defun make-router (&key (strategy :random) (routees nil))
   "Default constructor of router.
 Built-in strategies: `:random`, `:round-robin`.
-Specify your own strategy by providing a function that takes a `fixnum` as parameter 
-and returns a `fixnum` that represents the index of the routee to choose.
+Specify your own strategy by providing a function that takes a `fixnum` as parameter which represents the number of routees and returns a `fixnum` that represents the index of the routee to choose.
+
 Specify `routees` if you know them upfront."
   (let ((router (make-instance 'router
                                :strategy-fun (get-strategy-fun strategy))))
@@ -94,18 +94,24 @@ A router `strategy` defines how one of the actors is determined as the forwardin
   (copy-list (coerce (slot-value router 'routees) 'list)))
 
 (defmethod tell ((self router) message &optional sender)
+  "Posts the message to one routee. The routee is chosen from the router `strategy`.
+Otherwise see: `act:tell`."
   (tell
    (elt (slot-value self 'routees) (get-strategy-index self))
    message
    sender))
 
 (defmethod ask-s ((self router) message &key time-out)
+  "Posts the message to one routee. The routee is chosen from the router `strategy`.
+Otherwise see: `act:ask-s`."
   (ask-s
    (elt (slot-value self 'routees) (get-strategy-index self))
    message
    :time-out time-out))
 
 (defmethod ask ((self router) message &key time-out)
+  "Posts the message to one routee. The routee is chosen from the router `strategy`.
+Otherwise see: `act:ask`."
   (ask
    (elt (slot-value self 'routees) (get-strategy-index self))
    message

@@ -54,7 +54,11 @@
 <li><a href="#x-28CL-GSERVER-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29" title="Future (delayed-computation)">2.3.5 Future (delayed-computation)</a></li>
 </ul></li>
 <li><a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">2.4 Agent</a></li>
-<li><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">2.5 Dispatcher</a></li>
+<li><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">2.5 Dispatcher</a>
+
+<ul>
+<li><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">2.5.1 Shared dispatcher</a></li>
+</ul></li>
 <li><a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">2.6 Router</a></li>
 </ul></li>
 </ul>
@@ -669,7 +673,14 @@ the massively battle proven Java Runtime.</p>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" >ACTOR-SYSTEM</a></span></span></span></p>
 
 <p>An <code>actor-system</code> is the opening facility. The first thing you do is to create an <code>actor-system</code> using the main constructor <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AMAKE-ACTOR-SYSTEM-20FUNCTION-29" title="(CL-GSERVER.ACTOR-SYSTEM:MAKE-ACTOR-SYSTEM FUNCTION)"><code>make-actor-system</code></a>.
-With the <code>actor-system</code> you can create actors via the <code>actor-context</code> protocol function: <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION)"><code>actor-of</code></a>.</p></li>
+With the <code>actor-system</code> you can create actors via the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> protocol function: <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION)"><code>ac:actor-of</code></a>.</p>
+
+<p>Or even simpler via <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20-28MGL-PAX-3AMACRO-29-29" title="(CL-GSERVER.ACTOR:ACTOR-OF (MGL-PAX:MACRO))"><code>act:actor-of</code></a> which is a convenience macro:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">act:actor-of <span class="paren2">(<span class="code"><span class="special">*system*</span></span>)</span>
+                <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
+                  <span class="comment">;; do stuff
+</span>                  <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> <span class="string">"done"</span> state</span>)</span></span>)</span></span>)</span></span></code></pre></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-SYSTEM-3AMAKE-ACTOR-SYSTEM-20FUNCTION-29'></a></p>
@@ -1057,7 +1068,7 @@ The <code>new-behavior</code> function must accept 3 parameters: the actor insta
 <p><a id='x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">X</span></span></p>
 
 <p>This is the <code>actor-context</code> every actor is composed of.
 When the actor is created from scratch it has no <code>actor-context</code>.
@@ -1094,9 +1105,9 @@ I.e.: when it stopped. The message being sent in this case is: <code>(cons :stop
 <p><a id='x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">X</span></span></p>
 
-<p>Returns a list of watchers of <code>actor</code>.</p></li>
+<p>Returns a list of watchers of <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CELL-3A-40ACTOR-CELL-20MGL-PAX-3ASECTION-29'></a></p>
@@ -1497,7 +1508,7 @@ The return value of <code>update-fun</code> will be taken as the new state of th
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8594;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8634;</a></span></span></p>
 
 <h3><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29">2.5 Dispatcher</a></h3>
 
@@ -1517,7 +1528,10 @@ The return value of <code>update-fun</code> will be taken as the new state of th
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" >SHARED-DISPATCHER</a></span></span> <span class="locative-args"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCHER-BASE-20CLASS-29" title="(CL-GSERVER.DISPATCHER:DISPATCHER-BASE CLASS)">DISPATCHER-BASE</a></span></span></p>
 
 <p>A shared dispatcher.
-The strategy to choose a worker is random.</p></li>
+Internally it uses a <a href="#x-28CL-GSERVER-2EROUTER-3AROUTER-20CLASS-29" title="(CL-GSERVER.ROUTER:ROUTER CLASS)"><code>router:router</code></a> to drive the <a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-WORKER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:DISPATCH-WORKER CLASS)"><code>dispatch-worker</code></a>s.
+The default strategy of choosing a worker is <code>:random</code>.</p>
+
+<p>A <code>shared-dispatcher</code> is automatically setup by an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29'></a></p>
@@ -1583,9 +1597,27 @@ Only use the defined interface here to talk to them.</p></li>
 <code>num</code> only has the purpose to give the worker a name which includes a number.</p></li>
 </ul>
 
+<p><a id='x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29'></a></p>
+
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8592;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8593;</a> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8594;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8634;</a></span></span></p>
+
+<h4><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29">2.5.1 Shared dispatcher</a></h4>
+
+<p><a id='x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" >SHARED-DISPATCHER</a></span></span> <span class="locative-args"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCHER-BASE-20CLASS-29" title="(CL-GSERVER.DISPATCHER:DISPATCHER-BASE CLASS)">DISPATCHER-BASE</a></span></span></p>
+
+<p>A shared dispatcher.
+Internally it uses a <a href="#x-28CL-GSERVER-2EROUTER-3AROUTER-20CLASS-29" title="(CL-GSERVER.ROUTER:ROUTER CLASS)"><code>router:router</code></a> to drive the <a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-WORKER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:DISPATCH-WORKER CLASS)"><code>dispatch-worker</code></a>s.
+The default strategy of choosing a worker is <code>:random</code>.</p>
+
+<p>A <code>shared-dispatcher</code> is automatically setup by an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>.</p></li>
+</ul>
+
 <p><a id='x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8634;</a></span></span></p>
 
 <h3><a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29">2.6 Router</a></h3>
 
@@ -1610,9 +1642,9 @@ A router <code>strategy</code> defines how one of the actors is determined as th
 
 <p>Default constructor of router.
 Built-in strategies: <code>:random</code>, <code>:round-robin</code>.
-Specify your own strategy by providing a function that takes a <code>fixnum</code> as parameter 
-and returns a <code>fixnum</code> that represents the index of the routee to choose.
-Specify <a href="#x-28CL-GSERVER-2EROUTER-3AROUTEES-20FUNCTION-29" title="(CL-GSERVER.ROUTER:ROUTEES FUNCTION)"><code>routees</code></a> if you know them upfront.</p></li>
+Specify your own strategy by providing a function that takes a <code>fixnum</code> as parameter which represents the number of routees and returns a <code>fixnum</code> that represents the index of the routee to choose.</p>
+
+<p>Specify <a href="#x-28CL-GSERVER-2EROUTER-3AROUTEES-20FUNCTION-29" title="(CL-GSERVER.ROUTER:ROUTEES FUNCTION)"><code>routees</code></a> if you know them upfront.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EROUTER-3AADD-ROUTEE-20FUNCTION-29'></a></p>
@@ -1639,64 +1671,31 @@ Specify <a href="#x-28CL-GSERVER-2EROUTER-3AROUTEES-20FUNCTION-29" title="(CL-GS
 <p>Returns the routees as list.</p></li>
 </ul>
 
-<p><a id='x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29'></a></p>
+<p><a id='x-28CL-GSERVER-2EACTOR-3ATELL-20-28METHOD-20NIL-20-28CL-GSERVER-2EROUTER-3AROUTER-20T-29-29-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" >TELL</a></span></span> <span class="locative-args">ACTOR MESSAGE &amp;OPTIONAL SENDER</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20-28METHOD-20NIL-20-28CL-GSERVER-2EROUTER-3AROUTER-20T-29-29-29" >TELL</a></span></span> <span class="locative-args">(SELF ROUTER) MESSAGE</span></span></p>
 
-<p>Sends a message to the <code>actor</code>. <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> is asynchronous. There is no result.
-If a <code>sender</code> is specified a message result of the target actor of the <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> will be sent back to the <code>sender</code></p>
-
-<p>Generally <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> does not expect a response. But a <code>sender</code> can be specified as optionl parameter to <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a>.
-If a <code>sender</code> is specified, then the message handling behavior will send the <code>car</code> of the <code>cons</code> result to the specified <code>sender</code>.</p>
-
-<p>A <code>sender</code> can also be part of the message contract.</p>
-
-<p><a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> can be used in two environments:</p>
-
-<ol>
-<li>outside an actor</li>
-</ol>
-
-<p>By default this sends a message as fire &amp; forget. Since this is not inside an actor, no actor can be inferred as <code>sender</code>. A <code>sender</code> can be defined as optional parameter as part of <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a>.</p>
-
-<ol>
-<li>inside an actors as part of the <code>receive</code> function</li>
-</ol>
-
-<p>As <code>sender</code> can be specified when <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> is used inside of an actor. Currently the framework doesn't automatically infer the <code>sender</code> when no <code>sender</code> is explicitly specified.</p>
-
-<p>=&gt; This is a future enhancement.</p></li>
+<p>Posts the message to one routee. The routee is chosen from the router <code>strategy</code>.
+Otherwise see: <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>act:tell</code></a>.</p></li>
 </ul>
 
-<p><a id='x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29'></a></p>
+<p><a id='x-28CL-GSERVER-2EACTOR-3AASK-S-20-28METHOD-20NIL-20-28CL-GSERVER-2EROUTER-3AROUTER-20T-29-29-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" >ASK-S</a></span></span> <span class="locative-args">ACTOR MESSAGE &amp;KEY TIME-OUT</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20-28METHOD-20NIL-20-28CL-GSERVER-2EROUTER-3AROUTER-20T-29-29-29" >ASK-S</a></span></span> <span class="locative-args">(SELF ROUTER) MESSAGE</span></span></p>
 
-<p>Sends a message to the <code>actor</code>. <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> is synchronous and waits for a result.
-Specify <code>timeout</code> if a message is to be expected after a certain time.
-An <code>:handler-error</code> with <code>timeout</code> condition will be returned if the call timed out.</p>
-
-<p><a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> assumes, no matter if <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> is issued from outside or inside an actor, that the response is delivered back to the caller. That's why <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> does block the execution until the result is available. The <code>receive</code> function handler must specify the result as the <code>car</code> of the cons result.</p></li>
+<p>Posts the message to one routee. The routee is chosen from the router <code>strategy</code>.
+Otherwise see: <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>act:ask-s</code></a>.</p></li>
 </ul>
 
-<p><a id='x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29'></a></p>
+<p><a id='x-28CL-GSERVER-2EACTOR-3AASK-20-28METHOD-20NIL-20-28CL-GSERVER-2EROUTER-3AROUTER-20T-29-29-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" >ASK</a></span></span> <span class="locative-args">ACTOR MESSAGE &amp;KEY TIME-OUT</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AASK-20-28METHOD-20NIL-20-28CL-GSERVER-2EROUTER-3AROUTER-20T-29-29-29" >ASK</a></span></span> <span class="locative-args">(SELF ROUTER) MESSAGE</span></span></p>
 
-<p>This returns a <code>future</code>.
-Specify <code>timeout</code> if a message is to be expected after a certain time.
-An <code>:handler-error</code> with <code>timeout</code> condition will be returned is the call timed out.</p>
-
-<p>An <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>ask</code></a> is similar to a <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> in that the caller gets back a result 
-but it doesn't have to actively wait for it. Instead a <code>future</code> wraps the result.
-However, the internal message handling is based on <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a>.
-How this works is that the message to the target <code>actor</code> is not 'sent' using the callers thread
-but instead an anonymous <code>actor</code> is started behind the scenes and this in fact makes tells
-the message to the target <code>actor</code>. It does sent itself along as 'sender'.
-The target <code>actor</code> tells a response back to the initial <code>sender</code>. When that happens and the anonymous <code>actor</code> received the response the <code>future</code> will be fulfilled with the <code>promise</code>.</p></li>
+<p>Posts the message to one routee. The routee is chosen from the router <code>strategy</code>.
+Otherwise see: <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>act:ask</code></a>.</p></li>
 </ul>
   </div>
 </div>

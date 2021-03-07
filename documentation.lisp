@@ -114,16 +114,21 @@
   (agt:agent-stop function))
 
 (in-package :disp)
+
+(pax:defsection @shared-dispatcher (:title "Shared dispatcher")
+  (disp:shared-dispatcher class))
+
 (pax:defsection @dispatcher (:title "Dispatcher")
   (disp:dispatcher-base class)
-  (disp:shared-dispatcher class)
   (disp:make-dispatcher function)
   (disp:dispatch generic-function)
   (disp:dispatch-async generic-function)
   (disp:shutdown generic-function)
   (disp:workers generic-function)
   (disp:dispatch-worker class)
-  (disp:make-dispatcher-worker function))
+  (disp:make-dispatcher-worker function)
+
+  (disp:@shared-dispatcher pax:section))
 
 (in-package :router)
 (pax:defsection @router (:title "Router")
@@ -132,9 +137,9 @@
   (router:add-routee function)
   (router:stop function)
   (router:routees function)
-  (router:tell generic-function)
-  (router:ask-s generic-function)
-  (router:ask generic-function))
+  (router:tell (pax:method () (router:router t)))
+  (router:ask-s (pax:method () (router:router t)))
+  (router:ask (pax:method () (router:router t))))
 
 (defpackage :cl-gserver.docs)
 (in-package :cl-gserver.docs)

@@ -7,7 +7,7 @@
 (defun make-dispatcher (&key (num-workers 1))
   "Default constructor.
 This creates a `shared-dispatcher` with `num-workers` number of workers.
-Each worker is based on a `:pinned` actor meaning that it has it's own thread."
+Each worker is based on a `:pinned` actor meaning that it has its own thread."
   (make-instance 'shared-dispatcher
                  :num-workers num-workers))
 
@@ -23,7 +23,10 @@ Each worker is based on a `:pinned` actor meaning that it has it's own thread."
   ((router :initform (router:make-router :strategy :random)))
   (:documentation
    "A shared dispatcher.
-The strategy to choose a worker is random."))
+Internally it uses a `router:router` to drive the `dispatch-worker`s.
+The default strategy of choosing a worker is `:random`.
+
+A `shared-dispatcher` is automatically setup by an `asys:actor-system`."))
 
 (defmethod initialize-instance :after ((self shared-dispatcher) &key (num-workers 1))
   (with-slots (router) self

@@ -78,12 +78,13 @@
 <p>cl-gserver is a 'message passing' library/framework with actors
 similar to Erlang or Akka.</p>
 
-<p><strong>Version 1.4 adds: convenience macro for creating actor. See below for
-more details</strong></p>
+<p><strong>Version 1.4.1: changed documentation to the excellent <a href="https://github.com/melisgl/mgl-pax" >mgl-pax</a></strong></p>
 
-<p><strong>Version 1.3.1 adds: round-robin strategy for router</strong></p>
+<p><strong>Version 1.4: convenience macro for creating actor. See below for more details</strong></p>
 
-<p><strong>Version 1.3 adds: agents can be created in actor-system</strong></p>
+<p><strong>Version 1.3.1: round-robin strategy for router</strong></p>
+
+<p><strong>Version 1.3: agents can be created in actor-system</strong></p>
 
 <p><strong>Version 1.2 introduces a breaking change</strong></p>
 
@@ -148,7 +149,7 @@ it's used. It can be done by:</p>
 <pre><code><span class="code"><span class="paren1">(<span class="code">ac:shutdown <span class="special">*system*</span></span>)</span></span></code></pre>
 
 <p>This will stop all dispatcher workers and all other actors that have
-been spawed in the system.</p></li>
+been spawned in the system.</p></li>
 </ol>
 
 <h4>Creating actors</h4>
@@ -167,7 +168,7 @@ is:</p>
 will create a child actor.</li>
 </ol>
 
-<p>Here we now use the <code>actor-context</code> protocol/api nicknamed
+<p>Here we now use the <code>actor-context</code> protocol/API nicknamed
 <code>ac</code>.</p>
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">ac:actor-of <span class="special">*system*</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code"></span>)</span>
@@ -506,7 +507,7 @@ state and comes with some conveniences to do that.</p>
 <p>To use an Agent import <code>cl-gserver.agent</code> package.</p>
 
 <p>There is no need to subclass an Agent. Rather create a facade to
-customermize an agent. See below.</p>
+customize an agent. See below.</p>
 
 <p>An Agent provides three functions to use it.</p>
 
@@ -1541,7 +1542,7 @@ The default strategy of choosing a worker is <code>:random</code>.</p>
 
 <p>Default constructor.
 This creates a <a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:SHARED-DISPATCHER CLASS)"><code>shared-dispatcher</code></a> with <code>num-workers</code> number of workers.
-Each worker is based on a <code>:pinned</code> actor meaning that it has it's own thread.</p></li>
+Each worker is based on a <code>:pinned</code> actor meaning that it has its own thread.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-20GENERIC-FUNCTION-29'></a></p>

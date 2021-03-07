@@ -3,12 +3,13 @@
 cl-gserver is a 'message passing' library/framework with actors
 similar to Erlang or Akka.
 
-**Version 1.4 adds: convenience macro for creating actor. See below for
-more details**
+**Version 1.4.1: changed documentation to the excellent [mgl-pax](https://github.com/melisgl/mgl-pax)**
 
-**Version 1.3.1 adds: round-robin strategy for router**
+**Version 1.4: convenience macro for creating actor. See below for more details**
 
-**Version 1.3 adds: agents can be created in actor-system**
+**Version 1.3.1: round-robin strategy for router**
+
+**Version 1.3: agents can be created in actor-system**
 
 **Version 1.2 introduces a breaking change**
 
@@ -78,7 +79,7 @@ default can of course be increased.
     ```
 
     This will stop all dispatcher workers and all other actors that have
-    been spawed in the system.
+    been spawned in the system.
 
 #### Creating actors
 
@@ -94,7 +95,7 @@ is:
 2.  the `actor`. Creating actors on the context of an actor
     will create a child actor.
 
-Here we now use the `actor-context` protocol/api nicknamed
+Here we now use the `actor-context` protocol/API nicknamed
 `ac`.
 
 ```elisp
@@ -468,7 +469,7 @@ state and comes with some conveniences to do that.
 To use an Agent import `cl-gserver.agent` package.
 
 There is no need to subclass an Agent. Rather create a facade to
-customermize an agent. See below.
+customize an agent. See below.
 
 An Agent provides three functions to use it.
 

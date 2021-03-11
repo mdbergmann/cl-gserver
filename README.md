@@ -178,19 +178,19 @@ can create a child actor of that by doing:
 This will create a new actor on the context of the parent actor. The
 context is retrieved with `(act:context *answerer*)`.
 
-1.  Convenience macro for creating actors
+#####  Convenience macro for creating actors
 
-    The macro `actor-of` in the `actor` package
-    allows creating actors more easily. Internally it uses
-    `ac:actor-of` and `act:make-actor` functions.
-    But is removes a bit of typing. It also allows to specify either an
-    actor-system, an actor-context or just an actor as
-    `context` argument. The macro figures out the real
-    context required to create the actor. Similarly as for
-    `make-actor` it is possible to specify state, name and a
-    custom actor type to the macro.
+The macro `actor-of` in the `actor` package
+allows creating actors more easily. Internally it uses
+`ac:actor-of` and `act:make-actor` functions.
+But is removes a bit of typing. It also allows to specify either an
+actor-system, an actor-context or just an actor as
+`context` argument. The macro figures out the real
+context required to create the actor. Similarly as for
+`make-actor` it is possible to specify state, name and a
+custom actor type to the macro.
 
-    Here is an example:
+Here is an example:
 
 ```elisp
 (act:actor-of (*system*) 
@@ -200,13 +200,13 @@ context is retrieved with `(act:context *answerer*)`.
 
 It is sufficient to just specify the 'receive' lambda. The macro will add the rest.
 
-2.  `:pinned` vs. `:shared`
+##### Dispatchers `:pinned` vs. `:shared`
 
-    By default an actor, created using `actor-of`, uses a `:shared`
-    dispatcher type which uses the shared message dispatchers that are
-    setup in the system. It is also possible to create actors with their
-    own dispatcher thread, those are called `:pinned` actors. Just
-    provide the `:pinned` value to the `dispatcher-type` key parameter.
+By default an actor created using `actor-of` uses a `:shared`
+dispatcher type which uses the shared message dispatchers that are
+setup in the system. It is also possible to create actors with their
+own dispatcher thread, those are called `:pinned` actors. Just
+provide the `:pinned` value to the `dispatcher-type` key parameter.
 
 #### Finding actors in the context
 
@@ -237,110 +237,110 @@ looking up an actor in the system generally will be expanded upon.
 
 Let's send some messages.
 
-1.  tell
+##### tell
 
-    `tell` is a fire-and-forget kind of send type. It
-    doesn't expect a result in return.
+`tell` is a fire-and-forget kind of send type. It
+doesn't expect a result in return.
 
-    And because of that, and in order to demonstrate it does something,
-    it has to have a side-effect. So it dumps some string to the console
-    using `format`, because we couldn't otherwise `tell` if
-    the message was received and processed (see the
-    `*answerer*` actor definitions above).
+And because of that, and in order to demonstrate it does something,
+it has to have a side-effect. So it dumps some string to the console
+using `format`, because we couldn't otherwise `tell` if
+the message was received and processed (see the
+`*answerer*` actor definitions above).
 
-    ```elisp
-    CL-USER> (act:tell *answerer* "Foo")
-    T
-    CL-USER> 
-    Hello Foo
-    ```
+```elisp
+CL-USER> (act:tell *answerer* "Foo")
+T
+CL-USER> 
+Hello Foo
+```
 
-    So we see that `tell` returns immediately with `T`. But
-    to see the 'Hello Foo' it takes another hit on the return key,
-    because the REPL is not asynchronous.
+So we see that `tell` returns immediately with `T`. But
+to see the 'Hello Foo' it takes another hit on the return key,
+because the REPL is not asynchronous.
 
-2.  tell with sender
+##### tell with sender
 
-    `tell` accepts a 'sender', which has to be an actor. So
-    we can do like this:
+`tell` accepts a 'sender', which has to be an actor. So
+we can do like this:
 
-    ```elisp
-    CL-USER> (act:tell *child-answerer* "Foo" *answerer*)
-    T
-    CL-USER> 
-    Hello-child Foo
-    Hello Hello-child Foo
-    ```
+```elisp
+CL-USER> (act:tell *child-answerer* "Foo" *answerer*)
+T
+CL-USER> 
+Hello-child Foo
+Hello Hello-child Foo
+```
 
-    This sends \"Foo\" to `*child-answerer*`, but `*child-answerer*`
-    sends the response to `*answerer*`. So we see outputs of both
-    actors.
+This sends \"Foo\" to `*child-answerer*`, but `*child-answerer*`
+sends the response to `*answerer*`. So we see outputs of both
+actors.
 
-3.  ask-s
+##### ask-s
 
-    `ask-s` blocks until the message was processed by the
-    actor. This call returns the `car` part of the `cons` return of the
-    behavior function. Insofar an `ask-s` call is more
-    resource intensive than just a `tell`.
+`ask-s` blocks until the message was processed by the
+actor. This call returns the `car` part of the `cons` return of the
+behavior function. Insofar an `ask-s` call is more
+resource intensive than just a `tell`.
 
-    ```elisp
-    (act:ask-s *answerer* "Bar")
-    ```
+```elisp
+(act:ask-s *answerer* "Bar")
+```
 
-    Will respond with: 'Hello Bar'
+Will respond with: 'Hello Bar'
 
-4.  ask
+##### ask
 
-    `ask` combines both `ask-s` and
-    `tell`. From `ask-s` it 'inherits' returning
-    a result, even though it's a future result. Internally it is
-    implemented using `tell`. In order to wait for a result a
-    temporary actor is spawned that waits until it receives the result
-    from the actor where the message was sent to. With this received
-    result the future is fulfilled. So `ask` is async, it
-    returns immediately with a `future`. That
-    `future` can be queried until it is fulfilled. Better is
-    though to setup an `on-completed` handler function on it.
+`ask` combines both `ask-s` and
+`tell`. From `ask-s` it 'inherits' returning
+a result, even though it's a future result. Internally it is
+implemented using `tell`. In order to wait for a result a
+temporary actor is spawned that waits until it receives the result
+from the actor where the message was sent to. With this received
+result the future is fulfilled. So `ask` is async, it
+returns immediately with a `future`. That
+`future` can be queried until it is fulfilled. Better is
+though to setup an `on-completed` handler function on it.
 
-    So we can do:
+So we can do:
 
-    ```elisp
-    (future:on-completed
-              (act:ask *answerer* "Buzz")
-              (lambda (result)
-                (format t "Received result: ~a~%" result)))
-    ```
+```elisp
+(future:on-completed
+          (act:ask *answerer* "Buzz")
+          (lambda (result)
+            (format t "Received result: ~a~%" result)))
+```
 
-    Well, one step at a time:
+Well, one step at a time:
 
-    ```elisp
-    (act:ask *answerer* "Buzz")
-    ```
+```elisp
+(act:ask *answerer* "Buzz")
+```
 
-    Returns with:
+Returns with:
 
-    ```
-    #<FUTURE promise: #<PROMISE finished: NIL errored: NIL forward: NIL #x302002EAD6FD>>
-    ```
+```
+#<FUTURE promise: #<PROMISE finished: NIL errored: NIL forward: NIL #x302002EAD6FD>>
+```
 
-    Then we can setup a completion handler on the future:
+Then we can setup a completion handler on the future:
 
-    ```elisp
-    (future:on-completed 
-              *
-              (lambda (result)
-                (format t "Received result: ~a~%" result)))
-    ```
+```elisp
+(future:on-completed 
+          *
+          (lambda (result)
+            (format t "Received result: ~a~%" result)))
+```
 
-    Remember '\*' is the last result in the REPL which is the future
-    here.
+Remember '\*' is the last result in the REPL which is the future
+here.
 
-    This will print after a bit:
+This will print after a bit:
 
-    ```
-    Hello Buzz
-    Received result: Hello Buzz
-    ```
+```
+Hello Buzz
+Received result: Hello Buzz
+```
 
 #### ask-s and ask with timeout
 
@@ -573,6 +573,26 @@ Currently available strategies: `:random` and
 `:round-robin`.
 
 Custom strategies can be implemented.
+
+### Dispatchers
+
+#### :shared
+
+A `:shared` dispatcher is a separate facility that is set up in the `actor-system`. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that every only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).
+
+Using this dispatcher allows to create a large number of actors. The actors as such are generally very cheap.
+
+![](./docs/disp_shared.png)
+![](disp_shared.png)
+
+#### :pinned
+
+The `:pinned` dispatcher is represented by a thread that operates on the actors message queue. It handles one message after the other with the actors message handling code. This also ensures protection from data race conditions of the state of the actor.
+
+This variant is slightly faster (see below) but requires one thread per actor.
+
+![](./docs/disp_pinned.png)
+![](disp_pinned.png)
 
 ### Benchmarks
 

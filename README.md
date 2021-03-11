@@ -582,8 +582,8 @@ A `:shared` dispatcher is a separate facility that is set up in the `actor-syste
 
 Using this dispatcher allows to create a large number of actors. The actors as such are generally very cheap.
 
-![](./docs/disp_shared.png)
-![](disp_shared.png)
+<img alt="" src="./docs/disp_shared.png" width="700"/>
+<img alt="" src="disp_shared.png" width="700"/>
 
 #### :pinned
 
@@ -591,8 +591,8 @@ The `:pinned` dispatcher is represented by a thread that operates on the actors 
 
 This variant is slightly faster (see below) but requires one thread per actor.
 
-![](./docs/disp_pinned.png)
-![](disp_pinned.png)
+<img alt="" src="./docs/disp_pinned.png" width="700"/>
+<img alt="" src="disp_pinned.png" width="700"/>
 
 ### Benchmarks
 

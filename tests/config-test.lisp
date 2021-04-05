@@ -13,11 +13,11 @@
 
 (test parse-empty-config
   "Parses empty config"
-  (is (not (parse-config nil))))
+  (is (not (config-from nil))))
 
-(test parse-config
-  "Parses config. `parse-config' returns a plist where each key is a section."
-  (let ((config (parse-config
+(test config-from
+  "Parses config. `config-from' returns a plist where each key is a section."
+  (let ((config (config-from
                  (prin1-to-string
                   '(config
                     (:foo
@@ -30,40 +30,40 @@
     (is (listp config))
     (is (equal '(:foo (:one 1 :two 2) :bar (:three "3" :four "4")) config))))
 
-(test parse-config--err
+(test config-from--err
   "Parses config. Error, not correct CONFIG"
   (handler-case
-      (parse-config
+      (config-from
        (prin1-to-string
         '(something)))
     (error (c)
       (is (string= "Unrecognized config!" (format nil "~a" c))))))
 
-(test retrieve-dispatcher-section
-  "Retrieves config section dispatchers"
-  (let ((config (parse-config
+(test retrieve-section
+  "Retrieves config section."
+  (let ((config (config-from
                  (prin1-to-string
                   '(config
-                    (:dispatchers
-                     (:num-dispatchers 5)))))))
+                    (:foo
+                     (:bar 5)))))))
     (is (not (null config)))
     (is (listp config))
-    (is (not (null (get-section config :dispatchers))))
-    (is (listp (get-section config :dispatchers)))
-    (is (equal '(:num-dispatchers 5) (get-section config :dispatchers)))))
+    (is (not (null (retrieve-section config :foo))))
+    (is (listp (retrieve-section config :foo)))
+    (is (equal '(:bar 5) (retrieve-section config :foo)))))
 
-(test retrieve-sections
+(test retrieve-keys
   "Retrieves all section keys"
   (is (equal nil
-             (retrieve-sections (parse-config (prin1-to-string '(config))))))
+             (retrieve-keys (config-from (prin1-to-string '(config))))))
   (is (equal '(:foo :bar :buzz)
-             (retrieve-sections (parse-config (prin1-to-string '(config (:foo 1 :bar 2 :buzz 3)))))))
+             (retrieve-keys (config-from (prin1-to-string '(config (:foo 1 :bar 2 :buzz 3)))))))
   )
 
 (defun run-tests ()
   (run! 'parse-empty-config)
-  (run! 'parse-config)
-  (run! 'parse-config--err)
-  (run! 'retrieve-dispatcher-section)
-  (run! 'retrieve-sections)
+  (run! 'config-from)
+  (run! 'config-from--err)
+  (run! 'retrieve-section)
+  (run! 'retrieve-keys)
   )

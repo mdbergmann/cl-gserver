@@ -14,11 +14,12 @@
   :components ((:module "src"
                 :serial t
                 :components
-                ((:file "dispatcher-api")
+                ((:file "config")
+                 (:file "utils")
+                 (:file "dispatcher-api")
                  (:file "actor-system-api")
                  (:file "actor-context-api")
                  (:file "actor-api")
-                 (:file "utils")
                  (:module "core"
                   :components
                   ((:file "queue")
@@ -43,6 +44,7 @@
   :components ((:module "tests"
                 :components
                 ((:file "all-test")
+                 (:file "config-test")
                  (:file "utils-test")
                  (:file "actor-cell-test")
                  (:file "actor-mp-test")

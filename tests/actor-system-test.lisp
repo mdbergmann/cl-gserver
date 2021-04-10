@@ -40,7 +40,8 @@
     (sleep 0.5)))
 
 (test shutdown-system
-  "Shutting down should stop all actors whether pinned or shared."
+  "Shutting down should stop all actors whether pinned or shared.
+We use internal API here only for this test, do not use this otherwise."
   (let ((system (make-actor-system)))
     (asys::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :user)
     (asys::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :user)

@@ -57,13 +57,22 @@
   (is (equal nil
              (retrieve-keys (config-from (prin1-to-string '(defconfig))))))
   (is (equal '(:foo :bar :buzz)
-             (retrieve-keys (config-from (prin1-to-string '(defconfig (:foo 1 :bar 2 :buzz 3)))))))
-  )
+             (retrieve-keys (config-from (prin1-to-string '(defconfig (:foo 1 :bar 2 :buzz 3))))))))
+
+(test retrieve-value
+  "Retrieves a value from a section."
+  (let ((config (config-from
+                 (prin1-to-string
+                  '(defconfig
+                    (:foo
+                     (:bar 5)))))))
+    (is (= 5 (retrieve-value (retrieve-section config :foo) :bar)))))
 
 (defun run-tests ()
   (run! 'parse-empty-config)
   (run! 'config-from)
   (run! 'config-from--err)
   (run! 'retrieve-section)
+  (run! 'retrieve-value)
   (run! 'retrieve-keys)
   )

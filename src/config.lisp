@@ -3,6 +3,7 @@
   (:nicknames :config)
   (:export #:config-from
            #:retrieve-section
+           #:retrieve-value
            #:retrieve-keys))
 
 (in-package :cl-gserver.config)
@@ -35,6 +36,10 @@ Notice the 'config' s-expr must start with the root `car` 'config'.
 A section usually is a plist with additional configs or sub sections.
 This function looks only in the root hierarchy of the given config."
   (getf config section))
+
+(defun retrieve-value (section key)
+  "Retrieves the value for the given key and section."
+  (getf section key))
 
 (defun retrieve-keys (config)
   "Retrieves all section keys"

@@ -19,7 +19,7 @@
   "Parses config. `config-from' returns a plist where each key is a section."
   (let ((config (config-from
                  (prin1-to-string
-                  '(config
+                  '(defconfig
                     (:foo
                      (:one 1
                       :two 2)
@@ -43,7 +43,7 @@
   "Retrieves config section."
   (let ((config (config-from
                  (prin1-to-string
-                  '(config
+                  '(defconfig
                     (:foo
                      (:bar 5)))))))
     (is (not (null config)))
@@ -55,9 +55,9 @@
 (test retrieve-keys
   "Retrieves all section keys"
   (is (equal nil
-             (retrieve-keys (config-from (prin1-to-string '(config))))))
+             (retrieve-keys (config-from (prin1-to-string '(defconfig))))))
   (is (equal '(:foo :bar :buzz)
-             (retrieve-keys (config-from (prin1-to-string '(config (:foo 1 :bar 2 :buzz 3)))))))
+             (retrieve-keys (config-from (prin1-to-string '(defconfig (:foo 1 :bar 2 :buzz 3)))))))
   )
 
 (defun run-tests ()

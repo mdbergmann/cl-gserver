@@ -14,7 +14,7 @@
 (test actor-tree
   "Paths, etc. in a tree."
 
-  (let* ((asystem (asys:make-actor-system :shared-dispatcher-workers 0))
+  (let* ((asystem (asys:make-actor-system '(:dispatchers (:num-shared-workers 0))))
          (root (ac:actor-of asystem
                             (lambda () (act:make-actor
                                    (lambda (self msg state)

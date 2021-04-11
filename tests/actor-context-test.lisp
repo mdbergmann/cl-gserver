@@ -13,7 +13,7 @@
 
 (in-suite actor-context-tests)
 
-(defvar *test-actor-system* (asys:make-actor-system :shared-dispatcher-workers 0))
+(defvar *test-actor-system* (asys:make-actor-system '(:dispatchers (:num-shared-workers 0))))
 
 (test create--with-default-constructor
   "Test if the default constructor creates a context."

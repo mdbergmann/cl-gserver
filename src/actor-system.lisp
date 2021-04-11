@@ -16,6 +16,10 @@
                 :reader dispatchers
                 :documentation
                 "Internal API: contains a list of available message dispatchers.")
+   (config :initform '()
+           :accessor config
+           :documentation
+           "Internal API: the actor-system configuration.")
    (internal-actor-context :initform nil
                            :reader internal-actor-context
                            :documentation
@@ -40,8 +44,9 @@ Or even simpler via `act:actor-of` which is a convenience macro:
 
 (defmethod print-object ((obj actor-system) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (dispatchers internal-actor-context user-actor-context) obj
-      (format stream "shared-workers: ~a, user actors: ~a, internal actors: ~a"
+    (with-slots (dispatchers config internal-actor-context user-actor-context) obj
+      (format stream "config: ~a, shared-workers: ~a, user actors: ~a, internal actors: ~a"
+              config
               (length (disp:workers (getf dispatchers :shared)))
               (length (ac:all-actors user-actor-context))
               (length (ac:all-actors internal-actor-context))))))
@@ -51,13 +56,23 @@ Or even simpler via `act:actor-of` which is a convenience macro:
     (setf user-actor-context (ac:make-actor-context self "/user"))
     (setf internal-actor-context (ac:make-actor-context self "/internal"))))
 
-(defun make-actor-system (&key (shared-dispatcher-workers 4))
+(defun merge-config (config default-config)
+  (if config config default-config))
+
+(defun make-actor-system (&optional config)
   "Creates an `actor-system`.
-Allows to configure the amount of workers for the `shared-dispatcher`."
-  (let ((system (make-instance 'actor-system)))
-    (with-slots (dispatchers) system
+Allows to provide an optional configuration. See `asys:*default-config*`.
+If no config is provided the default config is used.
+Is a config provided then it is merged with the default config.
+Config options in the existing config override the default config."
+  (let* ((system-config (if config (merge-config config *default-config*) *default-config*))
+         (system (make-instance 'actor-system))
+         (dispatcher-config (config:retrieve-section system-config :dispatchers)))
+    (with-slots (dispatchers config) system
+      (setf config system-config)
       (setf dispatchers (list :shared (disp:make-dispatcher
-                                       :num-workers shared-dispatcher-workers))))
+                                       :num-workers
+                                       (config:retrieve-value dispatcher-config :num-shared-workers)))))
     (log:info system)
     system))
 

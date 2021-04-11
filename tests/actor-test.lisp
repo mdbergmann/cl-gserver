@@ -22,7 +22,7 @@
     (when with-context
       (setf (act:context cut)
             (ac:make-actor-context
-             (asys:make-actor-system :shared-dispatcher-workers 1))))
+             (asys:make-actor-system '(:dispatchers (:num-shared-workers 1))))))
     (unwind-protect
          (&body)
       (progn

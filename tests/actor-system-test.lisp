@@ -24,11 +24,11 @@
     (unwind-protect
          (&body)
       (ac:shutdown cut)
-      (sleep 0.5))))
+      (sleep 0.2))))
 
-(test create-system
-  "Creates a system"
-  (let ((system (make-actor-system :shared-dispatcher-workers 4)))
+(test create-system--default-config
+  "Creates an actor-system by applying the default config."
+  (let ((system (make-actor-system)))
     (is (not (null system)))
     (is (not (null (asys::internal-actor-context system))))
     (is (string= "/internal" (ac:id (asys::internal-actor-context system))))
@@ -36,8 +36,24 @@
     (is (not (null (asys::user-actor-context system))))
     (is (string= "/user" (ac:id (asys::user-actor-context system))))
     (is (typep (asys::user-actor-context system) 'ac:actor-context))
+    (is (= 4 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
     (ac:shutdown system)
-    (sleep 0.5)))
+    (sleep 0.2)))
+
+(test create-system--custom-config
+  "Create an actor-system by passing a custom config."
+  (let ((system (make-actor-system '(:dispatchers (:num-shared-workers 2)))))
+    (is (= 2 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
+    (ac:shutdown system)
+    (sleep 0.2)))
+
+(test create-system--check-defaults
+  "Checking defaults on the system"
+  (let ((system (make-actor-system)))
+    (let ((dispatchers (dispatchers system)))
+      (is-true (typep (getf dispatchers :shared) 'shared-dispatcher))
+      (is (= 4 (length (workers (getf dispatchers :shared))))))
+    (ac:shutdown system)))
 
 (test shutdown-system
   "Shutting down should stop all actors whether pinned or shared.
@@ -53,14 +69,6 @@ We use internal API here only for this test, do not use this otherwise."
                             (= 0 (length (ac:find-actors
                                           system
                                           (lambda (actor) (act-cell:running-p actor)))))) 2))))
-
-(test create-system--check-defaults
-  "Checking defaults on the system"
-  (let ((system (make-actor-system)))
-    (let ((dispatchers (dispatchers system)))
-      (is-true (typep (getf dispatchers :shared) 'shared-dispatcher))
-      (is (= 4 (length (workers (getf dispatchers :shared))))))
-    (ac:shutdown system)))
 
 (test actor-of--verify-proper-root-path
   "Tests whether actors and contexts are created with proper paths."
@@ -179,7 +187,9 @@ We use internal API here only for this test, do not use this otherwise."
       (is-true ask-result))))
 
 (defun run-tests ()
-  (run! 'create-system)
+  (run! 'create-system--default-config)
+  (run! 'create-system--custom-config)
+  (run! 'create-system--check-defaults)
   (run! 'shutdown-system)
   (run! 'actor-of--verify-proper-root-path)
   (run! 'actor-of--shared--user)

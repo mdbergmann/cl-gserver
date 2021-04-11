@@ -22,7 +22,7 @@
     (agent-stop agent)))
 
 (def-fixture agent-asys-fixture (fun)
-  (let ((asys (asys:make-actor-system :shared-dispatcher-workers 1)))
+  (let ((asys (asys:make-actor-system '(:dispatchers (:num-shared-workers 1)))))
     (unwind-protect
          (let ((agent (make-agent (lambda () (funcall fun)) asys)))
            (&body))

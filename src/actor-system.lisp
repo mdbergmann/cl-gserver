@@ -56,16 +56,13 @@ Or even simpler via `act:actor-of` which is a convenience macro:
     (setf user-actor-context (ac:make-actor-context self "/user"))
     (setf internal-actor-context (ac:make-actor-context self "/internal"))))
 
-(defun merge-config (config default-config)
-  (if config config default-config))
-
 (defun make-actor-system (&optional config)
   "Creates an `actor-system`.
 Allows to provide an optional configuration. See `asys:*default-config*`.
 If no config is provided the default config is used.
 Is a config provided then it is merged with the default config.
 Config options in the existing config override the default config."
-  (let* ((system-config (if config (merge-config config *default-config*) *default-config*))
+  (let* ((system-config (config:merge-config config *default-config*))
          (system (make-instance 'actor-system))
          (dispatcher-config (config:retrieve-section system-config :dispatchers)))
     (with-slots (dispatchers config) system

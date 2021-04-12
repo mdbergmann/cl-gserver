@@ -4,7 +4,8 @@
   (:export #:config-from
            #:retrieve-section
            #:retrieve-value
-           #:retrieve-keys))
+           #:retrieve-keys
+           #:merge-config))
 
 (in-package :cl-gserver.config)
 
@@ -45,3 +46,34 @@ This function looks only in the root hierarchy of the given config."
   "Retrieves all section keys"
   (loop :for key :in config :by #'cddr
         :collect key))
+
+(defun merge-config (config fallback-config)
+  "Merges config. 
+`config` specifies a config that overrides what exists in `fallback-config`.
+`fallback-config` is a default. If something doesn't exist in `config` it is taken from `fallback-config`.
+Both `config` and `fallback-config` must be plists, or a 'config' that was the output of `config-from`."
+  (cond
+    ((and config fallback-config)
+     (%merge-config nil config fallback-config))
+    (t (if config config fallback-config))))
+
+(defun %merge-config (key config fallback)
+  (cond
+    ((and (not (null config)) (listp config) (not (null fallback)) (listp fallback))
+     (let* ((keys (union (retrieve-keys config) (retrieve-keys fallback)))
+            (result (loop :for key :in keys
+                          :append (%merge-config
+                                   key
+                                   (retrieve-value config key)
+                                   (retrieve-value fallback key)))))
+       (if key
+           `(,key ,result)
+           result)))
+    ((and (listp config) (null fallback))
+     `(,key ,config))
+    ((and (or (null config) (not (listp config)))
+          (and (not (null fallback)) (listp fallback)))
+     `(,key ,fallback))
+    (t (if config
+           `(,key ,config)
+           `(,key ,fallback)))))

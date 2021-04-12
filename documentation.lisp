@@ -2,8 +2,8 @@
 (in-package :asys)
 (pax:defsection @actor-system (:title "Actor-System")
   (asys:actor-system class)
-  ;;(asys:dispatchers (pax:reader actor-system))
   (asys:make-actor-system function)
+  (asys:*default-config* variable)
   ;; ac protocol
   (ac:actor-of (pax:method () (asys:actor-system t)))
   (ac:find-actors (pax:method () (asys:actor-system t)))
@@ -141,6 +141,14 @@
   (router:ask-s (pax:method () (router:router t)))
   (router:ask (pax:method () (router:router t))))
 
+(in-package :config)
+(pax:defsection @config (:title "Config")
+  (config:config-from function)
+  (config:retrieve-section function)
+  (config:retrieve-value function)
+  (config:retrieve-keys function)
+  (config:merge-config function))
+
 (defpackage :cl-gserver.docs)
 (in-package :cl-gserver.docs)
 
@@ -153,7 +161,8 @@
   (act:@actor pax:section)
   (agt:@agent pax:section)
   (disp:@dispatcher pax:section)
-  (router:@router pax:section))
+  (router:@router pax:section)
+  (config:@config pax:section))
 
 (pax:defsection @cl-gserver (:title "cl-gserver documentation")
   (@readme pax:section)

@@ -1,5 +1,5 @@
 (defsystem "cl-gserver"
-  :version "1.4.1"
+  :version "1.5.0"
   :author "Manfred Bergmann"
   :license "AGPL"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."

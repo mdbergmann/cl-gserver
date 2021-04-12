@@ -60,6 +60,7 @@
 <li><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">2.5.1 Shared dispatcher</a></li>
 </ul></li>
 <li><a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">2.6 Router</a></li>
+<li><a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">2.7 Config</a></li>
 </ul></li>
 </ul>
 
@@ -78,15 +79,17 @@
 <p>cl-gserver is a 'message passing' library/framework with actors
 similar to Erlang or Akka.</p>
 
-<p><strong>Version 1.4.1: changed documentation to the excellent <a href="https://github.com/melisgl/mgl-pax" >mgl-pax</a></strong></p>
+<p><strong>Version 1.5.0:</strong> added configuration structure. actor-system can now be created with a configuration. More configuration options to come.</p>
 
-<p><strong>Version 1.4: convenience macro for creating actor. See below for more details</strong></p>
+<p><strong>Version 1.4.1:</strong> changed documentation to the excellent <a href="https://github.com/melisgl/mgl-pax" >mgl-pax</a></p>
 
-<p><strong>Version 1.3.1: round-robin strategy for router</strong></p>
+<p><strong>Version 1.4:</strong> convenience macro for creating actor. See below for more details</p>
 
-<p><strong>Version 1.3: agents can be created in actor-system</strong></p>
+<p><strong>Version 1.3.1:</strong> round-robin strategy for router</p>
 
-<p><strong>Version 1.2 introduces a breaking change</strong></p>
+<p><strong>Version 1.3:</strong> agents can be created in actor-system</p>
+
+<p><strong>Version 1.2:</strong> introduces a breaking change</p>
 
 <p><code>ask</code> has been renamed to <code>ask-s</code>.</p>
 
@@ -139,6 +142,8 @@ reason for working with the message dispatcher pool instead.</p>
 <p>So the <code>actor-system</code> has by default four shared message
 dispatcher workers. Depending on how busy the system tends to be this
 default can of course be increased.</p>
+
+<p>An optional configuration can be passed to the actor-system factory function. See API documentation.</p>
 
 <ol>
 <li><p>Shutting down the system</p>
@@ -245,8 +250,7 @@ can create a child actor of that by doing:</p>
 <p>This will create a new actor on the context of the parent actor. The
 context is retrieved with <code>(act:context *answerer*)</code>.</p>
 
-<ol>
-<li><p>Convenience macro for creating actors</p>
+<h5>Convenience macro for creating actors</h5>
 
 <p>The macro <code>actor-of</code> in the <code>actor</code> package
 allows creating actors more easily. Internally it uses
@@ -258,8 +262,7 @@ context required to create the actor. Similarly as for
 <code>make-actor</code> it is possible to specify state, name and a
 custom actor type to the macro.</p>
 
-<p>Here is an example:</p></li>
-</ol>
+<p>Here is an example:</p>
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">act:actor-of <span class="paren2">(<span class="code"><span class="special">*system*</span></span>)</span> 
   <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
@@ -267,15 +270,13 @@ custom actor type to the macro.</p>
 
 <p>It is sufficient to just specify the 'receive' lambda. The macro will add the rest.</p>
 
-<ol>
-<li><p><code>:pinned</code> vs. <code>:shared</code></p>
+<h5>Dispatchers <code>:pinned</code> vs. <code>:shared</code></h5>
 
-<p>By default an actor, created using <code>actor-of</code>, uses a <code>:shared</code>
+<p>By default an actor created using <code>actor-of</code> uses a <code>:shared</code>
 dispatcher type which uses the shared message dispatchers that are
 setup in the system. It is also possible to create actors with their
 own dispatcher thread, those are called <code>:pinned</code> actors. Just
-provide the <code>:pinned</code> value to the <code>dispatcher-type</code> key parameter.</p></li>
-</ol>
+provide the <code>:pinned</code> value to the <code>dispatcher-type</code> key parameter.</p>
 
 <h4>Finding actors in the context</h4>
 
@@ -302,8 +303,7 @@ looking up an actor in the system generally will be expanded upon.</p>
 
 <p>Let's send some messages.</p>
 
-<ol>
-<li><p>tell</p>
+<h5>tell</h5>
 
 <p><code>tell</code> is a fire-and-forget kind of send type. It
 doesn't expect a result in return.</p>
@@ -321,8 +321,9 @@ Hello Foo</span></code></pre>
 
 <p>So we see that <code>tell</code> returns immediately with <code>T</code>. But
 to see the 'Hello Foo' it takes another hit on the return key,
-because the REPL is not asynchronous.</p></li>
-<li><p>tell with sender</p>
+because the REPL is not asynchronous.</p>
+
+<h5>tell with sender</h5>
 
 <p><code>tell</code> accepts a 'sender', which has to be an actor. So
 we can do like this:</p>
@@ -335,8 +336,9 @@ Hello Hello-child Foo</span></code></pre>
 
 <p>This sends \&quot;Foo\&quot; to <code>*child-answerer*</code>, but <code>*child-answerer*</code>
 sends the response to <code>*answerer*</code>. So we see outputs of both
-actors.</p></li>
-<li><p>ask-s</p>
+actors.</p>
+
+<h5>ask-s</h5>
 
 <p><code>ask-s</code> blocks until the message was processed by the
 actor. This call returns the <code>car</code> part of the <code>cons</code> return of the
@@ -345,8 +347,9 @@ resource intensive than just a <code>tell</code>.</p>
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">act:ask-s <span class="special">*answerer*</span> <span class="string">"Bar"</span></span>)</span></span></code></pre>
 
-<p>Will respond with: 'Hello Bar'</p></li>
-<li><p>ask</p>
+<p>Will respond with: 'Hello Bar'</p>
+
+<h5>ask</h5>
 
 <p><code>ask</code> combines both <code>ask-s</code> and
 <code>tell</code>. From <code>ask-s</code> it 'inherits' returning
@@ -387,8 +390,7 @@ here.</p>
 <p>This will print after a bit:</p>
 
 <pre><code><span class="code">Hello Buzz
-Received result: Hello Buzz</span></code></pre></li>
-</ol>
+Received result: Hello Buzz</span></code></pre>
 
 <h4>ask-s and ask with timeout</h4>
 
@@ -606,6 +608,26 @@ routees and returns a routee index to be chosen for the next operation.</p>
 
 <p>Custom strategies can be implemented.</p>
 
+<h3>Dispatchers</h3>
+
+<h4>:shared</h4>
+
+<p>A <code>:shared</code> dispatcher is a separate facility that is set up in the <code>actor-system</code>. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that every only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).</p>
+
+<p>Using this dispatcher allows to create a large number of actors. The actors as such are generally very cheap.</p>
+
+<p><img alt="" src="./docs/disp_shared.png" width="700"/>
+<img alt="" src="disp_shared.png" width="700"/></p>
+
+<h4>:pinned</h4>
+
+<p>The <code>:pinned</code> dispatcher is represented by a thread that operates on the actors message queue. It handles one message after the other with the actors message handling code. This also ensures protection from data race conditions of the state of the actor.</p>
+
+<p>This variant is slightly faster (see below) but requires one thread per actor.</p>
+
+<p><img alt="" src="./docs/disp_pinned.png" width="700"/>
+<img alt="" src="disp_pinned.png" width="700"/></p>
+
 <h3>Benchmarks</h3>
 
 <p><img src="./docs/perf.png" alt="" />
@@ -687,10 +709,20 @@ With the <code>actor-system</code> you can create actors via the <a href="#x-28C
 <p><a id='x-28CL-GSERVER-2EACTOR-SYSTEM-3AMAKE-ACTOR-SYSTEM-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AMAKE-ACTOR-SYSTEM-20FUNCTION-29" >MAKE-ACTOR-SYSTEM</a></span></span> <span class="locative-args">&amp;KEY SHARED-DISPATCHER-WORKERS</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AMAKE-ACTOR-SYSTEM-20FUNCTION-29" >MAKE-ACTOR-SYSTEM</a></span></span> <span class="locative-args">&amp;OPTIONAL CONFIG</span></span></p>
 
 <p>Creates an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>actor-system</code></a>.
-Allows to configure the amount of workers for the <code>shared-dispatcher</code>.</p></li>
+Allows to provide an optional configuration. See <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" title="(CL-GSERVER.ACTOR-SYSTEM:*DEFAULT-CONFIG* (VARIABLE))"><code>asys:*default-config*</code></a>.
+If no config is provided the default config is used.
+Is a config provided then it is merged with the default config.
+Config options in the existing config override the default config.
+See <a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" title="(CL-GSERVER.CONFIG:CONFIG-FROM FUNCTION)"><code>config:config-from</code></a>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29'></a></p>
+
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" >*DEFAULT-CONFIG*</a></span></span> <span class="locative-args">(:DISPATCHERS (:NUM-SHARED-WORKERS 4))</span></span></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29'></a></p>
@@ -1069,7 +1101,7 @@ The <code>new-behavior</code> function must accept 3 parameters: the actor insta
 <p><a id='x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">X</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">ACTOR</span></span></p>
 
 <p>This is the <code>actor-context</code> every actor is composed of.
 When the actor is created from scratch it has no <code>actor-context</code>.
@@ -1106,9 +1138,9 @@ I.e.: when it stopped. The message being sent in this case is: <code>(cons :stop
 <p><a id='x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">X</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">ACTOR</span></span></p>
 
-<p>Returns a list of watchers of <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a>.</p></li>
+<p>Returns a list of watchers of <code>actor</code>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CELL-3A-40ACTOR-CELL-20MGL-PAX-3ASECTION-29'></a></p>
@@ -1523,18 +1555,6 @@ The return value of <code>update-fun</code> will be taken as the new state of th
 <p>A <code>dispatcher</code> contains a pool of <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a> that operate as workers where work is dispatched to.</p></li>
 </ul>
 
-<p><a id='x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29'></a></p>
-
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" >SHARED-DISPATCHER</a></span></span> <span class="locative-args"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCHER-BASE-20CLASS-29" title="(CL-GSERVER.DISPATCHER:DISPATCHER-BASE CLASS)">DISPATCHER-BASE</a></span></span></p>
-
-<p>A shared dispatcher.
-Internally it uses a <a href="#x-28CL-GSERVER-2EROUTER-3AROUTER-20CLASS-29" title="(CL-GSERVER.ROUTER:ROUTER CLASS)"><code>router:router</code></a> to drive the <a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-WORKER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:DISPATCH-WORKER CLASS)"><code>dispatch-worker</code></a>s.
-The default strategy of choosing a worker is <code>:random</code>.</p>
-
-<p>A <code>shared-dispatcher</code> is automatically setup by an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>.</p></li>
-</ul>
-
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29'></a></p>
 
 <ul>
@@ -1618,7 +1638,7 @@ The default strategy of choosing a worker is <code>:random</code>.</p>
 
 <p><a id='x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">&#8594;</a> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8634;</a></span></span></p>
 
 <h3><a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29">2.6 Router</a></h3>
 
@@ -1697,6 +1717,71 @@ Otherwise see: <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" t
 
 <p>Posts the message to one routee. The routee is chosen from the router <code>strategy</code>.
 Otherwise see: <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>act:ask</code></a>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29'></a></p>
+
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">&#8634;</a></span></span></p>
+
+<h3><a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29">2.7 Config</a></h3>
+
+<h6>[in package CL-GSERVER.CONFIG with nicknames CONFIG]</h6>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" >CONFIG-FROM</a></span></span> <span class="locative-args">CONFIG-STRING</span></span></p>
+
+<p>Parses the given config-string, represented by common lisp s-expressions.
+The config is composed of plists in a hierarchy.</p>
+
+<p>This function parses (run through <code>cl:read</code>) the given config string.
+The config string can be generated by:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">let</span></i> <span class="paren2">(<span class="code"><span class="paren3">(<span class="code"><span class="special">*print-case*</span> <span class="keyword">:downcase</span></span>)</span></span>)</span>
+  <span class="paren2">(<span class="code">prin1-to-string '<span class="paren3">(<span class="code"><i><span class="symbol">defconfig</span></i> 
+                     <span class="paren4">(<span class="code"><span class="keyword">:foo</span> 1
+                      <span class="keyword">:bar</span> 2</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>Or just be given by reading from a file.
+Notice the 'config' s-expr must start with the root <code>car</code> 'defconfig'.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-SECTION-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-SECTION-20FUNCTION-29" >RETRIEVE-SECTION</a></span></span> <span class="locative-args">CONFIG SECTION</span></span></p>
+
+<p>Retrieves the given named section which should be a (global) <code>symbol</code> (a key).
+A section usually is a plist with additional configs or sub sections.
+This function looks only in the root hierarchy of the given config.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-VALUE-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-VALUE-20FUNCTION-29" >RETRIEVE-VALUE</a></span></span> <span class="locative-args">SECTION KEY</span></span></p>
+
+<p>Retrieves the value for the given key and section.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-KEYS-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-KEYS-20FUNCTION-29" >RETRIEVE-KEYS</a></span></span> <span class="locative-args">CONFIG</span></span></p>
+
+<p>Retrieves all section keys</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3AMERGE-CONFIG-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3AMERGE-CONFIG-20FUNCTION-29" >MERGE-CONFIG</a></span></span> <span class="locative-args">CONFIG FALLBACK-CONFIG</span></span></p>
+
+<p>Merges config. 
+<code>config</code> specifies a config that overrides what exists in <code>fallback-config</code>.
+<code>fallback-config</code> is a default. If something doesn't exist in <code>config</code> it is taken from <code>fallback-config</code>.
+Both <code>config</code> and <code>fallback-config</code> must be plists, or a 'config' that was the output of <a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" title="(CL-GSERVER.CONFIG:CONFIG-FROM FUNCTION)"><code>config-from</code></a>.</p></li>
 </ul>
   </div>
 </div>

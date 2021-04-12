@@ -3,15 +3,17 @@
 cl-gserver is a 'message passing' library/framework with actors
 similar to Erlang or Akka.
 
-**Version 1.4.1: changed documentation to the excellent [mgl-pax](https://github.com/melisgl/mgl-pax)**
+**Version 1.5.0:** added configuration structure. actor-system can now be created with a configuration. More configuration options to come.
 
-**Version 1.4: convenience macro for creating actor. See below for more details**
+**Version 1.4.1:** changed documentation to the excellent [mgl-pax](https://github.com/melisgl/mgl-pax)
 
-**Version 1.3.1: round-robin strategy for router**
+**Version 1.4:** convenience macro for creating actor. See below for more details
 
-**Version 1.3: agents can be created in actor-system**
+**Version 1.3.1:** round-robin strategy for router
 
-**Version 1.2 introduces a breaking change**
+**Version 1.3:** agents can be created in actor-system
+
+**Version 1.2:** introduces a breaking change
 
 `ask` has been renamed to `ask-s`.
 
@@ -68,6 +70,8 @@ When we eval `*system*` in the repl we see a bit of the structure:
 So the `actor-system` has by default four shared message
 dispatcher workers. Depending on how busy the system tends to be this
 default can of course be increased.
+
+An optional configuration can be passed to the actor-system factory function. See API documentation.
 
 1.  Shutting down the system
 

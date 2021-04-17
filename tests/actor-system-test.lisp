@@ -24,7 +24,7 @@
     (unwind-protect
          (&body)
       (ac:shutdown cut)
-      (sleep 0.2))))
+      (sleep 0.5))))
 
 (test create-system--default-config
   "Creates an actor-system by applying the default config."
@@ -96,8 +96,9 @@ We use internal API here only for this test, do not use this otherwise."
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/dp))
       (is (not (null (act:context actor))))
       (is (eq (ac:system (act:context actor)) cut))
-      (is (= 1 (length (ac:all-actors (asys::internal-actor-context cut)))))
-      (is (eq actor (first (ac:all-actors (asys::internal-actor-context cut))))))))
+      (is (= 2 (length (ac:all-actors (asys::internal-actor-context cut)))))
+      ;; first is eventstream actor
+      (is (member actor (ac:all-actors (asys::internal-actor-context cut)) :test #'eq)))))
 
 (test actor-of--pinned--user
   "Creates actors in the system in user context with pinned dispatcher."
@@ -118,8 +119,9 @@ We use internal API here only for this test, do not use this otherwise."
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/bt))
       (is (not (null (act:context actor))))
       (is (eq (ac:system (act:context actor)) cut))
-      (is (= 1 (length (ac:all-actors (asys::internal-actor-context cut)))))
-      (is (eq actor (first (ac:all-actors (asys::internal-actor-context cut))))))))
+      (is (= 2 (length (ac:all-actors (asys::internal-actor-context cut)))))
+      ;; first is eventstream actor
+      (is (member actor (ac:all-actors (asys::internal-actor-context cut)) :test #'eq)))))
 
 (test find-actors--in-system
   "Test finding actors in system."
@@ -196,19 +198,3 @@ We use internal API here only for this test, do not use this otherwise."
       (ev:publish (eventstream cut) "Foo")
       (is (assert-cond (lambda () (equal ev-received "Foo")) 1))
       (ev:unsubscribe (eventstream cut) ev-listener))))
-
-(defun run-tests ()
-  (run! 'create-system--default-config)
-  (run! 'create-system--custom-config)
-  (run! 'create-system--check-defaults)
-  (run! 'shutdown-system)
-  (run! 'actor-of--verify-proper-root-path)
-  (run! 'actor-of--shared--user)
-  (run! 'actor-of--shared--internal)
-  (run! 'actor-of--pinned--user)
-  (run! 'actor-of--pinned--internal)
-  (run! 'find-actors--in-system)
-  (run! 'find-actor-by-name--in-system)
-  (run! 'all-actors--in-system-user-context)
-  (run! 'stop-actor--in-system)
-  (run! 'creating-some-actors--and-collect-responses))

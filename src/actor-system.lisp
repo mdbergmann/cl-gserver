@@ -27,7 +27,11 @@
    (user-actor-context :initform nil
                        :reader user-actor-context
                        :documentation
-                       "Internal API: an actor context for agents/actors created by the user."))
+                       "Internal API: an actor context for agents/actors created by the user.")
+   (eventstream :initform nil
+                :reader eventstream
+                :documentation
+                "The system event stream. See `ev:eventstream` for more info."))
   (:documentation
    "An `actor-system` is the opening facility. The first thing you do is to create an `actor-system` using the main constructor `make-actor-system`.
 With the `actor-system` you can create actors via the `ac:actor-context` protocol function: `ac:actor-of`.
@@ -63,11 +67,11 @@ If no config is provided the default config is used.
 Is a config provided then it is merged with the default config.
 Config options in the existing config override the default config.
 See `config:config-from`."
-  (let* ((system-config (config:merge-config config *default-config*))
-         (system (make-instance 'actor-system)))
-    (with-slots (dispatchers config) system
+  (let ((system-config (config:merge-config config *default-config*))
+        (system (make-instance 'actor-system)))
+    (with-slots (dispatchers config internal-actor-context eventstream) system
       (setf config system-config)
-
+      (setf eventstream (ev:make-eventstream internal-actor-context))
       (let ((dispatcher-config (config:retrieve-section system-config :dispatchers)))
         (setf dispatchers (list :shared (disp:make-dispatcher
                                          :num-workers

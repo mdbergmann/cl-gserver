@@ -17,7 +17,7 @@
     (unwind-protect
          (&body)
       (ac:shutdown context)
-      (sleep 0.1))))
+      (sleep 0.3))))
 
 (test make-eventstream
   "Creates an event stream."
@@ -159,4 +159,6 @@
       (is (null ev-received))
       (unsubscribe cut ev-listener)
       (setf ev-received nil)
+
+      (ac:stop context ev-listener)
       )))

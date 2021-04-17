@@ -4,6 +4,7 @@
   (:export #:make-actor-system
            #:actor-system
            #:dispatchers
+           #:eventstream
            #:*default-config*))
 
 (in-package :cl-gserver.actor-system)

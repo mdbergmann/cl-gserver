@@ -64,13 +64,14 @@ Is a config provided then it is merged with the default config.
 Config options in the existing config override the default config.
 See `config:config-from`."
   (let* ((system-config (config:merge-config config *default-config*))
-         (system (make-instance 'actor-system))
-         (dispatcher-config (config:retrieve-section system-config :dispatchers)))
+         (system (make-instance 'actor-system)))
     (with-slots (dispatchers config) system
       (setf config system-config)
-      (setf dispatchers (list :shared (disp:make-dispatcher
-                                       :num-workers
-                                       (config:retrieve-value dispatcher-config :num-shared-workers)))))
+
+      (let ((dispatcher-config (config:retrieve-section system-config :dispatchers)))
+        (setf dispatchers (list :shared (disp:make-dispatcher
+                                         :num-workers
+                                         (config:retrieve-value dispatcher-config :num-shared-workers))))))
     (log:info system)
     system))
 

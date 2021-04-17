@@ -10,7 +10,8 @@
                "iterate"
                "str"
                "blackbird"
-               "cl-hamt")
+               "cl-hamt"
+               "arrows")
   :components ((:module "src"
                 :serial t
                 :components

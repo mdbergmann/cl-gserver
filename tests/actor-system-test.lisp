@@ -170,14 +170,11 @@ We use internal API here only for this test, do not use this otherwise."
 (test creating-some-actors--and-collect-responses
   "Creating many actors should not pose a problem."
   (with-fixture test-system ()
-    (let ((actors (loop for i from 1 to 100
-                        collect (ac:actor-of
-                                 cut
-                                 (lambda ()
-                                   (make-actor
-                                    (lambda (self msg state)
-                                      (declare (ignore self))
-                                      (cons (format nil "reply: ~a" msg) state)))))))
+    (let ((actors (loop :repeat 100
+                        collect (act:actor-of (cut)
+                                  (lambda (self msg state)
+                                    (declare (ignore self))
+                                    (cons (format nil "reply: ~a" msg) state)))))
           (ask-result nil))
       (time (setf ask-result
                   (every (lambda (x) (string= "reply: test" x))
@@ -185,6 +182,19 @@ We use internal API here only for this test, do not use this otherwise."
                                    (act:ask-s actor "test"))
                                  actors))))
       (is-true ask-result))))
+
+(test ev-subscribe-publish-receive--all-messages
+  "Subscribe to eventstream, publish and receive. IntegTest."
+  (with-fixture test-system ()
+    (let* ((ev-received)
+           (ev-listener (act:actor-of (cut)
+                          (lambda (self msg state)
+                            (setf ev-received msg)
+                            (cons nil nil)))))
+      (ev:subscribe (eventstream cut) ev-listener)
+      (ev:publish (eventstream cut) "Foo")
+      (is (assert-cond (lambda () (equal ev-received "Foo")) 1))
+      (ev:unsubribe (eventstream cut) ev-listener))))
 
 (defun run-tests ()
   (run! 'create-system--default-config)

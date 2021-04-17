@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.eventstream
-  (:use :cl :arrows)
+  (:use :cl)
   (:nicknames :ev)
   (:import-from #:act
                 #:actor-of
@@ -27,7 +27,9 @@ The subscriber is then only notified when the events is posted with the exact sa
 
 Or events can be symbols.
 For example: a subscriber wants to listen to a certain type of message which is represented by the symbol `'my-package:foo` (this can be a class type or something else).
-The subscriber is then notified about the event when the poster posts exactly: `'my-package:foo`."))
+The subscriber is then notified about the event when the poster posts exactly: `'my-package:foo`.
+
+See more information at the `subscribe` function."))
 
 (defun make-eventstream (actor-context)
   "Creating an eventstream is done by the `actor-system` which is available system wide. 
@@ -57,29 +59,37 @@ But in theory it can be created individually by just passing an `actor-context` 
 (defun subscribers-for-type (subscribers msg-type msg)
   ;;(format t "msg-type, msg: ~a, ~a~%" msg-type msg)
   (flet ((no-type-registered-p (elem) (null elem))
-         (equal-string-p (elem) (and (subtypep msg-type 'string)
+         (equal-string-p (elem) (and (stringp msg)
+                                     (typep elem 'string)
                                      (string= elem msg)))
-         (equal-symbol-p (elem) (and (symbolp msg-type)
+         (equal-list-p (elem) (and (listp msg)
+                                   (typep elem 'cons)
+                                   (equalp elem msg)))
+         (equal-symbol-p (elem) (and (symbolp msg)
                                      (symbolp elem)
                                      (eq elem msg)))
-         (instance-subtype-p (elem) (and (symbolp elem)
+         (equal-objecttype-p (elem) (and (symbolp elem)
                                          (not (symbolp msg))
                                          (subtypep elem msg-type))))
     (mapcar #'car
             (filter (lambda (sub)
-                      (or (no-type-registered-p (second sub))
-                          (or (equal-string-p (second sub))
-                              (equal-symbol-p (second sub))
-                              (instance-subtype-p (second sub)))))
+                      (let ((reg-type (second sub)))
+                        (or (no-type-registered-p reg-type)
+                            (or (equal-symbol-p reg-type)
+                                (equal-objecttype-p reg-type)
+                                (equal-string-p reg-type)
+                                (equal-list-p reg-type)))))
                     subscribers))))
 
 (defmethod subscribe ((self eventstream) (actor act:actor) &optional message)
-  "Subscribe to the events stream for a certain message type, or all messages when `message` is nil.
+  "Subscribe to the eventstream to receive notifications of certain events or event types.
+
 The `message` can be:
+- nil: receive all events posted to the eventstream.
+- a type, class type: this allows to get notifications when an instance of this type, or class type is posted.
+- a symbol or global symbol: if posted message is a symbol or global symbol then the symbols are compared (`eq`).
 - a string: in which case an exact string comparison is made for a string message that is posted to the eventstream.
-- a symbol: a symbol can be just `'string` to receive notifications about all messages that are of type `string`.
-Or it may be another symbol or class type.
-In case the published message is an instance of a class, then the symbol for the subscription should be the class type."
+- a list: if subscription if for a list structure, and the posted message is also a list structure, then a structure comparison (`equalp`) is made."
   (with-slots (subscribers) self
     (setf subscribers (cons `(,actor ,message) subscribers))))
 

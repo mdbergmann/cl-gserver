@@ -27,9 +27,8 @@
     (if (> wait-time max-time) (return)
         (sleep sleep-time))))
 
-(defmacro filter (fun list)
-  (with-gensyms (x)
-  `(mapcan (lambda (,x) (if (funcall ,fun ,x) (list ,x))) ,list)))
+(defun filter (fun lst)
+  (mapcan (lambda (x) (if (funcall fun x) (list x))) lst))
 
 (defun wait-cond (cond-fun &optional (sleep-time 0.02) (max-time 12))
   (let ((wait-acc 0))

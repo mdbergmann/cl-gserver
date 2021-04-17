@@ -93,6 +93,14 @@
       (unsubscribe cut ev-listener)      
       (setf ev-received nil)
 
+      ;; subscribe for global symbol
+      (subscribe cut ev-listener :foo)
+      (publish cut :foo)
+      (is (assert-cond
+           (lambda () (eq :foo ev-received)) 0.5))
+      (unsubscribe cut ev-listener)      
+      (setf ev-received nil)
+
       ;; subscribe for symbol - no match
       (subscribe cut ev-listener 'foo)
       (publish cut 'bar)
@@ -136,4 +144,19 @@
       (unsubscribe cut ev-listener)
       (setf ev-received nil)
       
+      ;; subscribe for list - structure compare
+      (subscribe cut ev-listener '(1 2 3))
+      (publish cut '(1 2 3))
+      (is (assert-cond
+           (lambda () (equalp '(1 2 3) ev-received)) 0.5))
+      (unsubscribe cut ev-listener)
+      (setf ev-received nil)
+
+      ;; subscribe for list - structure compare - no match
+      (subscribe cut ev-listener '(1 2))
+      (publish cut '(1 2 3))
+      (sleep 0.2)
+      (is (null ev-received))
+      (unsubscribe cut ev-listener)
+      (setf ev-received nil)
       )))

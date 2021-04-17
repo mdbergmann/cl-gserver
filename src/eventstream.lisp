@@ -55,18 +55,22 @@ But in theory it can be created individually by just passing an `actor-context` 
   (cons t state))
 
 (defun subscribers-for-type (subscribers msg-type msg)
-  (flet ((is-no-type-registered (elem) (null elem))
-         (is-equal-subtype (elem) (subtypep (type-of elem) msg-type))
-         (is-equal-string (elem) (and (subtypep msg-type 'string)
-                                      (string= elem msg)))
-         (is-equal-symbol (elem) (and (symbolp msg-type)
-                                      (eq elem msg))))
+  ;;(format t "msg-type, msg: ~a, ~a~%" msg-type msg)
+  (flet ((no-type-registered-p (elem) (null elem))
+         (equal-string-p (elem) (and (subtypep msg-type 'string)
+                                     (string= elem msg)))
+         (equal-symbol-p (elem) (and (symbolp msg-type)
+                                     (symbolp elem)
+                                     (eq elem msg)))
+         (instance-subtype-p (elem) (and (symbolp elem)
+                                         (not (symbolp msg))
+                                         (subtypep elem msg-type))))
     (mapcar #'car
             (filter (lambda (sub)
-                      (or (is-no-type-registered (second sub))
-                          (and (is-equal-subtype (second sub))
-                               (or (is-equal-string (second sub))
-                                   (is-equal-symbol (second sub))))))
+                      (or (no-type-registered-p (second sub))
+                          (or (equal-string-p (second sub))
+                              (equal-symbol-p (second sub))
+                              (instance-subtype-p (second sub)))))
                     subscribers))))
 
 (defmethod subscribe ((self eventstream) (actor act:actor) &optional message)
@@ -74,7 +78,8 @@ But in theory it can be created individually by just passing an `actor-context` 
 The `message` can be:
 - a string: in which case an exact string comparison is made for a string message that is posted to the eventstream.
 - a symbol: a symbol can be just `'string` to receive notifications about all messages that are of type `string`.
-Or it may be class, or otherwise defined symbol."
+Or it may be another symbol or class type.
+In case the published message is an instance of a class, then the symbol for the subscription should be the class type."
   (with-slots (subscribers) self
     (setf subscribers (cons `(,actor ,message) subscribers))))
 

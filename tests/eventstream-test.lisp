@@ -49,6 +49,9 @@
       (unsubscribe cut act)
       (is (= 0 (length (ev::subscribers cut)))))))
 
+(defclass my-class () ())
+(defclass my-sub-class (my-class) ())
+
 (test publish-receive-ev
   "Publish a message to eventstream."
   (with-fixture test-ev ()
@@ -77,7 +80,7 @@
       ;; subscribe for string - no match
       (subscribe cut ev-listener "Foo")
       (publish cut "Bar")
-      (sleep 0.5)
+      (sleep 0.2)
       (is (null ev-received))
       (unsubscribe cut ev-listener)      
       (setf ev-received nil)
@@ -93,9 +96,44 @@
       ;; subscribe for symbol - no match
       (subscribe cut ev-listener 'foo)
       (publish cut 'bar)
-      (sleep 0.5)
+      (sleep 0.2)
       (is (null ev-received))
       (unsubscribe cut ev-listener)      
+      (setf ev-received nil)
+
+      ;; subscribe for symbol - class
+      (subscribe cut ev-listener 'my-class)
+      (let ((obj (make-instance 'my-class)))
+        (publish cut obj)
+        (is (assert-cond
+             (lambda () (eq obj ev-received)) 0.5)))
+      (unsubscribe cut ev-listener)
+      (setf ev-received nil)
+
+      ;; subscribe for symbol - sub-class
+      (subscribe cut ev-listener 'my-sub-class)
+      (let ((obj (make-instance 'my-class)))
+        (publish cut obj)
+        (is (assert-cond
+             (lambda () (eq obj ev-received)) 0.5)))
+      (unsubscribe cut ev-listener)
+      (setf ev-received nil)
+
+      ;; subscribe for symbol - parent-class
+      (subscribe cut ev-listener 'my-class)
+      (let ((obj (make-instance 'my-sub-class)))
+        (publish cut obj)
+        (sleep 0.2)
+        (is (null ev-received)))
+      (unsubscribe cut ev-listener)
+      (setf ev-received nil)
+
+      ;; subscribe for list
+      (subscribe cut ev-listener 'cons)
+      (publish cut '(1 2 3))
+      (is (assert-cond
+           (lambda () (equalp '(1 2 3) ev-received)) 0.5))
+      (unsubscribe cut ev-listener)
       (setf ev-received nil)
       
       )))

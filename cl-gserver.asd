@@ -7,7 +7,6 @@
                "lparallel"
                "cl-speedy-queue"
                "log4cl"
-               "iterate"
                "str"
                "blackbird"
                "cl-hamt"
@@ -30,6 +29,7 @@
                  (:file "actor")
                  (:file "agent")
                  (:file "router")
+                 (:file "eventstream")
                  (:file "dispatcher")
                  (:file "actor-context")
                  (:file "actor-system"))))
@@ -52,6 +52,7 @@
                  (:file "agent-test")
                  (:file "actor-test")
                  (:file "router-test")
+                 (:file "eventstream-test")
                  (:file "actor-context-test")
                  (:file "fcomputation-test")
                  (:file "dispatcher-test")

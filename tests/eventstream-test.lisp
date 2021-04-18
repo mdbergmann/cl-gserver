@@ -158,5 +158,5 @@
       (sleep 0.2)
       (is (null ev-received))
       (unsubscribe cut ev-listener)
-      (setf ev-received nil)
-      )))
+      (setf ev-received nil))))
+

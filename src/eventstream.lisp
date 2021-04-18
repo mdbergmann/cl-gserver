@@ -37,7 +37,7 @@ But in theory it can be created individually by just passing an `actor-context` 
   (let ((ev (make-instance 'eventstream)))
     (with-slots (ev-actor) ev
       (setf ev-actor (actor-of (actor-context
-                                (gensym "eventstream-actor")
+                                (gensym "eventstream-actor-")
                                 :dispatcher :pinned)
                        (lambda (self msg state)
                          (handler-case
@@ -51,12 +51,12 @@ But in theory it can be created individually by just passing an `actor-context` 
   (declare (ignore listener))
   (with-slots (subscribers) ev
     (let* ((msg-type (type-of msg))
-           (subs (subscribers-for-type subscribers msg-type msg)))
+           (subs (subscribers-for subscribers msg-type msg)))
       (dolist (sub subs)
         (tell sub msg))))
   (cons t state))
 
-(defun subscribers-for-type (subscribers msg-type msg)
+(defun subscribers-for (subscribers msg-type msg)
   ;;(format t "msg-type, msg: ~a, ~a~%" msg-type msg)
   (flet ((no-type-registered-p (elem) (null elem))
          (equal-string-p (elem) (and (stringp msg)
@@ -81,17 +81,17 @@ But in theory it can be created individually by just passing an `actor-context` 
                                 (equal-list-p reg-type)))))
                     subscribers))))
 
-(defmethod subscribe ((self eventstream) (actor act:actor) &optional message)
+(defmethod subscribe ((self eventstream) (actor act:actor) &optional pattern)
   "Subscribe to the eventstream to receive notifications of certain events or event types.
 
-The `message` can be:
+The `pattern` can be:
 - nil: receive all events posted to the eventstream.
 - a type, class type: this allows to get notifications when an instance of this type, or class type is posted.
 - a symbol or global symbol: if posted message is a symbol or global symbol then the symbols are compared (`eq`).
 - a string: in which case an exact string comparison is made for a string message that is posted to the eventstream.
 - a list: if subscription if for a list structure, and the posted message is also a list structure, then a structure comparison (`equalp`) is made."
   (with-slots (subscribers) self
-    (setf subscribers (cons `(,actor ,message) subscribers))))
+    (setf subscribers (cons `(,actor ,pattern) subscribers))))
 
 (defmethod unsubscribe ((self eventstream) (actor act:actor))
   "Unsubscribe from the eventstream. No more events will be received then."

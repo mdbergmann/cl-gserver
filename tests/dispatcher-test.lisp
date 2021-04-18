@@ -18,8 +18,7 @@
   (let ((context (asys:make-actor-system '(:dispatchers (:num-shared-workers 0)))))
     (unwind-protect
          (&body)
-      (ac:shutdown context)
-      (sleep 0.2))))
+      (ac:shutdown context))))
 
 
 (defun make-test-dispatcher (num-workers context)
@@ -30,18 +29,18 @@
   (with-fixture test-context ()
     (let ((cut (make-test-dispatcher 1 context)))
       (is (not (null cut)))
-      (shutdown cut))))
+      (stop cut))))
 
 (test create-the-workers
   "Checks that the workers are created as actors"
   (with-fixture test-context ()
     (let ((cut (make-test-dispatcher 4 context)))
       (is (= 4 (length (workers cut))))
-      (shutdown cut))))
+      (stop cut))))
 
 (test dispatch-to-worker
   "Tests the dispatching to a worker"
   (with-fixture test-context ()
     (let ((cut (make-test-dispatcher 1 context)))
       (is (= 15 (dispatch cut (lambda () (loop :for i :from 1 :to 5 :sum i)))))
-      (shutdown cut))))
+      (stop cut))))

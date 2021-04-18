@@ -17,7 +17,8 @@ Specify an `ac:actor-context` where actors needed in the dispatcher are created 
   ((context :initform nil
             :initarg :context))
   (:documentation
-   "A `dispatcher` contains a pool of `actors` that operate as workers where work is dispatched to."))
+   "A `dispatcher` contains a pool of `actors` that operate as workers where work is dispatched to.
+However, the workers are created in the given `ac:actor-context`."))
 
 ;; ---------------------------------
 ;; Shared dispatcher
@@ -48,7 +49,7 @@ A `shared-dispatcher` is automatically setup by an `asys:actor-system`."))
   (with-slots (router) self
     (router:routees router)))
 
-(defmethod shutdown ((self shared-dispatcher))
+(defmethod stop ((self shared-dispatcher))
   (with-slots (router) self
     (router:stop router)))
 

@@ -8,7 +8,7 @@
            #:dispatch
            #:dispatch-async
            #:dispatch-worker
-           #:shutdown
+           #:stop
            #:make-dispatcher-worker))
 
 (in-package :cl-gserver.dispatcher)
@@ -19,9 +19,9 @@
 But better do not touch them.
 Only use the defined interface here to talk to them."))
 
-(defgeneric shutdown (dispatcher)
+(defgeneric stop (dispatcher)
   (:documentation
-   "Shuts down the dispatcher. Stopps all workers."))
+   "Stops the dispatcher. Stops all workers."))
 
 (defgeneric dispatch (dispatcher dispatcher-exec-fun)
   (:documentation

@@ -136,6 +136,5 @@ Users should use `find-actors`."
 
 (defmethod shutdown ((self actor-system))
   "See `ac:shutdown`"
-  (disp:shutdown (getf (dispatchers self) :shared))
   (ac:shutdown (user-actor-context self))
   (ac:shutdown (internal-actor-context self)))

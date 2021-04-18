@@ -23,8 +23,7 @@
   (let ((cut (make-actor-system)))
     (unwind-protect
          (&body)
-      (ac:shutdown cut)
-      (sleep 0.3))))
+      (ac:shutdown cut))))
 
 (test create-system--default-config
   "Creates an actor-system by applying the default config."
@@ -38,7 +37,8 @@
     (is (typep (asys::user-actor-context system) 'ac:actor-context))
     (is (= 4 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
     (ac:shutdown system)
-    (sleep 0.2)))
+    ;;(sleep 0.2)
+    ))
 
 (test create-system--custom-config
   "Create an actor-system by passing a custom config."
@@ -95,7 +95,8 @@ We use internal API here only for this test, do not use this otherwise."
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/dp))
       (is (not (null (act:context actor))))
       (is (eq (ac:system (act:context actor)) cut))
-      (is (= 2 (length (ac:all-actors (asys::internal-actor-context cut)))))
+      ;; 1 here, + 1 eventstream + 4 dispatch-workers
+      (is (= 6 (length (ac:all-actors (asys::internal-actor-context cut)))))
       ;; first is eventstream actor
       (is (member actor (ac:all-actors (asys::internal-actor-context cut)) :test #'eq)))))
 
@@ -118,7 +119,8 @@ We use internal API here only for this test, do not use this otherwise."
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/bt))
       (is (not (null (act:context actor))))
       (is (eq (ac:system (act:context actor)) cut))
-      (is (= 2 (length (ac:all-actors (asys::internal-actor-context cut)))))
+      ;; 1 here, + 1 eventstream + 4 dispatch-workers
+      (is (= 6 (length (ac:all-actors (asys::internal-actor-context cut)))))
       ;; first is eventstream actor
       (is (member actor (ac:all-actors (asys::internal-actor-context cut)) :test #'eq)))))
 

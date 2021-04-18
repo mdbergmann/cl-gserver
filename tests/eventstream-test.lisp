@@ -16,8 +16,7 @@
          (cut (make-eventstream context)))
     (unwind-protect
          (&body)
-      (ac:shutdown context)
-      (sleep 0.2))))
+      (ac:shutdown context))))
 
 (test make-eventstream
   "Creates an event stream."

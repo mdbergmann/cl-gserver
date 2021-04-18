@@ -4,14 +4,18 @@
 (shadowing-import '(mesgb:message-box/bt
                     act:actor))
 
-(defun make-dispatcher (&key (num-workers 1))
+(defun make-dispatcher (actor-context &key (num-workers 1))
   "Default constructor.
 This creates a `shared-dispatcher` with `num-workers` number of workers.
-Each worker is based on a `:pinned` actor meaning that it has its own thread."
+Each worker is based on a `:pinned` actor meaning that it has its own thread.
+Specify an `ac:actor-context` where actors needed in the dispatcher are created in."
   (make-instance 'shared-dispatcher
-                 :num-workers num-workers))
+                 :num-workers num-workers
+                 :context actor-context))
 
-(defclass dispatcher-base () ()
+(defclass dispatcher-base ()
+  ((context :initform nil
+            :initarg :context))
   (:documentation
    "A `dispatcher` contains a pool of `actors` that operate as workers where work is dispatched to."))
 
@@ -29,9 +33,9 @@ The default strategy of choosing a worker is `:random`.
 A `shared-dispatcher` is automatically setup by an `asys:actor-system`."))
 
 (defmethod initialize-instance :after ((self shared-dispatcher) &key (num-workers 1))
-  (with-slots (router) self
+  (with-slots (router context) self
     (loop :for n :from 1 :to num-workers
-          :do (router:add-routee router (make-dispatcher-worker n)))))
+          :do (router:add-routee router (make-dispatcher-worker n context)))))
 
 (defmethod print-object ((obj shared-dispatcher) stream)
   (print-unreadable-object (obj stream :type t)
@@ -65,15 +69,15 @@ A `shared-dispatcher` is automatically setup by an `asys:actor-system`."))
   (:documentation
    "Specialized `actor` used as `worker` is the message `dispatcher`."))
 
-(defun make-dispatcher-worker (num)
+(defun make-dispatcher-worker (num actor-context)
   "Constructor for creating a worker.
 `num` only has the purpose to give the worker a name which includes a number."
-  (let ((worker (make-instance 'dispatch-worker
-                               :receive #'receive
-                               :name (utils:mkstr "dispatch-worker-" num))))
-    (setf (act-cell:msgbox worker)  (make-instance 'message-box/bt
-                                                   :max-queue-size 0))
-    worker))
+  (ac:actor-of actor-context
+    (lambda ()
+      (act:make-actor #'receive
+                      :type 'dispatch-worker
+                      :name (utils:mkstr "dispatch-worker-" num)))
+    :dispatch-type :pinned))
 
 (defun receive (self message current-state)
   "The worker receive function."

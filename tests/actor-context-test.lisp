@@ -17,7 +17,8 @@
   (let ((system (asys:make-actor-system '(:dispatchers (:num-shared-workers 0)))))
     (unwind-protect
          (&body)
-      (ac:shutdown system))))
+      (ac:shutdown system)
+      (sleep 0.3))))
 
 (test create--with-default-constructor
   "Test if the default constructor creates a context."

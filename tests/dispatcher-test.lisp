@@ -14,44 +14,34 @@
 
 (in-suite dispatcher-tests)
 
-(defun make-test-dispatcher (num-workers)
-  (make-dispatcher :num-workers num-workers))
+(def-fixture test-context ()
+  (let ((context (asys:make-actor-system '(:dispatchers (:num-shared-workers 0)))))
+    (unwind-protect
+         (&body)
+      (ac:shutdown context)
+      (sleep 0.2))))
+
+
+(defun make-test-dispatcher (num-workers context)
+  (make-dispatcher (ac:make-actor-context context) :num-workers num-workers))
 
 (test create-dispatcher
   "Checks creating a dispatcher"
-  (let ((cut (make-test-dispatcher 1)))
-    (is (not (null cut)))
-    (shutdown cut)))
+  (with-fixture test-context ()
+    (let ((cut (make-test-dispatcher 1 context)))
+      (is (not (null cut)))
+      (shutdown cut))))
 
 (test create-the-workers
-  "Checks that the workers are created as gservers"
-  (let ((cut (make-test-dispatcher 4)))
-    (is (= 4 (length (workers cut))))
-    (shutdown cut)))
+  "Checks that the workers are created as actors"
+  (with-fixture test-context ()
+    (let ((cut (make-test-dispatcher 4 context)))
+      (is (= 4 (length (workers cut))))
+      (shutdown cut))))
 
 (test dispatch-to-worker
   "Tests the dispatching to a worker"
-  (let ((cut (make-test-dispatcher 1)))
-    (is (= 15 (dispatch cut (lambda () (loop :for i :from 1 :to 5 :sum i)))))
-    (shutdown cut)))
-
-(test shutdown-dispatcher
-  "Tests shutting down a dispatcher and stopping all workers."
-  (flet ((len-message-threads () (length
-                                  (remove-if-not (lambda (x)
-                                                   (str:starts-with-p "message-thread-mesgb" x))
-                                                 (mapcar #'bt:thread-name (bt:all-threads))))))
-    ;; make sure there are no other message-box threads
-    (utils:wait-cond (lambda () (= 0 (len-message-threads))) 0.5 3)
-    (let* ((len-message-threads-before (len-message-threads))
-           (cut (make-test-dispatcher 4)))
-      (mapcar (lambda (worker) (ask-s worker (cons :execute (lambda () )))) (workers cut))
-      (is-true (assert-cond
-                (lambda ()
-                  (= (+ len-message-threads-before 4) (len-message-threads)))
-                2))
-      (shutdown cut)
-      (is-true (assert-cond
-                (lambda ()
-                  (= len-message-threads-before (len-message-threads)))
-                5)))))
+  (with-fixture test-context ()
+    (let ((cut (make-test-dispatcher 1 context)))
+      (is (= 15 (dispatch cut (lambda () (loop :for i :from 1 :to 5 :sum i)))))
+      (shutdown cut))))

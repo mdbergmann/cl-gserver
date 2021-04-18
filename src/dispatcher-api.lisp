@@ -5,10 +5,10 @@
            #:shared-dispatcher
            #:make-dispatcher
            #:workers
-           #:shutdown
            #:dispatch
            #:dispatch-async
            #:dispatch-worker
+           #:shutdown
            #:make-dispatcher-worker))
 
 (in-package :cl-gserver.dispatcher)
@@ -21,7 +21,7 @@ Only use the defined interface here to talk to them."))
 
 (defgeneric shutdown (dispatcher)
   (:documentation
-   "Shutting down the dispatcher and all workers."))
+   "Shuts down the dispatcher. Stopps all workers."))
 
 (defgeneric dispatch (dispatcher dispatcher-exec-fun)
   (:documentation

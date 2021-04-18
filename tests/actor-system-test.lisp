@@ -24,7 +24,7 @@
     (unwind-protect
          (&body)
       (ac:shutdown cut)
-      (sleep 0.5))))
+      (sleep 0.3))))
 
 (test create-system--default-config
   "Creates an actor-system by applying the default config."

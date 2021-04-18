@@ -72,8 +72,10 @@ See `config:config-from`."
     (with-slots (dispatchers config internal-actor-context eventstream) system
       (setf config system-config)
       (setf eventstream (ev:make-eventstream internal-actor-context))
+      
       (let ((dispatcher-config (config:retrieve-section system-config :dispatchers)))
         (setf dispatchers (list :shared (disp:make-dispatcher
+                                         internal-actor-context
                                          :num-workers
                                          (config:retrieve-value dispatcher-config :num-shared-workers))))))
     (log:info system)

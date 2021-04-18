@@ -3,8 +3,10 @@
 
 (defun make-actor-context (actor-system &optional (id nil))
   "Creates an `actor-context`. Requires a reference to `actor-system`
-`id` is an optional value that can identify the `actor-context`."
-  (assert (not (null actor-system)) nil "Requires an actor-system!")
+`id` is an optional value that can identify the `actor-context`.
+Creating an actor-context manually is usually not needed.
+An `asys:actor-system` implements the `actor-context` protocol.
+An `act:actor` contains an `actor-context`."
   (let ((context (make-instance 'actor-context :id id)))
     (with-slots (system) context
       (setf system actor-system))

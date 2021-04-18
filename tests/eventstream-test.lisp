@@ -17,12 +17,13 @@
     (unwind-protect
          (&body)
       (ac:shutdown context)
-      (sleep 0.3))))
+      (sleep 0.2))))
 
 (test make-eventstream
   "Creates an event stream."
-  (is (make-eventstream
-       (asys:make-actor-system '(:dispatchers (:num-shared-workers 0))))))
+  (let ((system (asys:make-actor-system '(:dispatchers (:num-shared-workers 0)))))
+    (is (make-eventstream system))
+    (ac:shutdown system)))
 
 (test subscribe-ev--all
   "Subscribe to eventstream for all messages."
@@ -159,6 +160,4 @@
       (is (null ev-received))
       (unsubscribe cut ev-listener)
       (setf ev-received nil)
-
-      (ac:stop context ev-listener)
       )))

@@ -13,152 +13,152 @@
 
 (in-suite actor-context-tests)
 
-(defvar *test-actor-system* (asys:make-actor-system '(:dispatchers (:num-shared-workers 0))))
+(def-fixture test-system ()
+  (let ((system (asys:make-actor-system '(:dispatchers (:num-shared-workers 0)))))
+    (unwind-protect
+         (&body)
+      (ac:shutdown system))))
 
 (test create--with-default-constructor
   "Test if the default constructor creates a context."
-  (is (not (null (make-actor-context *test-actor-system*))))
-  (is (null (id (make-actor-context *test-actor-system*))))
-  (is (string= "foo" (id (make-actor-context *test-actor-system* "foo")))))
+  (with-fixture test-system ()
+    (is (not (null (make-actor-context system))))
+    (is (null (id (make-actor-context system))))
+    (is (string= "foo" (id (make-actor-context system "foo"))))))
 
 (test create--check-aggregated-components
   "Tests creating a context."
-  (let ((cut (make-actor-context *test-actor-system*)))
-    (is (not (null cut)))
-    (is (not (null (system cut))))))
+  (with-fixture test-system ()
+    (let ((cut (make-actor-context system)))
+      (is (not (null cut)))
+      (is (not (null (system cut)))))))
 
 (test actor-of--creates-actor-path-and-context-id
   "Tests that when actors are created using `actor-of' that they get an expanded path from the context `id'."
-  (let* ((cut (make-actor-context *test-actor-system* "/foo"))
-         (actor (actor-of cut (lambda () (make-actor (lambda ()) :name "bar")))))
-    (print actor)
-    (is (string= "/foo/bar" (act:path actor)))
-    (is (string= "/foo/bar" (id (act:context actor))))))
+  (with-fixture test-system ()
+    (let* ((cut (make-actor-context system "/foo"))
+           (actor (actor-of cut (lambda () (make-actor (lambda ()) :name "bar")))))
+      (print actor)
+      (is (string= "/foo/bar" (act:path actor)))
+      (is (string= "/foo/bar" (id (act:context actor)))))))
 
 (test actor-of--shared
   "Tests creating a new actor in the context with shared dispatcher"
-  (let* ((cut (make-actor-context *test-actor-system*))
-         (actor (actor-of cut (lambda () (make-actor (lambda ()))))))
-    (is (not (null actor)))
-    (is (= 1 (length (all-actors cut))))
-    (is (typep (act-cell:msgbox actor) 'mesgb:message-box/dp))
-    (is (not (null (act:context actor))))
-    (is (not (eq cut (act:context actor))))
-    (is (not (null (ac:system (act:context actor)))))))
+  (with-fixture test-system ()
+    (let* ((cut (make-actor-context system))
+           (actor (actor-of cut (lambda () (make-actor (lambda ()))))))
+      (is (not (null actor)))
+      (is (= 1 (length (all-actors cut))))
+      (is (typep (act-cell:msgbox actor) 'mesgb:message-box/dp))
+      (is (not (null (act:context actor))))
+      (is (not (eq cut (act:context actor))))
+      (is (not (null (ac:system (act:context actor))))))))
 
 (test actor-of--pinned
   "Tests creating a new actor in the context with pinned dispatcher"
-  (let* ((cut (make-actor-context *test-actor-system*))
-         (actor (actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :pinned)))
-    (is (not (null actor)))
-    (is (= 1 (length (all-actors cut))))
-    (is (typep (act-cell:msgbox actor) 'mesgb:message-box/bt))
-    (is (not (null (act:context actor))))
-    (is (not (eq cut (act:context actor))))
-    (is (not (null (ac:system (act:context actor)))))
-    ;; stop the :pinned actor
-    (act-cell:stop actor)))
+  (with-fixture test-system ()
+    (let* ((cut (make-actor-context system))
+           (actor (actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :pinned)))
+      (is (not (null actor)))
+      (is (= 1 (length (all-actors cut))))
+      (is (typep (act-cell:msgbox actor) 'mesgb:message-box/bt))
+      (is (not (null (act:context actor))))
+      (is (not (eq cut (act:context actor))))
+      (is (not (null (ac:system (act:context actor)))))
+      ;; stop the :pinned actor
+      (act-cell:stop actor))))
 
 (test actor-of--dont-add-when-null-creator
   "Tests creating a new actor in the context."
-  (let ((cut (make-actor-context *test-actor-system*)))
-    (actor-of cut (lambda () nil))
-    (is (= 0 (length (all-actors cut))))))
+  (with-fixture test-system ()
+    (let ((cut (make-actor-context system)))
+      (actor-of cut (lambda () nil))
+      (is (= 0 (length (all-actors cut)))))))
 
 (test actor-of--adds-itself-as-watcher
   "Tests that when creating a new actor that the ac watches the actor."
-  (let* ((cut (make-actor-context *test-actor-system*))
-         (actor (actor-of cut (lambda () (make-actor (lambda ()) :name "foo")))))
-    (is (not (null (find-if
-                    (lambda (e) (eq e cut))
-                    (act:watchers actor)))))))
+  (with-fixture test-system ()
+    (let* ((cut (make-actor-context system))
+           (actor (actor-of cut (lambda () (make-actor (lambda ()) :name "foo")))))
+      (is (not (null (find-if
+                      (lambda (e) (eq e cut))
+                      (act:watchers actor))))))))
 
 (test notify--actor-stopped--remove-from-actors-list
   "Tests that the actor is removed from the actors list when a notification of `:stopped' is received."
-  (let* ((cut (make-actor-context *test-actor-system*))
-         (actor (actor-of cut (lambda () (make-actor (lambda ()) :name "foo")))))
-    (is (= 1 (length (all-actors cut))))
-    (notify cut actor :stopped)
-    (is (= 0 (length (all-actors cut))))))
+  (with-fixture test-system ()
+    (let* ((cut (make-actor-context system))
+           (actor (actor-of cut (lambda () (make-actor (lambda ()) :name "foo")))))
+      (is (= 1 (length (all-actors cut))))
+      (notify cut actor :stopped)
+      (is (= 0 (length (all-actors cut)))))))
 
 (test find-actors-test
   "Test for finding actors"
-  (let ((context (make-actor-context *test-actor-system*)))
-    (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
-    (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
-    (is (= 2 (length
-              (find-actors context
-                           (lambda (actor) (str:starts-with-p "foo" (act-cell:name actor)))))))))
+  (with-fixture test-system ()
+    (let ((context (make-actor-context system)))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
+      (is (= 2 (length
+                (find-actors context
+                             (lambda (actor) (str:starts-with-p "foo" (act-cell:name actor))))))))))
 
 (test stop-actor--by-context
   "Tests stopping an actor."
-  (with-mocks ()
-    (let* ((cut (make-actor-context *test-actor-system*))
-           (actor (actor-of cut (lambda () (make-actor (lambda ())))))
-           (cell-stop-called nil))
-      (answer (act-cell:stop actor-to-stop)
-        (progn 
-          (assert (eq actor-to-stop actor))
-          (setf cell-stop-called t)
-          nil))
-      (stop cut actor)
-      (is-true cell-stop-called)
-      (is (= 1 (length (invocations 'act-cell:stop)))))))
+  (with-fixture test-system ()
+    (with-mocks ()
+      (let* ((cut (make-actor-context system))
+             (actor (actor-of cut (lambda () (make-actor (lambda ())))))
+             (cell-stop-called nil))
+        (answer (act-cell:stop actor-to-stop)
+          (progn 
+            (assert (eq actor-to-stop actor))
+            (setf cell-stop-called t)
+            nil))
+        (stop cut actor)
+        (is-true cell-stop-called)
+        (is (= 1 (length (invocations 'act-cell:stop))))))))
 
 (test retrieve-all-actors
   "Retrieves all actors"
-  (let ((context (make-actor-context *test-actor-system*)))
-    (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
-    (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
-    (is (= 2 (length (all-actors context))))))
+  (with-fixture test-system ()
+    (let ((context (make-actor-context system)))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
+      (is (= 2 (length (all-actors context)))))))
 
 (test shutdown-actor-context
   "Shutdown actor context - stop all actors."
-  (let ((context (make-actor-context *test-actor-system*)))
-    (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
-    (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
-    (shutdown context)
-    (is (= 0 (length (find-actors context (lambda (a) (act-cell:running-p a))))))))
+  (with-fixture test-system ()
+    (let ((context (make-actor-context system)))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
+      (shutdown context)
+      (is (= 0 (length (find-actors context (lambda (a) (act-cell:running-p a)))))))))
 
 (test enforce-unique-actor-names
   "Test that all actors in a context have a unique name."
-  (let ((context (make-actor-context *test-actor-system*)))
-    (handler-case
-        (progn
-          (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
-          (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
-          (format t "Foo~%")
-          (fail))
-      (error (c)
-        (format t "cond: ~a~%" c)
-        (assert (string= "Actor with name 'foo' already exists!"
-                         (format nil "~a" c)))
-        (is-true t)))))
+  (with-fixture test-system ()
+    (let ((context (make-actor-context system)))
+      (handler-case
+          (progn
+            (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+            (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+            (format t "Foo~%")
+            (fail))
+        (error (c)
+          (format t "cond: ~a~%" c)
+          (assert (string= "Actor with name 'foo' already exists!"
+                           (format nil "~a" c)))
+          (is-true t))))))
 
 (test remove-and-add-actors--find-actor-by-name
   "Tests removing and again adding actors !!! this tests private API"
-  (let ((context (make-actor-context *test-actor-system*)))
-    (ac::add-actor context (make-instance 'act-cell:actor-cell :name :foo))
-    (is (find-actor-by-name context :foo))
-    (ac::remove-actor context (make-instance 'act-cell:actor-cell :name :foo))
-    (is (= 0 (length (all-actors context))))
-    (ac::add-actor context (make-instance 'act-cell:actor-cell :name :foo))
-    (is (find-actor-by-name context :foo))
-  ))
-
-(defun run-tests ()
-  (run! 'create--with-default-constructor)
-  (run! 'create--check-aggregated-components)
-  (run! 'actor-of--creates-actor-path-and-context-id)
-  (run! 'actor-of--shared)
-  (run! 'actor-of--pinned)
-  (run! 'actor-of--dont-add-when-null-creator)
-  (run! 'actor-of--adds-itself-as-watcher)
-  (run! 'notify--actor-stopped--remove-from-actors-list)
-  (run! 'find-actors-test)
-  (run! 'stop-actor--by-context)
-  (run! 'retrieve-all-actors)
-  (run! 'shutdown-actor-context)
-  (run! 'enforce-unique-actor-names)
-  (run! 'remove-and-add-actors)
-  )
+  (with-fixture test-system ()
+    (let ((context (make-actor-context system)))
+      (ac::add-actor context (make-instance 'act-cell:actor-cell :name :foo))
+      (is (find-actor-by-name context :foo))
+      (ac::remove-actor context (make-instance 'act-cell:actor-cell :name :foo))
+      (is (= 0 (length (all-actors context))))
+      (ac::add-actor context (make-instance 'act-cell:actor-cell :name :foo))
+      (is (find-actor-by-name context :foo)))))

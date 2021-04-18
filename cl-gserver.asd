@@ -58,7 +58,8 @@
                  (:file "dispatcher-test")
                  (:file "actor-system-test")
                  (:file "actor-tree-test")
-                 (:file "spawn-in-receive-test"))))
+                 (:file "spawn-in-receive-test")
+                 )))
   :description "Test system for cl-gserver"
   :perform (test-op (op c) (symbol-call :fiveam :run!
                                         (uiop:find-symbol* '#:test-suite

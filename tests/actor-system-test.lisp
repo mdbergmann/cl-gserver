@@ -44,8 +44,7 @@
   "Create an actor-system by passing a custom config."
   (let ((system (make-actor-system '(:dispatchers (:num-shared-workers 2)))))
     (is (= 2 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
-    (ac:shutdown system)
-    (sleep 0.2)))
+    (ac:shutdown system)))
 
 (test create-system--check-defaults
   "Checking defaults on the system"

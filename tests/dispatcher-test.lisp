@@ -32,7 +32,7 @@
 (test dispatch-to-worker
   "Tests the dispatching to a worker"
   (let ((cut (make-test-dispatcher 1)))
-    (is (= 15 (dispatch cut (lambda () (loop for i from 1 to 5 sum i)))))
+    (is (= 15 (dispatch cut (lambda () (loop :for i :from 1 :to 5 :sum i)))))
     (shutdown cut)))
 
 (test shutdown-dispatcher
@@ -55,9 +55,3 @@
                 (lambda ()
                   (= len-message-threads-before (len-message-threads)))
                 5)))))
-
-(defun run-tests ()
-  (run! 'create-dispatcher)
-  (run! 'create-the-workers)
-  (run! 'dispatch-to-worker)
-  (run! 'shutdown-dispatcher))

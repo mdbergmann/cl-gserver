@@ -7,7 +7,10 @@
                     act-cell:handle-call
                     act-cell:handle-cast
                     act-cell:stop
-                    future:make-future))
+                    future:make-future
+                    ev:subscribe
+                    ev:unsubscribe
+                    ev:publish))
 
 (defclass actor (actor-cell)
   ((receive :initarg :receive
@@ -167,3 +170,16 @@ In any case stop the actor-cell."
                       (cons :handler-error
                             (make-condition 'utils:ask-timeout :wait-time time-out
                                                                :cause c))))))))))
+
+;; -------------------------------
+;; eventstream protocol impl
+;; -------------------------------
+
+(defmethod subscribe ((actor actor) (subscriber actor) &optional pattern)
+  (ev:subscribe (ac:system (context actor)) subscriber pattern))
+
+(defmethod unsubscribe ((actor actor) (unsubscriber actor))
+  (ev:unsubscribe (ac:system (context actor)) unsubscriber))
+
+(defmethod publish ((actor actor) message)
+  (ev:publish (ac:system (context actor)) message))

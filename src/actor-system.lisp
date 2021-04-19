@@ -9,7 +9,10 @@
                     ac:find-actor-by-name
                     ac:all-actors
                     ac:shutdown
-                    ac:stop))
+                    ac:stop
+                    ev:subscribe
+                    ev:unsubscribe
+                    ev:publish))
 
 (defclass actor-system ()
   ((dispatchers :initform '()
@@ -138,3 +141,16 @@ Users should use `find-actors`."
   "See `ac:shutdown`"
   (ac:shutdown (user-actor-context self))
   (ac:shutdown (internal-actor-context self)))
+
+;; ----------------------------------------
+;; Public Api / eventcontext protocol
+;; ----------------------------------------
+
+(defmethod subscribe ((system actor-system) (subscriber act:actor) &optional pattern)
+  (ev:subscribe (eventstream system) subscriber pattern))
+
+(defmethod unsubscribe ((system actor-system) (unsubscriber act:actor))
+  (ev:unsubscribe (eventstream system) unsubscriber))
+
+(defmethod publish ((system actor-system) message)
+  (ev:publish (eventstream system) message))

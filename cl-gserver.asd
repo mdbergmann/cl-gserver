@@ -78,9 +78,15 @@
 ;;
 ;; test system
 ;; (asdf:test-system "cl-gserver/tests")
+;;
+;; (hlp:document (asdf:find-system :cl-gserver) :only-exported t)
+;; (pax:update-asdf-system-html-docs cl-gserver.docs:@cl-gserver :cl-gserver :target-dir #P"docs/")
 
 #|
-(hlp:document (asdf:find-system :cl-gserver) :only-exported t)
-(pax:update-asdf-system-html-docs cl-gserver.docs:@cl-gserver :cl-gserver :target-dir #P"docs/")
+
+TODOs:
+=> - implement ev protocol for system, context and actor
+- more tests for ev
+
 |#
 

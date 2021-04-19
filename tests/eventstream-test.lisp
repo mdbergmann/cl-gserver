@@ -12,11 +12,11 @@
 (in-suite eventstream-tests)
 
 (def-fixture test-ev ()
-  (let* ((context (asys:make-actor-system))
-         (cut (make-eventstream context)))
+  (let* ((system (asys:make-actor-system))
+         (cut (make-eventstream system)))
     (unwind-protect
          (&body)
-      (ac:shutdown context))))
+      (ac:shutdown system))))
 
 (test make-eventstream
   "Creates an event stream."
@@ -41,6 +41,14 @@
       (subscribe cut act "Foo")
       (is (string= "Foo" (cadar (member act (ev::subscribers cut) :test #'eq :key #'car)))))))
 
+(test subscribe-works-directly-on-system-and-actor
+  "Actor system and Actor implement the ev protocol"
+  (with-fixture test-ev ()
+    (is (ev:subscribe system (act:make-actor (lambda ()))))
+    (is (ev:subscribe (act:actor-of (system)
+                        (lambda ()))
+                      (act:make-actor (lambda ()))))))
+
 (test unsubscribe-ev
   "Test unsubscribing."
   (with-fixture test-ev ()
@@ -49,6 +57,14 @@
       (unsubscribe cut act)
       (is (= 0 (length (ev::subscribers cut)))))))
 
+(test unsubscribe-works-directly-on-system-and-actor
+  "Actor system and Actor implement the ev protocol"
+  (with-fixture test-ev ()
+    (is (ev:unsubscribe system (act:make-actor (lambda ()))))
+    (is (ev:unsubscribe (act:actor-of (system)
+                          (lambda ()))
+                      (act:make-actor (lambda ()))))))
+
 (defclass my-class () ())
 (defclass my-sub-class (my-class) ())
 
@@ -56,7 +72,7 @@
   "Publish a message to eventstream."
   (with-fixture test-ev ()
     (let* ((ev-received)
-           (ev-listener (act:actor-of (context)
+           (ev-listener (act:actor-of (system)
                          (lambda (self msg state)
                            (declare (ignore self state))
                            (setf ev-received msg)
@@ -160,3 +176,10 @@
       (unsubscribe cut ev-listener)
       (setf ev-received nil))))
 
+(test publish-works-directly-on-system-and-actor
+  "Actor system and Actor implement the ev protocol"
+  (with-fixture test-ev ()
+    (is (ev:publish system "Foo"))
+    (is (ev:publish (act:actor-of (system)
+                          (lambda ()))
+                      "Foo"))))

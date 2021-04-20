@@ -11,6 +11,12 @@
 
 (in-suite eventstream-tests)
 
+(def-fixture test-system ()
+  (let ((system (asys:make-actor-system)))
+    (unwind-protect
+         (&body)
+      (ac:shutdown system))))
+
 (def-fixture test-ev ()
   (let* ((system (asys:make-actor-system))
          (cut (make-eventstream system)))
@@ -43,7 +49,7 @@
 
 (test subscribe-works-directly-on-system-and-actor
   "Actor system and Actor implement the ev protocol"
-  (with-fixture test-ev ()
+  (with-fixture test-system ()
     (is (ev:subscribe system (act:make-actor (lambda ()))))
     (is (ev:subscribe (act:actor-of (system)
                         (lambda ()))
@@ -59,7 +65,7 @@
 
 (test unsubscribe-works-directly-on-system-and-actor
   "Actor system and Actor implement the ev protocol"
-  (with-fixture test-ev ()
+  (with-fixture test-system ()
     (is (ev:unsubscribe system (act:make-actor (lambda ()))))
     (is (ev:unsubscribe (act:actor-of (system)
                           (lambda ()))
@@ -86,6 +92,14 @@
       (setf ev-received nil)
 
       ;; subscribe for string
+      (subscribe cut ev-listener 'string)
+      (publish cut "Foo")
+      (is (assert-cond
+           (lambda () (string= "Foo" ev-received)) 0.5))
+      (unsubscribe cut ev-listener)      
+      (setf ev-received nil)
+
+      ;; subscribe for string - concrete
       (subscribe cut ev-listener "Foo")
       (publish cut "Foo")
       (is (assert-cond
@@ -138,8 +152,8 @@
       (subscribe cut ev-listener 'my-sub-class)
       (let ((obj (make-instance 'my-class)))
         (publish cut obj)
-        (is (assert-cond
-             (lambda () (eq obj ev-received)) 0.5)))
+        (sleep 0.2)
+        (is (null ev-received)))
       (unsubscribe cut ev-listener)
       (setf ev-received nil)
 
@@ -147,8 +161,8 @@
       (subscribe cut ev-listener 'my-class)
       (let ((obj (make-instance 'my-sub-class)))
         (publish cut obj)
-        (sleep 0.2)
-        (is (null ev-received)))
+        (is (assert-cond
+             (lambda () (eq obj ev-received)) 0.5)))
       (unsubscribe cut ev-listener)
       (setf ev-received nil)
 
@@ -178,8 +192,62 @@
 
 (test publish-works-directly-on-system-and-actor
   "Actor system and Actor implement the ev protocol"
-  (with-fixture test-ev ()
+  (with-fixture test-system ()
     (is (ev:publish system "Foo"))
     (is (ev:publish (act:actor-of (system)
                           (lambda ()))
                       "Foo"))))
+
+(test integration-like-test
+  "Integration - and a better overall example"
+  (with-fixture test-system ()
+    (let* ((counter-string 0)
+           (counter-list 0)
+           (counter-listp 0)
+           (counter-stringp 0)
+           (inc-counter-string (lambda () (stmx:atomic (incf counter-string))))
+           (inc-counter-stringp (lambda () (stmx:atomic (incf counter-stringp))))
+           (inc-counter-list (lambda () (stmx:atomic (incf counter-list))))
+           (inc-counter-listp (lambda () (stmx:atomic (incf counter-listp))))
+           (receive-fun (lambda (self msg state)
+                          (declare (ignore self))
+                          (cond
+                            ((stringp msg)
+                             (progn
+                               (funcall inc-counter-stringp)
+                               (when (string= "Awaited message1" msg)
+                                 (funcall inc-counter-string))))
+                            ((listp msg)
+                             (progn
+                               (funcall inc-counter-listp)
+                               (when (equalp '("foo" "bar" "buzz") msg)
+                                 (funcall inc-counter-list)))))
+                          (cons t state)))
+           (actor1 (act:actor-of (system "actor 1")
+                     receive-fun))
+           (actor2 (act:actor-of (system "actor 2")
+                     receive-fun)))
+
+      (subscribe system actor1 "Awaited message1")
+      (subscribe system actor1 'cons)
+      (subscribe system actor2 '("foo" "bar" "buzz"))
+      (subscribe system actor2 'string)
+
+      (loop :for i :from 0 :to 999
+            :when (oddp i)
+              :do (progn (publish system "Awaited message1")
+                         (publish system "some other message"))
+            :when (evenp i)
+              :do (progn
+                    (publish system '("foo" "bar" "buzz"))
+                    (publish system '(1 2 3))))
+
+      (is (assert-cond (lambda () (and
+                              (= counter-string 1000)
+                              (= counter-stringp 1500)
+                              (= counter-list  1000)
+                              (= counter-listp 1500))) 2))
+      (format t "counter string: ~a~%" counter-string )
+      (format t "counter list: ~a~%" counter-list)
+      (format t "counter listp: ~a~%" counter-listp)
+      (format t "counter stringp: ~a~%" counter-stringp))))

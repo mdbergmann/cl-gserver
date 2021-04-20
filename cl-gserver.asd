@@ -42,7 +42,8 @@
   :depends-on ("cl-gserver"
                "fiveam"
                "cl-mock"
-               "trivia")
+               "trivia"
+               "stmx")
   :components ((:module "tests"
                 :components
                 ((:file "all-test")

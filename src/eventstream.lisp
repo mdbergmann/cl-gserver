@@ -9,23 +9,20 @@
   ((subscribers :initform '()
                 :reader subscribers)
    (ev-actor :initform nil))
-  (:documentation "Eventstream facility allows any actor in the system to publish events,
-and actors that did subscribe to listen to events.
+  (:documentation "Eventstream facility allows to post/publish messages/events in the `asys:actor-system`
+ and actors that did subscribe, to listen on those events.
 
-Events can be posted as plain strings, where the subscriber has to define the exact string match.
+Events can be posted as plain strings, as lists, or as objects of classes.
+The subscriber has a variaty of options to define what to listen for.
 
-For example: a subscriber wants to listen to events with the string \"Foo\".
-The subscriber is then only notified when the events is posted with the exact same string.
+For example: a subscriber wants to listen to events/messages with the string \"Foo\".
+The subscriber is then only notified when events are posted with the exact same string.
 
-Or events can be symbols.
-For example: a subscriber wants to listen to a certain type of message which is represented by the symbol `'my-package:foo` (this can be a class type or something else).
-The subscriber is then notified about the event when the poster posts exactly: `'my-package:foo`.
-
-See more information at the `subscribe` function."))
+See more information at the `ev:subscribe` function."))
 
 (defun make-eventstream (actor-context)
-  "Creating an eventstream is done by the `actor-system` which is available system wide. 
-But in theory it can be created individually by just passing an `actor-context` (though I don't know what would be the reason to create an eventstream for the context of a single actor. Maybe to address only a certain hierarchy in the actor tree.)"
+  "Creating an eventstream is done by the `asys:actor-system` which is then available system wide. 
+But in theory it can be created individually by just passing an `ac:actor-context` (though I don't know what would be the reason to create an eventstream for the context of a single actor. Maybe to address only a certain hierarchy in the actor tree.)"
   (let ((ev (make-instance 'eventstream)))
     (with-slots (ev-actor) ev
       (setf ev-actor (actor-of (actor-context
@@ -74,14 +71,17 @@ But in theory it can be created individually by just passing an `actor-context` 
                     subscribers))))
 
 (defmethod subscribe ((ev-stream eventstream) (subscriber act:actor) &optional pattern)
+  "Subscribe to `ev:eventstream`."
   (with-slots (subscribers) ev-stream
     (setf subscribers (cons `(,subscriber ,pattern) subscribers))))
 
 (defmethod unsubscribe ((ev-stream eventstream) (unsubscriber act:actor))
+  "Unsubscribe to `ev:eventstream`."
   (with-slots (subscribers) ev-stream
     (setf subscribers (remove-if (lambda (x) (eq x unsubscriber)) subscribers :key #'car)))
   t)
 
 (defmethod publish ((ev-stream eventstream) message)  
+  "Publish to `ev:eventstream`."
   (with-slots (ev-actor) ev-stream
     (tell ev-actor message)))

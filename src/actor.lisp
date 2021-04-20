@@ -176,10 +176,13 @@ In any case stop the actor-cell."
 ;; -------------------------------
 
 (defmethod subscribe ((actor actor) (subscriber actor) &optional pattern)
+  "Convenience. Allows to subscribe to `ev:eventstream` by just providing the actor."
   (ev:subscribe (ac:system (context actor)) subscriber pattern))
 
 (defmethod unsubscribe ((actor actor) (unsubscriber actor))
+  "Convenience. Allows to unsubscribe to `ev:eventstream` by just providing the actor."
   (ev:unsubscribe (ac:system (context actor)) unsubscriber))
 
 (defmethod publish ((actor actor) message)
+  "Convenience. Allows to publish to `ev:eventstream` by just providing the actor."
   (ev:publish (ac:system (context actor)) message))

@@ -87,7 +87,6 @@
 #|
 
 TODOs:
-- more tests for ev
 
 |#
 

@@ -147,10 +147,13 @@ Users should use `find-actors`."
 ;; ----------------------------------------
 
 (defmethod subscribe ((system actor-system) (subscriber act:actor) &optional pattern)
+  "Convenience. Allows to subscribe to `ev:eventstream` by just providing the `asys:actor-system`."
   (ev:subscribe (eventstream system) subscriber pattern))
 
 (defmethod unsubscribe ((system actor-system) (unsubscriber act:actor))
+  "Convenience. Allows to unsubscribe to `ev:eventstream` by just providing the `asys:actor-system`."
   (ev:unsubscribe (eventstream system) unsubscriber))
 
 (defmethod publish ((system actor-system) message)
+  "Convenience. Allows to publish to `ev:eventstream` by just providing the `asys:actor-system`."
   (ev:publish (eventstream system) message))

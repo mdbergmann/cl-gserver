@@ -1,6 +1,11 @@
 (defpackage :cl-gserver.eventstream
   (:use :cl)
   (:nicknames :ev)
+  (:import-from #:utils
+                #:filter)
+  (:import-from #:act
+                #:actor-of
+                #:tell)
   (:export #:make-eventstream
            #:subscribe
            #:unsubscribe

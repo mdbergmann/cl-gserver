@@ -28,9 +28,9 @@ See more information at the `subscribe` function."))
 But in theory it can be created individually by just passing an `actor-context` (though I don't know what would be the reason to create an eventstream for the context of a single actor. Maybe to address only a certain hierarchy in the actor tree.)"
   (let ((ev (make-instance 'eventstream)))
     (with-slots (ev-actor) ev
-      (setf ev-actor (act:actor-of (actor-context
-                                    (gensym "eventstream-actor-")
-                                    :dispatcher :pinned)
+      (setf ev-actor (actor-of (actor-context
+                                (gensym "eventstream-actor-")
+                                :dispatcher :pinned)
                        (lambda (ev-stream msg state)
                          (handler-case
                              (ev-receive ev ev-stream msg state)
@@ -45,7 +45,7 @@ But in theory it can be created individually by just passing an `actor-context` 
     (let* ((msg-type (type-of msg))
            (subs (subscribers-for subscribers msg-type msg)))
       (dolist (sub subs)
-        (act:tell sub msg))))
+        (tell sub msg))))
   (cons t state))
 
 (defun subscribers-for (subscribers msg-type msg)
@@ -64,7 +64,7 @@ But in theory it can be created individually by just passing an `actor-context` 
                                          (not (symbolp msg))
                                          (subtypep msg-type elem))))
     (mapcar #'car
-            (utils:filter (lambda (sub)
+            (filter (lambda (sub)
                             (let ((reg-type (second sub)))
                               (or (no-type-registered-p reg-type)
                                   (or (equal-symbol-p reg-type)
@@ -84,4 +84,4 @@ But in theory it can be created individually by just passing an `actor-context` 
 
 (defmethod publish ((ev-stream eventstream) message)  
   (with-slots (ev-actor) ev-stream
-    (act:tell ev-actor message)))
+    (tell ev-actor message)))

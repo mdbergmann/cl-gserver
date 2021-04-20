@@ -1,17 +1,12 @@
-(defpackage :cl-gserver.eventstream
-  (:use :cl)
-  (:nicknames :ev)
-  (:import-from #:act
-                #:actor-of
-                #:tell)
-  (:import-from #:utils
-                #:filter)
-  (:export #:make-eventstream
-           #:subscribe
-           #:unsubscribe
-           #:publish))
 
 (in-package :cl-gserver.eventstream)
+
+(shadowing-import '(act:actor-of
+                    act:tell
+                    utils:filter
+                    ev:subscribe
+                    ev:unsubscribe
+                    ev:publish))
 
 (defclass eventstream ()
   ((subscribers :initform '()
@@ -81,33 +76,14 @@ But in theory it can be created individually by just passing an `actor-context` 
                                 (equal-list-p reg-type)))))
                     subscribers))))
 
-(defgeneric subscribe (eventstream subscriber &optional pattern)
-  (:documentation
-   "Subscribe to the eventstream to receive notifications of certain events or event types.
-
-The `pattern` can be:
-- nil: receive all events posted to the eventstream.
-- a type, class type: this allows to get notifications when an instance of this type, or class type is posted.
-- a symbol or global symbol: if posted message is a symbol or global symbol then the symbols are compared (`eq`).
-- a string: in which case an exact string comparison is made for a string message that is posted to the eventstream.
-- a list: if subscription if for a list structure, and the posted message is also a list structure, then a structure comparison (`equalp`) is made."))
-
 (defmethod subscribe ((ev-stream eventstream) (subscriber act:actor) &optional pattern)
   (with-slots (subscribers) ev-stream
     (setf subscribers (cons `(,subscriber ,pattern) subscribers))))
-
-(defgeneric unsubscribe (eventstream unsubscriber)
-  (:documentation
-   "Unsubscribe from the eventstream. No more events will be received then."))
 
 (defmethod unsubscribe ((ev-stream eventstream) (unsubscriber act:actor))
   (with-slots (subscribers) ev-stream
     (setf subscribers (remove-if (lambda (x) (eq x unsubscriber)) subscribers :key #'car)))
   t)
-
-(defgeneric publish (eventstream message)
-  (:documentation
-   "Publish an event/message to the eventstream. Subscribers may receive notification if they registered for the right message pattern."))
 
 (defmethod publish ((ev-stream eventstream) message)  
   (with-slots (ev-actor) ev-stream

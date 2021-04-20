@@ -20,6 +20,7 @@
                  (:file "actor-system-api")
                  (:file "actor-context-api")
                  (:file "actor-api")
+                 (:file "eventstream-api")
                  (:module "core"
                   :components
                   ((:file "queue")
@@ -28,8 +29,8 @@
                  (:file "fcomputation")
                  (:file "actor")
                  (:file "agent")
-                 (:file "router")
                  (:file "eventstream")
+                 (:file "router")
                  (:file "dispatcher")
                  (:file "actor-context")
                  (:file "actor-system"))))
@@ -85,7 +86,6 @@
 #|
 
 TODOs:
-=> - implement ev protocol for system, context and actor
 - more tests for ev
 
 |#

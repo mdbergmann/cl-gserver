@@ -88,5 +88,9 @@
 
 TODOs:
 
+=> - add :init and :receive to act:actor-of
+- change eventstream test code for changed 
+- add eventstream readme
+
 |#
 

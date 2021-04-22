@@ -44,6 +44,22 @@
   "Tests making an actor instance that is not the default 'actor type."
   (is (typep (make-actor "foo" :type 'custom-actor) 'custom-actor)))
 
+(test make-actor--with-init-and-destroy
+  "Tests the `init' and `destroy' hooks."
+  (let* ((init-called nil)
+         (destroy-called nil)
+         (actor (make-actor "foo-receive"
+                            :init (lambda (self)
+                                    (assert (not (null self)))
+                                    (setf init-called t))
+                            :destroy (lambda (self)
+                                       (assert (not (null self)))
+                                       (setf destroy-called t)))))
+    (is-true init-called)
+    (act-cell:stop actor)
+    (is-true destroy-called)
+  ))
+
 (test make-actor--has-no-msgbox-and-actor-context
   "Test constructor. actor should not have msgbox and attached actor-context."
 
@@ -341,26 +357,3 @@
            (is (string= "Bar" (ask-s actor-actor "Foo")))
            (is (string= "/user/foo1/foo2/foo3" (path actor-actor))))
       (ac:shutdown sys))))
-
-(defun run-tests ()
-  (run! 'get-actor-name-and-state)
-  (run! 'make-actor--custom-type)
-  (run! 'make-actor--has-no-msgbox-and-actor-context)
-  (run! 'make-actor--with-msgbox)
-  (run! 'actor-of--from-existing-actor-context)
-  (run! 'watch-and-unwatch--new-actor)
-  (run! 'watch--notify-about-stopped)
-  (run! 'stop-actor--stopping-parent-stops-also-child)
-  (run! 'stop-actor--notifies-actor-context-as-watcher)
-  (run! 'single-actor--handle-ask)
-  (run! 'single-actor--handle-ask-2)
-  (run! 'ask-s--shared--timeout)
-  (run! 'ask-s--shared--timeout-in-dispatcher)
-  (run! 'ask--shared--timeout)
-  (run! 'ask-s--pinned--timeout)
-  (run! 'ask--pinned--timeout)
-  (run! 'allow--no-reply--response)
-  (run! 'become-and-unbecome-a-different-behavior)
-  (run! 'actor-of-macro)
-  (run! 'actor-of-macro--figure-context)
-  )

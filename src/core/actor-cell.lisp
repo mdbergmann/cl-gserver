@@ -156,7 +156,8 @@ If a `sender' is specified the result will be sent to the sender."
   (log:debug "~a: stopping on actor-cell: ~a" (name self) self)
   (with-slots (msgbox internal-state) self
     (when (slot-value internal-state 'running)
-      (mesgb:stop msgbox)
+      (when msgbox
+        (mesgb:stop msgbox))
       (setf (slot-value internal-state 'running) nil)
       (after-stop self))))
 

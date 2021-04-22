@@ -25,8 +25,19 @@ The `sender` of the message, if available, is accessible with `*sender*` from wi
 the receive function or a behavior.")
    (behavior :initform nil
              :documentation
-             "Behavior function applied via `become` and reverted via `unbecome`
-`behavior' function takes the same parameters as `receive`.")
+             "Behavior function applied via `act:become` and reverted via `act:unbecome`
+`act:behavior` function takes the same parameters as `act:receive`.")
+   (init-fun :initarg :init
+             :initform nil
+             :documentation "Init hook.
+Function is called when actor was initialized.
+`act:context` is all setup at that time.
+Parameter of the lambda is the actor itself.")
+   (destroy-fun :initarg :destroy
+                :initform nil
+                :documentation "Destroy hook.
+Function is called when actor was stopped.
+Parameter of the lambda is the actor itself.")
    (context :initform nil
             :accessor context)
    (watchers :initform '()
@@ -39,11 +50,13 @@ There is asynchronous `tell` (no response) and synchronous `ask-s` and asynchron
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell` or `ask-s`)
 the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
 
-(defmethod make-actor (receive &key name state (type 'actor))
+(defmethod make-actor (receive &key name state (type 'actor) (init nil) (destroy nil))
   (make-instance type
                  :name name
                  :state state
-                 :receive receive))
+                 :receive receive
+                 :init init
+                 :destroy destroy))
 
 (defmethod print-object ((obj actor) stream)
   (print-unreadable-object (obj stream :type t)
@@ -66,6 +79,19 @@ the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
   (with-slots (receive behavior) self
     (let ((effective-behavior (if behavior behavior receive)))
       (funcall effective-behavior self message state))))
+
+(defmethod pre-start ((self actor) state)
+  (declare (ignore state))
+  (call-next-method)
+  (with-slots (init-fun) self
+    (when init-fun
+      (funcall init-fun self))))
+
+(defmethod after-stop ((self actor))
+  (call-next-method)
+  (with-slots (destroy-fun) self
+    (when destroy-fun
+      (funcall destroy-fun self))))
 
 (defun stop-children (actor)
   (let ((context (context actor)))

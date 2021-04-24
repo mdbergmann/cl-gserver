@@ -37,7 +37,7 @@ And the new state of the actor.
 I.e.: `(cons <my-response> <my-new-state>)`
 
 `init` and `destroy` are functions that take one argument, the actor instance.
-Those hooks are called on initialization and stop respectively.
+Those hooks are called on (after) initialization and (after) stop respectively.
 
 If the operation was an `ask-s` or `ask` then the `car` part of the `cons` will be sent back to the caller.
 In case of a `tell` operation there will be no response and the `car` of the `cons` is ignored,

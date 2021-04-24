@@ -224,14 +224,16 @@
                                  (funcall inc-counter-list)))))
                           (cons t state)))
            (actor1 (act:actor-of (system "actor 1")
+                     :init (lambda (self)
+                             (subscribe system self "Awaited message1")
+                             (subscribe system self 'cons))
                      :receive receive-fun))
            (actor2 (act:actor-of (system "actor 2")
+                     :init (lambda (self)
+                             (subscribe system self '("foo" "bar" "buzz"))
+                             (subscribe system self 'string))
                      :receive receive-fun)))
-
-      (subscribe system actor1 "Awaited message1")
-      (subscribe system actor1 'cons)
-      (subscribe system actor2 '("foo" "bar" "buzz"))
-      (subscribe system actor2 'string)
+      (declare (ignore actor1 actor2))
 
       (loop :for i :from 0 :to 999
             :when (oddp i)

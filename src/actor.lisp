@@ -57,7 +57,7 @@ the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
 (defmacro actor-of ((context
                      &optional (name nil))
                     &body body
-                    &key receive (init nil) (dispatcher :shared) (state nil) (type 'actor))
+                    &key receive (init nil) (dispatcher :shared) (state nil) (type ''actor))
   "Simple interface for creating an actor.
 This macro is not to confuse with the actor-context function `actor-of`.
 Internally it calls `ac:actor-of`.
@@ -66,7 +66,7 @@ The new actor is created in the given context.
 - `name` is optional. Specify when a static name is needed.
 - `:receive` is required and must be a lambda with arguments 1. the actor, 2. the message, 3. the state
 Usually expressed as `(lambda (self msg state))`.
-- `:init`: is an optional initialization lambda with one parameter: the actor instance (self).
+- `:init`: is an optional initialization lambdafunction with one argument: the actor instance (self).
 This represents a 'start' hook that ius called after the actor was initialized.
 - `:state` key can be used to initialize with a state.
 - `:dispatcher` key can be used to define the message dispatcher manually.
@@ -82,7 +82,7 @@ This represents a 'start' hook that ius called after the actor was initialized.
          (lambda () (act:make-actor ,receive
                                :state ,state
                                :name ,name
-                               :type ',type
+                               :type ,type
                                :init ,init))
          :dispatch-type ,dispatcher))))
 

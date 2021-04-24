@@ -51,11 +51,12 @@
          (actor (make-actor "foo-receive"
                             :init (lambda (self)
                                     (assert (not (null self)))
+                                    ;; is called from `ac:actor-of' when fully initialized.
                                     (setf init-called t))
                             :destroy (lambda (self)
                                        (assert (not (null self)))
                                        (setf destroy-called t)))))
-    (is-true init-called)
+    (is-false init-called)
     (act-cell:stop actor)
     (is-true destroy-called)
   ))
@@ -365,8 +366,7 @@
          (let* ((init-called nil)
                 (actor (actor-of (sys "foo")
                          :init (lambda (self)
-                                 (assert (not (null self)))
-                                 (assert (not (null (context self))))
+                                 (declare (ignore self))
                                  (setf init-called t))
                          :receive (lambda (self msg state)
                                     (declare (ignore self))

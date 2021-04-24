@@ -26,14 +26,14 @@ But in theory it can be created individually by just passing an `ac:actor-contex
   (let ((ev (make-instance 'eventstream)))
     (with-slots (ev-actor) ev
       (setf ev-actor (actor-of (actor-context
-                                (gensym "eventstream-actor-")
-                                :dispatcher :pinned)
-                       (lambda (ev-stream msg state)
-                         (handler-case
-                             (ev-receive ev ev-stream msg state)
-                           (t (c)
-                             (log:warn "Condition: ~a" c)
-                             (cons t state)))))))
+                                (gensym "eventstream-actor-"))
+                       :dispatcher :pinned
+                       :receive (lambda (ev-stream msg state)
+                                  (handler-case
+                                      (ev-receive ev ev-stream msg state)
+                                    (t (c)
+                                      (log:warn "Condition: ~a" c)
+                                      (cons t state)))))))
     ev))
 
 (defun ev-receive (ev listener msg state)

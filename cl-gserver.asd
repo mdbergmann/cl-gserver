@@ -88,8 +88,9 @@
 
 TODOs:
 
-=> - add :init and :receive to act:actor-of
-- change eventstream test code for changed 
+OK - add :init and :receive to act:actor-of
+OK - change eventstream test code for changed 
+=> - call init from outside when actor-context was attached
 - add eventstream readme
 
 |#

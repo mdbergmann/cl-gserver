@@ -57,6 +57,7 @@ An `act:actor` contains an `actor-context`."
   "See `ac:actor-of`"
   (let ((created (create-actor self create-fun dispatch-type queue-size)))
     (when created
+      (act::initialized created)
       (act:watch created self)
       (add-actor self created))))
 

@@ -43,6 +43,19 @@
       (is (string= "/foo/bar" (act:path actor)))
       (is (string= "/foo/bar" (id (act:context actor)))))))
 
+(test actor-of--calls-initialized-hook
+  "Check that 'initialized' hook got called during actor-of."
+  (with-fixture test-system ()
+    (let* ((cut (make-actor-context system "/foo"))
+           (init-called nil)
+           (actor (actor-of cut (lambda () (make-actor (lambda ())
+                                                  :name "bar"
+                                                  :init (lambda (self)
+                                                          (assert (not (null (act:context self))))
+                                                          (setf init-called t)))))))
+      (declare (ignore actor))
+      (is-true init-called))))
+
 (test actor-of--shared
   "Tests creating a new actor in the context with shared dispatcher"
   (with-fixture test-system ()

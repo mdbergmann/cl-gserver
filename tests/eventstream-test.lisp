@@ -52,7 +52,7 @@
   (with-fixture test-system ()
     (is (ev:subscribe system (act:make-actor (lambda ()))))
     (is (ev:subscribe (act:actor-of (system)
-                        (lambda ()))
+                        :receive (lambda ()))
                       (act:make-actor (lambda ()))))))
 
 (test unsubscribe-ev
@@ -68,7 +68,7 @@
   (with-fixture test-system ()
     (is (ev:unsubscribe system (act:make-actor (lambda ()))))
     (is (ev:unsubscribe (act:actor-of (system)
-                          (lambda ()))
+                          :receive (lambda ()))
                       (act:make-actor (lambda ()))))))
 
 (defclass my-class () ())
@@ -79,10 +79,10 @@
   (with-fixture test-ev ()
     (let* ((ev-received)
            (ev-listener (act:actor-of (system)
-                         (lambda (self msg state)
-                           (declare (ignore self state))
-                           (setf ev-received msg)
-                           (cons nil nil)))))
+                         :receive (lambda (self msg state)
+                                    (declare (ignore self state))
+                                    (setf ev-received msg)
+                                    (cons nil nil)))))
       ;; all
       (subscribe cut ev-listener)
       (publish cut "Foo")
@@ -195,7 +195,7 @@
   (with-fixture test-system ()
     (is (ev:publish system "Foo"))
     (is (ev:publish (act:actor-of (system)
-                          (lambda ()))
+                          :receive (lambda ()))
                       "Foo"))))
 
 (test integration-like-test
@@ -224,9 +224,9 @@
                                  (funcall inc-counter-list)))))
                           (cons t state)))
            (actor1 (act:actor-of (system "actor 1")
-                     receive-fun))
+                     :receive receive-fun))
            (actor2 (act:actor-of (system "actor 2")
-                     receive-fun)))
+                     :receive receive-fun)))
 
       (subscribe system actor1 "Awaited message1")
       (subscribe system actor1 'cons)

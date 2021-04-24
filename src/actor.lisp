@@ -50,6 +50,42 @@ There is asynchronous `tell` (no response) and synchronous `ask-s` and asynchron
 To stop an actors message processing in order to cleanup resouces you should tell (either `tell` or `ask-s`)
 the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
 
+;; --------------------------------------
+;; Convenience macro for creating actors
+;; --------------------------------------
+
+(defmacro actor-of ((context
+                     &optional (name nil))
+                    &body body
+                    &key receive (init nil) (dispatcher :shared) (state nil) (type 'actor))
+  "Simple interface for creating an actor.
+This macro is not to confuse with the actor-context function `actor-of`.
+Internally it calls `ac:actor-of`.
+`context` is either an `actor-system`, an `actor-context`, or an `actor` (any type of actor).
+The new actor is created in the given context.
+- `name` is optional. Specify when a static name is needed.
+- `:receive` is required and must be a lambda with arguments 1. the actor, 2. the message, 3. the state
+Usually expressed as `(lambda (self msg state))`.
+- `:init`: is an optional initialization lambda with one parameter: the actor instance (self).
+This represents a 'start' hook that ius called after the actor was initialized.
+- `:state` key can be used to initialize with a state.
+- `:dispatcher` key can be used to define the message dispatcher manually.
+  Options are `:shared` (default) and `:pinned`.
+- `:type` can specify a custom actor class. See `make-actor` for more info."
+  (declare (ignore body))
+  (let ((unwrapped-context (gensym)))
+    `(let* ((,unwrapped-context (etypecase ,context
+                                  (asys:actor-system ,context)
+                                  (ac:actor-context ,context)
+                                  (act:actor (act:context ,context)))))
+       (ac:actor-of ,unwrapped-context
+         (lambda () (act:make-actor ,receive
+                               :state ,state
+                               :name ,name
+                               :type ',type
+                               :init ,init))
+         :dispatch-type ,dispatcher))))
+
 (defmethod make-actor (receive &key name state (type 'actor) (init nil) (destroy nil))
   (make-instance type
                  :name name
@@ -82,16 +118,15 @@ the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
 
 (defmethod pre-start ((self actor) state)
   (declare (ignore state))
-  (call-next-method)
-  (with-slots (init-fun) self
-    (when init-fun
-      (funcall init-fun self))))
+  (call-next-method))
 
 (defmethod after-stop ((self actor))
   (call-next-method)
   (with-slots (destroy-fun) self
     (when destroy-fun
       (funcall destroy-fun self))))
+
+;; -------- children handling ----------
 
 (defun stop-children (actor)
   (let ((context (context actor)))
@@ -141,6 +176,12 @@ In any case stop the actor-cell."
   (stop-children self)
   (call-next-method)
   (notify-watchers-about-stop self))
+
+(defun initialized (actor)
+  "Private API: Called when initialized. I.e. messagebox and context was attached."
+  (with-slots (init-fun) actor
+    (when init-fun
+      (funcall init-fun actor))))
 
 ;; -------------------------------
 ;; Async handling

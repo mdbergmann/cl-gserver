@@ -17,7 +17,7 @@
 
 (in-package :cl-gserver.actor)
 
-(defgeneric make-actor (receive &key name state type)
+(defgeneric make-actor (receive &key name state type init destroy)
   (:documentation
    "Default constructor of an `actor`.
 Specify a custom actor class as the `:type` key which defaults to 'actor.
@@ -31,10 +31,13 @@ That is:
 2. the `message` and 
 3. the `current-state` of the actor.
 
-The `receive` can then decide how to handle the message.
+The `receive` function can then decide how to handle the message.
 In any case it has to return a `cons` of message to be sent back to caller (`car`), if applicable.
 And the new state of the actor.  
 I.e.: `(cons <my-response> <my-new-state>)`
+
+`init` and `destroy` are functions that take one argument, the actor instance.
+Those hooks are called on initialization and stop respectively.
 
 If the operation was an `ask-s` or `ask` then the `car` part of the `cons` will be sent back to the caller.
 In case of a `tell` operation there will be no response and the `car` of the `cons` is ignored,
@@ -121,30 +124,3 @@ I.e.: when it stopped. The message being sent in this case is: `(cons :stopped a
 (defgeneric watchers (actor)
   (:documentation
    "Returns a list of watchers of `actor`."))
-
-;; --------------------------------------
-;; Convenience macro for creating actors
-;; --------------------------------------
-
-(defmacro actor-of ((context
-                     &optional (name nil)
-                     &key (dispatcher :shared) (state nil) (type 'actor))
-                    &body body)
-  "Simple interface for creating an actor.
-This macro is not to confuse with the actor-context function `actor-of`.
-Internally it calls `ac:actor-of`.
-`context` is either an `actor-system`, an `actor-context`, or an `actor` (any type of actor).
-The new actor is created in the given context.
-- `name` is optional. Specify when a static name is needed.
-- `:state` key can be used to initialize with a state.
-- `:dispatcher` key can be used to define the message dispatcher manually.
-  Options are `:shared` (default) and `:pinned`.
-- `:type` can specify a custom actor class. See `make-actor` for more info."
-  (let ((unwrapped-context (gensym)))
-    `(let ((,unwrapped-context (etypecase ,context
-                                 (asys:actor-system ,context)
-                                 (ac:actor-context ,context)
-                                 (act:actor (act:context ,context)))))
-           (ac:actor-of ,unwrapped-context
-             (lambda () (act:make-actor ,@body :state ,state :name ,name :type ',type))
-             :dispatch-type ,dispatcher))))

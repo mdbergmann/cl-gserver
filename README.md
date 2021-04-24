@@ -3,6 +3,8 @@
 cl-gserver is a 'message passing' library/framework with actors
 similar to Erlang or Akka.
 
+**Version 1.6.0:** added eventstream facility (something like an event-bus)
+
 **Version 1.5.0:** added configuration structure. actor-system can now be created with a configuration. More configuration options to come.
 
 **Version 1.4.1:** changed documentation to the excellent [mgl-pax](https://github.com/melisgl/mgl-pax)
@@ -597,6 +599,10 @@ This variant is slightly faster (see below) but requires one thread per actor.
 
 <img alt="" src="./docs/disp_pinned.png" width="700"/>
 <img alt="" src="disp_pinned.png" width="700"/>
+
+### Eventstream
+
+
 
 ### Benchmarks
 

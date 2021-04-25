@@ -94,6 +94,14 @@ This represents a 'start' hook that ius called after the actor was initialized.
                  :init init
                  :destroy destroy))
 
+(defun initialize-with (actor message-box actor-context)
+  "Private API: finalize initialization of the actor with a `megb:message-box` and an `ac:actor-context`."
+  (setf (act-cell:msgbox actor) message-box)
+  (setf (act:context actor) actor-context)
+  (with-slots (init-fun) actor
+    (when init-fun
+      (funcall init-fun actor))))
+
 (defmethod print-object ((obj actor) stream)
   (print-unreadable-object (obj stream :type t)
     (let ((string-stream (make-string-output-stream)))
@@ -176,12 +184,6 @@ In any case stop the actor-cell."
   (stop-children self)
   (call-next-method)
   (notify-watchers-about-stop self))
-
-(defun initialized (actor)
-  "Private API: Called when initialized. I.e. messagebox and context was attached."
-  (with-slots (init-fun) actor
-    (when init-fun
-      (funcall init-fun actor))))
 
 ;; -------------------------------
 ;; Async handling

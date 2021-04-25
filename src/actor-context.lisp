@@ -48,16 +48,16 @@ An `act:actor` contains an `actor-context`."
   (let ((actor (funcall create-fun)))
     (when actor
       (verify-actor context actor)
-      (setf (act-cell:msgbox actor) (message-box-for-dispatch-type context dispatch-type queue-size))
-      (let ((context-id (utils:mkstr (id context) "/" (act-cell:name actor))))
-        (setf (act:context actor) (make-actor-context (system context) context-id))))
+      (act::initialize-with actor
+       (message-box-for-dispatch-type context dispatch-type queue-size)
+       (make-actor-context (system context)
+                           (utils:mkstr (id context) "/" (act-cell:name actor)))))
     actor))
 
 (defmethod actor-of ((self actor-context) create-fun &key (dispatch-type :shared) (queue-size 0))
   "See `ac:actor-of`"
   (let ((created (create-actor self create-fun dispatch-type queue-size)))
     (when created
-      (act::initialized created)
       (act:watch created self)
       (add-actor self created))))
 

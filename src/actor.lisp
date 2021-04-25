@@ -45,10 +45,22 @@ Parameter of the lambda is the actor itself.")
              :documentation "List of watchers of this actor."))
   (:documentation
    "This is the `actor` class.
+
 The `actor` does its message handling using the `receive` function.
-There is asynchronous `tell` (no response) and synchronous `ask-s` and asynchronous `ask` (with response).
-To stop an actors message processing in order to cleanup resouces you should tell (either `tell` or `ask-s`)
-the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
+
+The `receive` function has to return a `cons` constructed of a message to be sent back to caller (`car`), if applicable, and the new state of the actor (as `cdr`).
+I.e.: `(cons <my-response> <my-new-state>)`
+
+There is asynchronous `tell` (no response), a synchronous `ask-s` and asynchronous `ask` which all can be used to send messages to the actor. The 'ask' variants provide a response from the actor where 'tell' is only fire-and-forget.
+
+If the 'send' operation was `ask-s` or `ask` then the `car` part of the `cons` result will be sent back to the caller.
+In case of a `tell` operation there will be no response and the `car` of the `cons` is ignored, if there is no sender (see `sender` argument to `tell`). If there is a sender defined (which must be an actor), then the `car` of the `cons` result is sent (using `tell`) to the sender.  
+It is possible to specify `:no-reply` as `car` of `cons` in this case (`tell` with sender), which has the effect that the result is _not_ sent to the sender even if one exists. This is for the case that the user wants to handle the state and the notifications to a sender himself. It is useful when the message handling code for a particular message (in `receive`) should be executed in a special thread-pool, because long running operations within `receive` will block the message handling of the actor.
+
+The `:no-reply` result works for `ask` and `tell`, because also `ask` is based on `tell`.
+`ask-s` is really only useful if a synchronous result is required and should be avoided otherwise.
+
+To stop an actors message processing in order to cleanup resouces you should `tell` (or `ask-s`) the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
 
 ;; --------------------------------------
 ;; Convenience macro for creating actors
@@ -59,19 +71,24 @@ the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
                     &body body
                     &key receive (init nil) (dispatcher :shared) (state nil) (type ''actor))
   "Simple interface for creating an actor.
-This macro is not to confuse with the actor-context function `actor-of`.
-Internally it calls `ac:actor-of`.
-`context` is either an `actor-system`, an `actor-context`, or an `actor` (any type of actor).
+
+This is the preferred way to create an actor that runs within an `ac:actor-context`.
+
+**!!! Attention:** this macro wraps the `act:make-actor` and `ac:actor-of` functionality to something more simple to use. 
+Using this macro there is no need to use both `ac:actor-of` and `act:make-actor`.
+
+`context` is either an `asys:actor-system`, an `ac:actor-context`, or an `act:actor` (any type of actor).
 The new actor is created in the given context.
+
 - `name` is optional. Specify when a static name is needed.
 - `:receive` is required and must be a lambda with arguments 1. the actor, 2. the message, 3. the state
-Usually expressed as `(lambda (self msg state))`.
+  Usually expressed as `(lambda (self msg state))`.
 - `:init`: is an optional initialization function with one argument: the actor instance (self).
 This represents a 'start' hook that is called after the actor was fully initialized.
 - `:state` key can be used to initialize with a state.
 - `:dispatcher` key can be used to define the message dispatcher manually.
   Options are `:shared` (default) and `:pinned`.
-- `:type` can specify a custom actor class. See `make-actor` for more info."
+- `:type` can specify a custom actor class. See `act:make-actor` for more info."
   (declare (ignore body))
   (let ((unwrapped-context (gensym)))
     `(let* ((,unwrapped-context (etypecase ,context

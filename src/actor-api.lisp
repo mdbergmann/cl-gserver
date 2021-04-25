@@ -19,33 +19,27 @@
 
 (defgeneric make-actor (receive &key name state type init destroy)
   (:documentation
-   "Default constructor of an `actor`.
-Specify a custom actor class as the `:type` key which defaults to 'actor.
-Say you have a custom actor `custom-actor` and want `make-actor` create an instance of it.
-Then specify `:type 'custom-actor` on `make-actor` function.
-If you have additional initializations to make you can do so in `initialize-instance`.
+   "Constructs an `actor`.
 
-The `receive` parameter is a function that should take 3 parameters.
-That is:  
+Arguments:
+
+- `receive`: this is a function that must accept 3 parameters. That is:
+
 1. the actor `instance` itself, 
 2. the `message` and 
 3. the `current-state` of the actor.
 
-The `receive` function can then decide how to handle the message.
-In any case it has to return a `cons` of message to be sent back to caller (`car`), if applicable.
-And the new state of the actor.  
-I.e.: `(cons <my-response> <my-new-state>)`
+- `name`: give the actor a name. Must be unique within an `ac:actor-context`.
 
-`init` and `destroy` are functions that take one argument, the actor instance.
-Those hooks are called on (after) initialization and (after) stop respectively.
+- `type`: Specify a custom actor class as the `:type` key. Defaults to 'actor.
+Say you have a custom actor `custom-actor` and want `make-actor` create an instance of it.
+Then specify `:type 'custom-actor` on `make-actor` function.
+If you have additional initializations to make you can do so in `initialize-instance`.
 
-If the operation was an `ask-s` or `ask` then the `car` part of the `cons` will be sent back to the caller.
-In case of a `tell` operation there will be no response and the `car` of the `cons` is ignored,
-if there is no sender. If there is a sender defined, then the `car` of the `cons` is sent to the sender.
-It is possible to specify `:no-reply` in this case which has the effect that this result is _not_ sent to the sender even if one exists. This is for the case that the user wants to handle the state and the any notifications to a sender himself. It is useful when the `receive` message handler is executed in a special thread-pool, because long running operations within `receive` will block the message handling of the actor.
+- `state`: initialize an actor with a state. (default is `nil`)
 
-The `:no-reply` result works for `ask` and `tell`, because also `ask` is based on `tell`.
-`ask-s` is really only useful if a synchronous result is required and should be avoided otherwise."))
+- `init` and `destroy`: are functions that take one argument, the actor instance.
+Those hooks are called on (after) initialization and (after) stop respectively."))
 
 (defgeneric tell (actor message &optional sender)
   (:documentation

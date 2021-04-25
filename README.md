@@ -3,7 +3,7 @@
 cl-gserver is a 'message passing' library/framework with actors
 similar to Erlang or Akka.
 
-**Version 1.6.0:** added eventstream facility (something like an event-bus)
+**Version 1.6.0:** added eventstream facility + documentation improvements.
 
 **Version 1.5.0:** added configuration structure. actor-system can now be created with a configuration. More configuration options to come.
 
@@ -96,72 +96,33 @@ Lisp protocol that spawns a set of generic functions.
 There are two 'things' that host an `actor-context`. This
 is:
 
-1.  the `actor-system`. Creating actors on the
-    `actor-system` will create root actors.
-2.  the `actor`. Creating actors on the context of an actor
-    will create a child actor.
+1.  the `asys:actor-system`. Creating actors on the `asys:actor-system` will create root actors.
+2.  the `act:actor`. Creating actors on the context of an actor will create a child actor.
 
-Here we now use the `actor-context` protocol/API nicknamed
-`ac`.
-
-```elisp
-(ac:actor-of *system* (lambda ()
-                        (act:make-actor 
-                             (lambda (self msg state)
-                               (let ((output (format nil "Hello ~a" msg)))
-                                 (format t "~a~%" output)
-                                 (cons output state)))
-                             :name "answerer")))
-```
-
-The convenience version is just this, which you can generally use instead of `ac:actor-of`:
+Here we now use the `ac:actor-context` protocol/API nicknamed `ac`.
 
 ```elisp
 (act:actor-of (*system* "answerer")
+  :receive
   (lambda (self msg state)
     (let ((output (format nil "Hello ~a" msg)))
       (format t "~a~%" output)
       (cons output state))))
 ```
 
-This creates a root actor on the `*system*`. Notice that the actor is
-not assigned to a variable. It is now registered in the system. The main
-argument to the `actor-of` function is a 'creator-function'
-which when evaluated returns an actor created with the main actor
-constructor `make-actor`.
-
-`make-actor` requires as main parameter a 'receive'
-function which should look familiar if you know the previous version of
-cl-gserver. The parameters to the 'receive' function are still the
-tuple of:
+This creates a root actor on the `*system*`. Notice that the actor is not assigned to a variable. It is now registered in the system. The `:receive` key argument to the `actor-of` macro is a function which should look familiar if you know the previous version of cl-gserver. The parameters to the 'receive' function are the tuple of:
 
 1.  `self` - the instance of the actor
-2.  `msg` - the received message of when this 'receive'
-    function is called
+2.  `msg` - the received message of when this 'receive' function is called
 3.  `state` - the current state of the actor
 
-`make-actor` also allows to specify the initial state, a
-name, and a custom actor type. By default a standard actor of type
-`'actor` is created. But you can subclass `'actor`
-and specify your own. `make-actor` is still the facility to
-create them. If you require custom initialization for the custom actor
-do so in specializing `initialize-instance` function.
+`actor-of` also allows to specify the initial state by using the `:state` key, a name, and a custom actor type. By default a standard actor of type `'actor` is created. But you can subclass `'actor` and specify your own. It is also possible to add 'after initialization' code using the `:init` key which takes a lambda with the actor instance as parameter.
 
-The return value of the 'receive' function should also be familiar. It
-is the `cons` with `car` being sent back to sender
-(in case of ask/ask-s) and `cdr` set as the new state of the
-actor.
+The return value of the 'receive' function should also be familiar. It is the `cons` with `car` being sent back to sender (in case of ask/ask-s) and `cdr` set as the new state of the actor.
 
-The function `actor-of` still returns the actor as can be
-seen on the repl when this is executed. So it is of course possible to
-store the actor in a dynamic or lexical context. However, when the
-lexical context ends, the actor will still live as part of the actor
-context.
+The `actor-of` macro still returns the actor as can be seen on the repl when this is executed. So it is of course possible to store the actor in a dynamic or lexical context. However, when the lexical context ends, the actor will still live as part of the actor context/system.
 
-Here we see a few details of the actor. Among which is the name and also
-the type of message-box it uses. By default it is a
-`message-box/dp` which is the type of a shared message
-dispatcher message-box.
+Here we see a few details of the actor. Among which is the name and also the type of message-box it uses. By default it is a `message-box/dp` which is the type of a shared message dispatcher message-box.
 
 ```
 #<ACTOR answerer, running: T, state: NIL, message-box: #<MESSAGE-BOX/DP mesgb-9541, processed messages: 0, max-queue-size: 0, queue: #<QUEUE-UNBOUNDED #x3020029918FD>>>
@@ -171,40 +132,16 @@ Had we stored the actor to a variable, say `*answerer*` we
 can create a child actor of that by doing:
 
 ```elisp
-(ac:actor-of (act:context *answerer*) 
-                          (lambda ()
-                            (act:make-actor
-                             (lambda (self msg state)
-                               (let ((output (format nil "~a" "Hello-child ~a" msg)))
-                                 (format t "~a~%" output)
-                               (cons output state)))
-                             :name "child-answerer")))
+(act:actor-of (*answerer* "child-answerer")
+    :receive 
+    (lambda (self msg state)
+        (let ((output (format nil "~a" "Hello-child ~a" msg)))
+            (format t "~a~%" output)
+            (cons output state))))
 ```
 
 This will create a new actor on the context of the parent actor. The
-context is retrieved with `(act:context *answerer*)`.
-
-#####  Convenience macro for creating actors
-
-The macro `actor-of` in the `actor` package
-allows creating actors more easily. Internally it uses
-`ac:actor-of` and `act:make-actor` functions.
-But is removes a bit of typing. It also allows to specify either an
-actor-system, an actor-context or just an actor as
-`context` argument. The macro figures out the real
-context required to create the actor. Similarly as for
-`make-actor` it is possible to specify state, name and a
-custom actor type to the macro.
-
-Here is an example:
-
-```elisp
-(act:actor-of (*system*) 
-  (lambda (self msg state)
-    (cons "Hello world" state)))
-```
-
-It is sufficient to just specify the 'receive' lambda. The macro will add the rest.
+context can be specified with just the parent actor instance `*answerer*`.
 
 ##### Dispatchers `:pinned` vs. `:shared`
 

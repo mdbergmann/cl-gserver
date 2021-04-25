@@ -18,6 +18,8 @@
   (:documentation
    "Subscribe to the eventstream to receive notifications of certain events or event types.
 
+`subscriber` must be an actor (or agent).
+
 The `pattern` can be:
 
 - nil: receive all events posted to the eventstream.

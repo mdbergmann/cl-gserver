@@ -61,6 +61,7 @@
 </ul></li>
 <li><a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">2.6 Router</a></li>
 <li><a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">2.7 Config</a></li>
+<li><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29" title="Eventstream">2.8 Eventstream</a></li>
 </ul></li>
 </ul>
 
@@ -78,6 +79,8 @@
 
 <p>cl-gserver is a 'message passing' library/framework with actors
 similar to Erlang or Akka.</p>
+
+<p><strong>Version 1.6.0:</strong> added eventstream facility + documentation improvements.</p>
 
 <p><strong>Version 1.5.0:</strong> added configuration structure. actor-system can now be created with a configuration. More configuration options to come.</p>
 
@@ -167,108 +170,49 @@ Lisp protocol that spawns a set of generic functions.</p>
 is:</p>
 
 <ol>
-<li>the <code>actor-system</code>. Creating actors on the
-<code>actor-system</code> will create root actors.</li>
-<li>the <code>actor</code>. Creating actors on the context of an actor
-will create a child actor.</li>
+<li>the <code>asys:actor-system</code>. Creating actors on the <code>asys:actor-system</code> will create root actors.</li>
+<li>the <code>act:actor</code>. Creating actors on the context of an actor will create a child actor.</li>
 </ol>
 
-<p>Here we now use the <code>actor-context</code> protocol/API nicknamed
-<code>ac</code>.</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">ac:actor-of <span class="special">*system*</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code"></span>)</span>
-                        <span class="paren3">(<span class="code">act:make-actor 
-                             <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code">self msg state</span>)</span>
-                               <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren6">(<span class="code"><span class="paren1">(<span class="code">output <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"Hello ~a"</span> msg</span>)</span></span>)</span></span>)</span>
-                                 <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"~a~%"</span> output</span>)</span>
-                                 <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> output state</span>)</span></span>)</span></span>)</span>
-                             <span class="keyword">:name</span> <span class="string">"answerer"</span></span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<p>The convenience version is just this, which you can generally use instead of <code>ac:actor-of</code>:</p>
+<p>Here we now use the <code>ac:actor-context</code> protocol/API nicknamed <code>ac</code>.</p>
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">act:actor-of <span class="paren2">(<span class="code"><span class="special">*system*</span> <span class="string">"answerer"</span></span>)</span>
+  <span class="keyword">:receive</span>
   <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
     <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">output <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"Hello ~a"</span> msg</span>)</span></span>)</span></span>)</span>
       <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"~a~%"</span> output</span>)</span>
       <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> output state</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
 
-<p>This creates a root actor on the <code>*system*</code>. Notice that the actor is
-not assigned to a variable. It is now registered in the system. The main
-argument to the <code>actor-of</code> function is a 'creator-function'
-which when evaluated returns an actor created with the main actor
-constructor <code>make-actor</code>.</p>
-
-<p><code>make-actor</code> requires as main parameter a 'receive'
-function which should look familiar if you know the previous version of
-cl-gserver. The parameters to the 'receive' function are still the
-tuple of:</p>
+<p>This creates a root actor on the <code>*system*</code>. Notice that the actor is not assigned to a variable. It is now registered in the system. The <code>:receive</code> key argument to the <code>actor-of</code> macro is a function which should look familiar if you know the previous version of cl-gserver. The parameters to the 'receive' function are the tuple of:</p>
 
 <ol>
 <li><code>self</code> - the instance of the actor</li>
-<li><code>msg</code> - the received message of when this 'receive'
-function is called</li>
+<li><code>msg</code> - the received message of when this 'receive' function is called</li>
 <li><code>state</code> - the current state of the actor</li>
 </ol>
 
-<p><code>make-actor</code> also allows to specify the initial state, a
-name, and a custom actor type. By default a standard actor of type
-<code>'actor</code> is created. But you can subclass <code>'actor</code>
-and specify your own. <code>make-actor</code> is still the facility to
-create them. If you require custom initialization for the custom actor
-do so in specializing <code>initialize-instance</code> function.</p>
+<p><code>actor-of</code> also allows to specify the initial state by using the <code>:state</code> key, a name, and a custom actor type. By default a standard actor of type <code>'actor</code> is created. But you can subclass <code>'actor</code> and specify your own. It is also possible to add 'after initialization' code using the <code>:init</code> key which takes a lambda with the actor instance as parameter.</p>
 
-<p>The return value of the 'receive' function should also be familiar. It
-is the <code>cons</code> with <code>car</code> being sent back to sender
-(in case of ask/ask-s) and <code>cdr</code> set as the new state of the
-actor.</p>
+<p>The return value of the 'receive' function should also be familiar. It is the <code>cons</code> with <code>car</code> being sent back to sender (in case of ask/ask-s) and <code>cdr</code> set as the new state of the actor.</p>
 
-<p>The function <code>actor-of</code> still returns the actor as can be
-seen on the repl when this is executed. So it is of course possible to
-store the actor in a dynamic or lexical context. However, when the
-lexical context ends, the actor will still live as part of the actor
-context.</p>
+<p>The <code>actor-of</code> macro still returns the actor as can be seen on the repl when this is executed. So it is of course possible to store the actor in a dynamic or lexical context. However, when the lexical context ends, the actor will still live as part of the actor context/system.</p>
 
-<p>Here we see a few details of the actor. Among which is the name and also
-the type of message-box it uses. By default it is a
-<code>message-box/dp</code> which is the type of a shared message
-dispatcher message-box.</p>
+<p>Here we see a few details of the actor. Among which is the name and also the type of message-box it uses. By default it is a <code>message-box/dp</code> which is the type of a shared message dispatcher message-box.</p>
 
 <pre><code><span class="code">#&lt;ACTOR answerer, running: T, state: NIL, message-box: #&lt;MESSAGE-BOX/DP mesgb-9541, processed messages: 0, max-queue-size: 0, queue: #&lt;QUEUE-UNBOUNDED #x3020029918FD&gt;&gt;&gt;</span></code></pre>
 
 <p>Had we stored the actor to a variable, say <code>*answerer*</code> we
 can create a child actor of that by doing:</p>
 
-<pre><code><span class="code"><span class="paren1">(<span class="code">ac:actor-of <span class="paren2">(<span class="code">act:context <span class="special">*answerer*</span></span>)</span> 
-                          <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code"></span>)</span>
-                            <span class="paren3">(<span class="code">act:make-actor
-                             <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code">self msg state</span>)</span>
-                               <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren6">(<span class="code"><span class="paren1">(<span class="code">output <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"~a"</span> <span class="string">"Hello-child ~a"</span> msg</span>)</span></span>)</span></span>)</span>
-                                 <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"~a~%"</span> output</span>)</span>
-                               <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> output state</span>)</span></span>)</span></span>)</span>
-                             <span class="keyword">:name</span> <span class="string">"child-answerer"</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+<pre><code><span class="code"><span class="paren1">(<span class="code">act:actor-of <span class="paren2">(<span class="code"><span class="special">*answerer*</span> <span class="string">"child-answerer"</span></span>)</span>
+    <span class="keyword">:receive</span> 
+    <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
+        <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">output <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"~a"</span> <span class="string">"Hello-child ~a"</span> msg</span>)</span></span>)</span></span>)</span>
+            <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"~a~%"</span> output</span>)</span>
+            <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> output state</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
 
 <p>This will create a new actor on the context of the parent actor. The
-context is retrieved with <code>(act:context *answerer*)</code>.</p>
-
-<h5>Convenience macro for creating actors</h5>
-
-<p>The macro <code>actor-of</code> in the <code>actor</code> package
-allows creating actors more easily. Internally it uses
-<code>ac:actor-of</code> and <code>act:make-actor</code> functions.
-But is removes a bit of typing. It also allows to specify either an
-actor-system, an actor-context or just an actor as
-<code>context</code> argument. The macro figures out the real
-context required to create the actor. Similarly as for
-<code>make-actor</code> it is possible to specify state, name and a
-custom actor type to the macro.</p>
-
-<p>Here is an example:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">act:actor-of <span class="paren2">(<span class="code"><span class="special">*system*</span></span>)</span> 
-  <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
-    <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> <span class="string">"Hello world"</span> state</span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<p>It is sufficient to just specify the 'receive' lambda. The macro will add the rest.</p>
+context can be specified with just the parent actor instance <code>*answerer*</code>.</p>
 
 <h5>Dispatchers <code>:pinned</code> vs. <code>:shared</code></h5>
 
@@ -628,6 +572,31 @@ routees and returns a routee index to be chosen for the next operation.</p>
 <p><img alt="" src="./docs/disp_pinned.png" width="700"/>
 <img alt="" src="disp_pinned.png" width="700"/></p>
 
+<h3>Eventstream</h3>
+
+<p>The eventstream allows messages (or events) to be posted on the eventstream in a fire-and-forget kind of way. Actors can subscribe to the eventstream if they want to get notified for particular messages or generally on all messages posted.<br/>
+This allows to create event-based systems.</p>
+
+<p>Here is a simple example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">asys:make-actor-system</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code">act:actor-of <span class="paren2">(<span class="code"><span class="special">*sys*</span> <span class="string">"listener"</span></span>)</span>
+  <span class="keyword">:init</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self</span>)</span>
+          <span class="paren3">(<span class="code">ev:subscribe self self '<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_71.html#IDX149" class="symbol">string</a></span>)</span></span>)</span>
+  <span class="keyword">:receive</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
+             <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_126.html#IDX389" class="symbol"><i><span class="symbol">cond</span></i></a>
+               <span class="paren4">(<span class="code"><span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_73.html#IDX157" class="symbol">string=</a> <span class="string">"my-message"</span> msg</span>)</span>
+                <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"received event: ~a~%"</span> msg</span>)</span></span>)</span></span>)</span>
+             <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> <span class="keyword">:no-reply</span> state</span>)</span></span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code">ev:publish <span class="special">*sys*</span> <span class="string">"my-message"</span></span>)</span></span></code></pre>
+
+<p>This subscribes to all <code>'string</code> based events and just prints the message when received.<br/>
+The subscription here is done using the <code>:init</code> hook of the actor. The <code>ev:subscribe</code> function requires to specify the eventstream as first argument. But there are different variants of the generic function defined which allows to specofy an actor directly. The eventstream is retrieve from the actor through its actor-context.</p>
+
+<pre><code><span class="code">received event: my-message</span></code></pre>
+
 <h3>Benchmarks</h3>
 
 <p><img src="./docs/perf.png" alt="" />
@@ -796,7 +765,10 @@ The <code>actor-system</code> and the <code>actor</code> itself are composed of 
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AMAKE-ACTOR-CONTEXT-20FUNCTION-29" >MAKE-ACTOR-CONTEXT</a></span></span> <span class="locative-args">ACTOR-SYSTEM &amp;OPTIONAL ID</span></span></p>
 
 <p>Creates an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a>. Requires a reference to <code>actor-system</code>
-<code>id</code> is an optional value that can identify the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a>.</p></li>
+<code>id</code> is an optional value that can identify the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a>.
+Creating an actor-context manually is usually not needed.
+An <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a> implements the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a> protocol.
+An <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>act:actor</code></a> contains an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20T-29-29-29'></a></p>
@@ -966,59 +938,76 @@ For the <code>actor-system</code> it will stop the whole system with all actors.
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" >ACTOR</a></span></span> <span class="locative-args"><a href="#x-28CL-GSERVER-2EACTOR-CELL-3AACTOR-CELL-20CLASS-29" title="(CL-GSERVER.ACTOR-CELL:ACTOR-CELL CLASS)">ACTOR-CELL</a></span></span></p>
 
-<p>This is the <code>actor</code> class.
-The <code>actor</code> does its message handling using the <code>receive</code> function.
-There is asynchronous <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> (no response) and synchronous <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> and asynchronous <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>ask</code></a> (with response).
-To stop an actors message processing in order to cleanup resouces you should tell (either <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> or <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a>)
-the <code>:stop</code> message. It will respond with <code>:stopped</code> (in case of <code>ask(-s)</code>).</p></li>
-</ul>
+<p>This is the <code>actor</code> class.</p>
 
-<p><a id='x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29'></a></p>
+<p>The <code>actor</code> does its message handling using the <code>receive</code> function.</p>
 
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" >MAKE-ACTOR</a></span></span> <span class="locative-args">RECEIVE &amp;KEY NAME STATE TYPE</span></span></p>
-
-<p>Default constructor of an <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a>.
-Specify a custom actor class as the <code>:type</code> key which defaults to 'actor.
-Say you have a custom actor <code>custom-actor</code> and want <a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:MAKE-ACTOR GENERIC-FUNCTION)"><code>make-actor</code></a> create an instance of it.
-Then specify <code>:type 'custom-actor</code> on <a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:MAKE-ACTOR GENERIC-FUNCTION)"><code>make-actor</code></a> function.
-If you have additional initializations to make you can do so in <code>initialize-instance</code>.</p>
-
-<p>The <code>receive</code> parameter is a function that should take 3 parameters.
-That is:<br/>
-1. the actor <code>instance</code> itself, 
-2. the <code>message</code> and 
-3. the <code>current-state</code> of the actor.</p>
-
-<p>The <code>receive</code> can then decide how to handle the message.
-In any case it has to return a <code>cons</code> of message to be sent back to caller (<code>car</code>), if applicable.
-And the new state of the actor.<br/>
+<p>The <code>receive</code> function has to return a <code>cons</code> constructed of a message to be sent back to caller (<code>car</code>), if applicable, and the new state of the actor (as <code>cdr</code>).
 I.e.: <code>(cons &lt;my-response&gt; &lt;my-new-state&gt;)</code></p>
 
-<p>If the operation was an <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> or <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>ask</code></a> then the <code>car</code> part of the <code>cons</code> will be sent back to the caller.
-In case of a <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> operation there will be no response and the <code>car</code> of the <code>cons</code> is ignored,
-if there is no sender. If there is a sender defined, then the <code>car</code> of the <code>cons</code> is sent to the sender.
-It is possible to specify <code>:no-reply</code> in this case which has the effect that this result is <em>not</em> sent to the sender even if one exists. This is for the case that the user wants to handle the state and the any notifications to a sender himself. It is useful when the <code>receive</code> message handler is executed in a special thread-pool, because long running operations within <code>receive</code> will block the message handling of the actor.</p>
+<p>There is asynchronous <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> (no response), a synchronous <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> and asynchronous <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>ask</code></a> which all can be used to send messages to the actor. The 'ask' variants provide a response from the actor where 'tell' is only fire-and-forget.</p>
+
+<p>If the 'send' operation was <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> or <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>ask</code></a> then the <code>car</code> part of the <code>cons</code> result will be sent back to the caller.
+In case of a <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> operation there will be no response and the <code>car</code> of the <code>cons</code> is ignored, if there is no sender (see <code>sender</code> argument to <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a>). If there is a sender defined (which must be an actor), then the <code>car</code> of the <code>cons</code> result is sent (using <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a>) to the sender.<br/>
+It is possible to specify <code>:no-reply</code> as <code>car</code> of <code>cons</code> in this case (<a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> with sender), which has the effect that the result is <em>not</em> sent to the sender even if one exists. This is for the case that the user wants to handle the state and the notifications to a sender himself. It is useful when the message handling code for a particular message (in <code>receive</code>) should be executed in a special thread-pool, because long running operations within <code>receive</code> will block the message handling of the actor.</p>
 
 <p>The <code>:no-reply</code> result works for <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>ask</code></a> and <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a>, because also <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>ask</code></a> is based on <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a>.
-<a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> is really only useful if a synchronous result is required and should be avoided otherwise.</p></li>
+<a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> is really only useful if a synchronous result is required and should be avoided otherwise.</p>
+
+<p>To stop an actors message processing in order to cleanup resouces you should <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> (or <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a>) the <code>:stop</code> message. It will respond with <code>:stopped</code> (in case of <code>ask(-s)</code>).</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20-28MGL-PAX-3AMACRO-29-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20-28MGL-PAX-3AMACRO-29-29" >ACTOR-OF</a></span></span> <span class="locative-args">(CONTEXT &amp;OPTIONAL (NAME <code>NIL</code>) &amp;KEY (DISPATCHER <code>:SHARED</code>) (STATE <code>NIL</code>) (TYPE '<a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>ACTOR</code></a>)) &amp;BODY BODY</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20-28MGL-PAX-3AMACRO-29-29" >ACTOR-OF</a></span></span> <span class="locative-args">(CONTEXT &amp;OPTIONAL (NAME <code>NIL</code>)) &amp;BODY BODY &amp;KEY RECEIVE (INIT <code>NIL</code>) (DISPATCHER <code>:SHARED</code>) (STATE <code>NIL</code>) (TYPE ''<a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>ACTOR</code></a>)</span></span></p>
 
-<p>Simple interface for creating an actor.
-This macro is not to confuse with the actor-context function <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20-28MGL-PAX-3AMACRO-29-29" title="(CL-GSERVER.ACTOR:ACTOR-OF (MGL-PAX:MACRO))"><code>actor-of</code></a>.
-Internally it calls <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION)"><code>ac:actor-of</code></a>.
-<code>context</code> is either an <code>actor-system</code>, an <code>actor-context</code>, or an <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a> (any type of actor).
-The new actor is created in the given context.
-- <code>name</code> is optional. Specify when a static name is needed.
-- <code>:state</code> key can be used to initialize with a state.
-- <code>:dispatcher</code> key can be used to define the message dispatcher manually.
-  Options are <code>:shared</code> (default) and <code>:pinned</code>.
-- <code>:type</code> can specify a custom actor class. See <a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:MAKE-ACTOR GENERIC-FUNCTION)"><code>make-actor</code></a> for more info.</p></li>
+<p>Simple interface for creating an actor.</p>
+
+<p>This is the preferred way to create an actor that runs within an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a>.</p>
+
+<p><strong>!!! Attention:</strong> this macro wraps the <a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:MAKE-ACTOR GENERIC-FUNCTION)"><code>act:make-actor</code></a> and <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION)"><code>ac:actor-of</code></a> functionality to something more simple to use. 
+Using this macro there is no need to use both <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION)"><code>ac:actor-of</code></a> and <a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:MAKE-ACTOR GENERIC-FUNCTION)"><code>act:make-actor</code></a>.</p>
+
+<p><code>context</code> is either an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>, an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a>, or an <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>act:actor</code></a> (any type of actor).
+The new actor is created in the given context.</p>
+
+<ul>
+<li><p><code>name</code> is optional. Specify when a static name is needed.</p></li>
+<li><p><code>:receive</code> is required and must be a lambda with arguments 1. the actor, 2. the message, 3. the state
+  Usually expressed as <code>(lambda (self msg state))</code>.</p></li>
+<li><p><code>:init</code>: is an optional initialization function with one argument: the actor instance (self).
+This represents a 'start' hook that is called after the actor was fully initialized.</p></li>
+<li><p><code>:state</code> key can be used to initialize with a state.</p></li>
+<li><p><code>:dispatcher</code> key can be used to define the message dispatcher manually.
+  Options are <code>:shared</code> (default) and <code>:pinned</code>.</p></li>
+<li><p><code>:type</code> can specify a custom actor class. See <a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:MAKE-ACTOR GENERIC-FUNCTION)"><code>act:make-actor</code></a> for more info.</p></li>
+</ul></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" >MAKE-ACTOR</a></span></span> <span class="locative-args">RECEIVE &amp;KEY NAME STATE TYPE INIT DESTROY</span></span></p>
+
+<p>Constructs an <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a>.</p>
+
+<p>Arguments:</p>
+
+<ul>
+<li><p><code>receive</code>: this is a function that must accept 3 parameters. That is:</p></li>
+<li><p>the actor <code>instance</code> itself, </p></li>
+<li><p>the <code>message</code> and </p></li>
+<li><p>the <code>current-state</code> of the actor.</p></li>
+<li><p><code>name</code>: give the actor a name. Must be unique within an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a>.</p></li>
+<li><p><code>type</code>: Specify a custom actor class as the <code>:type</code> key. Defaults to 'actor.
+Say you have a custom actor <code>custom-actor</code> and want <a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:MAKE-ACTOR GENERIC-FUNCTION)"><code>make-actor</code></a> create an instance of it.
+Then specify <code>:type 'custom-actor</code> on <a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:MAKE-ACTOR GENERIC-FUNCTION)"><code>make-actor</code></a> function.
+If you have additional initializations to make you can do so in <code>initialize-instance</code>.</p></li>
+<li><p><code>state</code>: initialize an actor with a state. (default is <code>nil</code>)</p></li>
+<li><p><code>init</code> and <code>destroy</code>: are functions that take one argument, the actor instance.
+Those hooks are called on (after) initialization and (after) stop respectively.</p></li>
+</ul></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29'></a></p>
@@ -1552,17 +1541,19 @@ The return value of <code>update-fun</code> will be taken as the new state of th
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCHER-BASE-20CLASS-29" >DISPATCHER-BASE</a></span></span></span></p>
 
-<p>A <code>dispatcher</code> contains a pool of <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a> that operate as workers where work is dispatched to.</p></li>
+<p>A <code>dispatcher</code> contains a pool of <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a> that operate as workers where work is dispatched to.
+However, the workers are created in the given <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29" >MAKE-DISPATCHER</a></span></span> <span class="locative-args">&amp;KEY NUM-WORKERS</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29" >MAKE-DISPATCHER</a></span></span> <span class="locative-args">ACTOR-CONTEXT &amp;KEY NUM-WORKERS</span></span></p>
 
 <p>Default constructor.
 This creates a <a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:SHARED-DISPATCHER CLASS)"><code>shared-dispatcher</code></a> with <code>num-workers</code> number of workers.
-Each worker is based on a <code>:pinned</code> actor meaning that it has its own thread.</p></li>
+Each worker is based on a <code>:pinned</code> actor meaning that it has its own thread.
+Specify an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> where actors needed in the dispatcher are created in.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-20GENERIC-FUNCTION-29'></a></p>
@@ -1583,12 +1574,12 @@ Each worker is based on a <code>:pinned</code> actor meaning that it has its own
 <a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-ASYNC-20GENERIC-FUNCTION-29" title="(CL-GSERVER.DISPATCHER:DISPATCH-ASYNC GENERIC-FUNCTION)"><code>dispatch-async</code></a> does a <code>tell</code> to a <code>dispatcher</code> worker and is asynchronous.</p></li>
 </ul>
 
-<p><a id='x-28CL-GSERVER-2EDISPATCHER-3ASHUTDOWN-20GENERIC-FUNCTION-29'></a></p>
+<p><a id='x-28CL-GSERVER-2EDISPATCHER-3ASTOP-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHUTDOWN-20GENERIC-FUNCTION-29" >SHUTDOWN</a></span></span> <span class="locative-args">DISPATCHER</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ASTOP-20GENERIC-FUNCTION-29" >STOP</a></span></span> <span class="locative-args">DISPATCHER</span></span></p>
 
-<p>Shutting down the dispatcher and all workers.</p></li>
+<p>Stops the dispatcher. Stops all workers.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3AWORKERS-20GENERIC-FUNCTION-29'></a></p>
@@ -1612,7 +1603,7 @@ Only use the defined interface here to talk to them.</p></li>
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-WORKER-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-WORKER-20FUNCTION-29" >MAKE-DISPATCHER-WORKER</a></span></span> <span class="locative-args">NUM</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-WORKER-20FUNCTION-29" >MAKE-DISPATCHER-WORKER</a></span></span> <span class="locative-args">NUM ACTOR-CONTEXT</span></span></p>
 
 <p>Constructor for creating a worker.
 <code>num</code> only has the purpose to give the worker a name which includes a number.</p></li>
@@ -1721,7 +1712,7 @@ Otherwise see: <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" tit
 
 <p><a id='x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29" title="Eventstream">&#8594;</a> <a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">&#8634;</a></span></span></p>
 
 <h3><a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29">2.7 Config</a></h3>
 
@@ -1782,6 +1773,150 @@ This function looks only in the root hierarchy of the given config.</p></li>
 <code>config</code> specifies a config that overrides what exists in <code>fallback-config</code>.
 <code>fallback-config</code> is a default. If something doesn't exist in <code>config</code> it is taken from <code>fallback-config</code>.
 Both <code>config</code> and <code>fallback-config</code> must be plists, or a 'config' that was the output of <a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" title="(CL-GSERVER.CONFIG:CONFIG-FROM FUNCTION)"><code>config-from</code></a>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29'></a></p>
+
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29" title="Eventstream">&#8634;</a></span></span></p>
+
+<h3><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29">2.8 Eventstream</a></h3>
+
+<h6>[in package CL-GSERVER.EVENTSTREAM with nicknames EV]</h6>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" >EVENTSTREAM</a></span></span></span></p>
+
+<p>Eventstream facility allows to post/publish messages/events in the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>
+ and actors that did subscribe, to listen on those events.</p>
+
+<p>Events can be posted as plain strings, as lists, or as objects of classes.
+The subscriber has a variaty of options to define what to listen for.</p>
+
+<p>For example: a subscriber wants to listen to events/messages with the string &quot;Foo&quot;.
+The subscriber is then only notified when events are posted with the exact same string.</p>
+
+<p>See more information at the <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3ASUBSCRIBE-20GENERIC-FUNCTION-29" title="(CL-GSERVER.EVENTSTREAM:SUBSCRIBE GENERIC-FUNCTION)"><code>ev:subscribe</code></a> function.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3AMAKE-EVENTSTREAM-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AMAKE-EVENTSTREAM-20FUNCTION-29" >MAKE-EVENTSTREAM</a></span></span> <span class="locative-args">ACTOR-CONTEXT</span></span></p>
+
+<p>Creating an eventstream is done by the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a> which is then available system wide. 
+But in theory it can be created individually by just passing an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> (though I don't know what would be the reason to create an eventstream for the context of a single actor. Maybe to address only a certain hierarchy in the actor tree.)</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3ASUBSCRIBE-20GENERIC-FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3ASUBSCRIBE-20GENERIC-FUNCTION-29" >SUBSCRIBE</a></span></span> <span class="locative-args">EVENTSTREAM SUBSCRIBER &amp;OPTIONAL PATTERN</span></span></p>
+
+<p>Subscribe to the eventstream to receive notifications of certain events or event types.</p>
+
+<p><code>subscriber</code> must be an actor (or agent).</p>
+
+<p>The <code>pattern</code> can be:</p>
+
+<ul>
+<li><p>nil: receive all events posted to the eventstream.</p></li>
+<li><p>a type, class type: this allows to get notifications when an instance of this type, or class type is posted.
+I.e. if you want to listen to all string messages posted to the ev, thewn subscribe to <code>'string</code>.
+Or if you want to listen to all lists, subscribe with <code>'cons</code>.</p></li>
+<li><p>a symbol or global symbol: if posted message is a symbol or global symbol then the symbols are compared (<code>eq</code>).</p></li>
+<li><p>a string: in which case an exact string comparison is made for a string message that is posted to the eventstream (<code>string=</code>).</p></li>
+<li><p>a list: if subscription if for a list structure, and the posted message is also a list structure, then a structure comparison (<code>equalp</code>) is made.</p></li>
+</ul></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3AUNSUBSCRIBE-20GENERIC-FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AUNSUBSCRIBE-20GENERIC-FUNCTION-29" >UNSUBSCRIBE</a></span></span> <span class="locative-args">EVENTSTREAM UNSUBSCRIBER</span></span></p>
+
+<p>Unsubscribe from the eventstream. No more events will be received then.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3APUBLISH-20GENERIC-FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3APUBLISH-20GENERIC-FUNCTION-29" >PUBLISH</a></span></span> <span class="locative-args">EVENTSTREAM MESSAGE</span></span></p>
+
+<p>Publish an event/message to the eventstream. Subscribers may receive notification if they registered for the right message pattern.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3ASUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3ASUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29" >SUBSCRIBE</a></span></span> <span class="locative-args">(EV-STREAM EVENTSTREAM) (SUBSCRIBER ACTOR)</span></span></p>
+
+<p>Subscribe to <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3ASUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3ASUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29" >SUBSCRIBE</a></span></span> <span class="locative-args">(SYSTEM ACTOR-SYSTEM) (SUBSCRIBER ACTOR)</span></span></p>
+
+<p>Convenience. Allows to subscribe to <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a> by just providing the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3ASUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3ASUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29" >SUBSCRIBE</a></span></span> <span class="locative-args">(ACTOR ACTOR) (SUBSCRIBER ACTOR)</span></span></p>
+
+<p>Convenience. Allows to subscribe to <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3AUNSUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AUNSUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29" >UNSUBSCRIBE</a></span></span> <span class="locative-args">(EV-STREAM EVENTSTREAM) (UNSUBSCRIBER ACTOR)</span></span></p>
+
+<p>Unsubscribe to <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3AUNSUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AUNSUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29" >UNSUBSCRIBE</a></span></span> <span class="locative-args">(SYSTEM ACTOR-SYSTEM) (UNSUBSCRIBER ACTOR)</span></span></p>
+
+<p>Convenience. Allows to unsubscribe to <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a> by just providing the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3AUNSUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AUNSUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29" >UNSUBSCRIBE</a></span></span> <span class="locative-args">(ACTOR ACTOR) (UNSUBSCRIBER ACTOR)</span></span></p>
+
+<p>Convenience. Allows to unsubscribe to <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3APUBLISH-20-28METHOD-20NIL-20-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20T-29-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3APUBLISH-20-28METHOD-20NIL-20-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20T-29-29-29" >PUBLISH</a></span></span> <span class="locative-args">(EV-STREAM EVENTSTREAM) MESSAGE</span></span></p>
+
+<p>Publish to <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3APUBLISH-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3APUBLISH-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29" >PUBLISH</a></span></span> <span class="locative-args">(SYSTEM ACTOR-SYSTEM) MESSAGE</span></span></p>
+
+<p>Convenience. Allows to publish to <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a> by just providing the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3APUBLISH-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20T-29-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3APUBLISH-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20T-29-29-29" >PUBLISH</a></span></span> <span class="locative-args">(ACTOR ACTOR) MESSAGE</span></span></p>
+
+<p>Convenience. Allows to publish to <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
 </ul>
   </div>
 </div>

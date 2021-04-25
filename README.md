@@ -3,7 +3,7 @@
 cl-gserver is a 'message passing' library/framework with actors
 similar to Erlang or Akka.
 
-**Version 1.6.0:** added eventstream facility + documentation improvements.
+**Version 1.6.0:** added eventstream facility for building event based systems. Plus documentation improvements.
 
 **Version 1.5.0:** added configuration structure. actor-system can now be created with a configuration. More configuration options to come.
 
@@ -539,7 +539,32 @@ This variant is slightly faster (see below) but requires one thread per actor.
 
 ### Eventstream
 
+The eventstream allows messages (or events) to be posted on the eventstream in a fire-and-forget kind of way. Actors can subscribe to the eventstream if they want to get notified for particular messages or generally on all messages posted.  
+This allows to create event-based systems.
 
+Here is a simple example:
+
+```elisp
+(defparameter *sys* (asys:make-actor-system))
+
+(act:actor-of (*sys* "listener")
+  :init (lambda (self)
+          (ev:subscribe self self 'string))
+  :receive (lambda (self msg state)
+             (cond
+               ((string= "my-message" msg)
+                (format t "received event: ~a~%" msg)))
+             (cons :no-reply state)))
+
+(ev:publish *sys* "my-message")
+```
+
+This subscribes to all `'string` based events and just prints the message when received.  
+The subscription here is done using the `:init` hook of the actor. The `ev:subscribe` function requires to specify the eventstream as first argument. But there are different variants of the generic function defined which allows to specofy an actor directly. The eventstream is retrieve from the actor through its actor-context.
+
+```
+received event: my-message
+```
 
 ### Benchmarks
 

@@ -12,6 +12,6 @@
 (defparameter *default-config*
   '(:dispatchers (:num-shared-workers 4)))
 
-(defconstant +config-sections+
-  '(:dispatchers
-    (:keys :num-shared-workers)))
+;; (defconstant +config-sections+
+;;   '(:dispatchers
+;;     (:keys :num-shared-workers)))

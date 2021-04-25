@@ -66,8 +66,8 @@ The new actor is created in the given context.
 - `name` is optional. Specify when a static name is needed.
 - `:receive` is required and must be a lambda with arguments 1. the actor, 2. the message, 3. the state
 Usually expressed as `(lambda (self msg state))`.
-- `:init`: is an optional initialization lambdafunction with one argument: the actor instance (self).
-This represents a 'start' hook that ius called after the actor was initialized.
+- `:init`: is an optional initialization function with one argument: the actor instance (self).
+This represents a 'start' hook that is called after the actor was fully initialized.
 - `:state` key can be used to initialize with a state.
 - `:dispatcher` key can be used to define the message dispatcher manually.
   Options are `:shared` (default) and `:pinned`.

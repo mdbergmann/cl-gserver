@@ -566,6 +566,8 @@ The subscription here is done using the `:init` hook of the actor. The `ev:subsc
 received event: my-message
 ```
 
+See the [API documentation](#toc-2-api-documentation) for more details.
+
 ### Benchmarks
 
 ![](./docs/perf.png)

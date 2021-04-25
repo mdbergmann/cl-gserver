@@ -10,7 +10,9 @@
                 :reader subscribers)
    (ev-actor :initform nil))
   (:documentation "Eventstream facility allows to post/publish messages/events in the `asys:actor-system`
- and actors that did subscribe, to listen on those events.
+and actors that did subscribe, to listen on those events.
+
+The eventstream is driven by an actor. The processing of the sent events is guaranteed to be as they arrive.
 
 Events can be posted as plain strings, as lists, or as objects of classes.
 The subscriber has a variaty of options to define what to listen for.

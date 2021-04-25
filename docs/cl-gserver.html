@@ -597,6 +597,8 @@ The subscription here is done using the <code>:init</code> hook of the actor. Th
 
 <pre><code><span class="code">received event: my-message</span></code></pre>
 
+<p>See the <a href="#toc-2-api-documentation" >API documentation</a> for more details.</p>
+
 <h3>Benchmarks</h3>
 
 <p><img src="./docs/perf.png" alt="" />
@@ -1789,7 +1791,9 @@ Both <code>config</code> and <code>fallback-config</code> must be plists, or a '
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" >EVENTSTREAM</a></span></span></span></p>
 
 <p>Eventstream facility allows to post/publish messages/events in the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>
- and actors that did subscribe, to listen on those events.</p>
+and actors that did subscribe, to listen on those events.</p>
+
+<p>The eventstream is driven by an actor. The processing of the sent events is guaranteed to be as they arrive.</p>
 
 <p>Events can be posted as plain strings, as lists, or as objects of classes.
 The subscriber has a variaty of options to define what to listen for.</p>

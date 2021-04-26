@@ -91,15 +91,15 @@ An optional configuration can be passed to the actor-system factory function. Se
 
 Actors kind of live within an `actor-context`. An
 `actor-context` contains a collection (of actors) and defines a Common
-Lisp protocol that spawns a set of generic functions.
+Lisp protocol that defines a set of generic functions for creating, removing and finding actors in an `actor-context`.
 
 There are two 'things' that host an `actor-context`. This
 is:
 
-1.  the `asys:actor-system`. Creating actors on the `asys:actor-system` will create root actors.
-2.  the `act:actor`. Creating actors on the context of an actor will create a child actor.
+1.  the `actor-system`. Creating actors on the `actor-system` will create root actors.
+2.  the `actor`. Creating actors on the context of an actor will create a child actor.
 
-Here we now use the `ac:actor-context` protocol/API nicknamed `ac`.
+Let's create an actor.
 
 ```elisp
 (act:actor-of (*system* "answerer")
@@ -110,7 +110,7 @@ Here we now use the `ac:actor-context` protocol/API nicknamed `ac`.
       (cons output state))))
 ```
 
-This creates a root actor on the `*system*`. Notice that the actor is not assigned to a variable. It is now registered in the system. The `:receive` key argument to the `actor-of` macro is a function which should look familiar if you know the previous version of cl-gserver. The parameters to the 'receive' function are the tuple of:
+This creates a root actor on the `*system*`. Notice that the actor is not assigned to a variable. It is now registered in the system. The `:receive` key argument to the `actor-of` macro is a function which does the main message processing of an actor. The parameters to the 'receive' function are the tuple:
 
 1.  `self` - the instance of the actor
 2.  `msg` - the received message of when this 'receive' function is called

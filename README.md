@@ -1,7 +1,6 @@
 ### Introduction - Actor framework featuring actors and agents
 
-cl-gserver is a 'message passing' library/framework with actors
-similar to Erlang or Akka.
+cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.
 
 **Version 1.6.0:** added eventstream facility for building event based systems. Plus documentation improvements.
 

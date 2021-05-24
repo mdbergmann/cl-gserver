@@ -4,7 +4,8 @@
   (:export #:with-context
            #:task-yield
            #:task-start
-           #:task-async)
+           #:task-async
+           #:task-await)
   )
 
 (in-package :cl-gserver.tasks)
@@ -20,6 +21,8 @@
     :receive (lambda (self msg state)
                (declare (ignore self))
                (cond
+                 ((eq :get msg)
+                  (cons state state))
                  ((eq :exec (car msg))
                   (let ((fun-result (funcall (cdr msg))))
                     (cons fun-result fun-result)))
@@ -31,8 +34,8 @@
 A normal response from the actor is passed back as the response value.
 If the timeout elapsed the response is: `(cons :handler-error utils:ask-timeout)`."
   (let ((tmp-actor (make-tmp-actor *task-context*)))
-    (unwind-protect
-         (act:ask-s tmp-actor (cons :exec fun) :time-out time-out)
+    (prog1
+        (act:ask-s tmp-actor (cons :exec fun) :time-out time-out)
       (ac:stop *task-context* tmp-actor))))
 
 (defun task-start (fun)
@@ -48,6 +51,14 @@ The temporary actor is automatically stopped and removed from the context and wi
       (ac:stop *task-context* tmp-actor))))
 
 (defun task-async (fun)
+  "`task-async` schedules the function `fun` for asynchronous execution in a temporary spanwed actor.
+The result of this function is the temporary spawned actor as 'task'.
+Store this result for a call to `task-async`."
   (let ((tmp-actor (make-tmp-actor *task-context*)))
     (act:tell tmp-actor (cons :exec fun))
     tmp-actor))
+
+(defun task-await (task-actor)
+  (prog1
+    (act:ask-s task-actor :get)
+    (ac:stop *task-context* task-actor)))

@@ -54,3 +54,17 @@
         (is-true (typep task 'act:actor))
         ;; explicitly stop. since we still need the actor for a potential `await'.
         (ac:stop system task)))))
+
+(test task-async--with-await
+  "Test for task-async followed by task-await."
+  (with-fixture system-fixture ()
+    (with-context system
+      (let ((task (task-async (lambda () (+ 1 2)))))
+        (is (= 3 (task-await task)))))))
+
+(test task-async--with-await--longer-wait
+  "Test for task-async followed by task-await."
+  (with-fixture system-fixture ()
+    (with-context system
+      (let ((task (task-async (lambda () (sleep 1) (+ 1 2)))))
+        (is (= 3 (task-await task)))))))

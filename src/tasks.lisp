@@ -51,7 +51,7 @@ The temporary actor is automatically stopped and removed from the context and wi
       (ac:stop *task-context* tmp-actor))))
 
 (defun task-async (fun)
-  "`task-async` schedules the function `fun` for asynchronous execution in a temporary spanwed actor.
+  "`task-async` schedules the function `fun` for asynchronous execution in a temporary spawned actor.
 The result of this function is the temporary spawned actor as 'task'.
 Store this result for a call to `task-async`."
   (let ((tmp-actor (make-tmp-actor *task-context*)))

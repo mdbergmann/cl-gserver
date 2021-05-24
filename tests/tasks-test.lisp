@@ -43,4 +43,5 @@
             (task-start (lambda () (setf my-var 10)))
           (is (eq :ok result))
           (is-true (typep actor 'act:actor))
-          (is-true (assert-cond (lambda () (= 10 my-var)) 0.2)))))))
+          (is-true (assert-cond (lambda () (= 10 my-var)) 0.2))
+          (is (eq :stopped (act:ask-s actor :foo))))))))

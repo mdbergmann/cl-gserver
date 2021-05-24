@@ -38,6 +38,9 @@
   "Test for task-start"
   (with-fixture system-fixture ()
     (with-context system
-      (let ((my-var nil))
-        (task-start (lambda () (setf my-var 10)))
-        (is-true (assert-cond (lambda () (= 10 my-var)) 0.2))))))
+      (let* ((my-var nil))
+        (multiple-value-bind (result actor)
+            (task-start (lambda () (setf my-var 10)))
+          (is (eq :ok result))
+          (is-true (typep actor 'act:actor))
+          (is-true (assert-cond (lambda () (= 10 my-var)) 0.2)))))))

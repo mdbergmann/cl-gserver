@@ -32,5 +32,7 @@
 (defun task-start (fun)
   (let ((tmp-actor (make-tmp-actor *task-context*)))
     (unwind-protect
-         (act:tell tmp-actor (cons :exec fun))
+         (progn
+           (act:tell tmp-actor (cons :exec fun))
+           (values :ok tmp-actor))
       (ac:stop *task-context* tmp-actor))))

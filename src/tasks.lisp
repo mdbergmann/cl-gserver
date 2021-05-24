@@ -59,6 +59,8 @@ Store this result for a call to `task-async`."
     tmp-actor))
 
 (defun task-await (task-actor)
+  "`task-await` waits (by blocking) until a result has been generated for a previous `task-async` by passing result of `task-async` to `task-await`.
+`task-await` also stops the temporary actor that is the result of `task-async`, so it is of no further use."
   (prog1
     (act:ask-s task-actor :get)
     (ac:stop *task-context* task-actor)))

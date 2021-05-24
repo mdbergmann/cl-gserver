@@ -3,7 +3,8 @@
   (:nicknames :tasks)
   (:export #:with-context
            #:task-yield
-           #:task-start)
+           #:task-start
+           #:task-async)
   )
 
 (in-package :cl-gserver.tasks)
@@ -20,7 +21,8 @@
                (declare (ignore self))
                (cond
                  ((eq :exec (car msg))
-                  (cons (funcall (cdr msg)) state))
+                  (let ((fun-result (funcall (cdr msg))))
+                    (cons fun-result fun-result)))
                  (t (cons :unrecognized-command state))))))
 
 (defun task-yield (fun &optional time-out)
@@ -35,6 +37,7 @@ If the timeout elapsed the response is: `(cons :handler-error utils:ask-timeout)
 
 (defun task-start (fun)
   "`task-start` runs the given function `fun` asynchronously in a temporary actor.
+Use this if you don't care about any response or result, i.e. for I/O side-effects.
 It returns `(values :ok <actor-ref>)`. `<actor-ref> is the actor given back as reference.
 The temporary actor is automatically stopped and removed from the context and will not be able to handle requests."
   (let ((tmp-actor (make-tmp-actor *task-context*)))
@@ -43,3 +46,8 @@ The temporary actor is automatically stopped and removed from the context and wi
            (act:tell tmp-actor (cons :exec fun))
            (values :ok tmp-actor))
       (ac:stop *task-context* tmp-actor))))
+
+(defun task-async (fun)
+  (let ((tmp-actor (make-tmp-actor *task-context*)))
+    (act:tell tmp-actor (cons :exec fun))
+    tmp-actor))

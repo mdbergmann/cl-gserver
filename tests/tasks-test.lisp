@@ -38,10 +38,19 @@
   "Test for task-start"
   (with-fixture system-fixture ()
     (with-context system
-      (let* ((my-var nil))
+      (let ((my-var nil))
         (multiple-value-bind (result actor)
             (task-start (lambda () (setf my-var 10)))
           (is (eq :ok result))
           (is-true (typep actor 'act:actor))
           (is-true (assert-cond (lambda () (= 10 my-var)) 0.2))
           (is (eq :stopped (act:ask-s actor :foo))))))))
+
+(test task-async
+  "Test for task-async."
+  (with-fixture system-fixture ()
+    (with-context system
+      (let ((task (task-async (lambda () (+ 1 2)))))
+        (is-true (typep task 'act:actor))
+        ;; explicitly stop. since we still need the actor for a potential `await'.
+        (ac:stop system task)))))

@@ -65,7 +65,8 @@ gt 0: for a bounded queue (preferably a size > 100)"))
 (defgeneric stop (context actor)
   (:documentation
    "Stops the given actor on the context. 
-The context may either be an `actor-context`, or an `actor-system`."))
+The context may either be an `actor-context`, or an `actor-system`.
+The actor is then also removed from the context."))
 
 (defgeneric shutdown (context)
   (:documentation

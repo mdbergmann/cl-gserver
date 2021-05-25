@@ -120,8 +120,8 @@ Example:
 (defun task-await (task)
   "`task-await` waits (by blocking) until a result has been generated for a previous `task-async` by passing the `task` result of `task-async` to `task-await`.
 `task-await` also stops the `task` that is the result of `task-async`, so it is of no further use."
-  (prog1
-    (act:ask-s task :get)
+  (unwind-protect
+       (act:ask-s task :get)
     (ac:stop *task-context* task)))
 
 (defun task-shutdown (task)

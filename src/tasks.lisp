@@ -49,8 +49,12 @@ Example:
                  ((eq :get msg)
                   (cons state state))
                  ((eq :exec (car msg))
-                  (let ((fun-result (funcall (cdr msg))))
-                    (cons fun-result fun-result)))
+                  (handler-case
+                      (let ((fun-result (funcall (cdr msg))))
+                        (cons fun-result fun-result))
+                    (error (c)
+                      (let ((err-result (cons :handler-error c)))
+                        (cons err-result err-result)))))
                  (t (cons :unrecognized-command state))))))
 
 (defun task-yield (fun &optional time-out)
@@ -121,7 +125,7 @@ Example:
   "`task-await` waits (by blocking) until a result has been generated for a previous `task-async` by passing the `task` result of `task-async` to `task-await`.
 `task-await` also stops the `task` that is the result of `task-async`, so it is of no further use."
   (unwind-protect
-       (act:ask-s task :get)
+       (act:ask-s task :get);; :time-out time-out)))
     (ac:stop *task-context* task)))
 
 (defun task-shutdown (task)

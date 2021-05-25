@@ -63,6 +63,13 @@
       (let ((task (task-async (lambda () (+ 1 2)))))
         (is (= 3 (task-await task)))))))
 
+(test task-async--with-await--err-cond
+  "Test for task-async followed by task-await with error condition."
+  (with-fixture system-fixture ()
+    (with-context system
+      (let ((task (task-async (lambda () (error "Foo")))))
+        (is (eq :handler-error (car (task-await task))))))))
+
 (test task-async--with-await--longer-wait
   "Test for task-async followed by task-await."
   (with-fixture system-fixture ()
@@ -71,6 +78,17 @@
         (is (= 3 (task-await task)))))))
 
 (test task-async-stream
+  "Tests for task-async-stream"
+  (with-fixture system-fixture ()
+    (with-context system
+      (is (equal '(2 4 6 8 10)
+                 (task-async-stream (lambda (x) (* x 2))
+                                    '(1 2 3 4 5))))
+      (is (= 30 (reduce #'+
+                        (task-async-stream (lambda (x) (* x 2))
+                                           '(1 2 3 4 5))))))))
+
+(test task-async-stream--with-err-results
   "Tests for task-async-stream"
   (with-fixture system-fixture ()
     (with-context system

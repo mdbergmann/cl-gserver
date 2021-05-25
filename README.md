@@ -2,6 +2,8 @@
 
 cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.
 
+**Version 1.7.0:** added tasks abstraction facility to more easily deal with asynchronous and concurrent operations.
+
 **Version 1.6.0:** added eventstream facility for building event based systems. Plus documentation improvements.
 
 **Version 1.5.0:** added configuration structure. actor-system can now be created with a configuration. More configuration options to come.
@@ -565,7 +567,37 @@ The subscription here is done using the `:init` hook of the actor. The `ev:subsc
 received event: my-message
 ```
 
-See the [API documentation](#toc-2-api-documentation) for more details.
+See the [API documentation](https://mdbergmann.github.io/cl-gserver/cl-gserver.html#toc-2-7-eventstream) for more details.
+
+### Tasks
+
+'tasks' is a convenience package that makes dealing with asynchronous and concurrent operations very easy.
+
+Here is a simple example:
+
+```elisp
+;; create actor-system
+(defparameter *sys* (make-actor-system))
+
+(with-context *sys*
+  (->> 
+    '(1 2 3 4 5)
+    (task-async-stream #'1+)
+    (reduce #'+)))
+
+=> 20 (5 bits, #x14, #o24, #b10100)
+```
+
+All functions available in 'tasks' package require to be wrapped in a `with-context` macro. This macro removes the necessity of an additional argument to each of the functions which is instead supplied by the macro.
+
+What happens in this example is that the list `'(1 2 3 4 5)` is passed to `task-async-stream`.
+`task-async-stream` then spawns a 'task' for each element of the list and applies the given function (here `1+`) on each list element. The function though is executed by a worker of the actor-systems `:shared` dispatcher. `task-async-stream` then also collects the result of all workers. In the last step (`reduce`) the sum of the elements of the result list are calculated.
+
+The concurrency here depends on the number of `:shared` dispatcher workers.
+
+Be also aware that the `:shared` dispatcher should not run long running operations as it blocks a message processing thread.
+
+See the [API documentation](https://mdbergmann.github.io/cl-gserver/cl-gserver.html#toc-2-8-tasks) for more details.
 
 ### Benchmarks
 

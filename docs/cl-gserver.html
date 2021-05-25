@@ -60,8 +60,9 @@
 <li><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">2.5.1 Shared dispatcher</a></li>
 </ul></li>
 <li><a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">2.6 Router</a></li>
-<li><a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">2.7 Config</a></li>
-<li><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29" title="Eventstream">2.8 Eventstream</a></li>
+<li><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29" title="Eventstream">2.7 Eventstream</a></li>
+<li><a href="#x-28CL-GSERVER-2ETASKS-3A-40TASKS-20MGL-PAX-3ASECTION-29" title="Tasks">2.8 Tasks</a></li>
+<li><a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">2.9 Config</a></li>
 </ul></li>
 </ul>
 
@@ -78,6 +79,8 @@
 <h3>Introduction - Actor framework featuring actors and agents</h3>
 
 <p>cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.</p>
+
+<p><strong>Version 1.7.0:</strong> added tasks abstraction facility to more easily deal with asynchronous and concurrent operations.</p>
 
 <p><strong>Version 1.6.0:</strong> added eventstream facility for building event based systems. Plus documentation improvements.</p>
 
@@ -596,7 +599,35 @@ The subscription here is done using the <code>:init</code> hook of the actor. Th
 
 <pre><code><span class="code">received event: my-message</span></code></pre>
 
-<p>See the <a href="#toc-2-api-documentation" >API documentation</a> for more details.</p>
+<p>See the <a href="https://mdbergmann.github.io/cl-gserver/cl-gserver.html#toc-2-7-eventstream" >API documentation</a> for more details.</p>
+
+<h3>Tasks</h3>
+
+<p>'tasks' is a convenience package that makes dealing with asynchronous and concurrent operations very easy.</p>
+
+<p>Here is a simple example:</p>
+
+<pre><code><span class="code"><span class="comment">;; create actor-system
+</span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="special">*sys*</span>
+  <span class="paren2">(<span class="code">-&gt;&gt; 
+    '<span class="paren3">(<span class="code">1 2 3 4 5</span>)</span>
+    <span class="paren3">(<span class="code">task-async-stream #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a></span>)</span>
+    <span class="paren3">(<span class="code">reduce #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a></span>)</span></span>)</span></span>)</span>
+
+=&gt; 20 <span class="paren1">(<span class="code">5 bits, #x14, #o24, #b10100</span>)</span></span></code></pre>
+
+<p>All functions available in 'tasks' package require to be wrapped in a <code>with-context</code> macro. This macro removes the necessity of an additional argument to each of the functions which is instead supplied by the macro.</p>
+
+<p>What happens in this example is that the list <code>'(1 2 3 4 5)</code> is passed to <code>task-async-stream</code>.
+<code>task-async-stream</code> then spawns a 'task' for each element of the list and applies the given function (here <code>1+</code>) on each list element. The function though is executed by a worker of the actor-systems <code>:shared</code> dispatcher. <code>task-async-stream</code> then also collects the result of all workers. In the last step (<code>reduce</code>) the sum of the elements of the result list are calculated.</p>
+
+<p>The concurrency here depends on the number of <code>:shared</code> dispatcher workers.</p>
+
+<p>Be also aware that the <code>:shared</code> dispatcher should not run long running operations as it blocks a message processing thread.</p>
+
+<p>See the <a href="https://mdbergmann.github.io/cl-gserver/cl-gserver.html#toc-2-8-tasks" >API documentation</a> for more details.</p>
 
 <h3>Benchmarks</h3>
 
@@ -1631,7 +1662,7 @@ The default strategy of choosing a worker is <code>:random</code>.</p>
 
 <p><a id='x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">&#8594;</a> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29" title="Eventstream">&#8594;</a> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8634;</a></span></span></p>
 
 <h3><a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29">2.6 Router</a></h3>
 
@@ -1712,76 +1743,11 @@ Otherwise see: <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" t
 Otherwise see: <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>act:ask</code></a>.</p></li>
 </ul>
 
-<p><a id='x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29'></a></p>
-
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29" title="Eventstream">&#8594;</a> <a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">&#8634;</a></span></span></p>
-
-<h3><a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29">2.7 Config</a></h3>
-
-<h6>[in package CL-GSERVER.CONFIG with nicknames CONFIG]</h6>
-
-<p><a id='x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29'></a></p>
-
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" >CONFIG-FROM</a></span></span> <span class="locative-args">CONFIG-STRING</span></span></p>
-
-<p>Parses the given config-string, represented by common lisp s-expressions.
-The config is composed of plists in a hierarchy.</p>
-
-<p>This function parses (run through <code>cl:read</code>) the given config string.
-The config string can be generated by:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">let</span></i> <span class="paren2">(<span class="code"><span class="paren3">(<span class="code"><span class="special">*print-case*</span> <span class="keyword">:downcase</span></span>)</span></span>)</span>
-  <span class="paren2">(<span class="code">prin1-to-string '<span class="paren3">(<span class="code"><i><span class="symbol">defconfig</span></i> 
-                     <span class="paren4">(<span class="code"><span class="keyword">:foo</span> 1
-                      <span class="keyword">:bar</span> 2</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<p>Or just be given by reading from a file.
-Notice the 'config' s-expr must start with the root <code>car</code> 'defconfig'.</p></li>
-</ul>
-
-<p><a id='x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-SECTION-20FUNCTION-29'></a></p>
-
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-SECTION-20FUNCTION-29" >RETRIEVE-SECTION</a></span></span> <span class="locative-args">CONFIG SECTION</span></span></p>
-
-<p>Retrieves the given named section which should be a (global) <code>symbol</code> (a key).
-A section usually is a plist with additional configs or sub sections.
-This function looks only in the root hierarchy of the given config.</p></li>
-</ul>
-
-<p><a id='x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-VALUE-20FUNCTION-29'></a></p>
-
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-VALUE-20FUNCTION-29" >RETRIEVE-VALUE</a></span></span> <span class="locative-args">SECTION KEY</span></span></p>
-
-<p>Retrieves the value for the given key and section.</p></li>
-</ul>
-
-<p><a id='x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-KEYS-20FUNCTION-29'></a></p>
-
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-KEYS-20FUNCTION-29" >RETRIEVE-KEYS</a></span></span> <span class="locative-args">CONFIG</span></span></p>
-
-<p>Retrieves all section keys</p></li>
-</ul>
-
-<p><a id='x-28CL-GSERVER-2ECONFIG-3AMERGE-CONFIG-20FUNCTION-29'></a></p>
-
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3AMERGE-CONFIG-20FUNCTION-29" >MERGE-CONFIG</a></span></span> <span class="locative-args">CONFIG FALLBACK-CONFIG</span></span></p>
-
-<p>Merges config. 
-<code>config</code> specifies a config that overrides what exists in <code>fallback-config</code>.
-<code>fallback-config</code> is a default. If something doesn't exist in <code>config</code> it is taken from <code>fallback-config</code>.
-Both <code>config</code> and <code>fallback-config</code> must be plists, or a 'config' that was the output of <a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" title="(CL-GSERVER.CONFIG:CONFIG-FROM FUNCTION)"><code>config-from</code></a>.</p></li>
-</ul>
-
 <p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29" title="Eventstream">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29" title="Router">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2ETASKS-3A-40TASKS-20MGL-PAX-3ASECTION-29" title="Tasks">&#8594;</a> <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29" title="Eventstream">&#8634;</a></span></span></p>
 
-<h3><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29">2.8 Eventstream</a></h3>
+<h3><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29">2.7 Eventstream</a></h3>
 
 <h6>[in package CL-GSERVER.EVENTSTREAM with nicknames EV]</h6>
 
@@ -1921,6 +1887,198 @@ Or if you want to listen to all lists, subscribe with <code>'cons</code>.</p></l
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EEVENTSTREAM-3APUBLISH-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20T-29-29-29" >PUBLISH</a></span></span> <span class="locative-args">(ACTOR ACTOR) MESSAGE</span></span></p>
 
 <p>Convenience. Allows to publish to <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ETASKS-3A-40TASKS-20MGL-PAX-3ASECTION-29'></a></p>
+
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29" title="Eventstream">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">&#8594;</a> <a href="#x-28CL-GSERVER-2ETASKS-3A-40TASKS-20MGL-PAX-3ASECTION-29" title="Tasks">&#8634;</a></span></span></p>
+
+<h3><a href="#x-28CL-GSERVER-2ETASKS-3A-40TASKS-20MGL-PAX-3ASECTION-29">2.8 Tasks</a></h3>
+
+<h6>[in package CL-GSERVER.TASKS with nicknames TASKS]</h6>
+
+<p><a id='x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20-28MGL-PAX-3AMACRO-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20-28MGL-PAX-3AMACRO-29-29" >WITH-CONTEXT</a></span></span> <span class="locative-args">CONTEXT &amp;BODY BODY</span></span></p>
+
+<p><a href="#x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20-28MGL-PAX-3AMACRO-29-29" title="(CL-GSERVER.TASKS:WITH-CONTEXT (MGL-PAX:MACRO))"><code>with-context</code></a> creates an environment where the <code>tasks</code> package functions should be used in.
+<code>context</code> can be either an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>, an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a>, or an <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>act:actor</code></a> (or subclass).
+The tasks created using the <code>tasks</code> functions will then be created in the given context.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="comment">;; create actor-system
+</span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="special">*sys*</span>
+  <span class="paren2">(<span class="code">task-yield <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> 1 1</span>)</span></span>)</span></span>)</span></span>)</span>
+
+=&gt; 2 <span class="paren1">(<span class="code">2 bits, #x2, #o2, #b10</span>)</span></span></code></pre></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-YIELD-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-YIELD-20FUNCTION-29" >TASK-YIELD</a></span></span> <span class="locative-args">FUN &amp;OPTIONAL TIME-OUT</span></span></p>
+
+<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-YIELD-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-YIELD FUNCTION)"><code>task-yield</code></a> runs the given function <code>fun</code> by blocking and waiting for a response from the <code>task</code>, or until the given timeout was elapsed.
+<code>fun</code> must be a 0-arity function.</p>
+
+<p>A normal response from the actor is passed back as the response value.
+If the timeout elapsed the response is: <code>(values :handler-error utils:ask-timeout)</code>.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="comment">;; create actor-system
+</span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="special">*sys*</span>
+  <span class="paren2">(<span class="code">task-yield <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> 1 1</span>)</span></span>)</span></span>)</span></span>)</span>
+
+=&gt; 2 <span class="paren1">(<span class="code">2 bits, #x2, #o2, #b10</span>)</span></span></code></pre></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-START-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-START-20FUNCTION-29" >TASK-START</a></span></span> <span class="locative-args">FUN</span></span></p>
+
+<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-START-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-START FUNCTION)"><code>task-start</code></a> runs the given function <code>fun</code> asynchronously.
+<code>fun</code> must be a 0-arity function.
+Use this if you don't care about any response or result, i.e. for I/O side-effects.
+It returns <code>(values :ok &lt;task&gt;)</code>. `<task> is in fact an actor given back as reference.
+The task is automatically stopped and removed from the context and will not be able to handle requests.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" >TASK-ASYNC</a></span></span> <span class="locative-args">FUN</span></span></p>
+
+<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> schedules the function <code>fun</code> for asynchronous execution.
+<code>fun</code> must be a 0-arity function.
+The result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> is a <code>task</code>.
+Store this <code>task</code> for a call to <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a>.
+Users must call either <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> or <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-SHUTDOWN-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-SHUTDOWN FUNCTION)"><code>task-shutdown</code></a> for the task to be cleaned up.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="comment">;; create actor-system
+</span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="special">*sys*</span>
+  <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren3">(<span class="code"><span class="paren4">(<span class="code">x <span class="paren5">(<span class="code">task-async <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren1">(<span class="code"></span>)</span> <span class="paren1">(<span class="code">some bigger computation</span>)</span></span>)</span></span>)</span></span>)</span>
+        <span class="paren4">(<span class="code">y 1</span>)</span></span>)</span>
+    <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> <span class="paren4">(<span class="code">task-await x</span>)</span> y</span>)</span></span>)</span></span>)</span></span></code></pre></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" >TASK-AWAIT</a></span></span> <span class="locative-args">TASK</span></span></p>
+
+<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> waits (by blocking) until a result has been generated for a previous <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> by passing the <code>task</code> result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> to <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a>.
+<a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> also stops the <code>task</code> that is the result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a>, so it is of no further use.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-SHUTDOWN-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-SHUTDOWN-20FUNCTION-29" >TASK-SHUTDOWN</a></span></span> <span class="locative-args">TASK</span></span></p>
+
+<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-SHUTDOWN-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-SHUTDOWN FUNCTION)"><code>task-shutdown</code></a> shuts down a task in order to clean up resources.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-STREAM-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-STREAM-20FUNCTION-29" >TASK-ASYNC-STREAM</a></span></span> <span class="locative-args">FUN LST</span></span></p>
+
+<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-STREAM-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC-STREAM FUNCTION)"><code>task-async-stream</code></a> concurrently applies <code>fun</code> on all elements of <code>lst</code>.
+<code>fun</code> must be a one-arity function taking an element of <code>lst</code>.</p>
+
+<p>The concurrency depends on the number of available <code>:shared</code> dispatcher workers.
+Each element of <code>lst</code> is processed by a worker of the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>s <code>:shared</code> dispatcher.
+If all workers are busy then the computation of <code>fun</code> is queued.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="comment">;; create actor-system
+</span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="special">*sys*</span>
+  <span class="paren2">(<span class="code">-&gt;&gt; 
+    '<span class="paren3">(<span class="code">1 2 3 4 5</span>)</span>
+    <span class="paren3">(<span class="code">task-async-stream #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a></span>)</span>
+    <span class="paren3">(<span class="code">reduce #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a></span>)</span></span>)</span></span>)</span>
+
+=&gt; 20 <span class="paren1">(<span class="code">5 bits, #x14, #o24, #b10100</span>)</span></span></code></pre></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29'></a></p>
+
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2ETASKS-3A-40TASKS-20MGL-PAX-3ASECTION-29" title="Tasks">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29" title="Config">&#8634;</a></span></span></p>
+
+<h3><a href="#x-28CL-GSERVER-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29">2.9 Config</a></h3>
+
+<h6>[in package CL-GSERVER.CONFIG with nicknames CONFIG]</h6>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" >CONFIG-FROM</a></span></span> <span class="locative-args">CONFIG-STRING</span></span></p>
+
+<p>Parses the given config-string, represented by common lisp s-expressions.
+The config is composed of plists in a hierarchy.</p>
+
+<p>This function parses (run through <code>cl:read</code>) the given config string.
+The config string can be generated by:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">let</span></i> <span class="paren2">(<span class="code"><span class="paren3">(<span class="code"><span class="special">*print-case*</span> <span class="keyword">:downcase</span></span>)</span></span>)</span>
+  <span class="paren2">(<span class="code">prin1-to-string '<span class="paren3">(<span class="code"><i><span class="symbol">defconfig</span></i> 
+                     <span class="paren4">(<span class="code"><span class="keyword">:foo</span> 1
+                      <span class="keyword">:bar</span> 2</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>Or just be given by reading from a file.
+Notice the 'config' s-expr must start with the root <code>car</code> 'defconfig'.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-SECTION-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-SECTION-20FUNCTION-29" >RETRIEVE-SECTION</a></span></span> <span class="locative-args">CONFIG SECTION</span></span></p>
+
+<p>Retrieves the given named section which should be a (global) <code>symbol</code> (a key).
+A section usually is a plist with additional configs or sub sections.
+This function looks only in the root hierarchy of the given config.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-VALUE-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-VALUE-20FUNCTION-29" >RETRIEVE-VALUE</a></span></span> <span class="locative-args">SECTION KEY</span></span></p>
+
+<p>Retrieves the value for the given key and section.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-KEYS-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3ARETRIEVE-KEYS-20FUNCTION-29" >RETRIEVE-KEYS</a></span></span> <span class="locative-args">CONFIG</span></span></p>
+
+<p>Retrieves all section keys</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2ECONFIG-3AMERGE-CONFIG-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ECONFIG-3AMERGE-CONFIG-20FUNCTION-29" >MERGE-CONFIG</a></span></span> <span class="locative-args">CONFIG FALLBACK-CONFIG</span></span></p>
+
+<p>Merges config. 
+<code>config</code> specifies a config that overrides what exists in <code>fallback-config</code>.
+<code>fallback-config</code> is a default. If something doesn't exist in <code>config</code> it is taken from <code>fallback-config</code>.
+Both <code>config</code> and <code>fallback-config</code> must be plists, or a 'config' that was the output of <a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" title="(CL-GSERVER.CONFIG:CONFIG-FROM FUNCTION)"><code>config-from</code></a>.</p></li>
 </ul>
   </div>
 </div>

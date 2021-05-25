@@ -161,6 +161,16 @@
   (ev:publish (pax:method () (act:actor t)))
   )
 
+(in-package :tasks)
+(pax:defsection @tasks (:title "Tasks")
+  (tasks:with-context pax:macro)
+  (tasks:task-yield function)
+  (tasks:task-start function)
+  (tasks:task-async function)
+  (tasks:task-await function)
+  (tasks:task-shutdown function)
+  (tasks:task-async-stream function))
+
 (in-package :config)
 (pax:defsection @config (:title "Config")
   (config:config-from function)
@@ -182,8 +192,9 @@
   (agt:@agent pax:section)
   (disp:@dispatcher pax:section)
   (router:@router pax:section)
-  (config:@config pax:section)
-  (ev:@eventstream pax:section))
+  (ev:@eventstream pax:section)
+  (tasks:@tasks pax:section)
+  (config:@config pax:section))
 
 (pax:defsection @cl-gserver (:title "cl-gserver documentation")
   (@readme pax:section)

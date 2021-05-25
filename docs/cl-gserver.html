@@ -77,8 +77,7 @@
 
 <h3>Introduction - Actor framework featuring actors and agents</h3>
 
-<p>cl-gserver is a 'message passing' library/framework with actors
-similar to Erlang or Akka.</p>
+<p>cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.</p>
 
 <p><strong>Version 1.6.0:</strong> added eventstream facility for building event based systems. Plus documentation improvements.</p>
 
@@ -164,17 +163,17 @@ been spawned in the system.</p></li>
 
 <p>Actors kind of live within an <code>actor-context</code>. An
 <code>actor-context</code> contains a collection (of actors) and defines a Common
-Lisp protocol that spawns a set of generic functions.</p>
+Lisp protocol that defines a set of generic functions for creating, removing and finding actors in an <code>actor-context</code>.</p>
 
 <p>There are two 'things' that host an <code>actor-context</code>. This
 is:</p>
 
 <ol>
-<li>the <code>asys:actor-system</code>. Creating actors on the <code>asys:actor-system</code> will create root actors.</li>
-<li>the <code>act:actor</code>. Creating actors on the context of an actor will create a child actor.</li>
+<li>the <code>actor-system</code>. Creating actors on the <code>actor-system</code> will create root actors.</li>
+<li>the <code>actor</code>. Creating actors on the context of an actor will create a child actor.</li>
 </ol>
 
-<p>Here we now use the <code>ac:actor-context</code> protocol/API nicknamed <code>ac</code>.</p>
+<p>Let's create an actor.</p>
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">act:actor-of <span class="paren2">(<span class="code"><span class="special">*system*</span> <span class="string">"answerer"</span></span>)</span>
   <span class="keyword">:receive</span>
@@ -183,7 +182,7 @@ is:</p>
       <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"~a~%"</span> output</span>)</span>
       <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> output state</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
 
-<p>This creates a root actor on the <code>*system*</code>. Notice that the actor is not assigned to a variable. It is now registered in the system. The <code>:receive</code> key argument to the <code>actor-of</code> macro is a function which should look familiar if you know the previous version of cl-gserver. The parameters to the 'receive' function are the tuple of:</p>
+<p>This creates a root actor on the <code>*system*</code>. Notice that the actor is not assigned to a variable. It is now registered in the system. The <code>:receive</code> key argument to the <code>actor-of</code> macro is a function which does the main message processing of an actor. The parameters to the 'receive' function are the tuple:</p>
 
 <ol>
 <li><code>self</code> - the instance of the actor</li>
@@ -914,7 +913,8 @@ gt 0: for a bounded queue (preferably a size &gt; 100)</p></li>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3ASTOP-20GENERIC-FUNCTION-29" >STOP</a></span></span> <span class="locative-args">CONTEXT ACTOR</span></span></p>
 
 <p>Stops the given actor on the context. 
-The context may either be an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a>, or an <code>actor-system</code>.</p></li>
+The context may either be an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a>, or an <code>actor-system</code>.
+The actor is then also removed from the context.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3ASHUTDOWN-20GENERIC-FUNCTION-29'></a></p>

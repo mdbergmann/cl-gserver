@@ -10,8 +10,7 @@
            #:task-async
            #:task-await
            #:task-shutdown
-           #:task-async-stream)
-  )
+           #:task-async-stream))
 
 (in-package :cl-gserver.tasks)
 
@@ -30,6 +29,7 @@ Example:
 
 (with-context *sys*
   (task-yield (lambda () (+ 1 1))))
+
 => 2 (2 bits, #x2, #o2, #b10)
 ```
 "
@@ -68,6 +68,7 @@ Example:
 
 (with-context *sys*
   (task-yield (lambda () (+ 1 1))))
+
 => 2 (2 bits, #x2, #o2, #b10)
 ```
 "
@@ -132,7 +133,7 @@ Example:
 `fun` must be a one-arity function taking an element of `lst`.
 
 The concurrency depends on the number of available `:shared` dispatcher workers.
-Each element of `lst` is processed by a worker of the `asys:actor-system`s `:shared` dispatcher worker.
+Each element of `lst` is processed by a worker of the `asys:actor-system`s `:shared` dispatcher.
 If all workers are busy then the computation of `fun` is queued.
 
 Example:

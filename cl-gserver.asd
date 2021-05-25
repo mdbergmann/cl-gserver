@@ -1,5 +1,5 @@
 (defsystem "cl-gserver"
-  :version "1.6.1"
+  :version "1.7.0"
   :author "Manfred Bergmann"
   :license "AGPL"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -83,7 +83,7 @@
 ;; (asdf:test-system "cl-gserver/tests")
 ;;
 ;; (hlp:document (asdf:find-system :cl-gserver) :only-exported t)
-;; (pax:update-asdf-system-html-docs cl-gserver.docs:@cl-gserver :cl-gserver :target-dir #P"docs/")
+;; (pax:update-asdf-system-html-docs cl-gserver.docs:@cl-gserver :cl-gserver :target-dir #P"~/docs/")
 
 #|
 

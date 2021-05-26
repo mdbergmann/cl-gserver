@@ -17,8 +17,7 @@
   (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 0))))))
     (unwind-protect
          (&body)
-      (ac:shutdown system)
-      (sleep 0.3))))
+      (ac:shutdown system))))
 
 (test create--with-default-constructor
   "Test if the default constructor creates a context."
@@ -81,6 +80,34 @@
       (is (not (null (ac:system (act:context actor)))))
       ;; stop the :pinned actor
       (act-cell:stop actor))))
+
+(test actor-of--custom-dispatcher
+  "Tests creating an actor with a custom shared dispatcher."
+  (let ((system))
+    (unwind-protect
+         (progn
+           (setf system (asys:make-actor-system '(:dispatchers (:foo (:workers 0)))))
+           (let* ((cut (make-actor-context system))
+                  (actor (actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :foo)))
+             (is (not (null actor)))
+             (is (typep (act-cell:msgbox actor) 'mesgb:message-box/dp))
+             (is (eq :foo (slot-value (mesgb::dispatcher (act-cell:msgbox actor)) 'disp::identifier)))
+             ))
+      (ac:shutdown system))))
+
+(test actor-of--err-unknown-dispatcher
+  "Tests creating a new actor on an unknown dispatcher."
+  (with-fixture test-system ()
+    (let ((cut (make-actor-context system)))
+      (handler-case
+          (progn
+            (actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :unknown)
+            (fail()))
+        (error (c)
+          (format t "cond: ~a~%" c)
+          (assert (string= "No such dispatcher identifier 'UNKNOWN' exists!"
+                           (format nil "~a" c)))
+          (is-true t))))))
 
 (test actor-of--dont-add-when-null-creator
   "Tests creating a new actor in the context."

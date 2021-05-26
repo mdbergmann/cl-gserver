@@ -12,8 +12,8 @@ An `act:actor` contains an `actor-context`."
       (setf system actor-system))
     context))
 
-(defun get-shared-dispatcher (system)
-  (getf (asys:dispatchers system) :shared))
+(defun get-shared-dispatcher (system identifier)
+  (getf (asys:dispatchers system) identifier))
 
 (defun add-actor (context actor)
   (with-slots (actors) context
@@ -29,17 +29,17 @@ An `act:actor` contains an `actor-context`."
 (defun message-box-for-dispatch-type (context dispatch-type queue-size)
   (case dispatch-type
     (:pinned (make-instance 'mesgb:message-box/bt))
-    (otherwise (make-instance 'mesgb:message-box/dp
-                              :dispatcher (get-shared-dispatcher (system context))
-                              :max-queue-size queue-size))))
+    (otherwise (let ((dispatcher (get-shared-dispatcher (system context) dispatch-type)))
+                 (unless dispatcher
+                   (error (format nil "No such dispatcher identifier '~a' exists!" dispatch-type)))
+                 (make-instance 'mesgb:message-box/dp
+                                :dispatcher dispatcher
+                                :max-queue-size queue-size)))))
 
 (defun verify-actor (context actor)
   "Checks certain things on the actor before it is attached to the context."
   (let* ((actor-name (act-cell:name actor))
-         (exists-actor-p (not (null (car
-                                     (find-actors context
-                                                  (lambda (a)
-                                                    (string= (act-cell:name a) actor-name))))))))
+         (exists-actor-p (find-actor-by-name context actor-name)))
     (when exists-actor-p
       (log:error "Actor with name '~a' already exists!" actor-name)
       (error (make-condition 'actor-name-exists :name actor-name)))))

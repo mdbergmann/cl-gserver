@@ -580,6 +580,17 @@ Here is a simple example:
 (defparameter *sys* (make-actor-system))
 
 (with-context *sys*
+  
+  ;; run something without requiring a feedback
+  (task-start (lambda () (do-lengthy-IO))
+  
+  ;; run asynchronous
+  (let ((task (task-async (lambda () (do-a-task)))))
+    ;; do some other stuff
+    ;; eventually we need the task result
+    (+ (task-await task) 5))
+
+  ;; concurrently map over the given list
   (->> 
     '(1 2 3 4 5)
     (task-async-stream #'1+)

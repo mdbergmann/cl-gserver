@@ -99,12 +99,10 @@
                                            '(1 2 3 4 5))))))))
 
 (test task-async-stream--with-err-results
-  "Tests for task-async-stream"
+  "Tests for task-async-stream where computations contains errors."
   (with-fixture system-fixture ()
     (with-context (system)
-      (is (equal '(2 4 6 8 10)
-                 (task-async-stream (lambda (x) (* x 2))
-                                    '(1 2 3 4 5))))
-      (is (= 30 (reduce #'+
-                        (task-async-stream (lambda (x) (* x 2))
-                                           '(1 2 3 4 5))))))))
+      (is (= 24 (reduce #'+
+                        (utils:filter (lambda (x) (not (consp x)))
+                                      (task-async-stream (lambda (x) (* x 2))
+                                                         '(1 2 "f" 4 5)))))))))

@@ -6,7 +6,8 @@
 (in-package :cl-gserver.tasks-test)
 
 (def-fixture system-fixture ()
-  (let ((system (asys:make-actor-system)))
+  ;; creates an additional dispatcher called FOO
+  (let ((system (asys:make-actor-system '(:dispatchers (:foo (:workers 1))))))
     (unwind-protect
          (let ((initial-system-actors (ac:all-actors system)))
            (&body)
@@ -23,7 +24,7 @@
 (test task-yield
   "Tests for task-yield"
   (with-fixture system-fixture ()
-      (with-context system
+      (with-context (system)
         (is (eq :foo (task-yield (lambda () :foo))))
         (is (= 10 (task-yield (lambda () (+ 5 5)))))
         (is (equal '(2 4 6 8)
@@ -39,7 +40,7 @@
 (test task-start
   "Test for task-start"
   (with-fixture system-fixture ()
-    (with-context system
+    (with-context (system)
       (let ((my-var nil))
         (multiple-value-bind (result task)
             (task-start (lambda () (setf my-var 10)))
@@ -51,36 +52,45 @@
 (test task-async
   "Test for task-async."
   (with-fixture system-fixture ()
-    (with-context system
+    (with-context (system)
       (let ((task (task-async (lambda () (+ 1 2)))))
         (is-true (typep task 'tasks:task))
+        (task-shutdown task)))))
+
+(test task-async--in-custom-dispatcher
+  "Test for task-async in custom dispatcher."
+  (with-fixture system-fixture ()
+    (with-context (system :foo)
+      (let ((task (task-async (lambda () (+ 1 2)))))
+        (is-true (typep task 'tasks:task))
+        (is (eq :foo (slot-value (mesgb::dispatcher (act-cell:msgbox task)) 'disp::identifier)))
         (task-shutdown task)))))
 
 (test task-async--with-await
   "Test for task-async followed by task-await."
   (with-fixture system-fixture ()
-    (with-context system
+    (with-context (system)
       (let ((task (task-async (lambda () (+ 1 2)))))
         (is (= 3 (task-await task)))))))
 
 (test task-async--with-await--err-cond
   "Test for task-async followed by task-await with error condition."
   (with-fixture system-fixture ()
-    (with-context system
+    (with-context (system)
       (let ((task (task-async (lambda () (error "Foo")))))
         (is (eq :handler-error (car (task-await task))))))))
 
 (test task-async--with-await--longer-wait
   "Test for task-async followed by task-await."
   (with-fixture system-fixture ()
-    (with-context system
+    (with-context (system)
       (let ((task (task-async (lambda () (sleep 1) (+ 1 2)))))
         (is (= 3 (task-await task)))))))
 
 (test task-async-stream
   "Tests for task-async-stream"
   (with-fixture system-fixture ()
-    (with-context system
+    (with-context (system)
       (is (equal '(2 4 6 8 10)
                  (task-async-stream (lambda (x) (* x 2))
                                     '(1 2 3 4 5))))
@@ -91,7 +101,7 @@
 (test task-async-stream--with-err-results
   "Tests for task-async-stream"
   (with-fixture system-fixture ()
-    (with-context system
+    (with-context (system)
       (is (equal '(2 4 6 8 10)
                  (task-async-stream (lambda (x) (* x 2))
                                     '(1 2 3 4 5))))

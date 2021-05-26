@@ -20,6 +20,7 @@
 (defmacro with-context ((context &optional (dispatcher :shared)) &body body)
   "`with-context` creates an environment where the `tasks` package functions should be used in.
 `context` can be either an `asys:actor-system`, an `ac:actor-context`, or an `act:actor` (or subclass).
+`dispatcher` specifies the dispatcher where the tasks is executed in (like thread-pool).
 The tasks created using the `tasks` functions will then be created in the given context.
 
 Example:
@@ -32,6 +33,17 @@ Example:
   (task-yield (lambda () (+ 1 1))))
 
 => 2 (2 bits, #x2, #o2, #b10)
+
+Since the default `:shared` dispatcher should mainly be used for the message dispatching, 
+but not so much for longer running tasks it is possible to create an actor system with additional
+dispatchers. This additional dispatcher can be utilized for `tasks`.
+
+;; create actor-system with additional (custom) dispatcher
+(defparameter *sys* (asys:make-actor-system '(:dispatchers (:foo (:workers 16)))))
+
+(with-context (*sys* :foo)
+  (task-yield (lambda () (+ 1 1))))
+
 ```
 "
   `(let ((*task-context* ,context)

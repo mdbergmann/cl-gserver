@@ -15,8 +15,9 @@
 (in-package :cl-gserver.tasks)
 
 (defvar *task-context*)
+(defvar *task-dispatcher*)
 
-(defmacro with-context (context &body body)
+(defmacro with-context ((context &optional (dispatcher :shared)) &body body)
   "`with-context` creates an environment where the `tasks` package functions should be used in.
 `context` can be either an `asys:actor-system`, an `ac:actor-context`, or an `act:actor` (or subclass).
 The tasks created using the `tasks` functions will then be created in the given context.
@@ -27,21 +28,23 @@ Example:
 ;; create actor-system
 (defparameter *sys* (make-actor-system))
 
-(with-context *sys*
+(with-context (*sys*)
   (task-yield (lambda () (+ 1 1))))
 
 => 2 (2 bits, #x2, #o2, #b10)
 ```
 "
-  `(let ((*task-context* ,context))
+  `(let ((*task-context* ,context)
+         (*task-dispatcher* ,dispatcher))
      ,@body))
 
 (defclass task (act:actor) ()
   (:documentation
    "A dedicated `act:actor` subclass used for tasks."))
 
-(defun make-task (context)
+(defun make-task (context dispatcher)
   (act:actor-of (context)
+    :dispatcher dispatcher
     :type 'task
     :receive (lambda (self msg state)
                (declare (ignore self))
@@ -70,13 +73,13 @@ Example:
 ;; create actor-system
 (defparameter *sys* (make-actor-system))
 
-(with-context *sys*
+(with-context (*sys*)
   (task-yield (lambda () (+ 1 1))))
 
 => 2 (2 bits, #x2, #o2, #b10)
 ```
 "
-  (let ((task (make-task *task-context*)))
+  (let ((task (make-task *task-context* *task-dispatcher*)))
     (unwind-protect
          (let ((ask-result (act:ask-s task (cons :exec fun) :time-out time-out)))
            (cond
@@ -91,7 +94,7 @@ Example:
 Use this if you don't care about any response or result, i.e. for I/O side-effects.
 It returns `(values :ok <task>)`. `<task> is in fact an actor given back as reference.
 The task is automatically stopped and removed from the context and will not be able to handle requests."
-  (let ((task (make-task *task-context*)))
+  (let ((task (make-task *task-context* *task-dispatcher*)))
     (unwind-protect
          (progn
            (act:tell task (cons :exec fun))
@@ -111,13 +114,13 @@ Example:
 ;; create actor-system
 (defparameter *sys* (make-actor-system))
 
-(with-context *sys*
+(with-context (*sys*)
   (let ((x (task-async (lambda () (some bigger computation))))
         (y 1))
     (+ (task-await x) y)))
 ```
 "
-  (let ((task (make-task *task-context*)))
+  (let ((task (make-task *task-context* *task-dispatcher*)))
     (act:tell task (cons :exec fun))
     task))
 
@@ -146,7 +149,7 @@ Example:
 ;; create actor-system
 (defparameter *sys* (make-actor-system))
 
-(with-context *sys*
+(with-context (*sys*)
   (->> 
     '(1 2 3 4 5)
     (task-async-stream #'1+)

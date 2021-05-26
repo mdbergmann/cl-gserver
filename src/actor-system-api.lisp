@@ -9,9 +9,6 @@
 
 (in-package :cl-gserver.actor-system)
 
-(defparameter *default-config*
-  '(:dispatchers (:num-shared-workers 4)))
-
-;; (defconstant +config-sections+
-;;   '(:dispatchers
-;;     (:keys :num-shared-workers)))
+(defvar *default-config*
+  '(:dispatchers
+    (:shared (:workers 4))))

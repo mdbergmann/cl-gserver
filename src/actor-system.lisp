@@ -52,9 +52,8 @@ Or even simpler via `act:actor-of` which is a convenience macro:
 (defmethod print-object ((obj actor-system) stream)
   (print-unreadable-object (obj stream :type t)
     (with-slots (dispatchers config internal-actor-context user-actor-context) obj
-      (format stream "config: ~a, shared-workers: ~a, user actors: ~a, internal actors: ~a"
+      (format stream "config: ~a, user actors: ~a, internal actors: ~a"
               config
-              (length (disp:workers (getf dispatchers :shared)))
               (length (ac:all-actors user-actor-context))
               (length (ac:all-actors internal-actor-context))))))
 
@@ -77,12 +76,19 @@ See `config:config-from`."
       (setf eventstream (ev:make-eventstream internal-actor-context))
       
       (let ((dispatcher-config (config:retrieve-section system-config :dispatchers)))
-        (setf dispatchers (list :shared (disp:make-dispatcher
-                                         internal-actor-context
-                                         :num-workers
-                                         (config:retrieve-value dispatcher-config :num-shared-workers))))))
+        (setf dispatchers (make-dispatchers-from-config dispatcher-config internal-actor-context))))
     (log:info system)
     system))
+
+(defun make-dispatchers-from-config (config internal-actor-context)
+  "Creates a plist of dispatchers for the `:dispatchers` configuration section."
+  (loop :for dispatcher-key :in (config:retrieve-keys config)
+        :for dispatcher-section = (config:retrieve-section config dispatcher-key)
+        :append (list dispatcher-key
+                      (disp:make-dispatcher
+                       internal-actor-context
+                       :num-workers (config:retrieve-value dispatcher-section :workers)
+                       :identifier dispatcher-key))))
 
 ;; ----------------------------------------
 ;; Private Api

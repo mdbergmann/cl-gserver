@@ -12,7 +12,7 @@
 (in-suite actor-tree-tests)
 
 (def-fixture test-system ()
-  (let ((system (asys:make-actor-system '(:dispatchers (:num-shared-workers 0)))))
+  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 0))))))
     (unwind-protect
          (&body)
       (ac:shutdown system))))

@@ -42,8 +42,15 @@
 
 (test create-system--custom-config
   "Create an actor-system by passing a custom config."
-  (let ((system (make-actor-system '(:dispatchers (:num-shared-workers 2)))))
+  (let ((system (make-actor-system '(:dispatchers (:shared (:workers 2))))))
     (is (= 2 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
+    (ac:shutdown system)))
+
+(test create-system--additional-dispatcher
+  "Creates an actor system with an additional custom dispatcher."
+  (let ((system (make-actor-system '(:dispatchers (:foo (:workers 3))))))
+    (is (= 4 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
+    (is (= 3 (length (disp:workers (getf (asys::dispatchers system) :foo)))))
     (ac:shutdown system)))
 
 (test create-system--check-defaults

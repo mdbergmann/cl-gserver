@@ -26,7 +26,7 @@
 
 (test make-eventstream
   "Creates an event stream."
-  (let ((system (asys:make-actor-system '(:dispatchers (:num-shared-workers 0)))))
+  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 0))))))
     (is (make-eventstream system))
     (ac:shutdown system)))
 

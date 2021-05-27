@@ -36,7 +36,7 @@ This is internal API. Use `all-actors` or `find-actors` instead.")
   (:documentation "`actor-context` deals with creating and maintaining actors.
 The `actor-system` and the `actor` itself are composed of an `actor-context`."))
 
-(defgeneric actor-of (context create-fun &key dispatch-type queue-size)
+(defgeneric actor-of (context create-fun &key dispatcher-id queue-size)
   (:documentation "Creates and adds actors to the given context.
 
 Both an `actor-system` and an `actor` are composed of an `actor-context`.

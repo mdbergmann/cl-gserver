@@ -101,7 +101,7 @@ This represents a 'start' hook that is called after the actor was fully initiali
                                :name ,name
                                :type ,type
                                :init ,init))
-         :dispatch-type ,dispatcher))))
+         :dispatcher-id ,dispatcher))))
 
 (defmethod make-actor (receive &key name state (type 'actor) (init nil) (destroy nil))
   (make-instance type

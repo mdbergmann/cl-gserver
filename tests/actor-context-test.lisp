@@ -71,7 +71,7 @@
   "Tests creating a new actor in the context with pinned dispatcher"
   (with-fixture test-system ()
     (let* ((cut (make-actor-context system))
-           (actor (actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :pinned)))
+           (actor (actor-of cut (lambda () (make-actor (lambda ()))) :dispatcher-id :pinned)))
       (is (not (null actor)))
       (is (= 1 (length (all-actors cut))))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/bt))
@@ -88,7 +88,7 @@
          (progn
            (setf system (asys:make-actor-system '(:dispatchers (:foo (:workers 0)))))
            (let* ((cut (make-actor-context system))
-                  (actor (actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :foo)))
+                  (actor (actor-of cut (lambda () (make-actor (lambda ()))) :dispatcher-id :foo)))
              (is (not (null actor)))
              (is (typep (act-cell:msgbox actor) 'mesgb:message-box/dp))
              (is (eq :foo (slot-value (mesgb::dispatcher (act-cell:msgbox actor)) 'disp::identifier)))
@@ -101,7 +101,7 @@
     (let ((cut (make-actor-context system)))
       (handler-case
           (progn
-            (actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :unknown)
+            (actor-of cut (lambda () (make-actor (lambda ()))) :dispatcher-id :unknown)
             (fail()))
         (error (c)
           (format t "cond: ~a~%" c)

@@ -83,7 +83,7 @@ A `shared-dispatcher` is automatically setup by an `asys:actor-system`."))
       (act:make-actor #'receive
                       :type 'dispatch-worker
                       :name (format nil "dispatch(~a)-worker-~a" dispatcher-ident num)))
-    :dispatch-type :pinned))
+    :dispatcher-id :pinned))
 
 (defun receive (self message current-state)
   "The worker receive function."

@@ -79,14 +79,14 @@ We use internal API here only for this test, do not use this otherwise."
 (test actor-of--verify-proper-root-path
   "Tests whether actors and contexts are created with proper paths."
   (with-fixture test-system ()
-    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :dispatch-type :shared)))
+    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :dispatcher-id :shared)))
       (is (string= "/user/foo" (act:path actor)))
       (is (string= "/user/foo" (ac:id (act:context actor)))))))
 
 (test actor-of--shared--user
   "Creates actors in the system in user context with shared dispatcher."
   (with-fixture test-system ()
-    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :shared)))
+    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :dispatcher-id :shared)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/dp))
       (is (not (null (act:context actor))))
@@ -110,7 +110,7 @@ We use internal API here only for this test, do not use this otherwise."
 (test actor-of--pinned--user
   "Creates actors in the system in user context with pinned dispatcher."
   (with-fixture test-system ()
-    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :dispatch-type :pinned)))
+    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :dispatcher-id :pinned)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/bt))
       (is (not (null (act:context actor))))

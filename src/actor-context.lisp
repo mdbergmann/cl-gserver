@@ -26,12 +26,12 @@ An `act:actor` contains an `actor-context`."
     (setf actors
           (hamt:dict-remove actors (act-cell:name actor)))))
 
-(defun message-box-for-dispatch-type (context dispatch-type queue-size)
-  (case dispatch-type
+(defun message-box-for-dispatcher-id (context dispatcher-id queue-size)
+  (case dispatcher-id
     (:pinned (make-instance 'mesgb:message-box/bt))
-    (otherwise (let ((dispatcher (get-shared-dispatcher (system context) dispatch-type)))
+    (otherwise (let ((dispatcher (get-shared-dispatcher (system context) dispatcher-id)))
                  (unless dispatcher
-                   (error (format nil "No such dispatcher identifier '~a' exists!" dispatch-type)))
+                   (error (format nil "No such dispatcher identifier '~a' exists!" dispatcher-id)))
                  (make-instance 'mesgb:message-box/dp
                                 :dispatcher dispatcher
                                 :max-queue-size queue-size)))))
@@ -44,19 +44,19 @@ An `act:actor` contains an `actor-context`."
       (log:error "Actor with name '~a' already exists!" actor-name)
       (error (make-condition 'actor-name-exists :name actor-name)))))
 
-(defun create-actor (context create-fun dispatch-type queue-size)
+(defun create-actor (context create-fun dispatcher-id queue-size)
   (let ((actor (funcall create-fun)))
     (when actor
       (verify-actor context actor)
       (act::initialize-with actor
-       (message-box-for-dispatch-type context dispatch-type queue-size)
+       (message-box-for-dispatcher-id context dispatcher-id queue-size)
        (make-actor-context (system context)
                            (utils:mkstr (id context) "/" (act-cell:name actor)))))
     actor))
 
-(defmethod actor-of ((self actor-context) create-fun &key (dispatch-type :shared) (queue-size 0))
+(defmethod actor-of ((self actor-context) create-fun &key (dispatcher-id :shared) (queue-size 0))
   "See `ac:actor-of`"
-  (let ((created (create-actor self create-fun dispatch-type queue-size)))
+  (let ((created (create-actor self create-fun dispatcher-id queue-size)))
     (when created
       (act:watch created self)
       (add-actor self created))))

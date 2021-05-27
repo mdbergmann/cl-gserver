@@ -99,12 +99,12 @@ See `config:config-from`."
     (:internal (internal-actor-context system))
     (otherwise (user-actor-context system))))
 
-(defun %actor-of (system create-fun dispatch-type &key (context-key :user) (queue-size 0))
+(defun %actor-of (system create-fun dispatcher-id &key (context-key :user) (queue-size 0))
   "Private API to create system actors. Context-key is either `:internal` or `:user`
 Users should use `actor-of`."
   (ac:actor-of (actor-context-for-key context-key system)
     create-fun
-    :dispatch-type dispatch-type
+    :dispatcher-id dispatcher-id
     :queue-size queue-size))
 
 (defun %find-actors (system test-fun &key context-key)
@@ -123,10 +123,10 @@ Users should use `find-actors`."
 ;; Public Api / actor-context protocol
 ;; ----------------------------------------
 
-(defmethod actor-of ((self actor-system) create-fun &key (dispatch-type :shared) (queue-size 0))
+(defmethod actor-of ((self actor-system) create-fun &key (dispatcher-id :shared) (queue-size 0))
   "See `ac:actor-of`"
-  (%actor-of self create-fun dispatch-type :context-key :user :queue-size queue-size))
-
+  (%actor-of self create-fun dispatcher-id :context-key :user :queue-size queue-size))
+q
 (defmethod find-actors ((self actor-system) test-fun)
   "See `ac:find-actors`"
   (%find-actors self test-fun :context-key :user))

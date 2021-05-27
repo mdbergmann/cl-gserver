@@ -28,7 +28,7 @@
                                                      (declare (ignore self))
                                                      (incf *counter*)
                                                      (cons msg state))))
-                             :dispatch-type :pinned))
+                             :dispatcher-id :pinned))
   (setf *withreply-p* withreply-p)
   (setf *counter* 0)
   (setf *starttime* (get-universal-time))
@@ -68,7 +68,7 @@
                                                      (declare (ignore self))
                                                      (incf *counter*)
                                                      (cons msg state))))
-                             :dispatch-type :shared
+                             :dispatcher-id :shared
                              :queue-size queue-size))
   (print *actor*)
   (setf *withreply-p* withreply-p)

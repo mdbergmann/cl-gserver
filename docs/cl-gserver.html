@@ -218,11 +218,14 @@ context can be specified with just the parent actor instance <code>*answerer*</c
 
 <h5>Dispatchers <code>:pinned</code> vs. <code>:shared</code></h5>
 
-<p>By default an actor created using <code>actor-of</code> uses a <code>:shared</code>
-dispatcher type which uses the shared message dispatchers that are
-setup in the system. It is also possible to create actors with their
-own dispatcher thread, those are called <code>:pinned</code> actors. Just
-provide the <code>:pinned</code> value to the <code>dispatcher-type</code> key parameter.</p>
+<p>Dispatchers are somewhat alike thread pools. Dispatchers of the <code>:shared</code> type are a pool of workers. Workers are actors using a <code>:pinned</code> dispatcher. <code>:pinned</code> just means that an actor spawns its own mailbox thread.</p>
+
+<p>So <code>:pinned</code> and <code>:shared</code> are types of dispatchers. <code>:pinned</code> spawns its own mailbox thread, <code>:shared</code> uses a worker pool to handle the mailbox messages.</p>
+
+<p>By default an actor created using <code>actor-of</code> uses a <code>:shared</code> dispatcher type which uses the shared message dispatcher that is automatically setup in the system.<br/>
+When creating an actor it is possible to specify the <code>dispatcher-id</code>. This parameter specifies which 'dispatcher' should handle the mailbox queue/messages.</p>
+
+<p>Please see below for more info on dispatchers.</p>
 
 <h4>Finding actors in the context</h4>
 
@@ -558,7 +561,7 @@ routees and returns a routee index to be chosen for the next operation.</p>
 
 <h4>:shared</h4>
 
-<p>A <code>:shared</code> dispatcher is a separate facility that is set up in the <code>actor-system</code>. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that every only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).</p>
+<p>A <code>:shared</code> dispatcher is a separate facility that is set up in the <code>actor-system</code>. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that ever only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).</p>
 
 <p>Using this dispatcher allows to create a large number of actors. The actors as such are generally very cheap.</p>
 
@@ -573,6 +576,14 @@ routees and returns a routee index to be chosen for the next operation.</p>
 
 <p><img alt="" src="./docs/disp_pinned.png" width="700"/>
 <img alt="" src="disp_pinned.png" width="700"/></p>
+
+<h4>custom dispatcher</h4>
+
+<p>It is also possible to create additional dispatcher of type <code>:shared</code>. A name can be freely chosen, but by convention it should be a global symbol, i.e. <code>:my-dispatcher</code>.</p>
+
+<p>When creating actors using <code>act:actor-of</code>, or when using the <code>tasks</code> api it is possible to specify the dispatcher (via the 'dispatcher-id' i.e. <code>:my-dispatcher</code>) that should handle the actor, agent, or task messages.</p>
+
+<p>A custom dispatcher is in particular useful when using <code>tasks</code> for longer running operations. Longer running operations should not be used for the <code>:shared</code> dispatcher because it (by default) is responsible for the message handling of most actors.</p>
 
 <h3>Eventstream</h3>
 
@@ -607,25 +618,37 @@ The subscription here is done using the <code>:init</code> hook of the actor. Th
 
 <p>Here is a simple example:</p>
 
-<pre><code><span class="code"><span class="comment">;; create actor-system
-</span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
 
-<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="special">*sys*</span>
-  <span class="paren2">(<span class="code">-&gt;&gt; 
-    '<span class="paren3">(<span class="code">1 2 3 4 5</span>)</span>
-    <span class="paren3">(<span class="code">task-async-stream #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a></span>)</span>
-    <span class="paren3">(<span class="code">reduce #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a></span>)</span></span>)</span></span>)</span>
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span></span>)</span>
+  
+  // run something without requiring a feedback
+  <span class="paren2">(<span class="code">task-start <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code">do-lengthy-IO</span>)</span></span>)</span>
+  
+  // run asynchronous
+  <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">task <span class="paren6">(<span class="code">task-async <span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">do-a-task</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span>
+    // do some other stuff
+    // eventually we need <i><span class="symbol">the</span></i> task result
+    <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> <span class="paren5">(<span class="code">task-await task</span>)</span> 5</span>)</span></span>)</span>
 
-=&gt; 20 <span class="paren1">(<span class="code">5 bits, #x14, #o24, #b10100</span>)</span></span></code></pre>
+  // concurrently map over <i><span class="symbol">the</span></i> given <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX225" class="symbol">list</a>
+  <span class="paren3">(<span class="code">-&gt;&gt; 
+    '<span class="paren4">(<span class="code">1 2 3 4 5</span>)</span>
+    <span class="paren4">(<span class="code">task-async-stream #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a></span>)</span>
+    <span class="paren4">(<span class="code">reduce #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a></span>)</span></span>)</span></span>)</span>
+
+=&gt; 20 <span class="paren2">(<span class="code">5 bits, #x14, #o24, #b10100</span>)</span>
+</span></span></span></code></pre>
 
 <p>All functions available in 'tasks' package require to be wrapped in a <code>with-context</code> macro. This macro removes the necessity of an additional argument to each of the functions which is instead supplied by the macro.</p>
 
 <p>What happens in this example is that the list <code>'(1 2 3 4 5)</code> is passed to <code>task-async-stream</code>.
 <code>task-async-stream</code> then spawns a 'task' for each element of the list and applies the given function (here <code>1+</code>) on each list element. The function though is executed by a worker of the actor-systems <code>:shared</code> dispatcher. <code>task-async-stream</code> then also collects the result of all workers. In the last step (<code>reduce</code>) the sum of the elements of the result list are calculated.</p>
 
-<p>The concurrency here depends on the number of <code>:shared</code> dispatcher workers.</p>
+<p>It is possible to specify a second argument to the <code>with-context</code> macro to specify the dispatcher that should be used for the tasks.<br/>
+The concurrency here depends on the number of dispatcher workers.</p>
 
-<p>Be also aware that the <code>:shared</code> dispatcher should not run long running operations as it blocks a message processing thread.</p>
+<p>Be also aware that the <code>:shared</code> dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for <code>tasks</code> when you plan to operate longer running operations.</p>
 
 <p>See the <a href="https://mdbergmann.github.io/cl-gserver/cl-gserver.html#toc-2-8-tasks" >API documentation</a> for more details.</p>
 
@@ -723,7 +746,7 @@ See <a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" title="(CL-GS
 <p><a id='x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29'></a></p>
 
 <ul>
-<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" >*DEFAULT-CONFIG*</a></span></span> <span class="locative-args">(:DISPATCHERS (:NUM-SHARED-WORKERS 4))</span></span></li>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" >*DEFAULT-CONFIG*</a></span></span> <span class="locative-args">(:DISPATCHERS (:SHARED (:WORKERS 4)))</span></span></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29'></a></p>
@@ -895,7 +918,7 @@ Current exists:</p>
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" >ACTOR-OF</a></span></span> <span class="locative-args">CONTEXT CREATE-FUN &amp;KEY DISPATCH-TYPE QUEUE-SIZE</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" >ACTOR-OF</a></span></span> <span class="locative-args">CONTEXT CREATE-FUN &amp;KEY DISPATCHER-ID QUEUE-SIZE</span></span></p>
 
 <p>Creates and adds actors to the given context.</p>
 
@@ -1581,10 +1604,10 @@ However, the workers are created in the given <a href="#x-28CL-GSERVER-2EACTOR-C
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29" >MAKE-DISPATCHER</a></span></span> <span class="locative-args">ACTOR-CONTEXT &amp;KEY NUM-WORKERS</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29" >MAKE-DISPATCHER</a></span></span> <span class="locative-args">ACTOR-CONTEXT &amp;KEY NUM-WORKERS IDENTIFIER</span></span></p>
 
 <p>Default constructor.
-This creates a <a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:SHARED-DISPATCHER CLASS)"><code>shared-dispatcher</code></a> with <code>num-workers</code> number of workers.
+This creates a <a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:SHARED-DISPATCHER CLASS)"><code>disp:shared-dispatcher</code></a> with <code>num-workers</code> number of workers and the given <code>identifier</code> which represents a distinguishable name.
 Each worker is based on a <code>:pinned</code> actor meaning that it has its own thread.
 Specify an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> where actors needed in the dispatcher are created in.</p></li>
 </ul>
@@ -1636,10 +1659,11 @@ Only use the defined interface here to talk to them.</p></li>
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-WORKER-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-WORKER-20FUNCTION-29" >MAKE-DISPATCHER-WORKER</a></span></span> <span class="locative-args">NUM ACTOR-CONTEXT</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-WORKER-20FUNCTION-29" >MAKE-DISPATCHER-WORKER</a></span></span> <span class="locative-args">NUM ACTOR-CONTEXT DISPATCHER-IDENT</span></span></p>
 
 <p>Constructor for creating a worker.
-<code>num</code> only has the purpose to give the worker a name which includes a number.</p></li>
+<code>num</code> only has the purpose to give the worker a name which includes a number.
+`dispatcher-ident is the dispatcher identifier.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29'></a></p>
@@ -1900,10 +1924,11 @@ Or if you want to listen to all lists, subscribe with <code>'cons</code>.</p></l
 <p><a id='x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20-28MGL-PAX-3AMACRO-29-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20-28MGL-PAX-3AMACRO-29-29" >WITH-CONTEXT</a></span></span> <span class="locative-args">CONTEXT &amp;BODY BODY</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20-28MGL-PAX-3AMACRO-29-29" >WITH-CONTEXT</a></span></span> <span class="locative-args">(CONTEXT &amp;OPTIONAL (DISPATCHER <code>:SHARED</code>)) &amp;BODY BODY</span></span></p>
 
 <p><a href="#x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20-28MGL-PAX-3AMACRO-29-29" title="(CL-GSERVER.TASKS:WITH-CONTEXT (MGL-PAX:MACRO))"><code>with-context</code></a> creates an environment where the <code>tasks</code> package functions should be used in.
 <code>context</code> can be either an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>, an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a>, or an <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>act:actor</code></a> (or subclass).
+<code>dispatcher</code> specifies the dispatcher where the tasks is executed in (like thread-pool).
 The tasks created using the <code>tasks</code> functions will then be created in the given context.</p>
 
 <p>Example:</p>
@@ -1911,10 +1936,22 @@ The tasks created using the <code>tasks</code> functions will then be created in
 <pre><code><span class="code"><span class="comment">;; create actor-system
 </span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
 
-<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="special">*sys*</span>
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span></span>)</span>
   <span class="paren2">(<span class="code">task-yield <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> 1 1</span>)</span></span>)</span></span>)</span></span>)</span>
 
-=&gt; 2 <span class="paren1">(<span class="code">2 bits, #x2, #o2, #b10</span>)</span></span></code></pre></li>
+=&gt; 2 <span class="paren1">(<span class="code">2 bits, #x2, #o2, #b10</span>)</span>
+</span></code></pre>
+
+<p>Since the default <code>:shared</code> dispatcher should mainly be used for the message dispatching, 
+but not so much for longer running tasks it is possible to create an actor system with additional
+dispatchers. This additional dispatcher can be utilized for <code>tasks</code>. Be aware that the config as used below is merged with the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" title="(CL-GSERVER.ACTOR-SYSTEM:*DEFAULT-CONFIG* (VARIABLE))"><code>asys:*default-config*</code></a> which means that the dispatcher <code>:foo</code> here is really an additional dispatcher.</p>
+
+<pre><code><span class="code"><span class="comment">;; create actor-system with additional (custom) dispatcher
+</span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">asys:make-actor-system '<span class="paren3">(<span class="code"><span class="keyword">:dispatchers</span> <span class="paren4">(<span class="code"><span class="keyword">:foo</span> <span class="paren5">(<span class="code"><span class="keyword">:workers</span> 16</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span> <span class="keyword">:foo</span></span>)</span>
+  <span class="paren2">(<span class="code">task-yield <span class="paren3">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code">+ 1 1</span>)</span></span>)</span></span>)</span></span>)</span>
+</span></code></pre></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-YIELD-20FUNCTION-29'></a></p>
@@ -1933,7 +1970,7 @@ If the timeout elapsed the response is: <code>(values :handler-error utils:ask-t
 <pre><code><span class="code"><span class="comment">;; create actor-system
 </span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
 
-<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="special">*sys*</span>
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span></span>)</span>
   <span class="paren2">(<span class="code">task-yield <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> 1 1</span>)</span></span>)</span></span>)</span></span>)</span>
 
 =&gt; 2 <span class="paren1">(<span class="code">2 bits, #x2, #o2, #b10</span>)</span></span></code></pre></li>
@@ -1967,7 +2004,7 @@ Users must call either <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-
 <pre><code><span class="code"><span class="comment">;; create actor-system
 </span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
 
-<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="special">*sys*</span>
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span></span>)</span>
   <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren3">(<span class="code"><span class="paren4">(<span class="code">x <span class="paren5">(<span class="code">task-async <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren1">(<span class="code"></span>)</span> <span class="paren1">(<span class="code">some bigger computation</span>)</span></span>)</span></span>)</span></span>)</span>
         <span class="paren4">(<span class="code">y 1</span>)</span></span>)</span>
     <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> <span class="paren4">(<span class="code">task-await x</span>)</span> y</span>)</span></span>)</span></span>)</span></span></code></pre></li>
@@ -2007,7 +2044,7 @@ If all workers are busy then the computation of <code>fun</code> is queued.</p>
 <pre><code><span class="code"><span class="comment">;; create actor-system
 </span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
 
-<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="special">*sys*</span>
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span></span>)</span>
   <span class="paren2">(<span class="code">-&gt;&gt; 
     '<span class="paren3">(<span class="code">1 2 3 4 5</span>)</span>
     <span class="paren3">(<span class="code">task-async-stream #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a></span>)</span>

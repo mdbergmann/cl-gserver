@@ -588,27 +588,27 @@ See the [API documentation](https://mdbergmann.github.io/cl-gserver/cl-gserver.h
 Here is a simple example:
 
 ```elisp
-;; create actor-system
 (defparameter *sys* (make-actor-system))
 
 (with-context (*sys*)
   
-  ;; run something without requiring a feedback
+  // run something without requiring a feedback
   (task-start (lambda () (do-lengthy-IO))
   
-  ;; run asynchronous
+  // run asynchronous
   (let ((task (task-async (lambda () (do-a-task)))))
-    ;; do some other stuff
-    ;; eventually we need the task result
+    // do some other stuff
+    // eventually we need the task result
     (+ (task-await task) 5))
 
-  ;; concurrently map over the given list
+  // concurrently map over the given list
   (->> 
     '(1 2 3 4 5)
     (task-async-stream #'1+)
     (reduce #'+)))
 
 => 20 (5 bits, #x14, #o24, #b10100)
+
 ```
 
 All functions available in 'tasks' package require to be wrapped in a `with-context` macro. This macro removes the necessity of an additional argument to each of the functions which is instead supplied by the macro.

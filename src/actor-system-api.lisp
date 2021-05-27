@@ -11,4 +11,4 @@
 
 (defvar *default-config*
   '(:dispatchers
-    (:shared (:workers 4))))
+    (:shared (:workers 4 :strategy :random))))

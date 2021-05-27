@@ -111,6 +111,7 @@
   (agt:make-agent function)
   (agt:agent-get function)
   (agt:agent-update function)
+  (agt:agent-update-and-get function)
   (agt:agent-stop function))
 
 (in-package :disp)

@@ -45,7 +45,7 @@
   
   (when shared
     (format t "Running system tests...~%")
-    (let* ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 4)))))
+    (let* ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 4 :strategy :random)))))
            (cut (ac:actor-of system (lambda ()
                                       (make-instance 'counter-actor :state 0
                                                                     :receive *receive-fun*))))

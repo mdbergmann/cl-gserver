@@ -45,7 +45,7 @@ When an `actor-system` is specified as context (`actor-system` implements parts 
 When the new actor should be a child of another actor, then the `actor-context` of the (to be) parent `actor` should be specified.
 Creating an actor via `actor-of` will also add the `actor-context` as watcher of the actor. This watching can be used for different purposes. Right now the `actor` is removed from the context when it was stopped.
 
-Specify the dispatcher type (`disp-type`) as either:
+Specify the dispatcher type (`dispatcher-id`) as either:
 `:shared` to have this actor use the shared message dispatcher of the context
 `:pinned` to have this actor run it's own message box thread (faster, but more resource are bound.)
 

@@ -25,20 +25,15 @@
   "Returns a let-over-lambda that implements a round-robin strategy."
   (let ((index 0))
     (lambda (len)
-      (incf index)
-      (if (= len index)
-          (setf index 0))
-      index)))
-
-(defparameter *built-in-strategies*
-  (list
-   :random (make-random-strategy)
-   :round-robin (make-round-robin-strategy)))
+      (setf index
+            (if (< index (1- len))
+                (1+ index)
+                0)))))
 
 (defun get-strategy-fun (strategy)
   (cond
-    ((eq :random strategy) (getf *built-in-strategies* strategy))
-    ((eq :round-robin strategy) (getf *built-in-strategies* strategy))
+    ((eq :random strategy) (make-random-strategy))
+    ((eq :round-robin strategy) (make-round-robin-strategy))
     ((functionp strategy) strategy)
     (t (error "Unknown strategy!"))))
 
@@ -58,7 +53,7 @@ Specify `routees` if you know them upfront."
 (defclass router ()
   ((routees :initform (make-array 2 :adjustable t :fill-pointer 0)
             :documentation "The routees.")
-   (strategy-fun :initform (get-strategy-fun :random)
+   (strategy-fun :initform nil
                  :initarg :strategy-fun
                  :reader strategy-fun
                  :documentation

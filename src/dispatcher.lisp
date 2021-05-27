@@ -9,7 +9,8 @@
             :initarg :context)
    (identifier :initform nil
                :initarg :identifier
-               :reader identifier))
+               :reader identifier
+               :documentation "Returns the identifier of the dispatcher."))
   (:documentation
    "A `dispatcher` contains a pool of `actors` that operate as workers where work is dispatched to.
 However, the workers are created in the given `ac:actor-context`."))

@@ -85,10 +85,10 @@ See `config:config-from`."
   (loop :for dispatcher-key :in (config:retrieve-keys config)
         :for dispatcher-section = (config:retrieve-section config dispatcher-key)
         :append (list dispatcher-key
-                      (disp:make-dispatcher
-                       internal-actor-context
-                       :num-workers (config:retrieve-value dispatcher-section :workers)
-                       :identifier dispatcher-key))))
+                      (apply #'disp:make-dispatcher
+                             internal-actor-context
+                             dispatcher-key
+                             dispatcher-section))))
 
 ;; ----------------------------------------
 ;; Private Api

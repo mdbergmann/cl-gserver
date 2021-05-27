@@ -20,10 +20,6 @@
 But better do not touch them.
 Only use the defined interface here to talk to them."))
 
-(defgeneric identifier (dispatcher)
-  (:documentation
-   "Returns the identifier of the dispatcher."))
-
 (defgeneric stop (dispatcher)
   (:documentation
    "Stops the dispatcher. Stops all workers."))

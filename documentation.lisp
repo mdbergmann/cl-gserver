@@ -114,12 +114,12 @@
   (agt:agent-stop function))
 
 (in-package :disp)
-
 (pax:defsection @shared-dispatcher (:title "Shared dispatcher")
   (disp:shared-dispatcher class))
 
 (pax:defsection @dispatcher (:title "Dispatcher")
   (disp:dispatcher-base class)
+  (disp:identifier (pax:reader disp:dispatcher-base))
   (disp:make-dispatcher function)
   (disp:dispatch generic-function)
   (disp:dispatch-async generic-function)

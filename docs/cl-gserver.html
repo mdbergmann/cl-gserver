@@ -80,6 +80,8 @@
 
 <p>cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.</p>
 
+<p><strong>Version 1.7.1:</strong> added possibility to create additional and custom dispatchers. I.e. to be used with <code>tasks</code>.</p>
+
 <p><strong>Version 1.7.0:</strong> added tasks abstraction facility to more easily deal with asynchronous and concurrent operations.</p>
 
 <p><strong>Version 1.6.0:</strong> added eventstream facility for building event based systems. Plus documentation improvements.</p>
@@ -746,7 +748,7 @@ See <a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" title="(CL-GS
 <p><a id='x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29'></a></p>
 
 <ul>
-<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" >*DEFAULT-CONFIG*</a></span></span> <span class="locative-args">(:DISPATCHERS (:SHARED (:WORKERS 4)))</span></span></li>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" >*DEFAULT-CONFIG*</a></span></span> <span class="locative-args">(:DISPATCHERS (:SHARED (:WORKERS 4 :STRATEGY :RANDOM)))</span></span></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29'></a></p>
@@ -928,7 +930,7 @@ When an <code>actor-system</code> is specified as context (<code>actor-system</c
 <p>When the new actor should be a child of another actor, then the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a> of the (to be) parent <code>actor</code> should be specified.
 Creating an actor via <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION)"><code>actor-of</code></a> will also add the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a> as watcher of the actor. This watching can be used for different purposes. Right now the <code>actor</code> is removed from the context when it was stopped.</p>
 
-<p>Specify the dispatcher type (<code>disp-type</code>) as either:
+<p>Specify the dispatcher type (<code>dispatcher-id</code>) as either:
 <code>:shared</code> to have this actor use the shared message dispatcher of the context
 <code>:pinned</code> to have this actor run it's own message box thread (faster, but more resource are bound.)</p>
 
@@ -1545,7 +1547,7 @@ Stop an agent with <a href="#x-28CL-GSERVER-2EAGENT-3AAGENT-STOP-20FUNCTION-29" 
 <p><a id='x-28CL-GSERVER-2EAGENT-3AMAKE-AGENT-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-3AMAKE-AGENT-20FUNCTION-29" >MAKE-AGENT</a></span></span> <span class="locative-args">STATE-FUN &amp;OPTIONAL SYSTEM</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-3AMAKE-AGENT-20FUNCTION-29" >MAKE-AGENT</a></span></span> <span class="locative-args">STATE-FUN &amp;OPTIONAL ACTOR-CONTEXT</span></span></p>
 
 <p>Makes a new <a href="#x-28CL-GSERVER-2EAGENT-3AAGENT-20CLASS-29" title="(CL-GSERVER.AGENT:AGENT CLASS)"><code>agent</code></a> instance.
 <code>state-fun</code> is a function that takes no parameter and provides the initial state of the <a href="#x-28CL-GSERVER-2EAGENT-3AAGENT-20CLASS-29" title="(CL-GSERVER.AGENT:AGENT CLASS)"><code>agent</code></a> as return value.</p>
@@ -1576,6 +1578,17 @@ See <code>agent-test</code> for examples.</p></li>
 The return value of <code>update-fun</code> will be taken as the new state of the <code>agent</code>.</p></li>
 </ul>
 
+<p><a id='x-28CL-GSERVER-2EAGENT-3AAGENT-UPDATE-AND-GET-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-3AAGENT-UPDATE-AND-GET-20FUNCTION-29" >AGENT-UPDATE-AND-GET</a></span></span> <span class="locative-args">AGENT UPDATE-FUN</span></span></p>
+
+<p>Updates the <code>agent</code> state.
+<code>update-fun</code> must accept one parameter. That is the current state of the <code>agent</code>.
+The return value of <code>update-fun</code> will be taken as the new state of the <code>agent</code>.
+This function makes the update and returns the new value.</p></li>
+</ul>
+
 <p><a id='x-28CL-GSERVER-2EAGENT-3AAGENT-STOP-20FUNCTION-29'></a></p>
 
 <ul>
@@ -1601,13 +1614,21 @@ The return value of <code>update-fun</code> will be taken as the new state of th
 However, the workers are created in the given <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a>.</p></li>
 </ul>
 
+<p><a id='x-28CL-GSERVER-2EDISPATCHER-3AIDENTIFIER-20-28MGL-PAX-3AREADER-20CL-GSERVER-2EDISPATCHER-3ADISPATCHER-BASE-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AIDENTIFIER-20-28MGL-PAX-3AREADER-20CL-GSERVER-2EDISPATCHER-3ADISPATCHER-BASE-29-29" >IDENTIFIER</a></span></span> <span class="locative-args">DISPATCHER-BASE</span> <span class="locative-args">(:IDENTIFIER = <code>NIL</code>)</span></span></p>
+
+<p>Returns the identifier of the dispatcher.</p></li>
+</ul>
+
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29" >MAKE-DISPATCHER</a></span></span> <span class="locative-args">ACTOR-CONTEXT &amp;KEY NUM-WORKERS IDENTIFIER</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29" >MAKE-DISPATCHER</a></span></span> <span class="locative-args">ACTOR-CONTEXT IDENTIFIER &amp;REST CONFIG</span></span></p>
 
 <p>Default constructor.
-This creates a <a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:SHARED-DISPATCHER CLASS)"><code>disp:shared-dispatcher</code></a> with <code>num-workers</code> number of workers and the given <code>identifier</code> which represents a distinguishable name.
+This creates a <a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:SHARED-DISPATCHER CLASS)"><code>disp:shared-dispatcher</code></a> with the given dispatcher config, see <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" title="(CL-GSERVER.ACTOR-SYSTEM:*DEFAULT-CONFIG* (VARIABLE))"><code>asys:*default-config*</code></a>.
 Each worker is based on a <code>:pinned</code> actor meaning that it has its own thread.
 Specify an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> where actors needed in the dispatcher are created in.</p></li>
 </ul>

@@ -5,6 +5,7 @@
            #:shared-dispatcher
            #:make-dispatcher
            #:workers
+           #:identifier
            #:dispatch
            #:dispatch-async
            #:dispatch-worker
@@ -18,6 +19,10 @@
    "Returns the workers of this dispatcher.
 But better do not touch them.
 Only use the defined interface here to talk to them."))
+
+(defgeneric identifier (dispatcher)
+  (:documentation
+   "Returns the identifier of the dispatcher."))
 
 (defgeneric stop (dispatcher)
   (:documentation

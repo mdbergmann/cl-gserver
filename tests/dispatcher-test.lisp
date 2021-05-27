@@ -23,15 +23,25 @@
 
 (defun make-test-dispatcher (num-workers context ident)
   (make-dispatcher (ac:make-actor-context context)
-                   :num-workers num-workers
-                   :identifier ident))
+                   ident
+                   :workers num-workers))
 
 (test create-dispatcher
   "Checks creating a dispatcher"
   (with-fixture test-context ()
     (let ((cut (make-test-dispatcher 1 context "foo")))
       (is (not (null cut)))
-      (is (string= "foo" (slot-value cut 'disp::identifier)))
+      (is (string= "foo" (identifier cut)))
+      (is (str:containsp "RANDOM-STRATEGY" (format nil "disp: ~a~%" cut)))
+      (stop cut))))
+
+(test create-dispatcher--with-config
+  "Tests creating a dispatcher with a custom config."
+  (with-fixture test-context ()
+    (let ((cut (apply #'make-dispatcher context :foo '(:workers 0 :strategy :round-robin))))
+      (is (eq :foo (identifier cut)))
+      (is (= 0 (length (workers cut))))
+      (is (str:containsp "ROUND-ROBIN" (format nil "disp: ~a~%" cut)))
       (stop cut))))
 
 (test create-the-workers

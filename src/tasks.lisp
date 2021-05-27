@@ -36,7 +36,7 @@ Example:
 
 Since the default `:shared` dispatcher should mainly be used for the message dispatching, 
 but not so much for longer running tasks it is possible to create an actor system with additional
-dispatchers. This additional dispatcher can be utilized for `tasks`.
+dispatchers. This additional dispatcher can be utilized for `tasks`. Be aware that the config as used below is merged with the `asys:*default-config*` which means that the dispatcher `:foo` here is really an additional dispatcher.
 
 ;; create actor-system with additional (custom) dispatcher
 (defparameter *sys* (asys:make-actor-system '(:dispatchers (:foo (:workers 16)))))

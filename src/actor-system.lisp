@@ -126,7 +126,7 @@ Users should use `find-actors`."
 (defmethod actor-of ((self actor-system) create-fun &key (dispatcher-id :shared) (queue-size 0))
   "See `ac:actor-of`"
   (%actor-of self create-fun dispatcher-id :context-key :user :queue-size queue-size))
-q
+
 (defmethod find-actors ((self actor-system) test-fun)
   "See `ac:find-actors`"
   (%find-actors self test-fun :context-key :user))

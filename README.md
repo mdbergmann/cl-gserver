@@ -146,11 +146,14 @@ context can be specified with just the parent actor instance `*answerer*`.
 
 ##### Dispatchers `:pinned` vs. `:shared`
 
-By default an actor created using `actor-of` uses a `:shared`
-dispatcher type which uses the shared message dispatchers that are
-setup in the system. It is also possible to create actors with their
-own dispatcher thread, those are called `:pinned` actors. Just
-provide the `:pinned` value to the `dispatcher-type` key parameter.
+Dispatchers are somewhat alike thread pools. Dispatchers of the `:shared` type are a pool of workers. Workers are actors using a `:pinned` dispatcher. `:pinned` just means that an actor spawns its own mailbox thread.
+
+So `:pinned` and `:shared` are types of dispatchers. `:pinned` spawns its own mailbox thread, `:shared` uses a worker pool to handle the mailbox messages.
+
+By default an actor created using `actor-of` uses a `:shared` dispatcher type which uses the shared message dispatcher that is automatically setup in the system.  
+When creating an actor it is possible to specify the `dispatcher-id`. This parameter specifies which 'dispatcher' should handle the mailbox queue/messages.
+
+Please see below for more info on dispatchers.
 
 #### Finding actors in the context
 
@@ -522,7 +525,7 @@ Custom strategies can be implemented.
 
 #### :shared
 
-A `:shared` dispatcher is a separate facility that is set up in the `actor-system`. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that every only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).
+A `:shared` dispatcher is a separate facility that is set up in the `actor-system`. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that ever only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).
 
 Using this dispatcher allows to create a large number of actors. The actors as such are generally very cheap.
 
@@ -537,6 +540,15 @@ This variant is slightly faster (see below) but requires one thread per actor.
 
 <img alt="" src="./docs/disp_pinned.png" width="700"/>
 <img alt="" src="disp_pinned.png" width="700"/>
+
+
+#### custom dispatcher
+
+It is also possible to create additional dispatcher of type `:shared`. A name can be freely chosen, but by convention it should be a global symbol, i.e. `:my-dispatcher`.
+
+When creating actors using `act:actor-of`, or when using the `tasks` api it is possible to specify the dispatcher (via the 'dispatcher-id' i.e. `:my-dispatcher`) that should handle the actor, agent, or task messages.
+
+A custom dispatcher is in particular useful when using `tasks` for longer running operations. Longer running operations should not be used for the `:shared` dispatcher because it (by default) is responsible for the message handling of most actors.
 
 ### Eventstream
 
@@ -579,7 +591,7 @@ Here is a simple example:
 ;; create actor-system
 (defparameter *sys* (make-actor-system))
 
-(with-context *sys*
+(with-context (*sys*)
   
   ;; run something without requiring a feedback
   (task-start (lambda () (do-lengthy-IO))
@@ -604,9 +616,10 @@ All functions available in 'tasks' package require to be wrapped in a `with-cont
 What happens in this example is that the list `'(1 2 3 4 5)` is passed to `task-async-stream`.
 `task-async-stream` then spawns a 'task' for each element of the list and applies the given function (here `1+`) on each list element. The function though is executed by a worker of the actor-systems `:shared` dispatcher. `task-async-stream` then also collects the result of all workers. In the last step (`reduce`) the sum of the elements of the result list are calculated.
 
-The concurrency here depends on the number of `:shared` dispatcher workers.
+It is possible to specify a second argument to the `with-context` macro to specify the dispatcher that should be used for the tasks.  
+The concurrency here depends on the number of dispatcher workers.
 
-Be also aware that the `:shared` dispatcher should not run long running operations as it blocks a message processing thread.
+Be also aware that the `:shared` dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for `tasks` when you plan to operate longer running operations.
 
 See the [API documentation](https://mdbergmann.github.io/cl-gserver/cl-gserver.html#toc-2-8-tasks) for more details.
 

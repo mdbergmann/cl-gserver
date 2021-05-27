@@ -10,6 +10,7 @@
   (:export #:make-agent           
            #:agent-get
            #:agent-update
+           #:agent-update-and-get
            #:agent-stop
            #:agent))
 
@@ -34,9 +35,12 @@ This rarely (if at all) needs to change because the agent is very specific."
               current-state))
        (:update (cons
                  current-state
-                 (funcall (cdr message) current-state)))))))
+                 (funcall (cdr message) current-state)))
+       (:update-and-get
+        (let ((new-state (funcall (cdr message) current-state)))
+          (cons new-state new-state)))))))
 
-(defun make-agent (state-fun &optional system)
+(defun make-agent (state-fun &optional actor-context)
   "Makes a new `agent` instance.
 `state-fun` is a function that takes no parameter and provides the initial state of the `agent` as return value.
 
@@ -45,10 +49,10 @@ Optionally an `actor-system` can be specified. If specified the agent will be re
          (creator-fun (lambda () (make-instance 'agent :state state
                                                   :name (string (gensym "agent-"))
                                                   :receive #'receive)))
-         (agent (if system
-                    (ac:actor-of system creator-fun)
+         (agent (if actor-context
+                    (ac:actor-of actor-context creator-fun)
                     (funcall creator-fun))))
-    (unless system
+    (unless actor-context
       (setf (msgbox agent) (make-instance 'message-box/bt)))
     agent))
 
@@ -69,6 +73,13 @@ See `agent-test` for examples."
 `update-fun` must accept one parameter. That is the current state of the `agent`.
 The return value of `update-fun` will be taken as the new state of the `agent`."
   (tell agent (cons :update update-fun)))
+
+(defun agent-update-and-get (agent update-fun)
+  "Updates the `agent` state.
+`update-fun` must accept one parameter. That is the current state of the `agent`.
+The return value of `update-fun` will be taken as the new state of the `agent`.
+This function makes the update and returns the new value."
+  (ask-s agent (cons :update-and-get update-fun)))
 
 (defun agent-stop (agent)
   "Stops the message handling of the agent."

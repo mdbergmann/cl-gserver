@@ -50,7 +50,6 @@
   (with-fixture agent-asys-fixture ((lambda () '(5 4 3)))
     (is (equalp '(5 4 3) (agent-get agent #'identity)))))
 
-
 (test update-agent-state
   "Updates agent state"
   (with-fixture agent-fixture ((lambda () '(5 4 3)))
@@ -60,6 +59,13 @@
                        (equalp '(6 5 4) (agent-get agent #'identity)))
                      1))))
 
+(test update-and-get
+  "Tests update and get function"
+  (with-fixture agent-fixture ((lambda () 0))
+    (is (= 0 (agent-get agent #'identity)))
+    (is (= 1 (agent-update-and-get agent #'1+)))
+    (is (= 2 (agent-update-and-get agent #'1+)))))
+
 (test update-agent-state--on-system
   "Updates agent state - with agent on system."
   (with-fixture agent-asys-fixture ((lambda () '(5 4 3)))
@@ -68,7 +74,6 @@
     (is (assert-cond (lambda ()
                        (equalp '(6 5 4) (agent-get agent #'identity)))
                      1))))
-
 
 (test stop-agent
   "Stop agent to cleanup resources."
@@ -85,14 +90,3 @@
     (is (assert-cond (lambda ()
                        (eq :stopped (agent-get agent #'identity)))
                      1))))
-
-
-(defun run-tests ()
-  (run! 'create-agent)
-  (run! 'create-agent--on-system)
-  (run! 'get-agent-state)
-  (run! 'get-agent-state--on-system)
-  (run! 'update-agent-state)
-  (run! 'update-agent-state--on-system)
-  (run! 'stop-agent)
-  (run! 'stop-agent--on-system))

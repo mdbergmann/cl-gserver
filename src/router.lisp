@@ -23,7 +23,8 @@
 
 (defvar *rr-index* 0)
 (defun make-round-robin-strategy ()
-  "Returns a let-over-lambda that implements a round-robin strategy."
+  "Returns a let-over-lambda that implements a round-robin strategy.
+It needs a special variable `defvar` here to make the atomics work."
   (let ((index 0))
     (lambda (len)
       (let ((*rr-index* index))

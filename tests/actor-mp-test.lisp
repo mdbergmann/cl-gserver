@@ -31,34 +31,46 @@
   (defclass counter-actor (actor) ())
 
   (when pinned
-    (format t "Running non-system tests...~%")
-    (let* ((cut (make-instance 'counter-actor
-                               :name "counter-actor"
-                               :state 0
-                               :receive *receive-fun*))
-           (max-loop 10000)
-           (per-thread (/ max-loop 8)))
-      (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt :max-queue-size queue-size))
-      (&body)
-      (act-cell:stop cut))
-    (format t "Running non-system tests...done~%"))
+    (run-pinned-test queue-size
+      (&body)))
   
   (when shared
-    (format t "Running system tests...~%")
-    (let* ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 4 :strategy :random)))))
+    (run-system-test :random
+      (&body))
+    (run-system-test :round-robin
+      (&body)))
+  
+  (lparallel:end-kernel))
+
+(defmacro run-pinned-test (queue-size &body body)
+  `(progn
+     (format t "~%Running non-system tests (~a)...~%" ,queue-size)
+     (let* ((cut (make-instance 'counter-actor
+                                :name "counter-actor"
+                                :state 0
+                                :receive *receive-fun*))
+            (max-loop 10000)
+            (per-thread (/ max-loop 8)))
+       (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt :max-queue-size ,queue-size))
+       ,@body
+       (act-cell:stop cut))
+     (format t "Running non-system tests (~a)...done~%" ,queue-size)))
+
+(defmacro run-system-test (dispatcher-strategy &body body)
+  `(progn
+    (format t "Running system tests (~a)...~%" ,dispatcher-strategy)
+    (let* ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 4
+                                                                    :strategy ,dispatcher-strategy)))))
            (cut (ac:actor-of system (lambda ()
                                       (make-instance 'counter-actor :state 0
                                                                     :receive *receive-fun*))))
            (max-loop 10000)
            (per-thread (/ max-loop 8)))
       (unwind-protect
-           (&body)
+           ,@body
         (act-cell:stop cut)
         (ac:shutdown system)))
-    (format t "Running system tests...~%"))
-  
-  (lparallel:end-kernel))
-
+    (format t "Running system tests (~a)...done~%" ,dispatcher-strategy)))
 
 (test counter-mp-unbounded
   "Counter server - multi processors - unbounded queue"

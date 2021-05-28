@@ -10,7 +10,8 @@
                "str"
                "blackbird"
                "cl-hamt"
-               "binding-arrows")
+               "binding-arrows"
+               "atomics")
   :components ((:module "src"
                 :serial t
                 :components

@@ -2,6 +2,8 @@
 
 cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.
 
+**Version 1.7.2:** allowing to choose the dispatcher strategy via configuration
+
 **Version 1.7.1:** added possibility to create additional and custom dispatchers. I.e. to be used with `tasks`.
 
 **Version 1.7.0:** added tasks abstraction facility to more easily deal with asynchronous and concurrent operations.

@@ -80,6 +80,8 @@
 
 <p>cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.</p>
 
+<p><strong>Version 1.7.2:</strong> allowing to choose the dispatcher strategy via configuration</p>
+
 <p><strong>Version 1.7.1:</strong> added possibility to create additional and custom dispatchers. I.e. to be used with <code>tasks</code>.</p>
 
 <p><strong>Version 1.7.0:</strong> added tasks abstraction facility to more easily deal with asynchronous and concurrent operations.</p>
@@ -1148,7 +1150,7 @@ The <code>new-behavior</code> function must accept 3 parameters: the actor insta
 <p><a id='x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">X</span></span></p>
 
 <p>This is the <code>actor-context</code> every actor is composed of.
 When the actor is created from scratch it has no <code>actor-context</code>.
@@ -1185,9 +1187,9 @@ I.e.: when it stopped. The message being sent in this case is: <code>(cons :stop
 <p><a id='x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">X</span></span></p>
 
-<p>Returns a list of watchers of <code>actor</code>.</p></li>
+<p>Returns a list of watchers of <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CELL-3A-40ACTOR-CELL-20MGL-PAX-3ASECTION-29'></a></p>

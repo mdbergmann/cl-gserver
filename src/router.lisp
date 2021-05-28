@@ -28,12 +28,12 @@ It needs a special variable `defvar` here to make the atomics work."
   (let ((index 0))
     (lambda (len)
       (let ((*rr-index* index))
-        (atomics:cas
+        (atomics:atomic-update
          *rr-index*
-         *rr-index*
-         (if (< *rr-index* (1- len))
-             (1+ *rr-index*)
-             0))
+         (lambda (old) 
+           (if (< old (1- len))
+               (1+ old)
+               0)))
         (setf index *rr-index*)))))
 
 (defun get-strategy-fun (strategy)

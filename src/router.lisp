@@ -21,14 +21,19 @@
   "The default, built-in strategy: random."
   (lambda (len) (random len)))
 
+(defvar *rr-index* 0)
 (defun make-round-robin-strategy ()
   "Returns a let-over-lambda that implements a round-robin strategy."
   (let ((index 0))
     (lambda (len)
-      (setf index
-            (if (< index (1- len))
-                (1+ index)
-                0)))))
+      (let ((*rr-index* index))
+        (atomics:cas
+         *rr-index*
+         *rr-index*
+         (if (< *rr-index* (1- len))
+             (1+ *rr-index*)
+             0))
+        (setf index *rr-index*)))))
 
 (defun get-strategy-fun (strategy)
   (cond

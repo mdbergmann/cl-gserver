@@ -3,7 +3,8 @@
 cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.
 
 **Version 1.0** of `cl-gserver` library comes with quite a
-few new features. One of the major new features is that an actor is not
+few new features (compared to the previous 0.x versions). 
+One of the major new features is that an actor is not
 bound to it's own message dispatcher thread. Instead, when an
 `actor-system` is set-up, actors can use a shared pool of
 message dispatchers which effectively allows to create millions of

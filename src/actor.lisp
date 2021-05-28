@@ -39,7 +39,8 @@ Parameter of the lambda is the actor itself.")
 Function is called when actor was stopped.
 Parameter of the lambda is the actor itself.")
    (context :initform nil
-            :accessor context)
+            :accessor context
+            :documentation "The `ac:actor-context`")
    (watchers :initform '()
              :reader watchers
              :documentation "List of watchers of this actor."))

@@ -9,7 +9,6 @@
                "log4cl"
                "str"
                "blackbird"
-               "cl-hamt"
                "binding-arrows"
                "atomics")
   :components ((:module "src"

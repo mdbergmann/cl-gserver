@@ -6,14 +6,16 @@
 
 (defun %add-actor (context actor)
   (with-slots (actors) context
-    (setf actors
-          (hamt:dict-insert actors (act-cell:name actor) actor)))
+    (setf actors (cons actor actors)))
   actor)
 
 (defun %remove-actor (context actor)
   (with-slots (actors) context
     (setf actors
-          (hamt:dict-remove actors (act-cell:name actor)))))
+          (remove-if (lambda (a)
+                       (or (eq a actor)
+                           (string= (act-cell:name a) (act-cell:name actor))))
+                     actors))))
 
 (defun %message-box-for-dispatcher-id (context dispatcher-id queue-size)
   (case dispatcher-id
@@ -53,7 +55,7 @@
        :reader id
        :documentation
        "The id of this actor-context. Usually a string.")
-   (actors :initform (hamt:empty-dict)
+   (actors :initform '()
            :reader actors
            :documentation
            "A list of actors.
@@ -89,15 +91,15 @@ An `act:actor` contains an `actor-context`."
 
 (defmethod find-actor-by-name ((self actor-context) name)
   "See `ac:find-actor-by-name`"
-  (hamt:dict-lookup (actors self) name))
+  (find-if (lambda (a)
+             (let ((seq-name (act-cell:name a)))
+               (or (eq name seq-name)
+                   (string= name seq-name))))
+           (actors self)))
 
 (defmethod all-actors ((self actor-context))
   "See `ac:all-actors`"
-  (hamt:dict-reduce (lambda (acc key val)
-                      (declare (ignore key))
-                      (cons val acc))
-                    (actors self)
-                    '()))
+  (actors self))
 
 (defmethod stop ((self actor-context) actor)
   "See `ac:stop`"

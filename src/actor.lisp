@@ -113,7 +113,7 @@ This represents a 'start' hook that is called after the actor was fully initiali
                  :destroy destroy))
 
 (defun initialize-with (actor message-box actor-context)
-  "Private API: finalize initialization of the actor with a `megb:message-box` and an `ac:actor-context`."
+  "Private API: finalize initialization of the actor with a `mesgb:message-box` and an `ac:actor-context`."
   (setf (act-cell:msgbox actor) message-box)
   (setf (act:context actor) actor-context)
   (with-slots (init-fun) actor

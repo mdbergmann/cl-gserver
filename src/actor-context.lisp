@@ -1,6 +1,28 @@
 
 (in-package :cl-gserver.actor-context)
 
+(defclass actor-context ()
+  ((id :initarg :id
+       :initform nil
+       :reader id
+       :documentation
+       "The id of this actor-context. Usually a string.")
+   (actors :initform '()
+           :reader actors
+           :documentation
+           "A list of actors.
+This is internal API. Use `all-actors` or `find-actors` instead.")
+   (system :initform nil
+           :reader system
+           :documentation
+           "A reference to the `actor-system`."))
+  (:documentation "`actor-context` deals with creating and maintaining actors.
+The `actor-system` and the `actor` itself are composed of an `actor-context`."))
+
+;; --------------------------------------
+;; private functions
+;; --------------------------------------
+
 (defun %get-shared-dispatcher (system identifier)
   (getf (asys:dispatchers system) identifier))
 
@@ -48,24 +70,6 @@
 ;; --------------------------------------
 ;; public interface
 ;; --------------------------------------
-
-(defclass actor-context ()
-  ((id :initarg :id
-       :initform nil
-       :reader id
-       :documentation
-       "The id of this actor-context. Usually a string.")
-   (actors :initform '()
-           :reader actors
-           :documentation
-           "A list of actors.
-This is internal API. Use `all-actors` or `find-actors` instead.")
-   (system :initform nil
-           :reader system
-           :documentation
-           "A reference to the `actor-system`."))
-  (:documentation "`actor-context` deals with creating and maintaining actors.
-The `actor-system` and the `actor` itself are composed of an `actor-context`."))
 
 (defun make-actor-context (actor-system &optional (id nil))
   "Creates an `actor-context`. Requires a reference to `actor-system`

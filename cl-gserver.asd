@@ -16,16 +16,16 @@
                 :components
                 ((:file "config")
                  (:file "utils")
-                 (:file "dispatcher-api")
-                 (:file "actor-system-api")
-                 (:file "actor-context-api")
                  (:file "actor-api")
-                 (:file "eventstream-api")
+                 (:file "dispatcher-api")
                  (:module "core"
                   :components
                   ((:file "queue")
                    (:file "message-box")
                    (:file "actor-cell")))
+                 (:file "eventstream-api")
+                 (:file "actor-system-api")
+                 (:file "actor-context-api")
                  (:file "fcomputation")
                  (:file "actor")
                  (:file "agent")

@@ -50,8 +50,8 @@
 (test subscribe-works-directly-on-system-and-actor
   "Actor system and Actor implement the ev protocol"
   (with-fixture test-system ()
-    (is (ev:subscribe system (act:make-actor (lambda ()))))
-    (is (ev:subscribe (act:actor-of (system)
+    (is (subscribe system (act:make-actor (lambda ()))))
+    (is (subscribe (act:actor-of (system)
                         :receive (lambda ()))
                       (act:make-actor (lambda ()))))))
 
@@ -66,8 +66,8 @@
 (test unsubscribe-works-directly-on-system-and-actor
   "Actor system and Actor implement the ev protocol"
   (with-fixture test-system ()
-    (is (ev:unsubscribe system (act:make-actor (lambda ()))))
-    (is (ev:unsubscribe (act:actor-of (system)
+    (is (unsubscribe system (act:make-actor (lambda ()))))
+    (is (unsubscribe (act:actor-of (system)
                           :receive (lambda ()))
                       (act:make-actor (lambda ()))))))
 
@@ -193,8 +193,8 @@
 (test publish-works-directly-on-system-and-actor
   "Actor system and Actor implement the ev protocol"
   (with-fixture test-system ()
-    (is (ev:publish system "Foo"))
-    (is (ev:publish (act:actor-of (system)
+    (is (publish system "Foo"))
+    (is (publish (act:actor-of (system)
                       :receive (lambda ()))
                     "Foo"))))
 

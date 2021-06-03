@@ -1,6 +1,70 @@
 
 (in-package :cl-gserver.actor-context)
 
+(defun %get-shared-dispatcher (system identifier)
+  (getf (asys:dispatchers system) identifier))
+
+(defun %add-actor (context actor)
+  (with-slots (actors) context
+    (setf actors
+          (hamt:dict-insert actors (act-cell:name actor) actor)))
+  actor)
+
+(defun %remove-actor (context actor)
+  (with-slots (actors) context
+    (setf actors
+          (hamt:dict-remove actors (act-cell:name actor)))))
+
+(defun %message-box-for-dispatcher-id (context dispatcher-id queue-size)
+  (case dispatcher-id
+    (:pinned (make-instance 'mesgb:message-box/bt))
+    (otherwise (let ((dispatcher (%get-shared-dispatcher (system context) dispatcher-id)))
+                 (unless dispatcher
+                   (error (format nil "No such dispatcher identifier '~a' exists!" dispatcher-id)))
+                 (make-instance 'mesgb:message-box/dp
+                                :dispatcher dispatcher
+                                :max-queue-size queue-size)))))
+
+(defun %verify-actor (context actor)
+  "Checks certain things on the actor before it is attached to the context."
+  (let* ((actor-name (act-cell:name actor))
+         (exists-actor-p (find-actor-by-name context actor-name)))
+    (when exists-actor-p
+      (log:error "Actor with name '~a' already exists!" actor-name)
+      (error (make-condition 'actor-name-exists :name actor-name)))))
+
+(defun %create-actor (context create-fun dispatcher-id queue-size)
+  (let ((actor (funcall create-fun)))
+    (when actor
+      (%verify-actor context actor)
+      (act::initialize-with actor
+       (%message-box-for-dispatcher-id context dispatcher-id queue-size)
+       (make-actor-context (system context)
+                           (utils:mkstr (id context) "/" (act-cell:name actor)))))
+    actor))
+
+;; --------------------------------------
+;; public interface
+;; --------------------------------------
+
+(defclass actor-context ()
+  ((id :initarg :id
+       :initform nil
+       :reader id
+       :documentation
+       "The id of this actor-context. Usually a string.")
+   (actors :initform (hamt:empty-dict)
+           :reader actors
+           :documentation
+           "A list of actors.
+This is internal API. Use `all-actors` or `find-actors` instead.")
+   (system :initform nil
+           :reader system
+           :documentation
+           "A reference to the `actor-system`."))
+  (:documentation "`actor-context` deals with creating and maintaining actors.
+The `actor-system` and the `actor` itself are composed of an `actor-context`."))
+
 (defun make-actor-context (actor-system &optional (id nil))
   "Creates an `actor-context`. Requires a reference to `actor-system`
 `id` is an optional value that can identify the `actor-context`.
@@ -12,54 +76,12 @@ An `act:actor` contains an `actor-context`."
       (setf system actor-system))
     context))
 
-(defun get-shared-dispatcher (system identifier)
-  (getf (asys:dispatchers system) identifier))
-
-(defun add-actor (context actor)
-  (with-slots (actors) context
-    (setf actors
-          (hamt:dict-insert actors (act-cell:name actor) actor)))
-  actor)
-
-(defun remove-actor (context actor)
-  (with-slots (actors) context
-    (setf actors
-          (hamt:dict-remove actors (act-cell:name actor)))))
-
-(defun message-box-for-dispatcher-id (context dispatcher-id queue-size)
-  (case dispatcher-id
-    (:pinned (make-instance 'mesgb:message-box/bt))
-    (otherwise (let ((dispatcher (get-shared-dispatcher (system context) dispatcher-id)))
-                 (unless dispatcher
-                   (error (format nil "No such dispatcher identifier '~a' exists!" dispatcher-id)))
-                 (make-instance 'mesgb:message-box/dp
-                                :dispatcher dispatcher
-                                :max-queue-size queue-size)))))
-
-(defun verify-actor (context actor)
-  "Checks certain things on the actor before it is attached to the context."
-  (let* ((actor-name (act-cell:name actor))
-         (exists-actor-p (find-actor-by-name context actor-name)))
-    (when exists-actor-p
-      (log:error "Actor with name '~a' already exists!" actor-name)
-      (error (make-condition 'actor-name-exists :name actor-name)))))
-
-(defun create-actor (context create-fun dispatcher-id queue-size)
-  (let ((actor (funcall create-fun)))
-    (when actor
-      (verify-actor context actor)
-      (act::initialize-with actor
-       (message-box-for-dispatcher-id context dispatcher-id queue-size)
-       (make-actor-context (system context)
-                           (utils:mkstr (id context) "/" (act-cell:name actor)))))
-    actor))
-
 (defmethod actor-of ((self actor-context) create-fun &key (dispatcher-id :shared) (queue-size 0))
   "See `ac:actor-of`"
-  (let ((created (create-actor self create-fun dispatcher-id queue-size)))
+  (let ((created (%create-actor self create-fun dispatcher-id queue-size)))
     (when created
       (act:watch created self)
-      (add-actor self created))))
+      (%add-actor self created))))
 
 (defmethod find-actors ((self actor-context) test-fun)
   "See `ac:find-actors`"
@@ -88,4 +110,4 @@ An `act:actor` contains an `actor-context`."
 
 (defmethod notify ((self actor-context) actor notification)
   (case notification
-    (:stopped (remove-actor self actor))))
+    (:stopped (%remove-actor self actor))))

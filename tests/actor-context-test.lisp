@@ -197,9 +197,9 @@
   "Tests removing and again adding actors !!! this tests private API"
   (with-fixture test-system ()
     (let ((context (make-actor-context system)))
-      (ac::add-actor context (make-instance 'act-cell:actor-cell :name :foo))
+      (ac::%add-actor context (make-instance 'act-cell:actor-cell :name :foo))
       (is (find-actor-by-name context :foo))
-      (ac::remove-actor context (make-instance 'act-cell:actor-cell :name :foo))
+      (ac::%remove-actor context (make-instance 'act-cell:actor-cell :name :foo))
       (is (= 0 (length (all-actors context))))
-      (ac::add-actor context (make-instance 'act-cell:actor-cell :name :foo))
+      (ac::%add-actor context (make-instance 'act-cell:actor-cell :name :foo))
       (is (find-actor-by-name context :foo)))))

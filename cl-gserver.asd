@@ -42,8 +42,7 @@
   :license "AGPL"
   :depends-on ("cl-gserver"
                "fiveam"
-               "cl-mock"
-               "trivia")
+               "cl-mock")
   :components ((:module "tests"
                 :components
                 ((:file "all-test")

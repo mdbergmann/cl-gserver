@@ -94,36 +94,35 @@
   "Merges two configs, takes from both"
   (let ((config '(:bar 1))
         (fallback-config '(:foo 2 :buzz 3)))
-    #-sbcl
-    (is (equal '(:bar 1 :foo 2 :buzz 3) (merge-config config fallback-config)))
-    #+sbcl
-    (is (equal '(:buzz 3 :foo 2 :bar 1) (merge-config config fallback-config)))
-    ))
+    (is (= 1 (retrieve-value (merge-config config fallback-config) :bar)))
+    (is (= 2 (retrieve-value (merge-config config fallback-config) :foo)))
+    (is (= 3 (retrieve-value (merge-config config fallback-config) :buzz)))))
 
 (test merge-config--fallback-sets-structure
   "Merges two configs, takes from both"
   (let ((config '(:foo 1))
         (fallback-config '(:foo (:bar 2))))
-    (is (equal '(:foo (:bar 2)) (merge-config config fallback-config)))))
+    (is (equal '(:bar 2) (retrieve-value (merge-config config fallback-config) :foo)))))
 
 (test merge-config--deep
   "Merges two configs, merge deep."
   (let ((config '(:foo 1 :bar (:buzz 2)))
         (fallback-config '(:foo 2 :bar (:buzz 3 :foo2 4))))
-    #-sbcl
-    (is (equal '(:foo 1 :bar (:buzz 2 :foo2 4)) (merge-config config fallback-config)))
-    #+sbcl
-    (is (equal '(:foo 1 :bar (:foo2 4 :buzz 2)) (merge-config config fallback-config)))
-    ))
+    (is (= 1 (retrieve-value (merge-config config fallback-config) :foo)))
+    (is (listp (retrieve-value (merge-config config fallback-config) :bar)))
+    (is (= 2 (retrieve-value (retrieve-value (merge-config config fallback-config) :bar) :buzz)))
+    (is (= 4 (retrieve-value (retrieve-value (merge-config config fallback-config) :bar) :foo2)))))
 
 (test merge-config--config-but-no-fallback-takes-config
   "Merges two configs, when config exists as structure but not fallback then take fallback."
   (let ((config '(:foo 1 :bar (:buzz 2)))
         (fallback-config '(:foo 2)))
-    (is (equal '(:bar (:buzz 2) :foo 1) (merge-config config fallback-config)))))
+    (is (equal '(:buzz 2) (retrieve-value (merge-config config fallback-config) :bar)))
+    (is (= 1 (retrieve-value (merge-config config fallback-config) :foo)))))
 
 (test merge-config--config-but-no-fallback-takes-config-2
   "Merges two configs, when config exists as structure but not fallback then take fallback."
   (let ((config '(:foo 1 :bar (:buzz 2)))
         (fallback-config nil))
-    (is (equal '(:foo 1 :bar (:buzz 2)) (merge-config config fallback-config)))))
+    (is (equal '(:buzz 2) (retrieve-value (merge-config config fallback-config) :bar)))
+    (is (= 1 (retrieve-value (merge-config config fallback-config) :foo)))))

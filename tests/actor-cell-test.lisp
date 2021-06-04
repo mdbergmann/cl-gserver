@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor-cell-test
-  (:use :cl :trivia :fiveam :cl-gserver.actor-cell)
+  (:use :cl :fiveam :cl-gserver.actor-cell)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -82,13 +82,13 @@
   "Simple cell handle-call test."
   (with-fixture cell-fixture ((lambda (cell message current-state)
                                 (declare (ignore cell))
-                                (match message
-                                  ((list :add n)
-                                   (let ((new-state (+ current-state n)))
-                                     (cons new-state new-state)))
-                                  ((list :sub n)
-                                   (let ((new-state (- current-state n)))
-                                     (cons new-state new-state)))))
+                                (cond
+                                 ((and (listp message) (eq :add (car message)))
+                                  (let ((new-state (+ current-state (cadr message))))
+                                    (cons new-state new-state)))
+                                 ((and (listp message) (eq :sub (car message)))
+                                  (let ((new-state (- current-state (cadr message))))
+                                    (cons new-state new-state)))))
                               nil
                               nil
                               nil
@@ -135,8 +135,9 @@
   (with-fixture cell-fixture ((lambda (cell message current-state)
                                 (declare (ignore cell current-state))
                                 (log:info "Raising error condition...")
-                                (match message
-                                  ((list :err) (error "Foo Error"))))
+                                (cond
+                                 ((eq :err (car message))
+                                  (error "Foo Error"))))
                               nil
                               nil
                               nil
@@ -153,20 +154,20 @@
   (with-fixture cell-fixture ((lambda (cell message current-state)
                                 (declare (ignore cell))
                                 (format t "current-state: ~a~%" current-state)
-                                (match message
-                                  (:pop
-                                   (cons
-                                    (car current-state)
-                                    (cdr current-state)))
-                                  (:get
-                                   (cons current-state current-state))))
+                                (cond
+                                 ((eq :pop message)
+                                  (cons
+                                   (car current-state)
+                                   (cdr current-state)))
+                                 ((eq :get message)
+                                  (cons current-state current-state))))
                               (lambda (cell message current-state)
                                 (declare (ignore cell))
                                 (format t "current-state: ~a~%" current-state)
-                                (match message
-                                  ((cons :push value)
-                                   (let ((new-state (append current-state (list value))))
-                                     (cons new-state new-state)))))
+                                (cond
+                                 ((eq :push (car message))
+                                  (let ((new-state (append current-state (list (cdr message)))))
+                                    (cons new-state new-state)))))
                               nil
                               nil
                               '(5))
@@ -214,15 +215,3 @@
     (setf (msgbox cut) (make-instance 'mesgb:message-box/bt))
     (is (eq :stopped (call cut :stop)))))
 
-(defun run-tests ()
-  (run! 'get-cell-name-and-state)
-  (run! 'run-pre-start-fun)
-  (run! 'run-after-stop-fun)
-  (run! 'no-message-box)
-  (run! 'handle-call)
-  (run! 'handle-delayed-cancellable-message)
-  (run! 'cast-sends-result-back-to-sender)
-  (run! 'error-in-handler)
-  (run! 'stack-cell)
-  (run! 'cast--store-sender)
-  (run! 'stopping-cell))

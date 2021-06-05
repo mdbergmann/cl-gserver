@@ -21,20 +21,16 @@
   "The default, built-in strategy: random."
   (lambda (len) (random len)))
 
-(defvar *rr-index* 0)
 (defun make-round-robin-strategy ()
-  "Returns a let-over-lambda that implements a round-robin strategy.
-It needs a special variable `defvar` here to make the atomics work."
-  (let ((index 0))
+  "Returns a let-over-lambda that implements a round-robin strategy."
+  (let ((index (bt2:make-atomic-integer :value 0)))
     (lambda (len)
-      (let ((*rr-index* index))
-        (atomics:atomic-update
-         *rr-index*
-         (lambda (old) 
-           (if (< old (1- len))
-               (1+ old)
-               0)))
-        (setf index *rr-index*)))))
+      (let* ((unwrapped (bt2:atomic-integer-value index))
+             (new-value (if (< unwrapped (1- len))
+                            (1+ unwrapped)
+                            0)))
+        (bt2:atomic-integer-cas index unwrapped new-value)
+        new-value))))
 
 (defun get-strategy-fun (strategy)
   (cond

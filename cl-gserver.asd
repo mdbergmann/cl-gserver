@@ -9,8 +9,7 @@
                "log4cl"
                "str"
                "blackbird"
-               "binding-arrows"
-               "atomics")
+               "binding-arrows")
   :components ((:module "src"
                 :serial t
                 :components

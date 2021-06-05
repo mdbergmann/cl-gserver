@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor-mp-test
-  (:use :cl :trivia :iterate :fiveam :act)
+  (:use :cl :iterate :fiveam :act)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -14,16 +14,17 @@
 
 (log:config :warn)
 
-(defvar *receive-fun* (lambda (self message current-state)
-                        (declare (ignore self))
-                        (match message
-                          (:add
-                           (let ((new-state (1+ current-state)))
-                             (cons new-state new-state)))
-                          (:sub
-                           (let ((new-state (1- current-state)))
-                             (cons new-state new-state)))
-                          (:get (cons current-state current-state)))))
+(defparameter *receive-fun* (lambda (self message current-state)
+                              (declare (ignore self))
+                              (cond
+                                ((eq :add message)
+                                 (let ((new-state (1+ current-state)))
+                                   (cons new-state new-state)))
+                                ((eq :sub message)
+                                 (let ((new-state (1- current-state)))
+                                   (cons new-state new-state)))
+                                ((eq :get message)
+                                 (cons current-state current-state)))))
 
 (def-fixture mp-setup (queue-size pinned shared)
   (setf lparallel:*kernel* (lparallel:make-kernel 8))

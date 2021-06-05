@@ -18,7 +18,7 @@
 
 (defun runner-bt (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
   ;; dispatchers used for the async-ask
-  #+(or sbcl abcl clasp lispworks7)
+  #+(or sbcl abcl clasp lispworks7 allegro)
   (setf *per-thread* 125000)
   #+ccl
   (setf *per-thread* (if asyncask 10000 125000))
@@ -59,7 +59,7 @@
   (setf *per-thread* (if (or withreply-p asyncask) 50000 125000))
   #+ccl
   (setf *per-thread* (if asyncask 10000 125000))
-  #+(or abcl clasp)
+  #+(or abcl clasp allegro)
   (setf *per-thread* 125000)
   (setf *system* (asys:make-actor-system '(:dispatchers (:shared (:workers 8)))
                                          (if asyncask 50 8)))

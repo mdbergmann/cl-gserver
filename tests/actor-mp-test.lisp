@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.actor-mp-test
-  (:use :cl :iterate :fiveam :act)
+  (:use :cl :fiveam :act)
   (:export #:run!
            #:all-tests
            #:nil))

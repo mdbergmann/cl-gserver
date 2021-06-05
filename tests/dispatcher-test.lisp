@@ -32,7 +32,7 @@
     (let ((cut (make-test-dispatcher 1 context "foo")))
       (is (not (null cut)))
       (is (string= "foo" (identifier cut)))
-      (is (str:containsp "RANDOM-STRATEGY" (format nil "disp: ~a~%" cut)))
+      ;;(is (str:containsp "RANDOM-STRATEGY" (format nil "disp: ~a~%" cut)))
       (stop cut))))
 
 (test create-dispatcher--with-config
@@ -41,7 +41,7 @@
     (let ((cut (apply #'make-dispatcher context :foo '(:workers 0 :strategy :round-robin))))
       (is (eq :foo (identifier cut)))
       (is (= 0 (length (workers cut))))
-      (is (str:containsp "ROUND-ROBIN" (format nil "disp: ~a~%" cut)))
+      ;;(is (str:containsp "ROUND-ROBIN" (format nil "disp: ~a~%" cut)))
       (stop cut))))
 
 (test create-the-workers

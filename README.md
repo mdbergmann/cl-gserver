@@ -2,6 +2,38 @@
 
 cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.
 
+### Version history
+
+**Version 1.7.3:** cleaned up dependencies. Now cl-gserver works on SBCL, CCL, LispWorks, Allegro and ABCL
+
+**Version 1.7.2:** allowing to choose the dispatcher strategy via configuration
+
+**Version 1.7.1:** added possibility to create additional and custom dispatchers. I.e. to be used with `tasks`.
+
+**Version 1.7.0:** added tasks abstraction facility to more easily deal with asynchronous and concurrent operations.
+
+**Version 1.6.0:** added eventstream facility for building event based systems. Plus documentation improvements.
+
+**Version 1.5.0:** added configuration structure. actor-system can now be created with a configuration. More configuration options to come.
+
+**Version 1.4.1:** changed documentation to the excellent [mgl-pax](https://github.com/melisgl/mgl-pax)
+
+**Version 1.4:** convenience macro for creating actor. See below for more details
+
+**Version 1.3.1:** round-robin strategy for router
+
+**Version 1.3:** agents can be created in actor-system
+
+**Version 1.2:** introduces a breaking change
+
+`ask` has been renamed to `ask-s`.
+
+`async-ask` has been renamed to `ask`.
+
+The proposed default way to query for a result from another actor should
+be an asynchronous `ask`. `ask-s` (synchronous) is
+of course still possible.
+
 **Version 1.0** of `cl-gserver` library comes with quite a
 few new features (compared to the previous 0.x versions). 
 One of the major new features is that an actor is not
@@ -645,33 +677,3 @@ The pleasant surprise was ABCL. While not being the fastest it is the
 most robust. Where SBCL and CCL were struggling you could throw anything
 at ABCL and it'll cope with it. I'm assuming that this is because of
 the massively battle proven Java Runtime.
-
-### Version history
-
-**Version 1.7.2:** allowing to choose the dispatcher strategy via configuration
-
-**Version 1.7.1:** added possibility to create additional and custom dispatchers. I.e. to be used with `tasks`.
-
-**Version 1.7.0:** added tasks abstraction facility to more easily deal with asynchronous and concurrent operations.
-
-**Version 1.6.0:** added eventstream facility for building event based systems. Plus documentation improvements.
-
-**Version 1.5.0:** added configuration structure. actor-system can now be created with a configuration. More configuration options to come.
-
-**Version 1.4.1:** changed documentation to the excellent [mgl-pax](https://github.com/melisgl/mgl-pax)
-
-**Version 1.4:** convenience macro for creating actor. See below for more details
-
-**Version 1.3.1:** round-robin strategy for router
-
-**Version 1.3:** agents can be created in actor-system
-
-**Version 1.2:** introduces a breaking change
-
-`ask` has been renamed to `ask-s`.
-
-`async-ask` has been renamed to `ask`.
-
-The proposed default way to query for a result from another actor should
-be an asynchronous `ask`. `ask-s` (synchronous) is
-of course still possible.

@@ -4,12 +4,14 @@
   :license "AGPL"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
   :depends-on ("alexandria"
+               "bordeaux-threads"
                "lparallel"
                "cl-speedy-queue"
                "log4cl"
                "str"
                "blackbird"
-               "binding-arrows")
+               "binding-arrows"
+               "atomics")
   :components ((:module "src"
                 :serial t
                 :components

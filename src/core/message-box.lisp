@@ -283,18 +283,18 @@ The `dispatcher` is kind of like a thread pool."))
 It knows the message-box of the origin actor and acts on it.
 It pops the ,essage from the message-boxes queue and calls the `handler-fun` on it.
 The `handler-fun' is part of the message item."
-  (with-slots (box-name queue) msgbox
-    (log:trace "~a: popping message..." box-name)
+  (with-slots (name queue) msgbox
+    (log:trace "~a: popping message..." name)
     (let ((popped-item (popq queue)))
       (handle-popped-item popped-item msgbox))))
 
 (defun handle-popped-item (popped-item msgbox)
   "Handles the popped message. Means: calls the `handler-fun` on the message."
-  (with-slots (box-name lock) msgbox
+  (with-slots (name lock) msgbox
     (with-slots (message cancelled-p handler-fun) popped-item
-      (log:debug "~a: popped message: ~a" box-name popped-item)
+      (log:debug "~a: popped message: ~a" name popped-item)
       (when cancelled-p
-        (log:warn "~a: item got cancelled: ~a" box-name popped-item))
+        (log:warn "~a: item got cancelled: ~a" name popped-item))
       (unless cancelled-p
         ;; protect the actor from concurrent state changes on the shared dispatcher
         (bt:acquire-lock lock t)

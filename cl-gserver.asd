@@ -11,7 +11,8 @@
                "str"
                "blackbird"
                "binding-arrows"
-               "atomics")
+               #-abcl "atomics"
+               )
   :components ((:module "src"
                 :serial t
                 :components
@@ -23,7 +24,9 @@
                   :components
                   ((:file "queue")
                    (:file "message-box")
-                   (:file "actor-cell")))
+                   (:file "actor-cell")
+                   #+abcl
+                   (:file "atomic-abcl")))
                  (:file "eventstream-api")
                  (:file "actor-system-api")
                  (:file "actor-context-api")

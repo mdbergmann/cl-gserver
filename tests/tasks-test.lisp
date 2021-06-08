@@ -87,6 +87,15 @@
       (let ((task (task-async (lambda () (sleep 1) (+ 1 2)))))
         (is (= 3 (task-await task)))))))
 
+(test task-async--with-await--timeout
+  "Test for task-async followed by task-await, timeout raised."
+  (with-fixture system-fixture ()
+    (with-context (system)
+      (let* ((task (task-async (lambda () (sleep 1) (+ 1 2))))
+             (await-result (task-await task 0.5)))
+        (is (eq :handler-error (car await-result)))
+        (is (typep (cdr await-result) 'ask-timeout))))))
+
 (test task-async-stream
   "Tests for task-async-stream"
   (with-fixture system-fixture ()

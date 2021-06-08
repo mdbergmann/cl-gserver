@@ -139,11 +139,12 @@ Example:
     (act:tell task (cons :exec fun))
     task))
 
-(defun task-await (task)
+(defun task-await (task &optional time-out)
   "`task-await` waits (by blocking) until a result has been generated for a previous `task-async` by passing the `task` result of `task-async` to `task-await`.
+Specify `time-out` in seconds. If `task-await` times out a `(cons :handler-error 'ask-timeout)` will be returned.
 `task-await` also stops the `task` that is the result of `task-async`, so it is of no further use."
   (unwind-protect
-       (act:ask-s task :get);; :time-out time-out)))
+       (act:ask-s task :get :time-out time-out)
     (ac:stop *task-context* task)))
 
 (defun task-shutdown (task)

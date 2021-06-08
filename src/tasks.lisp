@@ -151,7 +151,7 @@ Example:
   (do-something-with result))
 
 (with-context (*sys*)
-  (task-async (lambda () (some bigger computation))
+  (task-async (lambda () (some-bigger-computation))
               :on-complete-fun #'my-task-completion))
 ```
 "

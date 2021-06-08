@@ -4,6 +4,8 @@ cl-gserver is a 'message passing' library/framework with actors similar to Erlan
 
 ### Version history
 
+**Version 1.7.4:** more convenience additions for task-async (completion-handler)
+
 **Version 1.7.3:** cleaned up dependencies. Now cl-gserver works on SBCL, CCL, LispWorks, Allegro and ABCL
 
 **Version 1.7.2:** allowing to choose the dispatcher strategy via configuration
@@ -604,11 +606,17 @@ Here is a simple example:
   // run something without requiring a feedback
   (task-start (lambda () (do-lengthy-IO))
   
-  // run asynchronous
+  // run asynchronous - with await
   (let ((task (task-async (lambda () (do-a-task)))))
     // do some other stuff
     // eventually we need the task result
     (+ (task-await task) 5))
+    
+  // run asynchronous with completion-handler (continuation)
+  (task-async (lambda () (some-bigger-computation))
+              :on-complete-fun
+              (lambda (result)
+                (do-something-with result)))
 
   // concurrently map over the given list
   (->> 

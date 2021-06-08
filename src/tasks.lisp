@@ -119,9 +119,21 @@ The task is automatically stopped and removed from the context and will not be a
 (defun task-async (fun &key on-complete-fun)
   "`task-async` schedules the function `fun` for asynchronous execution.
 `fun` must be a 0-arity function.
+`on-complete-fun` is a 1-arity completion handler function. When called the result is delivered.
+The completion handler function parameter may also be a `(cons :handler-error condition)` construct in case an error happened within the message handling.
+
+Using `task-async` provides two alternatives:
+
+- together with `task-await`
+- or with completion handler
+
+In fact it is possible to call `task-await` as well, but then you probably don't need a completion handler.
+Using the completion handler makes the processing complete asynchronous.
+
 The result of `task-async` is a `task`.
-Store this `task` for a call to `task-async`.
-Users must call either `task-await` or `task-shutdown` for the task to be cleaned up.
+Store this `task` for a call to `task-async` (even with or without using `on-complete-fun`).
+When _not_ using `on-complete-fun` users must call either `task-await` or `task-shutdown` for the task to be cleaned up.
+When using `on-complete-fun` this is done for you.
 
 Example:
 
@@ -133,6 +145,14 @@ Example:
   (let ((x (task-async (lambda () (some bigger computation))))
         (y 1))
     (+ (task-await x) y)))
+
+;; use-case with `on-complete-fun`
+(defun my-task-completion (result)
+  (do-something-with result))
+
+(with-context (*sys*)
+  (task-async (lambda () (some bigger computation))
+              :on-complete-fun #'my-task-completion))
 ```
 "
   (let ((task (make-task *task-context* *task-dispatcher*)))

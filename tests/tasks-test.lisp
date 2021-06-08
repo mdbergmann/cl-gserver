@@ -11,8 +11,10 @@
     (unwind-protect
          (let ((initial-system-actors (ac:all-actors system)))
            (&body)
-           (assert (= (length (ac:all-actors system))
-                      (length initial-system-actors))))
+           (assert-cond (lambda ()
+                          (= (length (ac:all-actors system))
+                             (length initial-system-actors)))
+                        0.5))
       (ac:shutdown system))))
 
 (def-suite tasks-tests
@@ -56,6 +58,29 @@
       (let ((task (task-async (lambda () (+ 1 2)))))
         (is-true (typep task 'tasks:task))
         (task-shutdown task)))))
+
+(test task-async--completion-handler-and-await
+  "Test for task-async passed result via completion halder."
+  (with-fixture system-fixture ()
+    (with-context (system)
+      (let* ((completion-result)
+             (completion-handler (lambda (result) (setf completion-result result)))
+             (task (task-async (lambda () (+ 1 2))
+                               :on-complete-fun completion-handler)))
+        (is (assert-cond (lambda () (and (not (null completion-result))
+                                    (= completion-result 3))) .5))
+        (is (= 3 (task-await task)))))))
+
+(test task-async--completion-handler--err-cond
+  "Test for task-async passed result via completion handler, error on handler."
+  (with-fixture system-fixture ()
+    (with-context (system)
+      (let* ((completion-result)
+             (completion-handler (lambda (result) (setf completion-result result))))
+        (task-async (lambda () (error "Foo"))
+                    :on-complete-fun completion-handler)
+        (is (assert-cond (lambda () (and (not (null completion-result))
+                                    (eq :handler-error (car completion-result)))) .5))))))
 
 (test task-async--in-custom-dispatcher
   "Test for task-async in custom dispatcher."

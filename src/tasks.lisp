@@ -116,7 +116,7 @@ The task is automatically stopped and removed from the context and will not be a
            (values :ok task))
       (ac:stop *task-context* task))))
 
-(defun task-async (fun)
+(defun task-async (fun &key on-complete-fun)
   "`task-async` schedules the function `fun` for asynchronous execution.
 `fun` must be a 0-arity function.
 The result of `task-async` is a `task`.
@@ -136,16 +136,27 @@ Example:
 ```
 "
   (let ((task (make-task *task-context* *task-dispatcher*)))
-    (act:tell task (cons :exec fun))
-    task))
+    (if on-complete-fun
+        (progn
+          (future:on-completed (act:ask task (cons :exec fun))
+                               (lambda (result)
+                                 (funcall on-complete-fun result)
+                                 (act:tell task :stop)))
+          task)
+        (progn 
+          (act:tell task (cons :exec fun))
+          task))))
 
 (defun task-await (task &optional time-out)
   "`task-await` waits (by blocking) until a result has been generated for a previous `task-async` by passing the `task` result of `task-async` to `task-await`.
 Specify `time-out` in seconds. If `task-await` times out a `(cons :handler-error 'ask-timeout)` will be returned.
 `task-await` also stops the `task` that is the result of `task-async`, so it is of no further use."
-  (unwind-protect
-       (act:ask-s task :get :time-out time-out)
-    (ac:stop *task-context* task)))
+  (let ((task-state (act-cell:state task)))
+    (if task-state
+        task-state
+        (unwind-protect
+             (act:ask-s task :get :time-out time-out)
+          (ac:stop *task-context* task)))))
 
 (defun task-shutdown (task)
   "`task-shutdown` shuts down a task in order to clean up resources."

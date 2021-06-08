@@ -80,6 +80,12 @@
 
 <p>cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.</p>
 
+<h3>Version history</h3>
+
+<p><strong>Version 1.7.4:</strong> more convenience additions for task-async (completion-handler)</p>
+
+<p><strong>Version 1.7.3:</strong> cleaned up dependencies. Now cl-gserver works on SBCL, CCL, LispWorks, Allegro and ABCL</p>
+
 <p><strong>Version 1.7.2:</strong> allowing to choose the dispatcher strategy via configuration</p>
 
 <p><strong>Version 1.7.1:</strong> added possibility to create additional and custom dispatchers. I.e. to be used with <code>tasks</code>.</p>
@@ -109,7 +115,8 @@ be an asynchronous <code>ask</code>. <code>ask-s</code> (synchronous) is
 of course still possible.</p>
 
 <p><strong>Version 1.0</strong> of <code>cl-gserver</code> library comes with quite a
-few new features. One of the major new features is that an actor is not
+few new features (compared to the previous 0.x versions). 
+One of the major new features is that an actor is not
 bound to it's own message dispatcher thread. Instead, when an
 <code>actor-system</code> is set-up, actors can use a shared pool of
 message dispatchers which effectively allows to create millions of
@@ -629,11 +636,17 @@ The subscription here is done using the <code>:init</code> hook of the actor. Th
   // run something without requiring a feedback
   <span class="paren2">(<span class="code">task-start <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code">do-lengthy-IO</span>)</span></span>)</span>
   
-  // run asynchronous
+  // run asynchronous <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX106" class="symbol">-</a> with await
   <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">task <span class="paren6">(<span class="code">task-async <span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">do-a-task</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span>
     // do some other stuff
     // eventually we need <i><span class="symbol">the</span></i> task result
     <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> <span class="paren5">(<span class="code">task-await task</span>)</span> 5</span>)</span></span>)</span>
+    
+  // run asynchronous with completion-handler <span class="paren3">(<span class="code">continuation</span>)</span>
+  <span class="paren3">(<span class="code">task-async <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code"></span>)</span> <span class="paren5">(<span class="code">some-bigger-computation</span>)</span></span>)</span>
+              <span class="keyword">:on-complete-fun</span>
+              <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code">result</span>)</span>
+                <span class="paren5">(<span class="code">do-something-with result</span>)</span></span>)</span></span>)</span>
 
   // concurrently map over <i><span class="symbol">the</span></i> given <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX225" class="symbol">list</a>
   <span class="paren3">(<span class="code">-&gt;&gt; 
@@ -2014,13 +2027,27 @@ The task is automatically stopped and removed from the context and will not be a
 <p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" >TASK-ASYNC</a></span></span> <span class="locative-args">FUN</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" >TASK-ASYNC</a></span></span> <span class="locative-args">FUN &amp;KEY ON-COMPLETE-FUN</span></span></p>
 
 <p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> schedules the function <code>fun</code> for asynchronous execution.
 <code>fun</code> must be a 0-arity function.
-The result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> is a <code>task</code>.
-Store this <code>task</code> for a call to <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a>.
-Users must call either <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> or <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-SHUTDOWN-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-SHUTDOWN FUNCTION)"><code>task-shutdown</code></a> for the task to be cleaned up.</p>
+<code>on-complete-fun</code> is a 1-arity completion handler function. When called the result is delivered.
+The completion handler function parameter may also be a <code>(cons :handler-error condition)</code> construct in case an error happened within the message handling.</p>
+
+<p>Using <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> provides two alternatives:</p>
+
+<ul>
+<li><p>together with <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a></p></li>
+<li><p>or with completion handler</p></li>
+</ul>
+
+<p>In fact it is possible to call <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> as well, but then you probably don't need a completion handler.
+Using the completion handler makes the processing complete asynchronous.</p>
+
+<p>The result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> is a <code>task</code>.
+Store this <code>task</code> for a call to <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> (even with or without using <code>on-complete-fun</code>).
+When <em>not</em> using <code>on-complete-fun</code> users must call either <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> or <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-SHUTDOWN-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-SHUTDOWN FUNCTION)"><code>task-shutdown</code></a> for the task to be cleaned up.
+When using <code>on-complete-fun</code> this is done for you.</p>
 
 <p>Example:</p>
 
@@ -2030,15 +2057,24 @@ Users must call either <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-
 <span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span></span>)</span>
   <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren3">(<span class="code"><span class="paren4">(<span class="code">x <span class="paren5">(<span class="code">task-async <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren1">(<span class="code"></span>)</span> <span class="paren1">(<span class="code">some bigger computation</span>)</span></span>)</span></span>)</span></span>)</span>
         <span class="paren4">(<span class="code">y 1</span>)</span></span>)</span>
-    <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> <span class="paren4">(<span class="code">task-await x</span>)</span> y</span>)</span></span>)</span></span>)</span></span></code></pre></li>
+    <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> <span class="paren4">(<span class="code">task-await x</span>)</span> y</span>)</span></span>)</span></span>)</span>
+
+<span class="comment">;; use-case with `on-complete-fun`
+</span><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> my-task-completion <span class="paren2">(<span class="code">result</span>)</span>
+  <span class="paren2">(<span class="code">do-something-with result</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span></span>)</span>
+  <span class="paren2">(<span class="code">task-async <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code">some-bigger-computation</span>)</span></span>)</span>
+              <span class="keyword">:on-complete-fun</span> #'my-task-completion</span>)</span></span>)</span></span></code></pre></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" >TASK-AWAIT</a></span></span> <span class="locative-args">TASK</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" >TASK-AWAIT</a></span></span> <span class="locative-args">TASK &amp;OPTIONAL TIME-OUT</span></span></p>
 
 <p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> waits (by blocking) until a result has been generated for a previous <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> by passing the <code>task</code> result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> to <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a>.
+Specify <code>time-out</code> in seconds. If <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> times out a <code>(cons :handler-error 'ask-timeout)</code> will be returned.
 <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> also stops the <code>task</code> that is the result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a>, so it is of no further use.</p></li>
 </ul>
 

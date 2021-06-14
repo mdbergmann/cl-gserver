@@ -642,7 +642,7 @@ See the [API documentation](https://mdbergmann.github.io/cl-gserver/cl-gserver.h
 
 ### Immutability
 
-Some words on immutability. cl-gserver does _not_ make deep copies of the actor states. So whatever is returned from `receive` function as part of the `(cons back-msg state)` is just `setf`ed to the actor state. The user is responsible to make deep copies if necessary in an immutable environment.
+Some words on immutability. cl-gserver does _not_ make deep copies of the actor states. So whatever is returned from `receive` function as part of the `(cons back-msg state)` is just `setf`ed to the actor state. The user is responsible to make deep copies if necessary in an immutable environment. The user is responsible to _not_ implictly modify the actor state outside of the actor.
 
 ### Benchmarks
 

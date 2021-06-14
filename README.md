@@ -640,6 +640,10 @@ Be also aware that the `:shared` dispatcher should not run long running operatio
 
 See the [API documentation](https://mdbergmann.github.io/cl-gserver/cl-gserver.html#toc-2-8-tasks) for more details.
 
+### Immutability
+
+Some words on immutability. cl-gserver does _not_ make deep copies of the actor states. So whatever is returned from `receive` function as part of the `(cons back-msg state)` is just `setf`ed to the actor state. The user is responsible to make deep copies if necessary in an immutable environment.
+
 ### Benchmarks
 
 ![](./docs/perf.png)

@@ -82,6 +82,8 @@
 
 <h3>Version history</h3>
 
+<p><strong>Version 1.7.5:</strong> Allow agent to specify the dispatcher to be used.</p>
+
 <p><strong>Version 1.7.4:</strong> more convenience additions for task-async (completion-handler)</p>
 
 <p><strong>Version 1.7.3:</strong> cleaned up dependencies. Now cl-gserver works on SBCL, CCL, LispWorks, Allegro and ABCL</p>
@@ -474,14 +476,15 @@ customize an agent. See below.</p>
 <p>An Agent provides three functions to use it.</p>
 
 <ul>
-<li><code>make-agent</code> creates a new agent</li>
+<li><code>make-agent</code> creates a new agent. Optionally specify an <code>actor-context</code> or define the kind of dispatcher the agent should use.</li>
 <li><code>agent-get</code> retrieves the current state of the agent. This directly
 delivers the state of the agent for performance reasons. There is no
 message handling involved.</li>
 <li><code>agent-update</code> updates the state of the agent</li>
+<li><code>agent-update-and-get</code> updates the agent state and returns the new state.</li>
 </ul>
 
-<p>All three take a lambda. The lambda for <code>make-agent</code> does not take a
+<p>All four take a lambda. The lambda for <code>make-agent</code> does not take a
 parameter. It should return the initial state of the agent. <code>agent-get</code>
 and <code>agent-update</code> both take a lambda that must support one parameter.
 This parameter represents the current state of the agent.</p>
@@ -668,6 +671,10 @@ The concurrency here depends on the number of dispatcher workers.</p>
 <p>Be also aware that the <code>:shared</code> dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for <code>tasks</code> when you plan to operate longer running operations.</p>
 
 <p>See the <a href="https://mdbergmann.github.io/cl-gserver/cl-gserver.html#toc-2-8-tasks" >API documentation</a> for more details.</p>
+
+<h3>Immutability</h3>
+
+<p>Some words on immutability. cl-gserver does <em>not</em> make deep copies of the actor states. So whatever is returned from <code>receive</code> function as part of the <code>(cons back-msg state)</code> is just <code>setf</code>ed to the actor state. The user is responsible to make deep copies if necessary in an immutable environment. The user is responsible to <em>not</em> implictly modify the actor state outside of the actor.</p>
 
 <h3>Benchmarks</h3>
 
@@ -1163,7 +1170,7 @@ The <code>new-behavior</code> function must accept 3 parameters: the actor insta
 <p><a id='x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">X</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">ACTOR</span></span></p>
 
 <p>This is the <code>actor-context</code> every actor is composed of.
 When the actor is created from scratch it has no <code>actor-context</code>.
@@ -1200,9 +1207,9 @@ I.e.: when it stopped. The message being sent in this case is: <code>(cons :stop
 <p><a id='x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">X</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">ACTOR</span></span></p>
 
-<p>Returns a list of watchers of <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a>.</p></li>
+<p>Returns a list of watchers of <code>actor</code>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CELL-3A-40ACTOR-CELL-20MGL-PAX-3ASECTION-29'></a></p>
@@ -1562,12 +1569,15 @@ Stop an agent with <a href="#x-28CL-GSERVER-2EAGENT-3AAGENT-STOP-20FUNCTION-29" 
 <p><a id='x-28CL-GSERVER-2EAGENT-3AMAKE-AGENT-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-3AMAKE-AGENT-20FUNCTION-29" >MAKE-AGENT</a></span></span> <span class="locative-args">STATE-FUN &amp;OPTIONAL ACTOR-CONTEXT</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-3AMAKE-AGENT-20FUNCTION-29" >MAKE-AGENT</a></span></span> <span class="locative-args">STATE-FUN &amp;OPTIONAL ACTOR-CONTEXT DISPATCHER-ID</span></span></p>
 
-<p>Makes a new <a href="#x-28CL-GSERVER-2EAGENT-3AAGENT-20CLASS-29" title="(CL-GSERVER.AGENT:AGENT CLASS)"><code>agent</code></a> instance.
-<code>state-fun</code> is a function that takes no parameter and provides the initial state of the <a href="#x-28CL-GSERVER-2EAGENT-3AAGENT-20CLASS-29" title="(CL-GSERVER.AGENT:AGENT CLASS)"><code>agent</code></a> as return value.</p>
+<p>Makes a new <a href="#x-28CL-GSERVER-2EAGENT-3AAGENT-20CLASS-29" title="(CL-GSERVER.AGENT:AGENT CLASS)"><code>agent</code></a> instance.</p>
 
-<p>Optionally an <code>actor-system</code> can be specified. If specified the agent will be registered in the <code>system</code> and destroyed with it should the actor-system be destroyed. In addition the agent will use the systems shared message dispatcher and will <em>not</em> create it's own.</p></li>
+<p><code>state-fun</code> is a function that takes no parameter and provides the initial state of the <a href="#x-28CL-GSERVER-2EAGENT-3AAGENT-20CLASS-29" title="(CL-GSERVER.AGENT:AGENT CLASS)"><code>agent</code></a> as return value.</p>
+
+<p><code>actor-context</code>: optionally specify an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a> as <code>actor-context</code>. If specified the agent will be registered in the <code>system</code> and destroyed with it should the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a> be destroyed. In addition the agent will use the systems shared message dispatcher and will <em>not</em> create it's own.</p>
+
+<p><code>dispatcher-id</code>: the dispatcher is configurable. Default is <code>:shared</code>. But you may use also <code>:pinned</code> or a custom configured one. Be aware that <code>:shared</code> of a custom dispatcher only works if an <code>actor-context</code> was specified.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EAGENT-3AAGENT-GET-20FUNCTION-29'></a></p>

@@ -4,6 +4,8 @@ cl-gserver is a 'message passing' library/framework with actors similar to Erlan
 
 ### Version history
 
+**Version 1.7.5:** Allow agent to specify the dispatcher to be used.
+
 **Version 1.7.4:** more convenience additions for task-async (completion-handler)
 
 **Version 1.7.3:** cleaned up dependencies. Now cl-gserver works on SBCL, CCL, LispWorks, Allegro and ABCL
@@ -431,13 +433,14 @@ customize an agent. See below.
 
 An Agent provides three functions to use it.
 
--   `make-agent` creates a new agent
--   `agent-get` retrieves the current state of the agent. This directly
+- `make-agent` creates a new agent. Optionally specify an `actor-context` or define the kind of dispatcher the agent should use.
+- `agent-get` retrieves the current state of the agent. This directly
     delivers the state of the agent for performance reasons. There is no
     message handling involved.
--   `agent-update` updates the state of the agent
+- `agent-update` updates the state of the agent
+- `agent-update-and-get` updates the agent state and returns the new state.
 
-All three take a lambda. The lambda for `make-agent` does not take a
+All four take a lambda. The lambda for `make-agent` does not take a
 parameter. It should return the initial state of the agent. `agent-get`
 and `agent-update` both take a lambda that must support one parameter.
 This parameter represents the current state of the agent.

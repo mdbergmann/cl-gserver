@@ -40,17 +40,20 @@ This rarely (if at all) needs to change because the agent is very specific."
         (let ((new-state (funcall (cdr message) current-state)))
           (cons new-state new-state)))))))
 
-(defun make-agent (state-fun &optional actor-context)
+(defun make-agent (state-fun &optional actor-context (dispatcher-id :shared))
   "Makes a new `agent` instance.
+
 `state-fun` is a function that takes no parameter and provides the initial state of the `agent` as return value.
 
-Optionally an `actor-system` can be specified. If specified the agent will be registered in the `system` and destroyed with it should the actor-system be destroyed. In addition the agent will use the systems shared message dispatcher and will _not_ create it's own."
+`actor-context`: optionally specify an `asys:actor-system` as `actor-context`. If specified the agent will be registered in the `system` and destroyed with it should the `asys:actor-system` be destroyed. In addition the agent will use the systems shared message dispatcher and will _not_ create it's own.
+
+`dispatcher-id`: the dispatcher is configurable. Default is `:shared`. But you may use also `:pinned` or a custom configured one. Be aware that `:shared` of a custom dispatcher only works if an `actor-context` was specified."
   (let* ((state (funcall state-fun))
          (creator-fun (lambda () (make-instance 'agent :state state
                                                   :name (string (gensym "agent-"))
                                                   :receive #'receive)))
          (agent (if actor-context
-                    (ac:actor-of actor-context creator-fun)
+                    (ac:actor-of actor-context creator-fun :dispatcher-id dispatcher-id)
                     (funcall creator-fun))))
     (unless actor-context
       (setf (msgbox agent) (make-instance 'message-box/bt)))

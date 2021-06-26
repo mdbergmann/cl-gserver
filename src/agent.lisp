@@ -9,6 +9,7 @@
                 #:message-box/bt)
   (:export #:make-agent           
            #:agent-get
+           #:agent-get-quick
            #:agent-update
            #:agent-update-and-get
            #:agent-stop
@@ -59,17 +60,19 @@ This rarely (if at all) needs to change because the agent is very specific."
       (setf (msgbox agent) (make-instance 'message-box/bt)))
     agent))
 
-(defun agent-get (agent get-fun)
-  "Gets the current state of the `agent`.
-`get-fun` must accept one parameter. That is the current-state of the `agent`.
-To return the current state `get-fun` may be just the `identity` function.
-Beware that this function does directly access the state of the agent for performance reasons.
-It does not go through message processing.
-See `agent-test` for examples."
+(defun agent-get-quick (agent get-fun)
+  "Gets the current state with bypassing the messaging.
+If you need consistent results this function should not be used."
   (with-slots (state) agent
     (if (running-p agent)
         (funcall get-fun state)
         :stopped)))
+
+(defun agent-get (agent get-fun)
+  "Gets the current state of the `agent`.
+`get-fun` must accept one parameter. That is the current-state of the `agent`.
+To return the current state `get-fun` may be just the `identity` function."
+  (ask-s agent (cons :get get-fun)))
 
 (defun agent-update (agent update-fun)
   "Updates the `agent` state.

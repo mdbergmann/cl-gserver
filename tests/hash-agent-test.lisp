@@ -18,27 +18,26 @@
       (ac:shutdown asys))))
 
 (def-fixture agt ()
-  (let ((cut (make-hash-agent)))
+  (let ((cut (make-hash-agent nil)))
     (unwind-protect
          (&body)
       (agt:agent-stop cut))))
 
 (test create
   "Tests creating a hash agent."
-  (let ((cut (make-hash-agent)))
+  (let ((cut (make-hash-agent nil)))
     (is-true cut)
     (agt:agent-stop cut)))
 
 (test create--in-system
   "Tests creating a hash agent with providing an actor-context."
   (with-fixture asys-fixture ()
-    (let ((cut (make-hash-agent :context asys)))
-      (is-true cut)
-      (agt:agent-stop cut))))
+    (let ((cut (make-hash-agent asys)))
+      (is-true cut))))
 
 (test create--with-hash-table-keys
   "Tests creating an hash agent."
-  (let ((cut (make-hash-agent :hash-table-keys (list :test #'eq))))
+  (let ((cut (make-hash-agent nil :hash-table-args (list :test #'eq))))
     (is (str:containsp ":TEST EQ" (format nil "~a" cut)))
     (is-true cut)
     (agt:agent-stop cut)))

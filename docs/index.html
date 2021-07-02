@@ -53,7 +53,11 @@
 <li><a href="#x-28CL-GSERVER-2EMESSAGEB-3A-40MESSAGE-BOX-2FDP-20MGL-PAX-3ASECTION-29" title="Message-box dispatched">2.3.4 Message-box dispatched</a></li>
 <li><a href="#x-28CL-GSERVER-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29" title="Future (delayed-computation)">2.3.5 Future (delayed-computation)</a></li>
 </ul></li>
-<li><a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">2.4 Agent</a></li>
+<li><a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">2.4 Agent</a>
+
+<ul>
+<li><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29" title="Hash-table agent">2.4.1 Hash-table agent</a></li>
+</ul></li>
 <li><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">2.5 Dispatcher</a>
 
 <ul>
@@ -81,6 +85,8 @@
 <p>cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.</p>
 
 <h3>Version history</h3>
+
+<p><strong>Version 1.7.6:</strong> Added cl:hash-table based agent with similar API interface.</p>
 
 <p><strong>Version 1.7.5:</strong> Allow agent to specify the dispatcher to be used.</p>
 
@@ -1549,7 +1555,7 @@ If the <code>future</code> is already complete then the <code>completed-fun</cod
 
 <p><a id='x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29" title="Future (delayed-computation)">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29" title="Future (delayed-computation)">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29" title="Hash-table agent">&#8594;</a> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8634;</a></span></span></p>
 
 <h3><a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29">2.4 Agent</a></h3>
 
@@ -1587,10 +1593,7 @@ Stop an agent with <a href="#x-28CL-GSERVER-2EAGENT-3AAGENT-STOP-20FUNCTION-29" 
 
 <p>Gets the current state of the <code>agent</code>.
 <code>get-fun</code> must accept one parameter. That is the current-state of the <code>agent</code>.
-To return the current state <code>get-fun</code> may be just the <code>identity</code> function.
-Beware that this function does directly access the state of the agent for performance reasons.
-It does not go through message processing.
-See <code>agent-test</code> for examples.</p></li>
+To return the current state <code>get-fun</code> may be just the <code>identity</code> function.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EAGENT-3AAGENT-UPDATE-20FUNCTION-29'></a></p>
@@ -1622,9 +1625,56 @@ This function makes the update and returns the new value.</p></li>
 <p>Stops the message handling of the agent.</p></li>
 </ul>
 
+<p><a id='x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29'></a></p>
+
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8592;</a> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29" title="Hash-table agent">&#8634;</a></span></span></p>
+
+<h4><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29">2.4.1 Hash-table agent</a></h4>
+
+<h6>[in package CL-GSERVER.AGENT.HASH with nicknames AGTHASH]</h6>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EHASH-3AMAKE-HASH-AGENT-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AMAKE-HASH-AGENT-20FUNCTION-29" >MAKE-HASH-AGENT</a></span></span> <span class="locative-args">CONTEXT &amp;KEY DISPATCHER-ID HASH-TABLE-ARGS</span></span></p>
+
+<p>Creates an agent that wraps a CL hash-table.<br/>
+<code>context</code>: something implementing <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> protocol like <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>. Specifying <code>nil</code> here creates an agent outside of an actor system. The user has to take care of that himself.<br/>
+<code>dispatcher-id</code>: a dispatcher. defaults to <code>:shared</code>.<br/>
+<code>hash-table-args</code>: pass through to <code>make-hash-table</code>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-GETHASH-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-GETHASH-20FUNCTION-29" >AGENT-GETHASH</a></span></span> <span class="locative-args">KEY HASH-AGENT</span></span></p>
+
+<p>Retrieves value from hash-table, or <code>nil</code> if it doesn't exist.
+See <code>cl:gethash</code> for more info.</p>
+
+<p>This supports setting a hash using <code>setf</code> in the same way as with <code>cl:hash-table</code>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-REMHASH-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-REMHASH-20FUNCTION-29" >AGENT-REMHASH</a></span></span> <span class="locative-args">KEY HASH-AGENT</span></span></p>
+
+<p>Delete a hash-table entry. See <code>cl:remhash</code>.
+Returns <code>t</code> if entry existed, <code>nil</code> otherwise.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-CLRHASH-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-CLRHASH-20FUNCTION-29" >AGENT-CLRHASH</a></span></span> <span class="locative-args">HASH-AGENT</span></span></p>
+
+<p>Clears the hash-table. See <code>cl:clrhash</code>.</p></li>
+</ul>
+
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29" title="Hash-table agent">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8634;</a></span></span></p>
 
 <h3><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29">2.5 Dispatcher</a></h3>
 

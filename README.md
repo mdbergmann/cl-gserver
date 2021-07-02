@@ -4,6 +4,8 @@ cl-gserver is a 'message passing' library/framework with actors similar to Erlan
 
 ### Version history
 
+**Version 1.7.6:** Added cl:hash-table based agent with similar API interface.
+
 **Version 1.7.5:** Allow agent to specify the dispatcher to be used.
 
 **Version 1.7.4:** more convenience additions for task-async (completion-handler)

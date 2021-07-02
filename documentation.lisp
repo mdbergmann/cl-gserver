@@ -105,6 +105,13 @@
   (mesgb:@message-box/dp pax:section)
   (future:@future pax:section))
 
+(in-package :agthash)
+(pax:defsection @hash-agent (:title "Hash-table agent")
+  (agthash:make-hash-agent function)
+  (agthash:agent-gethash function)
+  (agthash:agent-remhash function)
+  (agthash:agent-clrhash function))
+
 (in-package :agt)
 (pax:defsection @agent (:title "Agent")
   (agt:agent class)
@@ -112,7 +119,9 @@
   (agt:agent-get function)
   (agt:agent-update function)
   (agt:agent-update-and-get function)
-  (agt:agent-stop function))
+  (agt:agent-stop function)
+
+  (agthash:@hash-agent pax:section))
 
 (in-package :disp)
 (pax:defsection @shared-dispatcher (:title "Shared dispatcher")

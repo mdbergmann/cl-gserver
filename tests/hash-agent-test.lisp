@@ -78,3 +78,17 @@
     (is (string= "my-value" (agent-gethash :foo cut)))
     (is-true (agent-clrhash cut))
     (is-false (agent-gethash :foo cut))))
+
+(test agent-dohash
+  "Tests 'do' on hash table."
+  (with-fixture agt ()
+    (setf (agent-gethash :foo cut) 1)
+    (setf (agent-gethash :bar cut) 2)
+    (is-true (agent-dohash (lambda (hash-table)
+                             (setf (gethash :foo hash-table) 10)
+                             (setf (gethash :bar hash-table) 20)
+                             (setf (gethash :buzz hash-table) 30))
+                           cut))
+    (is (= 10 (agent-gethash :foo cut)))
+    (is (= 20 (agent-gethash :bar cut)))
+    (is (= 30 (agent-gethash :buzz cut)))))

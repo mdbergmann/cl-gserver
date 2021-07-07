@@ -1176,7 +1176,7 @@ The <code>new-behavior</code> function must accept 3 parameters: the actor insta
 <p><a id='x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">X</span></span></p>
 
 <p>This is the <code>actor-context</code> every actor is composed of.
 When the actor is created from scratch it has no <code>actor-context</code>.
@@ -1213,9 +1213,9 @@ I.e.: when it stopped. The message being sent in this case is: <code>(cons :stop
 <p><a id='x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">X</span></span></p>
 
-<p>Returns a list of watchers of <code>actor</code>.</p></li>
+<p>Returns a list of watchers of <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CELL-3A-40ACTOR-CELL-20MGL-PAX-3ASECTION-29'></a></p>
@@ -1670,6 +1670,21 @@ Returns <code>t</code> if entry existed, <code>nil</code> otherwise.</p></li>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-CLRHASH-20FUNCTION-29" >AGENT-CLRHASH</a></span></span> <span class="locative-args">HASH-AGENT</span></span></p>
 
 <p>Clears the hash-table. See <code>cl:clrhash</code>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-DOHASH-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-DOHASH-20FUNCTION-29" >AGENT-DOHASH</a></span></span> <span class="locative-args">FUN HASH-AGENT</span></span></p>
+
+<p>'Do' arbitrary operations on the hash-table.</p>
+
+<p><code>fun</code> is a 1-arity function taking the hash-table.
+The result of this function is not relevant. It is ignored.</p>
+
+<p><code>hash-agent</code> is the <code>hash-agent</code> instance.</p>
+
+<p>The result of <code>dohash</code> is <code>T</code>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29'></a></p>

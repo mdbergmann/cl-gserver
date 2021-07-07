@@ -4,7 +4,8 @@
   (:export #:make-hash-agent
            #:agent-gethash
            #:agent-remhash
-           #:agent-clrhash)
+           #:agent-clrhash
+           #:agent-dohash)
   )
 
 (in-package :cl-gserver.agent.hash)
@@ -49,3 +50,16 @@ Returns `t` if entry existed, `nil` otherwise."
 (defun agent-clrhash (hash-agent)
   "Clears the hash-table. See `cl:clrhash`."
   (agt:agent-update hash-agent (lambda (hash-table) (clrhash hash-table))))
+
+(defun agent-dohash (fun hash-agent)
+  "'Do' arbitrary operations on the hash-table.
+
+`fun` is a 1-arity function taking the hash-table.
+The result of this function is not relevant. It is ignored.
+
+`hash-agent` is the `hash-agent` instance.
+
+The result of `dohash` is `T`."
+  (agt:agent-update hash-agent (lambda (hash-table)
+                                 (funcall fun hash-table)
+                                 hash-table)))

@@ -110,7 +110,8 @@
   (agthash:make-hash-agent function)
   (agthash:agent-gethash function)
   (agthash:agent-remhash function)
-  (agthash:agent-clrhash function))
+  (agthash:agent-clrhash function)
+  (agthash:agent-dohash function))
 
 (in-package :agt)
 (pax:defsection @agent (:title "Agent")

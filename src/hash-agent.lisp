@@ -10,14 +10,19 @@
 
 (in-package :cl-gserver.agent.hash)
 
-;; !!! This is work in progress. Don't use. !!!
 
-(defun make-hash-agent (context &key (dispatcher-id :shared) (hash-table-args nil))
+(defun make-hash-agent (context &key
+                                  (initial-hash-table nil)
+                                  (dispatcher-id :shared)
+                                  (hash-table-args nil))
   "Creates an agent that wraps a CL hash-table.  
 `context`: something implementing `ac:actor-context` protocol like `asys:actor-system`. Specifying `nil` here creates an agent outside of an actor system. The user has to take care of that himself.  
+`initial-hash-table`: specify an initial hash-table. If not specified an empty one will be created.  
 `dispatcher-id`: a dispatcher. defaults to `:shared`.  
 `hash-table-args`: pass through to `make-hash-table`."
-  (agt:make-agent (lambda () (apply #'make-hash-table hash-table-args))
+  (agt:make-agent (lambda ()
+                    (if initial-hash-table initial-hash-table
+                        (apply #'make-hash-table hash-table-args)))
                   context dispatcher-id))
 
 (defun agent-puthash (key hash-agent value)

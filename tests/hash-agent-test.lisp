@@ -37,10 +37,18 @@
 
 (test create--with-hash-table-keys
   "Tests creating an hash agent."
-  (let ((cut (make-hash-agent nil :hash-table-args (list :test #'eq))))
+  (let ((cut (make-hash-agent nil :hash-table-args `(:test ,#'eq))))
     (is (str:containsp ":TEST EQ" (format nil "~a" cut)))
     (is-true cut)
     (agt:agent-stop cut)))
+
+(test create--with-initial-hash-table
+  "Tests creating hash agent with initial provided hash-table."
+  (let ((initial-hash-table (make-hash-table))
+        (cut))
+    (setf (gethash :foo initial-hash-table) "bar")
+    (setf cut (make-hash-agent nil :initial-hash-table initial-hash-table))
+    (is (string= "bar" (agent-gethash :foo cut)))))
 
 (test agent-puthash
   "Tests putting a value to hash agent -- private"

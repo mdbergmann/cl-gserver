@@ -102,6 +102,13 @@
                 (dequeue/no-wait queue)
                 (dequeue/wait queue cvar lock))
       #+ccl (dequeue/wait queue cvar lock)
+      ;; this loop was suggested in a bordeaux-threads GitHub issue conversation.
+      ;; but it doesn't work on CCL.
+      ;; (progn
+      ;;   (loop
+      ;;     :while (emptyq-p self)
+      ;;     :do (dequeue/wait queue cvar lock))
+      ;;   (dequeue/no-wait queue))
       )))
 
 (defun dequeue/no-wait (queue)

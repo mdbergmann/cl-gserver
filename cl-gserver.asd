@@ -1,5 +1,5 @@
 (defsystem "cl-gserver"
-  :version "1.8.1"
+  :version "1.9.0"
   :author "Manfred Bergmann"
   :license "AGPL"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -34,6 +34,7 @@
                  (:file "actor")
                  (:file "agent")
                  (:file "hash-agent")
+                 (:file "array-agent")
                  (:file "eventstream")
                  (:file "tasks")
                  (:file "router")
@@ -57,6 +58,7 @@
                  (:file "actor-mp-test")
                  (:file "agent-test")
                  (:file "hash-agent-test")
+                 (:file "array-agent-test")
                  (:file "actor-test")
                  (:file "router-test")
                  (:file "tasks-test")

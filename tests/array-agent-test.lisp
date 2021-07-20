@@ -17,8 +17,8 @@
          (&body)
       (ac:shutdown asys))))
 
-(def-fixture agt ()
-  (let ((cut (make-array-agent nil)))
+(def-fixture agt (arr)
+  (let ((cut (make-array-agent nil :initial-array arr)))
     (unwind-protect
          (&body)
       (agt:agent-stop cut))))
@@ -32,5 +32,17 @@
 (test create--in-system
   "Tests creating a array agent with providing an actor-context."
   (with-fixture asys-fixture ()
-    (let ((cut (make-array-agent asys)))
+    (let ((cut (make-array-agent asys :initial-array #())))
       (is-true cut))))
+
+(test elt
+  "Tests retrieve element."
+  (with-fixture agt (#(10 20))
+    (is (= 10 (agent-elt 0 cut)))
+    (is (= 20 (agent-elt 1 cut)))
+    ))
+
+(test push-value
+  "Tests pushing new value."
+  (with-fixture agt ((make-array 0 :adjustable t :fill-pointer t))
+    (is-true (agent-push 1 cut))))

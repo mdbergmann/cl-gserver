@@ -4,6 +4,7 @@
   (:export #:make-array-agent
            #:agent-elt
            #:agent-push
+           #:agent-push-and-getidx
            #:agent-pop)
   )
 
@@ -30,7 +31,7 @@
                    (elt array index))))
 
 (defun agent-push (item array-agent)
-  "Pushes a value to the array/vector. Internally uses `vector-push-extend`, so the array must have a `fill-pointer`.  
+  "Pushes a value to the array/vector. Internally uses `vector-push-extend`, so the array must have a `fill-pointer`.
 `item`: item to push.  
 `array-agent`: the array agent instance."
   (agt:agent-update array-agent
@@ -38,8 +39,18 @@
                       (vector-push-extend item array)
                       array)))
 
+(defun agent-push-and-getidx (item array-agent)
+  "Pushes `item` to the array. This function is similar to `agent-push` but returns the index of the pushed value similar as `vector-push` does. Therefore it is based on the somewhat slower `ask-s` actor pattern. So if you don't care about the new index of the pushed item use `agent-push` instead. But this one is able to immediately return error conditions that may occur on `vector-push`.  
+`item`: item to push.  
+`array-agent`: the array agent instance."
+  (agt:agent-get array-agent
+                 (lambda (array)
+                   (handler-case
+                       (vector-push-extend item array)
+                     (error (c) c)))))
+
 (defun agent-pop (array-agent)
-  "Pops from array and returns the popped value. Internally uses `vector-pop`, so the array must have a `fill-pointer`.  
+  "Pops from array and returns the popped value. Internally uses `vector-pop`, so the array must have a `fill-pointer`. In case of error from using `vector-pop` the condition is returned.  
 `array-agent`: the array agent instance."
   (agt:agent-get array-agent
                  (lambda (array)

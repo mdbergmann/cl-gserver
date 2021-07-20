@@ -49,6 +49,17 @@
     (is (= 1 (agent-elt 0 cut)))
     (is (= 2 (agent-elt 1 cut)))))
 
+(test agent-push-and-getidx
+  "Tests pushing with returning the new index."
+  (with-fixture agt ((make-array 0 :adjustable t :fill-pointer t))
+    (is (= 0 (agent-push-and-getidx 1 cut)))
+    (is (= 1 (agent-push-and-getidx 2 cut)))))
+
+(test agent-push-and-getidx--err
+  "Tests pushing with returning an error. Missing fill-pointer here."
+  (with-fixture agt ((make-array 0 :adjustable t))
+    (is (typep (agent-push-and-getidx 1 cut) 'error))))
+
 (test agent-pop
   "Tests poping value."
   (with-fixture agt ((make-array 0 :adjustable t :fill-pointer t))

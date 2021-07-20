@@ -35,14 +35,24 @@
     (let ((cut (make-array-agent asys :initial-array #())))
       (is-true cut))))
 
-(test elt
+(test agent-elt
   "Tests retrieve element."
   (with-fixture agt (#(10 20))
     (is (= 10 (agent-elt 0 cut)))
-    (is (= 20 (agent-elt 1 cut)))
-    ))
+    (is (= 20 (agent-elt 1 cut)))))
 
-(test push-value
+(test agent-push
   "Tests pushing new value."
   (with-fixture agt ((make-array 0 :adjustable t :fill-pointer t))
-    (is-true (agent-push 1 cut))))
+    (is-true (agent-push 1 cut))
+    (is-true (agent-push 2 cut))
+    (is (= 1 (agent-elt 0 cut)))
+    (is (= 2 (agent-elt 1 cut)))))
+
+(test agent-pop
+  "Tests poping value."
+  (with-fixture agt ((make-array 0 :adjustable t :fill-pointer t))
+    (is-true (agent-push 1 cut))
+    (is-true (agent-push 2 cut))
+    (is (= 2 (agent-pop cut)))
+    (is (= 1 (agent-pop cut)))))

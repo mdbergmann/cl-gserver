@@ -3,7 +3,8 @@
   (:nicknames :agtarray)
   (:export #:make-array-agent
            #:agent-elt
-           #:agent-push)
+           #:agent-push
+           #:agent-pop)
   )
 
 (in-package :cl-gserver.agent.array)
@@ -21,12 +22,25 @@
                   context dispatcher-id))
 
 (defun agent-elt (index array-agent)
+  "Retrieves the value of the specified index of the array.  
+`index`: the index to retrieve.  
+`array-agent`: the array agent instance."
   (agt:agent-get array-agent
                  (lambda (array)
                    (elt array index))))
 
 (defun agent-push (item array-agent)
+  "Pushes a value to the array/vector. Internally uses `vector-push-extend`, so the array must have a `fill-pointer`.  
+`item`: item to push.  
+`array-agent`: the array agent instance."
   (agt:agent-update array-agent
                     (lambda (array)
                       (vector-push-extend item array)
                       array)))
+
+(defun agent-pop (array-agent)
+  "Pops from array and returns the popped value. Internally uses `vector-pop`, so the array must have a `fill-pointer`.  
+`array-agent`: the array agent instance."
+  (agt:agent-get array-agent
+                 (lambda (array)
+                   (vector-pop array))))

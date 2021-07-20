@@ -41,6 +41,17 @@
     (is (= 10 (agent-elt 0 cut)))
     (is (= 20 (agent-elt 1 cut)))))
 
+(test agent-setf
+  "Tests setf'ing a value to array."
+  (with-fixture agt (#(10 20))
+    (is (= 11 (setf (agent-elt 0 cut) 11)))))
+
+(test agent-setf--err-no-index
+  "Tests setf'ing a value to array whos index doesn't exist.
+While the test succeeds an error is visible in error log."
+  (with-fixture agt (#())
+    (is (= 11 (setf (agent-elt 0 cut) 11)))))
+
 (test agent-push
   "Tests pushing new value."
   (with-fixture agt ((make-array 0 :adjustable t :fill-pointer t))
@@ -67,3 +78,11 @@
     (is-true (agent-push 2 cut))
     (is (= 2 (agent-pop cut)))
     (is (= 1 (agent-pop cut)))))
+
+(test agent-delete
+  "Tests deleting an item."
+  (with-fixture agt ((make-array 0 :adjustable t :fill-pointer t))
+    (is-true (agent-push "foo" cut))
+    (is (string= "foo" (agent-elt 0 cut)))
+    (is-true (agent-delete "foo" cut :test #'string=))
+    (is (typep (agent-elt 0 cut) 'error))))

@@ -5,8 +5,7 @@
            #:agent-gethash
            #:agent-remhash
            #:agent-clrhash
-           #:agent-dohash)
-  )
+           #:agent-dohash))
 
 (in-package :cl-gserver.agent.hash)
 

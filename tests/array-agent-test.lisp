@@ -79,6 +79,11 @@ While the test succeeds an error is visible in error log."
     (is (= 2 (agent-pop cut)))
     (is (= 1 (agent-pop cut)))))
 
+(test agent-pop--err
+  "Tests poping empty array."
+  (with-fixture agt ((make-array 0 :adjustable t :fill-pointer t))
+    (is (typep (agent-pop cut) 'error))))
+
 (test agent-delete
   "Tests deleting an item."
   (with-fixture agt ((make-array 0 :adjustable t :fill-pointer t))

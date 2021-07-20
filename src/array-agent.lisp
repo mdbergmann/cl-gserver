@@ -78,10 +78,12 @@ In case of error `agent-elt` returns the error condition that `elt` raises."
 `array-agent`: the array agent instance."
   (agt:agent-get array-agent
                  (lambda (array)
-                   (vector-pop array))))
+                   (handler-case
+                       (vector-pop array)
+                     (error (c) c)))))
 
 (defun agent-delete (item array-agent &rest delete-args)
-  "Deletes item from array. Internally uses `delete`.
+  "Deletes item from array. Internally uses `delete`. Returns `T`.
 
 `item`: the item to delete.  
 `array-agent`: the array agent instance.  

@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.agent.array
-  (:use :cl)
+  (:use :cl :cl-gserver.agent.usecase-commons)
   (:nicknames :agtarray)
   (:export #:make-array-agent
            #:agent-elt
@@ -9,10 +9,6 @@
            #:agent-delete))
 
 (in-package :cl-gserver.agent.array)
-
-(defstruct model
-  (object nil)
-  (err-fun nil))
 
 (defun make-array-agent (context &key
                                    initial-array
@@ -48,21 +44,6 @@ The `setf` functionality will call `err-fun` on error if it has been configured.
                    (handler-case
                        (elt (model-object model) index)
                      (error (c) c)))))
-
-(defmacro with-update-handler (&body body)
-  `(lambda (model)
-     (handler-case
-         ,@body
-       (error (c)
-         (when (model-err-fun model)
-           (funcall (model-err-fun model) c))))
-     model))
-
-(defmacro with-get-handler (&body body)
-  `(lambda (model)
-    (handler-case
-        ,@body
-      (error (c) c))))
 
 (defun agent-set (index array-agent value)
   "Internal for `setf`."

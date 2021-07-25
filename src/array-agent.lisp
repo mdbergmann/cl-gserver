@@ -11,17 +11,24 @@
 
 (in-package :cl-gserver.agent.array)
 
+(defstruct model
+  (arr nil :type array)
+  (err-fun nil))
 
 (defun make-array-agent (context &key
                                    initial-array
+                                   (error-fun nil)
                                    (dispatcher-id :shared))
   "Creates an agent that wraps a CL array/vector.
 
 `context`: something implementing `ac:actor-context` protocol like `asys:actor-system`. Specifying `nil` here creates an agent outside of an actor system. The user has to take care of that himself.  
 `initial-array`: specify an initial array/vector.  
+`error-fun`: a 2-arrity function taking a condition and the quoted operation that was executed.
+Use this to get notified of error when using the non-value returning functions of the agent.  
 `dispatcher-id`: a dispatcher. defaults to `:shared`."
   (check-type initial-array array)
-  (agt:make-agent (lambda () initial-array)
+  (agt:make-agent (lambda () (make-model :arr initial-array
+                                    :err-fun error-fun))
                   context dispatcher-id))
 
 (defun agent-elt (index array-agent)
@@ -34,19 +41,29 @@
 `index`: the index to retrieve.  
 `array-agent`: the array agent instance.
 
-In case of error `agent-elt` returns the error condition that `elt` raises."
+In case of error `agent-elt` returns the error condition that `elt` raises.
+
+The `setf` functionality will call `err-fun` on error if it has been configured."
   (agt:agent-get array-agent
-                 (lambda (array)
+                 (lambda (model)
                    (handler-case
-                       (elt array index)
+                       (elt (model-arr model) index)
                      (error (c) c)))))
+
+(defmacro with-error-fun (&body body)
+  `(lambda (model)
+     (handler-case
+         ,@body
+       (error (c)
+         (when (model-err-fun model)
+           (funcall (model-err-fun model) c))))
+     model))
 
 (defun agent-set (index array-agent value)
   "Internal for `setf`."
   (agt:agent-update array-agent
-                    (lambda (array)
-                      (setf (elt array index) value)
-                      array))
+                    (with-error-fun
+                      (setf (elt (model-arr model) index) value)))
   value)
 
 (defsetf agent-elt agent-set)
@@ -55,11 +72,12 @@ In case of error `agent-elt` returns the error condition that `elt` raises."
   "Pushes a value to the array/vector. Internally uses `vector-push-extend`, so the array must have a `fill-pointer`.
 
 `item`: item to push.  
-`array-agent`: the array agent instance."
+`array-agent`: the array agent instance.
+
+On error it will call `err-fun` with the raised condition, if `err-fun` has been configured."
   (agt:agent-update array-agent
-                    (lambda (array)
-                      (vector-push-extend item array)
-                      array)))
+                    (with-error-fun
+                      (vector-push-extend item (model-arr model)))))
 
 (defun agent-push-and-getidx (item array-agent)
   "Pushes `item` to the array. This function is similar to `agent-push` but returns the index of the pushed value similar as `vector-push` does. Therefore it is based on the somewhat slower `ask-s` actor pattern. So if you don't care about the new index of the pushed item use `agent-push` instead. But this one is able to immediately return error conditions that may occur on `vector-push`.
@@ -67,9 +85,9 @@ In case of error `agent-elt` returns the error condition that `elt` raises."
 `item`: item to push.  
 `array-agent`: the array agent instance."
   (agt:agent-get array-agent
-                 (lambda (array)
+                 (lambda (model)
                    (handler-case
-                       (vector-push-extend item array)
+                       (vector-push-extend item (model-arr model))
                      (error (c) c)))))
 
 (defun agent-pop (array-agent)
@@ -77,9 +95,9 @@ In case of error `agent-elt` returns the error condition that `elt` raises."
 
 `array-agent`: the array agent instance."
   (agt:agent-get array-agent
-                 (lambda (array)
+                 (lambda (model)
                    (handler-case
-                       (vector-pop array)
+                       (vector-pop (model-arr model))
                      (error (c) c)))))
 
 (defun agent-delete (item array-agent &rest delete-args)
@@ -89,5 +107,6 @@ In case of error `agent-elt` returns the error condition that `elt` raises."
 `array-agent`: the array agent instance.  
 `delete-args`: any arguments passed on to `delete`."
   (agt:agent-update array-agent
-                    (lambda (array)
-                      (apply #'delete item array delete-args))))
+                    (with-error-fun
+                      (let ((del-result (apply #'delete item (model-arr model) delete-args)))
+                        del-result))))

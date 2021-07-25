@@ -11,7 +11,7 @@
 (in-package :cl-gserver.agent.array)
 
 (defstruct model
-  (arr nil :type array)
+  (object nil)
   (err-fun nil))
 
 (defun make-array-agent (context &key
@@ -26,7 +26,7 @@
 Use this to get notified of error when using the non-value returning functions of the agent.  
 `dispatcher-id`: a dispatcher. defaults to `:shared`."
   (check-type initial-array array)
-  (agt:make-agent (lambda () (make-model :arr initial-array
+  (agt:make-agent (lambda () (make-model :object initial-array
                                     :err-fun error-fun))
                   context dispatcher-id))
 
@@ -46,10 +46,10 @@ The `setf` functionality will call `err-fun` on error if it has been configured.
   (agt:agent-get array-agent
                  (lambda (model)
                    (handler-case
-                       (elt (model-arr model) index)
+                       (elt (model-object model) index)
                      (error (c) c)))))
 
-(defmacro with-error-fun (&body body)
+(defmacro with-update-handler (&body body)
   `(lambda (model)
      (handler-case
          ,@body
@@ -58,7 +58,7 @@ The `setf` functionality will call `err-fun` on error if it has been configured.
            (funcall (model-err-fun model) c))))
      model))
 
-(defmacro with-handler (&body body)
+(defmacro with-get-handler (&body body)
   `(lambda (model)
     (handler-case
         ,@body
@@ -67,8 +67,8 @@ The `setf` functionality will call `err-fun` on error if it has been configured.
 (defun agent-set (index array-agent value)
   "Internal for `setf`."
   (agt:agent-update array-agent
-                    (with-error-fun
-                      (setf (elt (model-arr model) index) value)))
+                    (with-update-handler
+                      (setf (elt (model-object model) index) value)))
   value)
 
 (defsetf agent-elt agent-set)
@@ -81,8 +81,8 @@ The `setf` functionality will call `err-fun` on error if it has been configured.
 
 On error it will call `err-fun` with the raised condition, if `err-fun` has been configured."
   (agt:agent-update array-agent
-                    (with-error-fun
-                      (vector-push-extend item (model-arr model)))))
+                    (with-update-handler
+                      (vector-push-extend item (model-object model)))))
 
 (defun agent-push-and-getidx (item array-agent)
   "Pushes `item` to the array. This function is similar to `agent-push` but returns the index of the pushed value similar as `vector-push` does. Therefore it is based on the somewhat slower `ask-s` actor pattern. So if you don't care about the new index of the pushed item use `agent-push` instead. But this one is able to immediately return error conditions that may occur on `vector-push`.
@@ -90,16 +90,16 @@ On error it will call `err-fun` with the raised condition, if `err-fun` has been
 `item`: item to push.  
 `array-agent`: the array agent instance."
   (agt:agent-get array-agent
-                 (with-handler
-                   (vector-push-extend item (model-arr model)))))
+                 (with-get-handler
+                   (vector-push-extend item (model-object model)))))
 
 (defun agent-pop (array-agent)
   "Pops from array and returns the popped value. Internally uses `vector-pop`, so the array must have a `fill-pointer`. In case of error from using `vector-pop` the condition is returned.
 
 `array-agent`: the array agent instance."
   (agt:agent-get array-agent
-                 (with-handler
-                       (vector-pop (model-arr model)))))
+                 (with-get-handler
+                       (vector-pop (model-object model)))))
 
 (defun agent-delete (item array-agent &rest delete-args)
   "Deletes item from array. Internally uses `delete`. Returns `T`.
@@ -108,6 +108,6 @@ On error it will call `err-fun` with the raised condition, if `err-fun` has been
 `array-agent`: the array agent instance.  
 `delete-args`: any arguments passed on to `delete`."
   (agt:agent-update array-agent
-                    (with-error-fun
-                      (let ((del-result (apply #'delete item (model-arr model) delete-args)))
+                    (with-update-handler
+                      (let ((del-result (apply #'delete item (model-object model) delete-args)))
                         del-result))))

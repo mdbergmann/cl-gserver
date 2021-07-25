@@ -6,8 +6,7 @@
            #:agent-push
            #:agent-push-and-getidx
            #:agent-pop
-           #:agent-delete)
-  )
+           #:agent-delete))
 
 (in-package :cl-gserver.agent.array)
 
@@ -23,7 +22,7 @@
 
 `context`: something implementing `ac:actor-context` protocol like `asys:actor-system`. Specifying `nil` here creates an agent outside of an actor system. The user has to take care of that himself.  
 `initial-array`: specify an initial array/vector.  
-`error-fun`: a 2-arrity function taking a condition and the quoted operation that was executed.
+`error-fun`: a 1-arrity function taking a condition that was raised.
 Use this to get notified of error when using the non-value returning functions of the agent.  
 `dispatcher-id`: a dispatcher. defaults to `:shared`."
   (check-type initial-array array)
@@ -59,6 +58,12 @@ The `setf` functionality will call `err-fun` on error if it has been configured.
            (funcall (model-err-fun model) c))))
      model))
 
+(defmacro with-handler (&body body)
+  `(lambda (model)
+    (handler-case
+        ,@body
+      (error (c) c))))
+
 (defun agent-set (index array-agent value)
   "Internal for `setf`."
   (agt:agent-update array-agent
@@ -85,20 +90,16 @@ On error it will call `err-fun` with the raised condition, if `err-fun` has been
 `item`: item to push.  
 `array-agent`: the array agent instance."
   (agt:agent-get array-agent
-                 (lambda (model)
-                   (handler-case
-                       (vector-push-extend item (model-arr model))
-                     (error (c) c)))))
+                 (with-handler
+                   (vector-push-extend item (model-arr model)))))
 
 (defun agent-pop (array-agent)
   "Pops from array and returns the popped value. Internally uses `vector-pop`, so the array must have a `fill-pointer`. In case of error from using `vector-pop` the condition is returned.
 
 `array-agent`: the array agent instance."
   (agt:agent-get array-agent
-                 (lambda (model)
-                   (handler-case
-                       (vector-pop (model-arr model))
-                     (error (c) c)))))
+                 (with-handler
+                       (vector-pop (model-arr model)))))
 
 (defun agent-delete (item array-agent &rest delete-args)
   "Deletes item from array. Internally uses `delete`. Returns `T`.

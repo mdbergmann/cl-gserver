@@ -12,23 +12,28 @@
 
 (defun make-hash-agent (context &key
                                   (initial-hash-table nil)
+                                  (error-fun nil)
                                   (dispatcher-id :shared)
                                   (hash-table-args nil))
   "Creates an agent that wraps a CL hash-table.  
 `context`: something implementing `ac:actor-context` protocol like `asys:actor-system`. Specifying `nil` here creates an agent outside of an actor system. The user has to take care of that himself.  
 `initial-hash-table`: specify an initial hash-table. If not specified an empty one will be created.  
+`error-fun`: a 1-arrity function taking a condition that was raised.
+Use this to get notified of error when using the non-value returning functions of the agent.  
 `dispatcher-id`: a dispatcher. defaults to `:shared`.  
 `hash-table-args`: pass through to `make-hash-table`."
   (agt:make-agent (lambda ()
-                    (if initial-hash-table initial-hash-table
-                        (apply #'make-hash-table hash-table-args)))
+                    (make-model :object
+                                (if initial-hash-table initial-hash-table
+                                    (apply #'make-hash-table hash-table-args))
+                                :err-fun error-fun))
                   context dispatcher-id))
 
 (defun agent-puthash (key hash-agent value)
   "Internal"
-  (agt:agent-update hash-agent (lambda (hash-table)
-                                 (setf (gethash key hash-table) value)
-                                 hash-table))
+  (agt:agent-update hash-agent
+                    (with-update-handler
+                      (setf (gethash key (model-object model)) value)))
   value)
 
 (defun agent-gethash (key hash-agent)
@@ -36,32 +41,38 @@
 See `cl:gethash` for more info.
 
 This supports setting a hash using `setf` in the same way as with `cl:hash-table`."
-  (agt:agent-get hash-agent (lambda (hash-table)
-                              (gethash key hash-table))))
+  (agt:agent-get hash-agent
+                 (with-get-handler
+                   (gethash key (model-object model)))))
 
 (defsetf agent-gethash agent-puthash)
 
 (defun agent-remhash (key hash-agent)
   "Delete a hash-table entry. See `cl:remhash`.
 Returns `t` if entry existed, `nil` otherwise."
-  (let ((hash-table (agt:agent-get-quick hash-agent #'identity)))
+  (let ((hash-table (agt:agent-get-quick hash-agent
+                                         (lambda (model) (model-object model)))))
     (if (gethash key hash-table)
-        (agt:agent-update hash-agent (lambda (hash-table)
-                                       (remhash key hash-table)
-                                       hash-table))
+        (agt:agent-update hash-agent
+                          (with-update-handler
+                            (remhash key hash-table)))
         nil)))
 
 (defun agent-clrhash (hash-agent)
   "Clears the hash-table. See `cl:clrhash`."
-  (agt:agent-update hash-agent (lambda (hash-table) (clrhash hash-table))))
+  (agt:agent-update hash-agent
+                    (with-update-handler
+                      (clrhash (model-object model)))))
 
 (defun agent-dohash (fun hash-agent)
   "'Do' arbitrary atomic operation on the hash-table.
 
-`fun` is a 1-arity function taking the hash-table. This function can operate on the hash-table without interference from other threads. The result of this function is not relevant. It is ignored.  
+`fun` is a 1-arity function taking the hash-table. This function can operate on the hash-table without interference from other threads. The result of this function must be a hash-table.  
 `hash-agent` is the `hash-agent` instance.
 
-The result of `dohash` is `T`."
-  (agt:agent-update hash-agent (lambda (hash-table)
-                                 (funcall fun hash-table)
-                                 hash-table)))
+The result of `agent-dohash` is `T`."
+  (agt:agent-update hash-agent
+                    (lambda (model)
+                      (setf (model-object model)
+                            (funcall fun (model-object model)))
+                      model)))

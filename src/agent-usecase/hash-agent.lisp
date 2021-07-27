@@ -55,7 +55,7 @@ Returns `t` if entry existed, `nil` otherwise."
     (if (gethash key hash-table)
         (agt:agent-update hash-agent
                           (with-update-handler
-                            (remhash key hash-table)))
+                            (remhash key (model-object model))))
         nil)))
 
 (defun agent-clrhash (hash-agent)

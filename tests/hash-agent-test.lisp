@@ -26,14 +26,14 @@
 
 (test create
   "Tests creating a hash agent."
-  (let ((cut (make-hash-agent nil)))
+  (let ((cut (make-hash-agent nil :initial-hash-table (make-hash-table))))
     (is-true cut)
     (agt:agent-stop cut)))
 
 (test create--in-system
   "Tests creating a hash agent with providing an actor-context."
   (with-fixture asys-fixture ()
-    (let ((cut (make-hash-agent asys)))
+    (let ((cut (make-hash-agent asys :initial-hash-table (make-hash-table))))
       (is-true cut))))
 
 (test create--with-initial-hash-table

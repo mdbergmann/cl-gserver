@@ -14,13 +14,14 @@
                                   initial-hash-table
                                   (error-fun nil)
                                   (dispatcher-id :shared))
-  "Creates an agent that wraps a CL hash-table.  
+  "Creates an agent that wraps a CL hash-table.
+
 `context`: something implementing `ac:actor-context` protocol like `asys:actor-system`. Specifying `nil` here creates an agent outside of an actor system. The user has to take care of that himself.  
 `initial-hash-table`: specify an initial hash-table.  
 `error-fun`: a 1-arrity function taking a condition that was raised.
-Use this to get notified of error when using the non-value returning functions of the agent.  
-`dispatcher-id`: a dispatcher. defaults to `:shared`.  
-`hash-table-args`: pass through to `make-hash-table`."
+Use this to get notified of error when using the update functions of the agent.  
+`dispatcher-id`: a dispatcher. defaults to `:shared`."
+  (check-type initial-hash-table hash-table)
   (agt:make-agent (lambda ()
                     (make-model :object initial-hash-table
                                 :err-fun error-fun))
@@ -37,7 +38,9 @@ Use this to get notified of error when using the non-value returning functions o
   "Retrieves value from hash-table, or `nil` if it doesn't exist.
 See `cl:gethash` for more info.
 
-This supports setting a hash using `setf` in the same way as with `cl:hash-table`."
+This supports setting a hash using `setf` in the same way as with `cl:hash-table`.
+
+Returns any raised condition or the value from `gethash`."
   (agt:agent-get hash-agent
                  (with-get-handler
                    (gethash key (model-object model)))))

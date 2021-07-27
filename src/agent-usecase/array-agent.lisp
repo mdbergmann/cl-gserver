@@ -20,7 +20,7 @@
 `context`: something implementing `ac:actor-context` protocol like `asys:actor-system`. Specifying `nil` here creates an agent outside of an actor system. The user has to take care of that himself.  
 `initial-array`: specify an initial array/vector.  
 `error-fun`: a 1-arrity function taking a condition that was raised.
-Use this to get notified of error when using the non-value returning functions of the agent.  
+Use this to get notified of error when using the update functions of the agent.  
 `dispatcher-id`: a dispatcher. defaults to `:shared`."
   (check-type initial-array array)
   (agt:make-agent (lambda () (make-model :object initial-array

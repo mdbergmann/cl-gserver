@@ -1,5 +1,5 @@
 (defpackage :cl-gserver.agent.hash
-  (:use :cl)
+  (:use :cl :cl-gserver.agent.usecase-commons)
   (:nicknames :agthash)
   (:export #:make-hash-agent
            #:agent-gethash

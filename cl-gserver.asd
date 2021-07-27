@@ -33,13 +33,16 @@
                  (:file "fcomputation")
                  (:file "actor")
                  (:file "agent")
-                 (:file "hash-agent")
                  (:file "eventstream")
                  (:file "tasks")
                  (:file "router")
                  (:file "dispatcher")
                  (:file "actor-context")
-                 (:file "actor-system"))))
+                 (:file "actor-system")
+                 (:module "agent-usecase"
+                  :components
+                  ((:file "agent-usecase-commons")
+                   (:file "hash-agent"))))))
   :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 
 (defsystem "cl-gserver/tests"

@@ -11,21 +11,18 @@
 
 
 (defun make-hash-agent (context &key
-                                  (initial-hash-table nil)
+                                  initial-hash-table
                                   (error-fun nil)
-                                  (dispatcher-id :shared)
-                                  (hash-table-args nil))
+                                  (dispatcher-id :shared))
   "Creates an agent that wraps a CL hash-table.  
 `context`: something implementing `ac:actor-context` protocol like `asys:actor-system`. Specifying `nil` here creates an agent outside of an actor system. The user has to take care of that himself.  
-`initial-hash-table`: specify an initial hash-table. If not specified an empty one will be created.  
+`initial-hash-table`: specify an initial hash-table.  
 `error-fun`: a 1-arrity function taking a condition that was raised.
 Use this to get notified of error when using the non-value returning functions of the agent.  
 `dispatcher-id`: a dispatcher. defaults to `:shared`.  
 `hash-table-args`: pass through to `make-hash-table`."
   (agt:make-agent (lambda ()
-                    (make-model :object
-                                (if initial-hash-table initial-hash-table
-                                    (apply #'make-hash-table hash-table-args))
+                    (make-model :object initial-hash-table
                                 :err-fun error-fun))
                   context dispatcher-id))
 

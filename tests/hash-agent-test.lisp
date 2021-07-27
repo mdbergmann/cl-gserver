@@ -18,7 +18,8 @@
       (ac:shutdown asys))))
 
 (def-fixture agt (err-fun)
-  (let ((cut (make-hash-agent nil :error-fun err-fun)))
+  (let ((cut (make-hash-agent nil :initial-hash-table (make-hash-table)
+                                  :error-fun err-fun)))
     (unwind-protect
          (&body)
       (agt:agent-stop cut))))
@@ -34,13 +35,6 @@
   (with-fixture asys-fixture ()
     (let ((cut (make-hash-agent asys)))
       (is-true cut))))
-
-(test create--with-hash-table-keys
-  "Tests creating an hash agent."
-  (let ((cut (make-hash-agent nil :hash-table-args `(:test ,#'eq))))
-    (is (str:containsp ":TEST EQ" (format nil "~a" cut)))
-    (is-true cut)
-    (agt:agent-stop cut)))
 
 (test create--with-initial-hash-table
   "Tests creating hash agent with initial provided hash-table."

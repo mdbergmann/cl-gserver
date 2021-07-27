@@ -117,3 +117,14 @@ So this test just does nothing really."
     (with-fixture agt (#() err-fun)
       (is-true (agent-delete "foo" cut :test #'string=))
       (is (utils:assert-cond (lambda () (null err-cond)) 0.5)))))
+
+(test agent-doarray
+  "Tests running arbitrary array operations on the agent."
+  (with-fixture agt (#() nil)
+    (is-true (agent-doarray (lambda (array)
+                              (declare (ignore array))
+                              (remove-if #'evenp #(1 2 3 4 5)))
+                            cut))
+    (is (= 1 (agent-elt 0 cut)))
+    (is (= 3 (agent-elt 1 cut)))
+    (is (= 5 (agent-elt 2 cut)))))

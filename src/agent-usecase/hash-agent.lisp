@@ -56,7 +56,7 @@ Returns `t` if entry existed, `nil` otherwise."
   (agt:agent-update hash-agent (lambda (hash-table) (clrhash hash-table))))
 
 (defun agent-dohash (fun hash-agent)
-  "'Do' arbitrary operations on the hash-table that is executed atomically.
+  "'Do' arbitrary atomic operation on the hash-table.
 
 `fun` is a 1-arity function taking the hash-table. This function can operate on the hash-table without interference from other threads. The result of this function is not relevant. It is ignored.  
 `hash-agent` is the `hash-agent` instance.

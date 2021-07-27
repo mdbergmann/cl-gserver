@@ -42,7 +42,8 @@
                  (:module "agent-usecase"
                   :components
                   ((:file "agent-usecase-commons")
-                   (:file "hash-agent"))))))
+                   (:file "hash-agent")
+                   (:file "array-agent"))))))
   :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 
 (defsystem "cl-gserver/tests"
@@ -60,6 +61,7 @@
                  (:file "actor-mp-test")
                  (:file "agent-test")
                  (:file "hash-agent-test")
+                 (:file "array-agent-test")
                  (:file "actor-test")
                  (:file "router-test")
                  (:file "tasks-test")

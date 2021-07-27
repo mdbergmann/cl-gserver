@@ -2,6 +2,9 @@
   (:use :cl)
   (:nicknames :agent.usecase-commons)
   (:export #:model
+           #:make-model
+           #:model-object
+           #:model-err-fun
            #:with-update-handler
            #:with-get-handler))
 

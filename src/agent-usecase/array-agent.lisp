@@ -6,7 +6,8 @@
            #:agent-push
            #:agent-push-and-getidx
            #:agent-pop
-           #:agent-delete))
+           #:agent-delete
+           #:agent-doarray))
 
 (in-package :cl-gserver.agent.array)
 
@@ -92,3 +93,16 @@ On error it will call `err-fun` with the raised condition, if `err-fun` has been
                     (with-update-handler
                       (let ((del-result (apply #'delete item (model-object model) delete-args)))
                         del-result))))
+
+(defun agent-doarray (fun array-agent)
+  "'Do' arbitrary atomic operation on the array.
+
+`fun` is a 1-arity function taking the array. This function can operate on the array without interference from other threads. The result of this function must be an array which will be the new agent state.  
+`array-agent` is the `array-agent` instance.
+
+The result of `agent-doarray` is `T`."
+  (agt:agent-update array-agent
+                    (lambda (model)
+                      (setf (model-object model)
+                            (funcall fun (model-object model)))
+                      model)))

@@ -113,6 +113,16 @@
   (agthash:agent-clrhash function)
   (agthash:agent-dohash function))
 
+(in-package :agtarray)
+(pax:defsection @array-agent (:title "Array/Vector agent")
+  (agtarray:make-array-agent function)
+  (agtarray:agent-elt function)
+  (agtarray:agent-push function)
+  (agtarray:agent-push-and-getidx function)
+  (agtarray:agent-pop function)
+  (agtarray:agent-delete function)
+  (agtarray:agent-doarray function))
+
 (in-package :agt)
 (pax:defsection @agent (:title "Agent")
   (agt:agent class)
@@ -122,7 +132,8 @@
   (agt:agent-update-and-get function)
   (agt:agent-stop function)
 
-  (agthash:@hash-agent pax:section))
+  (agthash:@hash-agent pax:section)
+  (agtarray:@array-agent pax:section))
 
 (in-package :disp)
 (pax:defsection @shared-dispatcher (:title "Shared dispatcher")

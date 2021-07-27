@@ -97,8 +97,8 @@ On error it will call `err-fun` with the raised condition, if `err-fun` has been
 (defun agent-doarray (fun array-agent)
   "'Do' arbitrary atomic operation on the array.
 
-`fun` is a 1-arity function taking the array. This function can operate on the array without interference from other threads. The result of this function must be an array which will be the new agent state.  
-`array-agent` is the `array-agent` instance.
+`fun`: is a 1-arity function taking the array. This function can operate on the array without interference from other threads. The result of this function must be an array which will be the new agent state.  
+`array-agent`: is the `array-agent` instance.
 
 The result of `agent-doarray` is `T`."
   (agt:agent-update array-agent

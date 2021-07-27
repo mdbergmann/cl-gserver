@@ -67,8 +67,8 @@ Returns `t` if entry existed, `nil` otherwise."
 (defun agent-dohash (fun hash-agent)
   "'Do' arbitrary atomic operation on the hash-table.
 
-`fun` is a 1-arity function taking the hash-table. This function can operate on the hash-table without interference from other threads. The result of this function must be a hash-table.  
-`hash-agent` is the `hash-agent` instance.
+`fun`: is a 1-arity function taking the hash-table. This function can operate on the hash-table without interference from other threads. The result of this function must be a hash-table.  
+`hash-agent`: is the `hash-agent` instance.
 
 The result of `agent-dohash` is `T`."
   (agt:agent-update hash-agent

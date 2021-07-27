@@ -57,6 +57,7 @@
 
 <ul>
 <li><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29" title="Hash-table agent">2.4.1 Hash-table agent</a></li>
+<li><a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3A-40ARRAY-AGENT-20MGL-PAX-3ASECTION-29" title="Array/Vector agent">2.4.2 Array/Vector agent</a></li>
 </ul></li>
 <li><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">2.5 Dispatcher</a>
 
@@ -85,6 +86,8 @@
 <p>cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.</p>
 
 <h3>Version history</h3>
+
+<p><strong>Version 1.8.0:</strong> hash-agent interface changes. Added array-agent.</p>
 
 <p><strong>Version 1.7.6:</strong> Added cl:hash-table based agent with similar API interface.</p>
 
@@ -1176,7 +1179,7 @@ The <code>new-behavior</code> function must accept 3 parameters: the actor insta
 <p><a id='x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">X</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">ACTOR</span></span></p>
 
 <p>This is the <code>actor-context</code> every actor is composed of.
 When the actor is created from scratch it has no <code>actor-context</code>.
@@ -1213,9 +1216,9 @@ I.e.: when it stopped. The message being sent in this case is: <code>(cons :stop
 <p><a id='x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">X</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">ACTOR</span></span></p>
 
-<p>Returns a list of watchers of <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a>.</p></li>
+<p>Returns a list of watchers of <code>actor</code>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CELL-3A-40ACTOR-CELL-20MGL-PAX-3ASECTION-29'></a></p>
@@ -1627,7 +1630,7 @@ This function makes the update and returns the new value.</p></li>
 
 <p><a id='x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8592;</a> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29" title="Hash-table agent">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8592;</a> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8593;</a> <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3A-40ARRAY-AGENT-20MGL-PAX-3ASECTION-29" title="Array/Vector agent">&#8594;</a> <a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29" title="Hash-table agent">&#8634;</a></span></span></p>
 
 <h4><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29">2.4.1 Hash-table agent</a></h4>
 
@@ -1636,12 +1639,15 @@ This function makes the update and returns the new value.</p></li>
 <p><a id='x-28CL-GSERVER-2EAGENT-2EHASH-3AMAKE-HASH-AGENT-20FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AMAKE-HASH-AGENT-20FUNCTION-29" >MAKE-HASH-AGENT</a></span></span> <span class="locative-args">CONTEXT &amp;KEY DISPATCHER-ID HASH-TABLE-ARGS</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AMAKE-HASH-AGENT-20FUNCTION-29" >MAKE-HASH-AGENT</a></span></span> <span class="locative-args">CONTEXT &amp;KEY INITIAL-HASH-TABLE ERROR-FUN DISPATCHER-ID</span></span></p>
 
-<p>Creates an agent that wraps a CL hash-table.<br/>
-<code>context</code>: something implementing <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> protocol like <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>. Specifying <code>nil</code> here creates an agent outside of an actor system. The user has to take care of that himself.<br/>
-<code>dispatcher-id</code>: a dispatcher. defaults to <code>:shared</code>.<br/>
-<code>hash-table-args</code>: pass through to <code>make-hash-table</code>.</p></li>
+<p>Creates an agent that wraps a CL hash-table.</p>
+
+<p><code>context</code>: something implementing <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> protocol like <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>. Specifying <code>nil</code> here creates an agent outside of an actor system. The user has to take care of that himself.<br/>
+<code>initial-hash-table</code>: specify an initial hash-table.<br/>
+<code>error-fun</code>: a 1-arrity function taking a condition that was raised.
+Use this to get notified of error when using the update functions of the agent.<br/>
+<code>dispatcher-id</code>: a dispatcher. defaults to <code>:shared</code>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-GETHASH-20FUNCTION-29'></a></p>
@@ -1652,7 +1658,9 @@ This function makes the update and returns the new value.</p></li>
 <p>Retrieves value from hash-table, or <code>nil</code> if it doesn't exist.
 See <code>cl:gethash</code> for more info.</p>
 
-<p>This supports setting a hash using <code>setf</code> in the same way as with <code>cl:hash-table</code>.</p></li>
+<p>This supports setting a hash using <code>setf</code> in the same way as with <code>cl:hash-table</code>.</p>
+
+<p>Returns any raised condition or the value from <code>gethash</code>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-REMHASH-20FUNCTION-29'></a></p>
@@ -1677,19 +1685,115 @@ Returns <code>t</code> if entry existed, <code>nil</code> otherwise.</p></li>
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-DOHASH-20FUNCTION-29" >AGENT-DOHASH</a></span></span> <span class="locative-args">FUN HASH-AGENT</span></span></p>
 
-<p>'Do' arbitrary operations on the hash-table.</p>
+<p>'Do' arbitrary atomic operation on the hash-table.</p>
 
-<p><code>fun</code> is a 1-arity function taking the hash-table.
-The result of this function is not relevant. It is ignored.</p>
+<p><code>fun</code>: is a 1-arity function taking the hash-table. This function can operate on the hash-table without interference from other threads. The result of this function must be a hash-table.<br/>
+<code>hash-agent</code>: is the <code>hash-agent</code> instance.</p>
 
-<p><code>hash-agent</code> is the <code>hash-agent</code> instance.</p>
+<p>The result of <a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-DOHASH-20FUNCTION-29" title="(CL-GSERVER.AGENT.HASH:AGENT-DOHASH FUNCTION)"><code>agent-dohash</code></a> is <code>T</code>.</p></li>
+</ul>
 
-<p>The result of <code>dohash</code> is <code>T</code>.</p></li>
+<p><a id='x-28CL-GSERVER-2EAGENT-2EARRAY-3A-40ARRAY-AGENT-20MGL-PAX-3ASECTION-29'></a></p>
+
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29" title="Hash-table agent">&#8592;</a> <a href="#x-28CL-GSERVER-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29" title="Agent">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3A-40ARRAY-AGENT-20MGL-PAX-3ASECTION-29" title="Array/Vector agent">&#8634;</a></span></span></p>
+
+<h4><a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3A-40ARRAY-AGENT-20MGL-PAX-3ASECTION-29">2.4.2 Array/Vector agent</a></h4>
+
+<h6>[in package CL-GSERVER.AGENT.ARRAY with nicknames AGTARRAY]</h6>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EARRAY-3AMAKE-ARRAY-AGENT-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AMAKE-ARRAY-AGENT-20FUNCTION-29" >MAKE-ARRAY-AGENT</a></span></span> <span class="locative-args">CONTEXT &amp;KEY INITIAL-ARRAY ERROR-FUN DISPATCHER-ID</span></span></p>
+
+<p>Creates an agent that wraps a CL array/vector.</p>
+
+<p><code>context</code>: something implementing <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> protocol like <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>. Specifying <code>nil</code> here creates an agent outside of an actor system. The user has to take care of that himself.<br/>
+<code>initial-array</code>: specify an initial array/vector.<br/>
+<code>error-fun</code>: a 1-arrity function taking a condition that was raised.
+Use this to get notified of error when using the update functions of the agent.<br/>
+<code>dispatcher-id</code>: a dispatcher. defaults to <code>:shared</code>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-ELT-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-ELT-20FUNCTION-29" >AGENT-ELT</a></span></span> <span class="locative-args">INDEX ARRAY-AGENT</span></span></p>
+
+<p>Retrieves the value of the specified index of the array. <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-ELT-20FUNCTION-29" title="(CL-GSERVER.AGENT.ARRAY:AGENT-ELT FUNCTION)"><code>agent-elt</code></a> allows <code>setf</code>ing like:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">setf <span class="paren2">(<span class="code">agent-elt 0 cut</span>)</span> 11</span>)</span></span></code></pre>
+
+<p><code>index</code>: the index to retrieve.<br/>
+<code>array-agent</code>: the array agent instance.</p>
+
+<p>In case of error <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-ELT-20FUNCTION-29" title="(CL-GSERVER.AGENT.ARRAY:AGENT-ELT FUNCTION)"><code>agent-elt</code></a> returns the error condition that <code>elt</code> raises.</p>
+
+<p>The <code>setf</code> functionality will call <code>err-fun</code> on error if it has been configured.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-PUSH-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-PUSH-20FUNCTION-29" >AGENT-PUSH</a></span></span> <span class="locative-args">ITEM ARRAY-AGENT</span></span></p>
+
+<p>Pushes a value to the array/vector. Internally uses <code>vector-push-extend</code>, so the array must have a <code>fill-pointer</code>.</p>
+
+<p><code>item</code>: item to push.<br/>
+<code>array-agent</code>: the array agent instance.</p>
+
+<p>On error it will call <code>err-fun</code> with the raised condition, if <code>err-fun</code> has been configured.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-PUSH-AND-GETIDX-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-PUSH-AND-GETIDX-20FUNCTION-29" >AGENT-PUSH-AND-GETIDX</a></span></span> <span class="locative-args">ITEM ARRAY-AGENT</span></span></p>
+
+<p>Pushes <code>item</code> to the array. This function is similar to <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-PUSH-20FUNCTION-29" title="(CL-GSERVER.AGENT.ARRAY:AGENT-PUSH FUNCTION)"><code>agent-push</code></a> but returns the index of the pushed value similar as <code>vector-push</code> does. Therefore it is based on the somewhat slower <code>ask-s</code> actor pattern. So if you don't care about the new index of the pushed item use <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-PUSH-20FUNCTION-29" title="(CL-GSERVER.AGENT.ARRAY:AGENT-PUSH FUNCTION)"><code>agent-push</code></a> instead. But this one is able to immediately return error conditions that may occur on <code>vector-push</code>.</p>
+
+<p><code>item</code>: item to push.<br/>
+<code>array-agent</code>: the array agent instance.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-POP-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-POP-20FUNCTION-29" >AGENT-POP</a></span></span> <span class="locative-args">ARRAY-AGENT</span></span></p>
+
+<p>Pops from array and returns the popped value. Internally uses <code>vector-pop</code>, so the array must have a <code>fill-pointer</code>. In case of error from using <code>vector-pop</code> the condition is returned.</p>
+
+<p><code>array-agent</code>: the array agent instance.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-DELETE-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-DELETE-20FUNCTION-29" >AGENT-DELETE</a></span></span> <span class="locative-args">ITEM ARRAY-AGENT &amp;REST DELETE-ARGS</span></span></p>
+
+<p>Deletes item from array. Internally uses <code>delete</code>. Returns <code>T</code>.</p>
+
+<p><code>item</code>: the item to delete.<br/>
+<code>array-agent</code>: the array agent instance.<br/>
+<code>delete-args</code>: any arguments passed on to <code>delete</code>.</p></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-DOARRAY-20FUNCTION-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-DOARRAY-20FUNCTION-29" >AGENT-DOARRAY</a></span></span> <span class="locative-args">FUN ARRAY-AGENT</span></span></p>
+
+<p>'Do' arbitrary atomic operation on the array.</p>
+
+<p><code>fun</code>: is a 1-arity function taking the array. This function can operate on the array without interference from other threads. The result of this function must be an array which will be the new agent state.<br/>
+<code>array-agent</code>: is the <code>array-agent</code> instance.</p>
+
+<p>The result of <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-DOARRAY-20FUNCTION-29" title="(CL-GSERVER.AGENT.ARRAY:AGENT-DOARRAY FUNCTION)"><code>agent-doarray</code></a> is <code>T</code>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29'></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3A-40HASH-AGENT-20MGL-PAX-3ASECTION-29" title="Hash-table agent">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3A-40ARRAY-AGENT-20MGL-PAX-3ASECTION-29" title="Array/Vector agent">&#8592;</a> <a href="#x-28CL-GSERVER-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29" title="API documentation">&#8593;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29" title="Shared dispatcher">&#8594;</a> <a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29" title="Dispatcher">&#8634;</a></span></span></p>
 
 <h3><a href="#x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29">2.5 Dispatcher</a></h3>
 

@@ -597,7 +597,7 @@ The subscription here is done using the `:init` hook of the actor. The `ev:subsc
 received event: my-message
 ```
 
-See the [API documentation](https://mdbergmann.github.io/cl-gserver/cl-gserver.html#toc-2-7-eventstream) for more details.
+See the [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#toc-2-7-eventstream) for more details.
 
 ### Tasks
 
@@ -645,7 +645,7 @@ The concurrency here depends on the number of dispatcher workers.
 
 Be also aware that the `:shared` dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for `tasks` when you plan to operate longer running operations.
 
-See the [API documentation](https://mdbergmann.github.io/cl-gserver/cl-gserver.html#toc-2-8-tasks) for more details.
+See the [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#toc-2-8-tasks) for more details.
 
 ### Immutability
 

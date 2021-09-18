@@ -10,7 +10,10 @@
                     future:make-future
                     ev:subscribe
                     ev:unsubscribe
-                    ev:publish))
+                    ev:publish
+                    ac:find-actors
+                    ac:find-actor-by-name
+                    ac:all-actors))
 
 (defclass actor (actor-cell)
   ((receive :initarg :receive
@@ -273,3 +276,20 @@ In any case stop the actor-cell."
 (defmethod publish ((actor actor) message)
   "Convenience. Allows to publish to `ev:eventstream` by just providing the actor."
   (ev:publish (ac:system (context actor)) message))
+
+
+;; --------------------------------------
+;; actor-context protocol impl (partial)
+;; --------------------------------------
+
+(defmethod find-actors ((actor actor) test-fun)
+  "`ac:actor-context` protocol implementation."
+  (ac:find-actors (context actor) test-fun))
+
+(defmethod find-actor-by-name ((actor actor) name)
+  "`ac:actor-context` protocol implementation."
+  (ac:find-actor-by-name (context actor) name))
+
+(defmethod all-actors ((actor actor))
+  "`ac:actor-context` protocol implementation."
+  (ac:all-actors (context actor)))

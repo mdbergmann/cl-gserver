@@ -98,7 +98,15 @@
   (act:watch generic-function)
   (act:unwatch generic-function)
   (act:watchers generic-function)
-
+  ;; event stream protocol
+  (ev:subscribe (pax:method () (act:actor act:actor)))
+  (ev:unsubscribe (pax:method () (act:actor act:actor)))
+  (ev:publish (pax:method () (act:actor t)))
+  ;; actor-context protocol
+  (ac:find-actors (pax:method () (act:actor t)))
+  (ac:find-actor-by-name (pax:method () (act:actor t)))
+  (ac:all-actors (pax:method () (act:actor)))
+  
   (act-cell:@actor-cell pax:section)
   (mesgb:@message-box-base pax:section)
   (mesgb:@message-box/bt pax:section)

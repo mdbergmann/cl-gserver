@@ -97,18 +97,6 @@
     (is (= 500 (call cut '(:sub 500))))
     (is (eq :unhandled (call cut "Foo")))))
 
-(test handle-delayed-cancellable-message
-  "Tests that this special kind of message can be handled"
-  (with-fixture cell-fixture ((lambda (cell message current-state)
-                                (declare (ignore cell))
-                                (cons message current-state))
-                              nil nil nil 0)
-    (is (string= "inner"
-                 (call cut (mesgb:make-delayed-cancellable-message "inner" nil))))
-    (let ((msg (mesgb:make-delayed-cancellable-message "inner" 0.2)))
-      (sleep 0.5)
-      (is (string= :cancelled (call cut msg))))))
-
 (test cast-sends-result-back-to-sender
   "Test that a cast, that specifies a 'sender' sends the result back to the 'sender'."
   (with-fixture cell-fixture (nil

@@ -85,8 +85,6 @@ Use this instead of `submit`."
                 :initform nil
                 :accessor cancelled-p
                 :type boolean)
-   (cancel-timer :initform nil
-                 :accessor cancel-timer)
    (cancel-delay :initarg :cancel-delay
                  :initform nil
                  :reader cancel-delay
@@ -95,20 +93,13 @@ Use this instead of `submit`."
 If it has not been processed yet.
 When `nil` no timer is created and this is treated as an ordinary wrapped message.")))
 
-(defmethod initialize-instance :after ((self delayed-cancellable-message) &key)
-  (when (cancel-delay self)
-    (setf (cancel-timer self)
-          (make-timer (cancel-delay self)
-                      (lambda () (setf (cancelled-p self) t))))))
-
 (defmethod print-object ((obj delayed-cancellable-message) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (inner-msg cancelled-p cancel-delay cancel-timer) obj
-      (format stream "~a, cancelled-p: ~a, cancel-delay: ~a, cancel-timer: ~a"
+    (with-slots (inner-msg cancelled-p cancel-delay) obj
+      (format stream "~a, cancelled-p: ~a, cancel-delay: ~a"
               inner-msg
               cancelled-p
-              cancel-delay
-              cancel-timer))))
+              cancel-delay))))
 
 (defun make-delayed-cancellable-message (inner-msg delay &optional cancelled-p)
   (make-instance 'delayed-cancellable-message
@@ -167,7 +158,7 @@ this kind of queue because each message-box (and with that each actor) requires 
 
 (defun process-queue-item (msgbox item)
   "The `time-out' handling in here is to make sure that handling of the
-message is 'interrupted'.
+message is 'interrupted' when the message was 'cancelled'.
 This should happen in conjunction with the outer time-out in `submit/reply'."
   (with-slots (message handler-fun withreply-p withreply-lock withreply-cvar cancelled-p time-out) item
     (when cancelled-p
@@ -197,7 +188,9 @@ The `handler-fun` argument here will be `funcall`ed when the message was 'popped
         (submit/no-reply self queue message handler-fun))))
 
 (defun submit/no-reply (msgbox queue message handler-fun)
-  "This is quite efficient, no locking necessary."
+  "This is quite efficient, no locking necessary.
+If the message was submitted with timeout then the timeout plays no role here, the message is handled anyhow.
+The submitting code has to await the side-effect and possibly handle a timeout."
   (let ((push-item (make-message-item/bt
                     :message message
                     :withreply-p nil
@@ -236,14 +229,17 @@ The queue thread has processed the message."
       (queue:pushq queue push-item)
 
       (if time-out
-          (unless
-              (utils:assert-cond (lambda () (not (eq 'no-result my-handler-result))) time-out 0.05)
-            (log:warn "~a: time-out elapsed but result not available yet!" (name msgbox))
-            (setf (slot-value push-item 'cancelled-p) t)
-            (error 'utils:ask-timeout :wait-time time-out))
+          (waitAndProbeForResult my-handler-result time-out msgbox push-item)
           (bt:condition-wait withreply-cvar withreply-lock)))
     (log:trace "~a: withreply: result should be available: ~a" (name msgbox) my-handler-result)
     my-handler-result))
+
+(defmacro waitAndProbeForResult (my-handler-result time-out msgbox push-item)
+  `(unless
+      (utils:assert-cond (lambda () (not (eq 'no-result ,my-handler-result))) ,time-out 0.1)
+    (log:warn "~a: time-out elapsed but result not available yet!" (name ,msgbox))
+    (setf (slot-value ,push-item 'cancelled-p) t)
+    (error 'utils:ask-timeout :wait-time ,time-out)))
 
 (defmethod stop ((self message-box/bt))
   (call-next-method)

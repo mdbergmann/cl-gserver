@@ -51,6 +51,7 @@
              (print (cause c) stream))))
 
 (defmacro with-waitfor ((wait-time) &body body)
+  "Spawns thread with timeout. Blocks until computation is done, or timeout elapsed."
   (with-gensyms (c)
     `(handler-case
          (bt:with-timeout (,wait-time)

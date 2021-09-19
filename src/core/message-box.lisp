@@ -229,12 +229,12 @@ The queue thread has processed the message."
       (queue:pushq queue push-item)
 
       (if time-out
-          (waitAndProbeForResult my-handler-result time-out msgbox push-item)
+          (wait-and-probe-for-result my-handler-result time-out msgbox push-item)
           (bt:condition-wait withreply-cvar withreply-lock)))
     (log:trace "~a: withreply: result should be available: ~a" (name msgbox) my-handler-result)
     my-handler-result))
 
-(defmacro waitAndProbeForResult (my-handler-result time-out msgbox push-item)
+(defmacro wait-and-probe-for-result (my-handler-result time-out msgbox push-item)
   `(unless
       (utils:assert-cond (lambda () (not (eq 'no-result ,my-handler-result))) ,time-out 0.1)
     (log:warn "~a: time-out elapsed but result not available yet!" (name ,msgbox))

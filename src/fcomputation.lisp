@@ -59,7 +59,8 @@ Create a future with:
 If the `future` is already complete then the `completed-fun` function is called immediately.
 `completed-fun` takes a parameter which represents the fulfilled promise (the value with which the `future` was fulfilled)."
   (with-slots (promise) future
-    (attach promise completed-fun)))
+    (attach promise completed-fun))
+  nil)
 
 (defun get-result (future)
   "Get the computation result. If not yet available `:not-ready` is returned."

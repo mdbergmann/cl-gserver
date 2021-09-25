@@ -231,33 +231,29 @@
                                0
                                t)
     (with-mocks ()
-      (answer (disp:dispatch _ _)
+      (answer (disp:dispatch-async _ _)
         (progn
           (format t "Dispatch called...~%")
           (sleep 2)))
-      (let* ((actor (ac:actor-of (ac:system (act:context cut))
-                                 (lambda ()
-                                   (make-actor
-                                    (lambda (self msg state)
-                                      (declare (ignore self msg state)))))))
+      (let* ((actor (actor-of ((act:context cut))
+                      :receive (lambda (self msg state)
+                                 (declare (ignore self msg state)))))
              (result (ask-s actor "foo" :time-out 0.5)))
         ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
         (is (eq :handler-error (car result)))
         (is (typep (cdr result) 'utils:ask-timeout))
-        (is (= 1 (length (invocations 'disp:dispatch))))))))
+        (is (= 1 (length (invocations 'disp:dispatch-async))))))))
 
 (test ask--shared--timeout
   "Tests for ask timeout."
   (with-fixture actor-fixture ((lambda ())
                                0
                                t)
-    (let* ((actor (ac:actor-of (ac:system (act:context cut))
-                               (lambda ()
-                                 (make-actor
-                                  (lambda (self msg state)
-                                    (declare (ignore self msg))
-                                    (sleep 2)
-                                    (cons :my-result state))))))
+    (let* ((actor (actor-of ((act:context cut))
+                    :receive (lambda (self msg state)
+                               (declare (ignore self msg))
+                               (sleep 2)
+                               (cons :my-result state))))
            (future (ask actor "foo" :time-out 0.5)))
       (utils:wait-cond (lambda () (complete-p future)))
       (is (eq :handler-error (car (get-result future))))

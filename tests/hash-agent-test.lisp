@@ -42,7 +42,8 @@
         (cut))
     (setf (gethash :foo initial-hash-table) "bar")
     (setf cut (make-hash-agent nil :initial-hash-table initial-hash-table))
-    (is (string= "bar" (agent-gethash :foo cut)))))
+    (is (string= "bar" (agent-gethash :foo cut)))
+    (agt:agent-stop cut)))
 
 (test agent-puthash
   "Tests putting a value to hash agent -- private"

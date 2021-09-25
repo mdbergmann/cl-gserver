@@ -92,9 +92,9 @@
                                  (declare (ignore self msg state)))
                                0
                                t)
-    (let ((child-actor (ac:actor-of (act:context cut)
-                                    (lambda () (make-actor (lambda (self msg state)
-                                                        (declare (ignore self msg state))))))))
+    (let ((child-actor (actor-of ((act:context cut))
+                         :receive (lambda (self msg state)
+                                    (declare (ignore self msg state))))))
       (is (not (null child-actor)))
       (is (not (eq (act:context child-actor) (act:context cut))))
       (is (eq (ac:system (act:context child-actor)) (ac:system (act:context cut))))
@@ -106,9 +106,8 @@
                                  (declare (ignore self msg state)))
                                0
                                t)
-    (let ((watcher (ac:actor-of
-                    (act:context cut)
-                    (lambda () (make-actor (lambda ()))))))
+    (let ((watcher (actor-of ((act:context cut))
+                     :receive (lambda ()))))
       (watch cut watcher)
       (is (= 1 (length (watchers cut))))
       (unwatch cut watcher)
@@ -122,15 +121,14 @@
                                t)
     ;; we need an actor as watcher that is not the 'child' of the to be watched actor.
     (let* ((stopped-msg-received nil)
-           (watcher (ac:actor-of
-                     (ac:system (act:context cut))
-                     (lambda () (make-actor (lambda (self msg state)
-                                         (declare (ignore self))
-                                         (case (car msg)
-                                           (:stopped (progn
-                                                       (assert (eq cut (cdr msg)))
-                                                       (setf stopped-msg-received t)
-                                                       (cons msg state))))))))))
+           (watcher (actor-of ((ac:system (act:context cut)))
+                      :receive (lambda (self msg state)
+                                 (declare (ignore self))
+                                 (case (car msg)
+                                   (:stopped (progn
+                                               (assert (eq cut (cdr msg)))
+                                               (setf stopped-msg-received t)
+                                               (cons msg state))))))))
       (watch cut watcher)
       (is (= 1 (length (watchers cut))))
       (ac:stop (act:context cut) cut)
@@ -142,10 +140,9 @@
                                  (declare (ignore self msg state)))
                                0
                                t)
-    (let ((child-actor (ac:actor-of
-                        (act:context cut)
-                        (lambda () (make-actor (lambda (self msg state)
-                                            (declare (ignore self msg state))))))))
+    (let ((child-actor (actor-of ((act:context cut))
+                         :receive (lambda (self msg state)
+                                    (declare (ignore self msg state))))))
       (act-cell:stop cut)
       (is (assert-cond (lambda ()
                          (notany
@@ -158,10 +155,9 @@
                                  (declare (ignore self msg state)))
                                0
                                t)
-    (let ((child-actor (ac:actor-of
-                        (act:context cut)
-                        (lambda () (make-actor (lambda (self msg state)
-                                            (declare (ignore self msg state))))))))
+    (let ((child-actor (actor-of ((act:context cut))
+                         :receive (lambda (self msg state)
+                                    (declare (ignore self msg state))))))
       (with-mocks ()
         (answer (ac:notify context actor event)
           (progn
@@ -212,13 +208,11 @@
   (with-fixture actor-fixture ((lambda ())
                                0
                                t)
-    (let* ((actor (ac:actor-of (ac:system (act:context cut))
-                               (lambda ()
-                                 (make-actor
-                                  (lambda (self msg state)
-                                    (declare (ignore self msg))
-                                    (sleep 2)
-                                    (cons :my-result state))))))
+    (let* ((actor (actor-of ((act:context cut))
+                    :receive (lambda (self msg state)
+                               (declare (ignore self msg))
+                               (sleep 2)
+                               (cons :my-result state))))
            (result (ask-s actor "foo" :time-out 0.5)))
       ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
       (is (eq :handler-error (car result)))

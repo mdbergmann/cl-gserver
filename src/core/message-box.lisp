@@ -234,12 +234,12 @@ The queue thread has processed the message."
     (log:trace "~a: withreply: result should be available: ~a" (name msgbox) my-handler-result)
     my-handler-result))
 
-(defmacro wait-and-probe-for-result (my-handler-result time-out msgbox push-item)
-  `(unless
-      (utils:assert-cond (lambda () (not (eq 'no-result ,my-handler-result))) ,time-out 0.1)
-    (log:warn "~a: time-out elapsed but result not available yet!" (name ,msgbox))
-    (setf (slot-value ,push-item 'cancelled-p) t)
-    (error 'utils:ask-timeout :wait-time ,time-out)))
+(defun wait-and-probe-for-result (my-handler-result time-out msgbox push-item)
+  (unless
+      (utils:assert-cond (lambda () (not (eq 'no-result my-handler-result))) time-out 0.1)
+    (log:warn "~a: time-out elapsed but result not available yet!" (name msgbox))
+    (setf (slot-value push-item 'cancelled-p) t)
+    (error 'utils:ask-timeout :wait-time time-out)))
 
 (defmethod stop ((self message-box/bt))
   (call-next-method)

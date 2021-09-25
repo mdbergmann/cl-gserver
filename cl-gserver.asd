@@ -98,6 +98,7 @@
 #|
 
 TODOs:
+- add processed-p to messages so that message processing can be checked on the queued item
 
 |#
 

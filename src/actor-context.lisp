@@ -1,4 +1,3 @@
-
 (in-package :cl-gserver.actor-context)
 
 (defclass actor-context ()
@@ -7,9 +6,7 @@
        :reader id
        :documentation
        "The id of this actor-context. Usually a string.")
-   (actors :initform
-           #-abcl '()
-           #+abcl (atomic:make-atomic-reference :reference '())
+   (actors :initform (atomic:make-atomic-reference :value '())
            :documentation
            "A list of actors.
 This is internal API. Use `all-actors` or `find-actors` instead.")
@@ -25,49 +22,28 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
 ;; --------------------------------------
 
 (defmethod actors ((self actor-context))
-  #-abcl
-  (slot-value self 'actors)
-  #+abcl
-  (atomic:atomic-reference-value (slot-value self 'actors))
-  )
+  (atomic:atomic-reference-value (slot-value self 'actors)))
 
 (defun %get-shared-dispatcher (system identifier)
   (getf (asys:dispatchers system) identifier))
 
-(defvar *actors-cas* nil)
-#-abcl
-(defun %swap-actors (context old-actors new-actors)
-  "Swaps actors container atomically."
-  (let* ((*actors-cas* (actors context))
-         (swap-result (atomics:cas *actors-cas*
-                                   old-actors
-                                   new-actors)))
-    (when swap-result
-      (setf (slot-value context 'actors) *actors-cas*))
-    swap-result))
-
-#+abcl
-(defun %swap-actors (context old-actors new-actors)
-  "Swaps actors container atomically."
-  (let ((actors (slot-value context 'actors)))
-    (atomic:atomic-reference-cas actors
-                                 old-actors
-                                 new-actors)))
-
 (defun %add-actor (context actor)
-  (let ((actors (actors context)))
-    (if (%swap-actors context actors (cons actor actors))
+  (let ((atomic-actors (slot-value context 'actors))
+        (actors (actors context)))
+    (if (atomic:atomic-reference-cas atomic-actors actors (cons actor actors))
         actor
         (error "Unable to add actor!"))))
 
 (defun %remove-actor (context actor)
-  (let ((actors (actors context)))
-    (%swap-actors context
-                  actors
-                  (remove-if (lambda (a)
-                               (or (eq a actor)
-                                   (string= (act-cell:name a) (act-cell:name actor))))
-                             actors))))
+  (let ((atomic-actors (slot-value context 'actors))
+        (actors (actors context)))
+    (atomic:atomic-reference-cas atomic-actors
+                                 actors
+                                 (remove-if (lambda (a)
+                                              (or (eq a actor)
+                                                  (string= (act-cell:name a)
+                                                           (act-cell:name actor))))
+                                            actors))))
 
 (defun %message-box-for-dispatcher-id (context dispatcher-id queue-size)
   (case dispatcher-id

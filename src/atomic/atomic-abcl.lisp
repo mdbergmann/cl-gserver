@@ -99,9 +99,9 @@ MIT License
   (print-unreadable-object (ar stream :type t :identity t)
     (format stream "~S" (atomic-reference-value ar))))
 
-(defun make-atomic-reference (&key (reference nil))
+(defun make-atomic-reference (&key (value nil))
   (%make-atomic-reference
-   (jnew "java.util.concurrent.atomic.AtomicReference" reference)))
+   (jnew "java.util.concurrent.atomic.AtomicReference" value)))
 
 (defconstant +atomic-reference-cas+
   (jmethod "java.util.concurrent.atomic.AtomicReference" "compareAndSet"

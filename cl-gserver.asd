@@ -1,5 +1,5 @@
 (defsystem "cl-gserver"
-  :version "1.8.1"
+  :version "1.8.2"
   :author "Manfred Bergmann"
   :license "AGPL"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -16,7 +16,11 @@
   :components ((:module "src"
                 :serial t
                 :components
-                ((:file "config")
+                ((:module "atomic"
+                  :components
+                  (#-abcl (:file "atomic")
+                   #+abcl (:file "atomic-abcl")))
+                 (:file "config")
                  (:file "utils")
                  (:file "actor-api")
                  (:file "dispatcher-api")
@@ -24,9 +28,7 @@
                   :components
                   ((:file "queue")
                    (:file "message-box")
-                   (:file "actor-cell")
-                   #+abcl
-                   (:file "atomic-abcl")))
+                   (:file "actor-cell")))
                  (:file "eventstream-api")
                  (:file "actor-system-api")
                  (:file "actor-context-api")
@@ -55,6 +57,7 @@
   :components ((:module "tests"
                 :components
                 ((:file "all-test")
+                 (:file "atomic-test")
                  (:file "config-test")
                  (:file "utils-test")
                  (:file "actor-cell-test")

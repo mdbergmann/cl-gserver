@@ -4,6 +4,8 @@ cl-gserver is a 'message passing' library/framework with actors similar to Erlan
 
 ### Version history
 
+**Version 1.8.2:** atomic add/remove of actors in actor-context.
+
 **Version 1.8.0:** hash-agent interface changes. Added array-agent.
 
 **Version 1.7.6:** Added cl:hash-table based agent with similar API interface.

@@ -1,6 +1,7 @@
 #|
 Code taken from bordeaux-threads-2
 @author: sionescu@cddr.org
+Atomic Reference added by: manfred@nnamgreb.de
 MIT License
 |#
 
@@ -10,13 +11,16 @@ MIT License
   (:import-from :java #:jnew #:jcall #:jclass #:jmethod)
   (:export #:make-atomic-integer
            #:atomic-integer-cas
-           #:atomic-integer-value))
+           #:atomic-integer-value
+           #:make-atomic-reference
+           #:atomic-reference-cas
+           #:atomic-reference-value))
 
 (in-package :cl-gserver.atomic)
 
 (defstruct (atomic-integer
             (:constructor %make-atomic-integer (cell)))
-  "Wrapper for java.util.concurrent.AtomicLong."
+  "Wrapper for java.util.concurrent.atomic.AtomicLong."
   cell)
 
 (defmethod print-object ((aint atomic-integer) stream)
@@ -82,3 +86,35 @@ MIT License
   (jcall +atomic-long-set+ (atomic-integer-cell atomic-integer)
          newval)
   newval)
+
+
+;; atomic reference
+
+(defstruct (atomic-reference
+            (:constructor %make-atomic-reference (cell)))
+  "Wrapper for java.util.concurrent.atomic.AtomicReference."
+  cell)
+
+(defmethod print-object ((ar atomic-reference) stream)
+  (print-unreadable-object (ar stream :type t :identity t)
+    (format stream "~S" (atomic-reference-value ar))))
+
+(defun make-atomic-reference (&key (reference nil))
+  (%make-atomic-reference
+   (jnew "java.util.concurrent.atomic.AtomicReference" reference)))
+
+(defconstant +atomic-reference-cas+
+  (jmethod "java.util.concurrent.atomic.AtomicReference" "compareAndSet"
+           (jclass "java.lang.Object") (jclass "java.lang.Object")))
+
+(defun atomic-reference-cas (atomic-reference expected new)
+  (declare (optimize (safety 0) (speed 3)))
+  (jcall +atomic-reference-cas+ (atomic-reference-cell atomic-reference)
+         expected new))
+
+(defconstant +atomic-reference-get+
+  (jmethod "java.util.concurrent.atomic.AtomicReference" "get"))
+
+(defun atomic-reference-value (atomic-reference)
+  (declare (optimize (safety 0) (speed 3)))
+  (jcall +atomic-reference-get+ (atomic-reference-cell atomic-reference)))

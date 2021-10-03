@@ -22,7 +22,7 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
 ;; --------------------------------------
 
 (defmethod actors ((self actor-context))
-  (atomic:atomic-reference-value (slot-value self 'actors)))
+  (atomic:atomic-get (slot-value self 'actors)))
 
 (defun %get-shared-dispatcher (system identifier)
   (getf (asys:dispatchers system) identifier))
@@ -30,20 +30,20 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
 (defun %add-actor (context actor)
   (let ((atomic-actors (slot-value context 'actors))
         (actors (actors context)))
-    (if (atomic:atomic-reference-cas atomic-actors actors (cons actor actors))
+    (if (atomic:atomic-cas atomic-actors actors (cons actor actors))
         actor
         (error "Unable to add actor!"))))
 
 (defun %remove-actor (context actor)
   (let ((atomic-actors (slot-value context 'actors))
         (actors (actors context)))
-    (atomic:atomic-reference-cas atomic-actors
-                                 actors
-                                 (remove-if (lambda (a)
-                                              (or (eq a actor)
-                                                  (string= (act-cell:name a)
-                                                           (act-cell:name actor))))
-                                            actors))))
+    (atomic:atomic-cas atomic-actors
+                       actors
+                       (remove-if (lambda (a)
+                                    (or (eq a actor)
+                                        (string= (act-cell:name a)
+                                                 (act-cell:name actor))))
+                                  actors))))
 
 (defun %message-box-for-dispatcher-id (context dispatcher-id queue-size)
   (case dispatcher-id

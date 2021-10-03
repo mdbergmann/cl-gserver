@@ -15,9 +15,9 @@
   "Tests making an atomic reference"
   (is (make-atomic-reference :value '())))
 
-(test swap
+(test swap-reference
   "Swap a reference."
   (let* ((ref (make-atomic-reference :value '()))
-         (old (atomic-reference-value ref)))
-    (is-true (atomic-reference-cas ref old '(1 2)))
-    (is (equal '(1 2) (atomic-reference-value ref)))))
+         (old (atomic-get ref)))
+    (is-true (atomic-cas ref old '(1 2)))
+    (is (equal '(1 2) (atomic-get ref)))))

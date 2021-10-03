@@ -13,8 +13,8 @@ MIT License
            #:atomic-integer-cas
            #:atomic-integer-value
            #:make-atomic-reference
-           #:atomic-reference-cas
-           #:atomic-reference-value))
+           #:atomic-cas
+           #:atomic-get))
 
 (in-package :cl-gserver.atomic)
 
@@ -97,7 +97,7 @@ MIT License
 
 (defmethod print-object ((ar atomic-reference) stream)
   (print-unreadable-object (ar stream :type t :identity t)
-    (format stream "~S" (atomic-reference-value ar))))
+    (format stream "~S" (atomic-get ar))))
 
 (defun make-atomic-reference (&key (value nil))
   (%make-atomic-reference
@@ -107,7 +107,7 @@ MIT License
   (jmethod "java.util.concurrent.atomic.AtomicReference" "compareAndSet"
            (jclass "java.lang.Object") (jclass "java.lang.Object")))
 
-(defun atomic-reference-cas (atomic-reference expected new)
+(defun atomic-cas (atomic-reference expected new)
   (declare (optimize (safety 0) (speed 3)))
   (jcall +atomic-reference-cas+ (atomic-reference-cell atomic-reference)
          expected new))
@@ -115,6 +115,6 @@ MIT License
 (defconstant +atomic-reference-get+
   (jmethod "java.util.concurrent.atomic.AtomicReference" "get"))
 
-(defun atomic-reference-value (atomic-reference)
+(defun atomic-get (atomic-reference)
   (declare (optimize (safety 0) (speed 3)))
   (jcall +atomic-reference-get+ (atomic-reference-cell atomic-reference)))

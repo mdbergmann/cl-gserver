@@ -5,17 +5,6 @@ Atomic Reference added by: manfred@nnamgreb.de
 MIT License
 |#
 
-(defpackage :cl-gserver.atomic
-  (:use :cl)
-  (:nicknames :atomic)
-  (:import-from :java #:jnew #:jcall #:jclass #:jmethod)
-  (:export #:make-atomic-integer
-           #:atomic-integer-cas
-           #:atomic-integer-value
-           #:make-atomic-reference
-           #:atomic-cas
-           #:atomic-get))
-
 (in-package :cl-gserver.atomic)
 
 (defstruct (atomic-integer
@@ -33,59 +22,40 @@ MIT License
 (defun make-atomic-integer (&key (value 0))
   (check-type value %atomic-integer-value)
   (%make-atomic-integer
-   (jnew "java.util.concurrent.atomic.AtomicLong" value)))
+   (java:jnew "java.util.concurrent.atomic.AtomicLong" value)))
 
 (defconstant +atomic-long-cas+
-  (jmethod "java.util.concurrent.atomic.AtomicLong" "compareAndSet"
-           (jclass "long") (jclass "long")))
+  (java:jmethod "java.util.concurrent.atomic.AtomicLong" "compareAndSet"
+                (java:jclass "long") (java:jclass "long")))
 
-(defun atomic-integer-cas (atomic-integer old new)
-  (declare (type atomic-integer atomic-integer)
-           (type %atomic-integer-value old new)
+(defmethod atomic-cas ((int atomic-integer) old new)
+  (declare (type %atomic-integer-value old new)
            (optimize (safety 0) (speed 3)))
-  (jcall +atomic-long-cas+ (atomic-integer-cell atomic-integer)
-         old new))
+  (java:jcall +atomic-long-cas+ (atomic-integer-cell int)
+              old new))
 
 (defconstant +atomic-long-incf+
-  (jmethod "java.util.concurrent.atomic.AtomicLong" "getAndAdd"
-           (jclass "long")))
-
-(defun atomic-integer-decf (atomic-integer &optional (delta 1))
-  (declare (type atomic-integer atomic-integer)
-           (type %atomic-integer-value delta)
-           (optimize (safety 0) (speed 3)))
-  (let ((increment (- delta)))
-    (+ (jcall +atomic-long-incf+ (atomic-integer-cell atomic-integer)
-              increment)
-       increment)))
-
-(defun atomic-integer-incf (atomic-integer &optional (delta 1))
-  (declare (type atomic-integer atomic-integer)
-           (type %atomic-integer-value delta)
-           (optimize (safety 0) (speed 3)))
-  (+ (jcall +atomic-long-incf+ (atomic-integer-cell atomic-integer)
-            delta)
-     delta))
+  (java:jmethod "java.util.concurrent.atomic.AtomicLong" "getAndAdd"
+                (java:jclass "long")))
 
 (defconstant +atomic-long-get+
-  (jmethod "java.util.concurrent.atomic.AtomicLong" "get"))
+  (java:jmethod "java.util.concurrent.atomic.AtomicLong" "get"))
 
-(defun atomic-integer-value (atomic-integer)
-  (declare (type atomic-integer atomic-integer)
-           (optimize (safety 0) (speed 3)))
-  (jcall +atomic-long-get+ (atomic-integer-cell atomic-integer)))
+(defmethod atomic-get ((int atomic-integer))
+  (declare (optimize (safety 0) (speed 3)))
+  (java:jcall +atomic-long-get+ (atomic-integer-cell int)))
 
-(defconstant +atomic-long-set+
-  (jmethod "java.util.concurrent.atomic.AtomicLong" "set"
-           (jclass "long")))
+;; (defconstant +atomic-long-set+
+;;   (java:jmethod "java.util.concurrent.atomic.AtomicLong" "set"
+;;                 (java:jclass "long")))
 
-(defun (setf atomic-integer-value) (newval atomic-integer)
-  (declare (type atomic-integer atomic-integer)
-           (type %atomic-integer-value newval)
-           (optimize (safety 0) (speed 3)))
-  (jcall +atomic-long-set+ (atomic-integer-cell atomic-integer)
-         newval)
-  newval)
+;; (defun (setf atomic-integer-value) (newval atomic-integer)
+;;   (declare (type atomic-integer atomic-integer)
+;;            (type %atomic-integer-value newval)
+;;            (optimize (safety 0) (speed 3)))
+;;   (jcall +atomic-long-set+ (atomic-integer-cell atomic-integer)
+;;          newval)
+;;   newval)
 
 
 ;; atomic reference
@@ -95,26 +65,26 @@ MIT License
   "Wrapper for java.util.concurrent.atomic.AtomicReference."
   cell)
 
-(defmethod print-object ((ar atomic-reference) stream)
-  (print-unreadable-object (ar stream :type t :identity t)
-    (format stream "~S" (atomic-get ar))))
+(defmethod print-object ((ref atomic-reference) stream)
+  (print-unreadable-object (ref stream :type t :identity t)
+    (format stream "~S" (atomic-get ref))))
 
 (defun make-atomic-reference (&key (value nil))
   (%make-atomic-reference
-   (jnew "java.util.concurrent.atomic.AtomicReference" value)))
+   (java:jnew "java.util.concurrent.atomic.AtomicReference" value)))
 
 (defconstant +atomic-reference-cas+
-  (jmethod "java.util.concurrent.atomic.AtomicReference" "compareAndSet"
-           (jclass "java.lang.Object") (jclass "java.lang.Object")))
+  (java:jmethod "java.util.concurrent.atomic.AtomicReference" "compareAndSet"
+           (java:jclass "java.lang.Object") (java:jclass "java.lang.Object")))
 
-(defun atomic-cas (atomic-reference expected new)
+(defmethod atomic-cas ((ref atomic-reference) expected new)
   (declare (optimize (safety 0) (speed 3)))
-  (jcall +atomic-reference-cas+ (atomic-reference-cell atomic-reference)
-         expected new))
+  (java:jcall +atomic-reference-cas+ (atomic-reference-cell ref)
+              expected new))
 
 (defconstant +atomic-reference-get+
-  (jmethod "java.util.concurrent.atomic.AtomicReference" "get"))
+  (java:jmethod "java.util.concurrent.atomic.AtomicReference" "get"))
 
-(defun atomic-get (atomic-reference)
+(defmethod atomic-get ((ref atomic-reference))
   (declare (optimize (safety 0) (speed 3)))
-  (jcall +atomic-reference-get+ (atomic-reference-cell atomic-reference)))
+  (java:jcall +atomic-reference-get+ (atomic-reference-cell ref)))

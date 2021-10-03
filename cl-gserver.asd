@@ -18,7 +18,8 @@
                 :components
                 ((:module "atomic"
                   :components
-                  (#-abcl (:file "atomic")
+                  ((:file "atomic-api")
+                   #-abcl (:file "atomic")
                    #+abcl (:file "atomic-abcl")))
                  (:file "config")
                  (:file "utils")

@@ -59,4 +59,4 @@ jobs:
     - name: load code and run tests
       shell: bash
       run: |
-        ros -e '(handler-bind (#+asdf3.2(asdf:bad-SYSTEM-NAME (function MUFFLE-WARNING))) (handler-case (progn (asdf:test-system :cl-gserver/tests) (5am:run! 'cl-gserver.tests:test-suite)) (error (a) (format t "caught error ~s~%~a~%" a a) (uiop:quit 123))))'
+        ros -e '(handler-bind (#+asdf3.2(asdf:bad-SYSTEM-NAME (function MUFFLE-WARNING))) (handler-case (asdf:load-system :cl-gserver/tests) (error (a) (format t "caught error ~s~%~a~%" a a) (uiop:quit 123))))' -e '(5am:run! 'cl-gserver.tests:test-suite)'

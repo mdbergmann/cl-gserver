@@ -19,7 +19,7 @@ jobs:
     name: ${{ matrix.lisp }} on ${{ matrix.os }}
     strategy:
       matrix:
-        lisp: [sbcl-bin, ccl, ecl, allegro]
+        lisp: [sbcl-bin, ccl ] #, ecl, allegro]
         os: [ ubuntu-latest ] #, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     

@@ -5,10 +5,13 @@
            #:actor-system
            #:dispatchers
            #:eventstream
+           #:timeout-timer
            #:*default-config*))
 
 (in-package :cl-gserver.actor-system)
 
-(defvar *default-config*
+(defparameter *default-config*
   '(:dispatchers
-    (:shared (:workers 4 :strategy :random))))
+    (:shared (:workers 4 :strategy :random))
+    :timeout-timer
+    (:resolution 1000 :max-size 1000)))

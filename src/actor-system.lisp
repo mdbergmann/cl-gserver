@@ -81,13 +81,19 @@ See `config:config-from`."
       (setf config system-config)
       (setf eventstream (ev:make-eventstream internal-actor-context))
 
-      (let ((timeout-timer-config (config:retrieve-section system-config :timeout-timer)))
-        (setf timeout-timer (wt:make-wheel-timer timeout-timer-config)))
-      
-      (let ((dispatcher-config (config:retrieve-section system-config :dispatchers)))
-        (setf dispatchers (make-dispatchers-from-config dispatcher-config internal-actor-context))))
+      (setf timeout-timer (wt:make-wheel-timer
+                           (%get-timeout-timer-config config)))
+      (setf dispatchers (make-dispatchers-from-config
+                         (%get-dispatcher-config config)
+                         internal-actor-context)))
     (log:info system)
     system))
+
+(defun %get-timeout-timer-config (system-config)
+  (config:retrieve-section system-config :timeout-timer))
+
+(defun %get-dispatcher-config (system-config)
+  (config:retrieve-section system-config :dispatchers))
 
 (defun make-dispatchers-from-config (config internal-actor-context)
   "Creates a plist of dispatchers for the `:dispatchers` configuration section."

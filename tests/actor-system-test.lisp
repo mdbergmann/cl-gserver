@@ -40,8 +40,7 @@
            (is (typep (asys::user-actor-context system) 'ac:actor-context))
            (is (= 4 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
 
-           (is (not (null (asys::timeout-timer system))))
-           )
+           (is (not (null (asys:timeout-timer system)))))
       (ac:shutdown system))
       ))
 
@@ -61,10 +60,17 @@
 (test create-system--check-defaults
   "Checking defaults on the system"
   (let ((system (make-actor-system)))
-    (let ((dispatchers (dispatchers system)))
-      (is-true (typep (getf dispatchers :shared) 'shared-dispatcher))
-      (is (= 4 (length (workers (getf dispatchers :shared))))))
-    (ac:shutdown system)))
+    (unwind-protect
+         (progn
+           (let ((dispatchers (dispatchers system)))
+             (is-true (typep (getf dispatchers :shared) 'shared-dispatcher))
+             (is (= 4 (length (workers (getf dispatchers :shared))))))
+           (is (equal (asys::%get-dispatcher-config (asys::config system))
+                      '(:shared (:workers 4 :strategy :random))))
+           (is (equal (asys::%get-timeout-timer-config (asys::config system))
+                      '(:resolution 1000
+                        :max-size 1000))))
+      (ac:shutdown system))))
 
 (test shutdown-system
   "Shutting down should stop all actors whether pinned or shared.

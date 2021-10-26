@@ -11,6 +11,7 @@
                "str"
                "blackbird"
                "binding-arrows"
+               "timer-wheel"
                #-abcl "atomics"
                )
   :components ((:module "src"
@@ -22,6 +23,7 @@
                    #-abcl (:file "atomic")
                    #+abcl (:file "atomic-abcl")))
                  (:file "config")
+                 (:file "wheel-timer")
                  (:file "utils")
                  (:file "actor-api")
                  (:file "dispatcher-api")
@@ -60,6 +62,7 @@
                 ((:file "all-test")
                  (:file "atomic-test")
                  (:file "config-test")
+                 (:file "wheel-timer-test")
                  (:file "utils-test")
                  (:file "actor-cell-test")
                  (:file "actor-mp-test")
@@ -102,7 +105,7 @@
 #|
 
 TODOs:
-- add processed-p to messages so that message processing can be checked on the queued item
+- shutdown wheel-timer in system
 
 |#
 

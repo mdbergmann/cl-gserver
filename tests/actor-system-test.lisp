@@ -62,14 +62,14 @@
   (let ((system (make-actor-system)))
     (unwind-protect
          (progn
-           (let ((dispatchers (dispatchers system)))
-             (is-true (typep (getf dispatchers :shared) 'shared-dispatcher))
-             (is (= 4 (length (workers (getf dispatchers :shared))))))
            (is (equal (asys::%get-dispatcher-config (asys::config system))
                       '(:shared (:workers 4 :strategy :random))))
            (is (equal (asys::%get-timeout-timer-config (asys::config system))
                       '(:resolution 1000
-                        :max-size 1000))))
+                        :max-size 1000)))
+           (let ((dispatchers (dispatchers system)))
+             (is-true (typep (getf dispatchers :shared) 'shared-dispatcher))
+             (is (= 4 (length (workers (getf dispatchers :shared)))))))
       (ac:shutdown system))))
 
 (test shutdown-system

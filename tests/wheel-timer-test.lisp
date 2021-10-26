@@ -14,5 +14,17 @@
 (test make-wheel-timer
   "Tests making a wheel timer with config"
   (let ((cut (make-wheel-timer '(:resolution 100 :max-size 100))))
-    (is (not (null cut)))
-    (shutdown-wheel-timer cut)))
+    (unwind-protect
+         (progn
+           (is (not (null cut))))
+      (shutdown-wheel-timer cut))))
+
+(test schedule
+  "Tests executing a scheduled timer function."
+  (let ((cut (make-wheel-timer '(:resolution 100 :max-size 100)))
+        (callback))
+    (unwind-protect
+         (progn
+           (schedule cut 200 (lambda () (setf callback t)))
+           (is-true (utils:assert-cond (lambda () (eq t callback)) 0.25)))
+      (shutdown-wheel-timer cut))))

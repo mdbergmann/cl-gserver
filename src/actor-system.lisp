@@ -160,6 +160,7 @@ Users should use `find-actors`."
 
 (defmethod shutdown ((self actor-system))
   "See `ac:shutdown`"
+  (wt:shutdown-wheel-timer (timeout-timer self))
   (ac:shutdown (user-actor-context self))
   (ac:shutdown (internal-actor-context self)))
 

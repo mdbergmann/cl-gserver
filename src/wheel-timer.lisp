@@ -22,7 +22,7 @@
     instance))
 
 (defun schedule (wheel-timer millis timer-fun)
-  (tw:schedule (wheel wheel-timer)
+  (tw:schedule-timer (wheel wheel-timer)
                      (tw:make-timer (lambda (wheel timer)
                                       (declare (ignore wheel timer))
                                       (funcall timer-fun)))

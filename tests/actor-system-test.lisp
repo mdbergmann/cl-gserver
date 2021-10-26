@@ -28,17 +28,22 @@
 (test create-system--default-config
   "Creates an actor-system by applying the default config."
   (let ((system (make-actor-system)))
-    (is (not (null system)))
-    (is (not (null (asys::internal-actor-context system))))
-    (is (string= "/internal" (ac:id (asys::internal-actor-context system))))
-    (is (typep (asys::internal-actor-context system) 'ac:actor-context))
-    (is (not (null (asys::user-actor-context system))))
-    (is (string= "/user" (ac:id (asys::user-actor-context system))))
-    (is (typep (asys::user-actor-context system) 'ac:actor-context))
-    (is (= 4 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
-    (ac:shutdown system)
-    ;;(sleep 0.2)
-    ))
+    (unwind-protect
+         (progn
+           (is (not (null system)))
+           (is (not (null (asys::internal-actor-context system))))
+           (is (string= "/internal" (ac:id (asys::internal-actor-context system))))
+           (is (typep (asys::internal-actor-context system) 'ac:actor-context))
+
+           (is (not (null (asys::user-actor-context system))))
+           (is (string= "/user" (ac:id (asys::user-actor-context system))))
+           (is (typep (asys::user-actor-context system) 'ac:actor-context))
+           (is (= 4 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
+
+           (is (not (null (asys::timeout-timer system))))
+           )
+      (ac:shutdown system))
+      ))
 
 (test create-system--custom-config
   "Create an actor-system by passing a custom config."

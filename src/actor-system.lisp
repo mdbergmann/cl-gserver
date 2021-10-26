@@ -12,7 +12,9 @@
                     ac:stop
                     ev:subscribe
                     ev:unsubscribe
-                    ev:publish))
+                    ev:publish
+                    wt:wheel-timer
+                    wt:make-wheel-timer))
 
 (defclass actor-system ()
   ((dispatchers :initform '()
@@ -34,7 +36,11 @@
    (eventstream :initform nil
                 :reader eventstream
                 :documentation
-                "The system event stream. See `ev:eventstream` for more info."))
+                "The system event stream. See `ev:eventstream` for more info.")
+   (timeout-timer :initform nil
+                  :reader timeout-timer
+                  :documentation
+                  "A wheel-timer used for timeouts to make timeouts less resource expensive."))
   (:documentation
    "An `actor-system` is the opening facility. The first thing you do is to create an `actor-system` using the main constructor `make-actor-system`.
 With the `actor-system` you can create actors via the `ac:actor-context` protocol function: `ac:actor-of`.
@@ -58,7 +64,7 @@ Or even simpler via `act:actor-of` which is a convenience macro:
               (length (ac:all-actors internal-actor-context))))))
 
 (defmethod initialize-instance :after ((self actor-system) &key)
-  (with-slots (user-actor-context internal-actor-context) self
+  (with-slots (user-actor-context internal-actor-context timeout-timer) self
     (setf user-actor-context (ac:make-actor-context self "/user"))
     (setf internal-actor-context (ac:make-actor-context self "/internal"))))
 
@@ -71,9 +77,12 @@ Config options in the existing config override the default config.
 See `config:config-from`."
   (let ((system-config (config:merge-config config *default-config*))
         (system (make-instance 'actor-system)))
-    (with-slots (dispatchers config internal-actor-context eventstream) system
+    (with-slots (dispatchers config internal-actor-context eventstream timeout-timer) system
       (setf config system-config)
       (setf eventstream (ev:make-eventstream internal-actor-context))
+
+      (let ((timeout-timer-config (config:retrieve-section system-config :timeout-timer)))
+        (setf timeout-timer (wt:make-wheel-timer timeout-timer-config)))
       
       (let ((dispatcher-config (config:retrieve-section system-config :dispatchers)))
         (setf dispatchers (make-dispatchers-from-config dispatcher-config internal-actor-context))))

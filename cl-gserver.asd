@@ -1,5 +1,5 @@
 (defsystem "cl-gserver"
-  :version "1.8.2"
+  :version "1.9.0"
   :author "Manfred Bergmann"
   :license "AGPL"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -105,7 +105,6 @@
 #|
 
 TODOs:
-OK - shutdown wheel-timer in system
 
 |#
 

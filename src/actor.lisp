@@ -240,27 +240,37 @@ In any case stop the actor-cell."
      (log:debug "Executing future function...")
      (let* ((context (context self))
             (system (if context (ac:system context) nil))
-            (timed-out nil)
-            (result-received nil))
-       (with-waiting-actor self message system time-out
-         (lambda (result)
-           (setf result-received t)
-           (log:info "Result: ~a, timed-out:~a" result timed-out)
-           (unless timed-out
-             (funcall promise-fun result))))
-       (when time-out
-         (handler-case
-             (utils:with-waitfor (time-out)
-               (utils:wait-cond (lambda () result-received) 0.1))
-           (bt:timeout (c)
-             (log:error "Timeout condition: ~a" c)
-             (setf timed-out t)
-             ;; fullfil the future
-             (funcall promise-fun
-                      (cons :handler-error
-                            (make-condition 'utils:ask-timeout :wait-time time-out
-                                                               :cause c))))))))))
-
+            (timed-out-p nil)
+            (result-received-p nil))
+       (flet ((handle-timeout (&optional cause)
+                (setf timed-out-p t)
+                ;; fullfil the future with timeout
+                (funcall promise-fun
+                         (cons :handler-error
+                               (make-condition 'utils:ask-timeout
+                                               :wait-time time-out
+                                               :cause cause)))))
+         (with-waiting-actor self message system time-out
+           (lambda (result)
+             (setf result-received-p t)
+             (log:info "Result: ~a, timed-out:~a" result timed-out-p)
+             (unless timed-out-p
+               (funcall promise-fun result))))
+         (when time-out
+           (when system
+             (wt:schedule (asys:timeout-timer system)
+                          time-out
+                          (lambda ()
+                            (unless result-received-p
+                              (handle-timeout)))))
+           (unless system
+             (handler-case
+                 (utils:with-waitfor (time-out)
+                   (utils:wait-cond (lambda () result-received-p) 0.1))
+               (bt:timeout (c)
+                 (log:info "Timeout condition: ~a" c)
+                 (handle-timeout c))))))))))
+  
 ;; -------------------------------
 ;; eventstream protocol impl
 ;; -------------------------------

@@ -105,7 +105,7 @@
 #|
 
 TODOs:
-- shutdown wheel-timer in system
+OK - shutdown wheel-timer in system
 
 |#
 

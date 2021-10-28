@@ -257,19 +257,20 @@ In any case stop the actor-cell."
              (unless timed-out-p
                (funcall promise-fun result))))
          (when time-out
-           (when system
-             (wt:schedule (asys:timeout-timer system)
-                          time-out
-                          (lambda ()
-                            (unless result-received-p
-                              (handle-timeout)))))
-           (unless system
+           ;; (when system
+           ;;   (wt:schedule (asys:timeout-timer system)
+           ;;                time-out
+           ;;                (lambda ()
+           ;;                  (log:info "Timeout!")
+           ;;                  (unless result-received-p
+           ;;                    (handle-timeout)))))
+           ;; (unless system
              (handler-case
                  (utils:with-waitfor (time-out)
                    (utils:wait-cond (lambda () result-received-p) 0.1))
                (bt:timeout (c)
                  (log:info "Timeout condition: ~a" c)
-                 (handle-timeout c))))))))))
+                 (handle-timeout c)))))))))
   
 ;; -------------------------------
 ;; eventstream protocol impl

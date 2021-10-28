@@ -31,13 +31,13 @@
   "Schedule a function execution:
 
 `wheel-timer` is the `wt:wheel-timer` instance.
-`delay` is the number of milli seconds delay when `timer-fun` should be executed.
+`delay` is the number of seconds (float) delay when `timer-fun` should be executed.
 `timer-fun` is a 0-arity function that is executed after `delay`."
   (tw:schedule-timer (wheel wheel-timer)
                      (tw:make-timer (lambda (wheel timer)
                                       (declare (ignore wheel timer))
                                       (funcall timer-fun)))
-                     :milliseconds delay))
+                     :milliseconds (round (* delay 1000))))
 
 (defun shutdown-wheel-timer (wheel-timer)
   "Shuts down the wheel timer and frees resources."

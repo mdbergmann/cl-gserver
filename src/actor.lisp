@@ -281,7 +281,7 @@ In any case stop the actor-cell."
                    (utils:wait-cond (lambda () result-received-p) 0.1))
                (bt:timeout (c)
                  (handle-timeout c))))))))))
-  
+
 ;; -------------------------------
 ;; eventstream protocol impl
 ;; -------------------------------

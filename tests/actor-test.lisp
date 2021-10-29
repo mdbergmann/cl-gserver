@@ -22,7 +22,7 @@
     (when with-context
       (setf (act:context cut)
             (ac:make-actor-context
-             (asys:make-actor-system '(:dispatchers (:shared (:workers 1)))))))
+             (asys:make-actor-system '(:dispatchers (:shared (:workers 2)))))))
     (unwind-protect
          (&body)
       (progn
@@ -253,6 +253,28 @@
       (is (eq :handler-error (car (get-result future))))
       (format t "error: ~a~%" (cdr (get-result future)))
       (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
+
+(test ask--shared--timeout--many
+  "Tests creation of many actors and ask messages with timeouts."
+  (with-fixture actor-fixture ((lambda ())
+                               0
+                               t)
+    (let* ((the-context (context cut))
+           (many-actors (loop :for i :from 1 :to 2000
+                              :collect
+                              (actor-of (the-context)
+                                :receive (lambda (self msg state)
+                                           (declare (ignore self msg state))
+                                           (sleep 2)))))
+           (futures (mapcar (lambda (a) (ask a "Foo" :time-out 0.5)) many-actors)))
+      (is-true (assert-cond
+                (lambda ()
+                  (every
+                   (lambda (n) (and (consp n)
+                               (typep (cdr n) 'utils:ask-timeout)))
+                   (mapcar #'get-result futures)))
+                0.7))
+      (print (length futures)))))
 
 (test ask-s--pinned--timeout
   "Tests for ask-s timeout."

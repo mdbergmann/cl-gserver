@@ -6,6 +6,8 @@ cl-gserver is a 'message passing' library/framework with actors similar to Erlan
 
 ### Version history
 
+**Version 1.9.0:** Use wheel timer for `ask` timeouts for low weight timeouts.
+
 **Version 1.8.2:** atomic add/remove of actors in actor-context.
 
 **Version 1.8.0:** hash-agent interface changes. Added array-agent.
@@ -346,6 +348,9 @@ CL-USER> (format t "~a" (cdr *))
 A timeout set to 2 seconds occurred. Cause: 
 #<BORDEAUX-THREADS:TIMEOUT #x302002FAB73D> 
 ```
+
+Note that `ask-s` uses the calling thread for the timeout checks.  
+`ask` uses a wheel timer to handle timeouts. The default resolution for `ask` timeouts is 500ms with a maximum size of wheel slots (registered timeouts) of 1000. What this means is that you can have timeouts of a multiple of 500ms and 1000 `ask` operations with timeouts. This default can be tweaked when creating an actor-system, see [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29) for more details.
 
 #### Long running operations in `receive`
 

@@ -14,4 +14,4 @@
   '(:dispatchers
     (:shared (:workers 4 :strategy :random))
     :timeout-timer
-    (:resolution 1000 :max-size 1000)))
+    (:resolution 500 :max-size 1000)))

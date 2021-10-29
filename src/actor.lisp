@@ -232,7 +232,8 @@ In any case stop the actor-cell."
                                           (act-cell:stop ,self)))
                             :name (string (gensym "Ask-Waiter-")))))
        (setf (act-cell:msgbox ,waiting-actor) ,msgbox)
-       (act-cell::submit-message ,actor ,message nil ,waiting-actor ,time-out))))
+       (act-cell::submit-message ,actor ,message nil ,waiting-actor ,time-out)
+       ,waiting-actor)))
 
 (defmethod ask ((self actor) message &key (time-out nil))
   (future:make-future
@@ -241,36 +242,45 @@ In any case stop the actor-cell."
      (let* ((context (context self))
             (system (if context (ac:system context) nil))
             (timed-out-p nil)
-            (result-received-p nil))
+            (result-received-p nil)
+            (waiting-actor nil))
        (flet ((handle-timeout (&optional cause)
+                (log:info "Timeout condition: ~a" cause)
                 (setf timed-out-p t)
-                ;; fullfil the future with timeout
                 (funcall promise-fun
                          (cons :handler-error
                                (make-condition 'utils:ask-timeout
                                                :wait-time time-out
-                                               :cause cause)))))
-         (with-waiting-actor self message system time-out
-           (lambda (result)
-             (setf result-received-p t)
-             (log:info "Result: ~a, timed-out:~a" result timed-out-p)
-             (unless timed-out-p
-               (funcall promise-fun result))))
+                                               :cause cause)))
+                (tell waiting-actor :stop))
+              (handle-error (&optional cause)
+                (log:warn "~a" cause)
+                (funcall promise-fun
+                         (cons :handler-error cause))
+                (tell waiting-actor :stop)))
+         (setf waiting-actor
+               (with-waiting-actor self message system time-out
+                 (lambda (result)
+                   (setf result-received-p t)
+                   (log:info "Result: ~a, timed-out:~a" result timed-out-p)
+                   (unless timed-out-p
+                     (funcall promise-fun result)))))
          (when time-out
-           ;; (when system
-           ;;   (wt:schedule (asys:timeout-timer system)
-           ;;                time-out
-           ;;                (lambda ()
-           ;;                  (log:info "Timeout!")
-           ;;                  (unless result-received-p
-           ;;                    (handle-timeout)))))
-           ;; (unless system
+           (when system
+             (handler-case
+                 (wt:schedule (asys:timeout-timer system)
+                              time-out
+                              (lambda ()
+                                (unless result-received-p
+                                  (handle-timeout))))
+               (error (c)
+                 (handle-error c))))
+           (unless system
              (handler-case
                  (utils:with-waitfor (time-out)
                    (utils:wait-cond (lambda () result-received-p) 0.1))
                (bt:timeout (c)
-                 (log:info "Timeout condition: ~a" c)
-                 (handle-timeout c)))))))))
+                 (handle-timeout c))))))))))
   
 ;; -------------------------------
 ;; eventstream protocol impl

@@ -14,6 +14,13 @@
           :documentation "The wheel."))
   (:documentation "Wheel timer class"))
 
+(defmethod print-object ((obj wheel-timer) stream)
+  (print-unreadable-object (obj stream :type t)
+    (with-slots (wheel) obj
+      (format stream "wheel resolution: ~a, size: ~a"
+              (tw:wheel-resolution wheel)
+              (length (tw::slots wheel))))))
+
 (defun make-wheel-timer (config)
   "Creates a new `wheel-timer`.
 

@@ -251,6 +251,7 @@
            (future (ask actor "foo" :time-out 0.5)))
       (utils:wait-cond (lambda () (complete-p future)))
       (is (eq :handler-error (car (get-result future))))
+      (format t "error: ~a~%" (cdr (get-result future)))
       (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
 
 (test ask-s--pinned--timeout

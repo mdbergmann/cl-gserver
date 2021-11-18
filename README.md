@@ -6,7 +6,7 @@ cl-gserver is a 'message passing' library/framework with actors similar to Erlan
 
 ### Version history
 
-**Version 1.9.0:** Use wheel timer for `ask` timeouts for low weight timeouts.
+**Version 1.9.0:** Use wheel timer for `ask` timeouts.
 
 **Version 1.8.2:** atomic add/remove of actors in actor-context.
 

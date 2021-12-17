@@ -254,3 +254,78 @@ Elapsed: 25
 
 => ABCL makes overall a very good picture. 
 Probably because of the battle proven VM and the very efficient and proven GC.
+
+
+-----------------------------------------------
+LispWorks 8.0
+-----------------------------------------------
+
+CL-USER 9 > (runner-bt)
+Times: 1000000
+User time    =        2.781
+System time  =        0.694
+Elapsed time =        1.767
+Allocation   = 240219976 bytes
+112471 Page faults
+GC time      =        0.500
+Counter: 1000000
+Elapsed: 1
+
+CL-USER 10 > (runner-bt t)
+Times: 1000000
+User time    =       11.112
+System time  =        5.484
+Elapsed time =        3.713
+Allocation   = 593288432 bytes
+1281 Page faults
+GC time      =        0.027
+Counter: 1000000
+Elapsed: 3
+
+CL-USER 11 > (runner-bt t t)
+Times: 1000000
+User time    =       22.506
+System time  =        5.408
+Elapsed time =       10.310
+Allocation   = 2327968248 bytes
+775742 Page faults
+Calls to %EVAL    219
+GC time      =        5.709
+Counter: 1000000
+Elapsed: 10
+
+-------------------- shared --------------------
+
+CL-USER 12 > (runner-dp)
+Times: 1000000
+User time    =        9.678
+System time  =        3.234
+Elapsed time =        3.905
+Allocation   = 545296248 bytes
+201976 Page faults
+GC time      =        1.629
+Counter: 1000000
+Elapsed: 4
+
+CL-USER 13 > (runner-dp t)
+Times: 1000000
+User time    =       22.872
+System time  =       19.456
+Elapsed time =        4.726
+Allocation   = 897306480 bytes
+744 Page faults
+GC time      =        0.012
+Counter: 1000000
+Elapsed: 4
+
+CL-USER 14 > (runner-dp t t)
+Times: 1000000
+User time    =       24.325
+System time  =        4.782
+Elapsed time =       13.753
+Allocation   = 2468653304 bytes
+1024802 Page faults
+Calls to %EVAL    261
+GC time      =        8.650
+Counter: 1000000
+Elapsed: 13

@@ -61,8 +61,7 @@
   (setf *per-thread* (if asyncask 10000 125000))
   #+(or abcl clasp allegro)
   (setf *per-thread* 125000)
-  (setf *system* (asys:make-actor-system '(:dispatchers (:shared (:workers 8)))
-                                         (if asyncask 50 8)))
+  (setf *system* (asys:make-actor-system '(:dispatchers (:shared (:workers 8)))))
   (setf *actor* (ac:actor-of *system*
                              (lambda () (act:make-actor (lambda (self msg state)
                                                      (declare (ignore self))

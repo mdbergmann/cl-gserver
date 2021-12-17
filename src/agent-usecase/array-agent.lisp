@@ -92,6 +92,7 @@ On error it will call `err-fun` with the raised condition, if `err-fun` has been
   (agt:agent-update array-agent
                     (with-update-handler
                       (let ((del-result (apply #'delete item (model-object model) delete-args)))
+                        (setf (model-object model) del-result)
                         del-result))))
 
 (defun agent-doarray (fun array-agent)

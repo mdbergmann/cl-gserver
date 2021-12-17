@@ -691,6 +691,10 @@ problems on `dispatched - ask-s` where I had to lower the
 number of messages to 200k alltogether. Beyond that value SBCL didn't
 get it worked out.
 
+**LispWorks (8.0)**
+
+LispWorks is fast overall. Not as fast as SBCL. But it seems the GC is more robust, in particular on the `dispatched - ask`.
+
 **CCL (v1.12)**
 
 CCL is on acceptable average speed. The problems CCL had was heap

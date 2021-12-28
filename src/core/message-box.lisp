@@ -40,8 +40,7 @@ Don't make it too small. A queue size of 1000 might be a good choice."))
     (setf queue
           (case max-queue-size
             ((0 nil) (make-instance 'queue-unbounded))
-            (t (make-instance 'queue-bounded :max-items max-queue-size)))))
-  (log:debug "~a: initialize instance: ~a" (name self) self))
+            (t (make-instance 'queue-bounded :max-items max-queue-size))))))
 
 (defmethod print-object ((obj message-box-base) stream)
   (print-unreadable-object (obj stream :type t)
@@ -238,10 +237,12 @@ The queue thread has processed the message."
     my-handler-result))
 
 (defmethod stop ((self message-box/bt))
-  (call-next-method)
+  (when (next-method-p)
+    (call-next-method))
   (with-slots (queue-thread should-run) self
     (setf should-run nil)
-    (submit self :trigger-closing-the-wait-handler nil nil (lambda (msg) (declare (ignore msg))))))
+    (submit self :trigger-closing-the-wait-handler nil nil
+            (lambda (msg) (declare (ignore msg))))))
 
 
 ;; ----------------------------------------
@@ -257,7 +258,7 @@ The queue thread has processed the message."
 
 (defclass message-box/dp (message-box-base)
   ((dispatcher :initarg :dispatcher
-               :initform (error "Must be set!")
+               :initform (error "Dispatcher must be set!")
                :reader dispatcher
                :documentation
                "The dispatcher from the system.")

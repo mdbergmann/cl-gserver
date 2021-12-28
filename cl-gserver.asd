@@ -27,15 +27,17 @@
                  (:file "utils")
                  (:file "actor-api")
                  (:file "dispatcher-api")
-                 (:module "core"
+                 (:module "queue"
                   :components
-                  ((:file "queue")
-                   (:file "message-box")
-                   (:file "actor-cell")))
+                  ((:file "queue")))
+                 (:module "mbox"
+                  :components
+                  ((:file "message-box")))
                  (:file "eventstream-api")
                  (:file "actor-system-api")
                  (:file "actor-context-api")
                  (:file "fcomputation")
+                 (:file "actor-cell")
                  (:file "actor")
                  (:file "agent")
                  (:file "eventstream")

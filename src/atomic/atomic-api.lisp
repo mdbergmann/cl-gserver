@@ -6,6 +6,8 @@
            #:atomic-cas
            #:atomic-get))
 
+(in-package :cl-gserver.atomic)
+
 (defgeneric atomic-get (atomic)
   (:documentation "Retrieve value from atomic object."))
 

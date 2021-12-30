@@ -14,7 +14,7 @@
 
 (in-suite agent-tests)
 
-(log:config :warn)
+(lf:config :level :warn)
 
 (def-fixture agent-fixture (fun)
   (let ((agent (make-agent (lambda () (funcall fun)))))

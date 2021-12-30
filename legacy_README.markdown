@@ -44,7 +44,7 @@ the 'message' that was sent, and the 'current-state' of the `gserver`:
 
 ```lisp
 (defmethod handle-call ((server stack-server) message current-state)
-  (log:debug "current-state: " current-state)
+  (lf:ldebug "current-state: " current-state)
   (match message
     (:pop
      (cons
@@ -82,7 +82,7 @@ Now we also want to push values. This will be done by `cast`ing to the server.
 
 ```lisp
 (defmethod handle-cast ((server stack-server) message current-state)
-  (log:debug "current-state: " current-state)
+  (lf:ldebug "current-state: " current-state)
   (match message
     ((cons :push value)
      (let ((new-state (append current-state (list value))))
@@ -161,7 +161,7 @@ First create a ping actor:
                                      (lambda (self msg state)
                                        (trivia:match msg
                                          ((cons :ping sender) (progn
-                                                                (log:info "ping from: " sender)
+                                                                (lf:linfo "ping from: " sender)
                                                                 (sleep 1)
                                                                 (when (< state 5)
                                                                   (act:tell sender (cons :pong self))
@@ -186,7 +186,7 @@ Now let's create the pong actor:
                                      (lambda (self msg state)
                                      (trivia:match msg
                                        ((cons :pong sender) (progn
-                                                              (log:info "pong from: " sender)
+                                                              (lf:linfo "pong from: " sender)
                                                               (sleep 1)
                                                               (act:tell sender (cons :ping self))
                                                               (cons nil nil)))))))

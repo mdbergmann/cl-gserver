@@ -86,7 +86,7 @@ See `config:config-from`."
       (setf dispatchers (make-dispatchers-from-config
                          (%get-dispatcher-config config)
                          internal-actor-context)))
-    (log:info system)
+    (lf:linfo system)
     system))
 
 (defun %get-timeout-timer-config (system-config)

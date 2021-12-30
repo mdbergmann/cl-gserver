@@ -61,7 +61,7 @@
        ;; the below is not needed anymore with SBCL 2.1. Will keep it anyway for compatibility.
        #+sbcl
        (sb-ext:timeout (,c)
-         (log:warn "sb-ext:timeout, wrapping to 'expired'.")
+         (lf:lwarn "sb-ext:timeout, wrapping to 'expired'.")
          (error 'bt:timeout :length ,wait-time)))))
 
 (defun make-timer (delay run-fun)

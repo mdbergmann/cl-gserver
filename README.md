@@ -6,6 +6,8 @@ cl-gserver is a 'message passing' library/framework with actors similar to Erlan
 
 ### Version history
 
+**Version 1.10.0:** Logging abstraction. Use your own logging facility. cl-gserver doesn't lock you in but provides support for log4cl. Support for other logging facilities can be easily added so that the logging of cl-gserver  will use your chosen logging library. See below for more details.
+
 **Version 1.9.0:** Use wheel timer for `ask` timeouts.
 
 **Version 1.8.2:** atomic add/remove of actors in actor-context.
@@ -659,6 +661,14 @@ See the [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#t
 ### Immutability
 
 Some words on immutability. cl-gserver does _not_ make deep copies of the actor states. So whatever is returned from `receive` function as part of the `(cons back-msg state)` is just `setf`ed to the actor state. The user is responsible to make deep copies if necessary in an immutable environment. The user is responsible to _not_ implictly modify the actor state outside of the actor.
+
+### Logging
+
+cl-gserver does its own logging using different log levels from 'trace' to 'error'. By default it uses its own logging implementation which just dumps the log string to stdout. However, the logging is abstracted in a way that allows to integrate the logging of cl-gserver to use your chosen logging library. The way this works is that cl-gserver uses a set of macros to do the logging. Those macros can be overridden by custom implementation. This is quite simple. I.e. an implementation for log4cl is included, see [logif-log4cl.lisp](/src/logif/logif-log4cl.lisp).
+
+The important point to note is that the log implementations must come in separate ASDF systems so that they can be loaded first, before any of the code of cl-gserver is loaded and compiled. See the main system 'cl-gserver' for this in [cl-gserver.asd](/cl-gserver.asd). Instead of 'logif-simple' you may choose 'logif-log4cl', or your own implementation.
+
+However, you may also just use the logging facility of cl-gserver in the package `cl-gserver.logif`. It's limited though but might be expanded later. The level config can be done via i.e.: `(lf:config :level :debug)`. If you use log4cl then you just use the log4cl config functionality.
 
 ### Benchmarks
 

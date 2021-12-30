@@ -1,7 +1,7 @@
 ;;(push #P"~/Development/MySources/cl-gserver/" asdf:*central-registry*)
 (asdf:load-system "cl-gserver")
 
-(log:config :warn)
+(lf:config :level :warn)
 
 (defparameter *starttime* 0)
 (defparameter *endtime* 0)

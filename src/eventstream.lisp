@@ -34,7 +34,7 @@ But in theory it can be created individually by just passing an `ac:actor-contex
                                   (handler-case
                                       (ev-receive ev ev-stream msg state)
                                     (t (c)
-                                      (log:warn "Condition: ~a" c)
+                                      (lf:lwarn "Condition: ~a" c)
                                       (cons t state)))))))
     ev))
 

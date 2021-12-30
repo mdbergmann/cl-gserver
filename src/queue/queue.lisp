@@ -64,7 +64,7 @@
             ((<= max-items 10) 2)
             ((<= max-items 20) 8)
             (t (* (/ max-items 100) 95))))  ; 95%
-    (log:info "Yield threshold at: " yield-threshold)
+    (lf:linfo "Yield threshold at: ~a" yield-threshold)
 
     (setf queue (cl-speedy-queue:make-queue max-items))))
 
@@ -83,11 +83,11 @@
         :for loop-count :from 0
         :if (and (> loop-count 100) (> queue-count yield-threshold))
           :do (progn
-                (log:warn "Unable to reduce queue pressure!")
+                (lf:lwarn "Unable to reduce queue pressure!")
                 (error "Unable to reduce queue pressure. Consider increasing queue-size or use more threads!"))
         :while (> queue-count yield-threshold)
         :do (progn
-              (log:debug "back-pressure, doing thread-yield (~a/~a)." queue-count yield-threshold)
+              (lf:ldebug "back-pressure, doing thread-yield (~a/~a)." queue-count yield-threshold)
               (bt:thread-yield)
               (sleep .01))))
 
@@ -97,7 +97,7 @@
 (defmethod popq ((self queue-bounded))
   (with-slots (queue lock cvar) self
     (bt:with-lock-held (lock)
-      (log:debug "Lock aquired...")
+      (lf:ldebug "Lock aquired...")
       #-ccl (if (> (get-queue-count queue) 0)
                 (dequeue/no-wait queue)
                 (dequeue/wait queue cvar lock))
@@ -112,13 +112,13 @@
       )))
 
 (defun dequeue/no-wait (queue)
-  (log:debug "Dequeue without wait...")
+  (lf:ldebug "Dequeue without wait...")
   (cl-speedy-queue:dequeue queue))
 
 (defun dequeue/wait (queue cvar lock)
-  (log:debug "Going to sleep...")
+  (lf:ldebug "Going to sleep...")
   (bt:condition-wait cvar lock)
-  (log:debug "Awoken, processing queue...")
+  (lf:ldebug "Awoken, processing queue...")
   (cl-speedy-queue:dequeue queue))
 
 (defmethod emptyq-p ((self queue-bounded))

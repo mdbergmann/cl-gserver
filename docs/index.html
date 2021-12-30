@@ -14,7 +14,7 @@
        }
      });
    </script>
-   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+   <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
    </script>
    </head>
 <body>
@@ -89,7 +89,9 @@
 
 <h3>Version history</h3>
 
-<p><strong>Version 1.9.0:</strong> Use wheel timer for <code>ask</code> timeouts for low weight timeouts.</p>
+<p><strong>Version 1.10.0:</strong> Logging abstraction. Use your own logging facility. cl-gserver doesn't lock you in but provides support for log4cl. Support for other logging facilities can be easily added so that the logging of cl-gserver  will use your chosen logging library. See below for more details.</p>
+
+<p><strong>Version 1.9.0:</strong> Use wheel timer for <code>ask</code> timeouts.</p>
 
 <p><strong>Version 1.8.2:</strong> atomic add/remove of actors in actor-context.</p>
 
@@ -694,6 +696,14 @@ The concurrency here depends on the number of dispatcher workers.</p>
 
 <p>Some words on immutability. cl-gserver does <em>not</em> make deep copies of the actor states. So whatever is returned from <code>receive</code> function as part of the <code>(cons back-msg state)</code> is just <code>setf</code>ed to the actor state. The user is responsible to make deep copies if necessary in an immutable environment. The user is responsible to <em>not</em> implictly modify the actor state outside of the actor.</p>
 
+<h3>Logging</h3>
+
+<p>cl-gserver does its own logging using different log levels from 'trace' to 'error'. By default it uses its own logging implementation which just dumps the log string to stdout. However, the logging is abstracted in a way that allows to integrate the logging of cl-gserver to use your chosen logging library. The way this works is that cl-gserver uses a set of macros to do the logging. Those macros can be overridden by custom implementation. This is quite simple. I.e. an implementation for log4cl is included, see <a href="/src/logif/logif-log4cl.lisp" >logif-log4cl.lisp</a>.</p>
+
+<p>The important point to note is that the log implementations must come in separate ASDF systems so that they can be loaded first, before any of the code of cl-gserver is loaded and compiled. See the main system 'cl-gserver' for this in <a href="/cl-gserver.asd" >cl-gserver.asd</a>. Instead of 'logif-simple' you may choose 'logif-log4cl', or your own implementation.</p>
+
+<p>However, you may also just use the logging facility of cl-gserver in the package <code>cl-gserver.logif</code>. It's limited though but might be expanded later. The level config can be done via i.e.: <code>(lf:config :level :debug)</code>. If you use log4cl then you just use the log4cl config functionality.</p>
+
 <h3>Benchmarks</h3>
 
 <p><img src="./docs/perf.png" alt="" />
@@ -726,6 +736,10 @@ both <code>:pinned</code> and <code>dispatched</code>, it had massive
 problems on <code>dispatched - ask-s</code> where I had to lower the
 number of messages to 200k alltogether. Beyond that value SBCL didn't
 get it worked out.</p>
+
+<p><strong>LispWorks (8.0)</strong></p>
+
+<p>LispWorks is fast overall. Not as fast as SBCL. But it seems the GC is more robust, in particular on the <code>dispatched - ask</code>.</p>
 
 <p><strong>CCL (v1.12)</strong></p>
 
@@ -764,7 +778,7 @@ the massively battle proven Java Runtime.</p>
 <p>An <code>actor-system</code> is the opening facility. The first thing you do is to create an <code>actor-system</code> using the main constructor <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AMAKE-ACTOR-SYSTEM-20FUNCTION-29" title="(CL-GSERVER.ACTOR-SYSTEM:MAKE-ACTOR-SYSTEM FUNCTION)"><code>make-actor-system</code></a>.
 With the <code>actor-system</code> you can create actors via the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> protocol function: <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION)"><code>ac:actor-of</code></a>.</p>
 
-<p>Or even simpler via <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20-28MGL-PAX-3AMACRO-29-29" title="(CL-GSERVER.ACTOR:ACTOR-OF (MGL-PAX:MACRO))"><code>act:actor-of</code></a> which is a convenience macro:</p>
+<p>Or even simpler via <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20MGL-PAX-3AMACRO-29" title="(CL-GSERVER.ACTOR:ACTOR-OF MGL-PAX:MACRO)"><code>act:actor-of</code></a> which is a convenience macro:</p>
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">act:actor-of <span class="paren2">(<span class="code"><span class="special">*system*</span></span>)</span>
                 <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
@@ -778,17 +792,17 @@ With the <code>actor-system</code> you can create actors via the <a href="#x-28C
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AMAKE-ACTOR-SYSTEM-20FUNCTION-29" >MAKE-ACTOR-SYSTEM</a></span></span> <span class="locative-args">&amp;OPTIONAL CONFIG</span></span></p>
 
 <p>Creates an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>actor-system</code></a>.
-Allows to provide an optional configuration. See <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" title="(CL-GSERVER.ACTOR-SYSTEM:*DEFAULT-CONFIG* (VARIABLE))"><code>asys:*default-config*</code></a>.
+Allows to provide an optional configuration. See <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20VARIABLE-29" title="(CL-GSERVER.ACTOR-SYSTEM:*DEFAULT-CONFIG* VARIABLE)"><code>asys:*default-config*</code></a>.
 If no config is provided the default config is used.
 Is a config provided then it is merged with the default config.
 Config options in the existing config override the default config.
 See <a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" title="(CL-GSERVER.CONFIG:CONFIG-FROM FUNCTION)"><code>config:config-from</code></a>.</p></li>
 </ul>
 
-<p><a id='x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29'></a></p>
+<p><a id='x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20VARIABLE-29'></a></p>
 
 <ul>
-<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" >*DEFAULT-CONFIG*</a></span></span> <span class="locative-args">(:DISPATCHERS (:SHARED (:WORKERS 4 :STRATEGY :RANDOM)) :TIMEOUT-TIMER (:RESOLUTION 500 :MAX-SIZE 1000))</span></span></li>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20VARIABLE-29" >*DEFAULT-CONFIG*</a></span></span> <span class="locative-args">(:DISPATCHERS (:SHARED (:WORKERS 4 :STRATEGY :RANDOM)) :TIMEOUT-TIMER (:RESOLUTION 500 :MAX-SIZE 1000))</span></span></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29'></a></p>
@@ -968,7 +982,7 @@ Current exists:</p>
 When an <code>actor-system</code> is specified as context (<code>actor-system</code> implements parts of the protocol) then the new actor will be a new root actor.</p>
 
 <p>When the new actor should be a child of another actor, then the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a> of the (to be) parent <code>actor</code> should be specified.
-Creating an actor via <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION)"><code>actor-of</code></a> will also add the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a> as watcher of the actor. This watching can be used for different purposes. Right now the <code>actor</code> is removed from the context when it was stopped.</p>
+Creating an actor via <code>actor-of</code> will also add the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a> as watcher of the actor. This watching can be used for different purposes. Right now the <code>actor</code> is removed from the context when it was stopped.</p>
 
 <p>Specify the dispatcher type (<code>dispatcher-id</code>) as either:
 <code>:shared</code> to have this actor use the shared message dispatcher of the context
@@ -1055,10 +1069,10 @@ It is possible to specify <code>:no-reply</code> as <code>car</code> of <code>co
 <p>To stop an actors message processing in order to cleanup resouces you should <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> (or <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a>) the <code>:stop</code> message. It will respond with <code>:stopped</code> (in case of <code>ask(-s)</code>).</p></li>
 </ul>
 
-<p><a id='x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20-28MGL-PAX-3AMACRO-29-29'></a></p>
+<p><a id='x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20MGL-PAX-3AMACRO-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20-28MGL-PAX-3AMACRO-29-29" >ACTOR-OF</a></span></span> <span class="locative-args">(CONTEXT &amp;OPTIONAL (NAME <code>NIL</code>)) &amp;BODY BODY &amp;KEY RECEIVE (INIT <code>NIL</code>) (DISPATCHER <code>:SHARED</code>) (STATE <code>NIL</code>) (TYPE ''<a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20MGL-PAX-3AMACRO-29" >ACTOR-OF</a></span></span> <span class="locative-args">(CONTEXT &amp;OPTIONAL (NAME <code>NIL</code>)) &amp;BODY BODY &amp;KEY RECEIVE (INIT <code>NIL</code>) (DISPATCHER <code>:SHARED</code>) (STATE <code>NIL</code>) (TYPE ''<a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>ACTOR</code></a>)</span></span></p>
 
 <p>Simple interface for creating an actor.</p>
 
@@ -1099,8 +1113,8 @@ This represents a 'start' hook that is called after the actor was fully initiali
 <li><p>the <code>current-state</code> of the actor.</p></li>
 <li><p><code>name</code>: give the actor a name. Must be unique within an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a>.</p></li>
 <li><p><code>type</code>: Specify a custom actor class as the <code>:type</code> key. Defaults to 'actor.
-Say you have a custom actor <code>custom-actor</code> and want <a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:MAKE-ACTOR GENERIC-FUNCTION)"><code>make-actor</code></a> create an instance of it.
-Then specify <code>:type 'custom-actor</code> on <a href="#x-28CL-GSERVER-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:MAKE-ACTOR GENERIC-FUNCTION)"><code>make-actor</code></a> function.
+Say you have a custom actor <code>custom-actor</code> and want <code>make-actor</code> create an instance of it.
+Then specify <code>:type 'custom-actor</code> on <code>make-actor</code> function.
 If you have additional initializations to make you can do so in <code>initialize-instance</code>.</p></li>
 <li><p><code>state</code>: initialize an actor with a state. (default is <code>nil</code>)</p></li>
 <li><p><code>init</code> and <code>destroy</code>: are functions that take one argument, the actor instance.
@@ -1113,27 +1127,27 @@ Those hooks are called on (after) initialization and (after) stop respectively.<
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" >TELL</a></span></span> <span class="locative-args">ACTOR MESSAGE &amp;OPTIONAL SENDER</span></span></p>
 
-<p>Sends a message to the <code>actor</code>. <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> is asynchronous. There is no result.
-If a <code>sender</code> is specified a message result of the target actor of the <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> will be sent back to the <code>sender</code></p>
+<p>Sends a message to the <code>actor</code>. <code>tell</code> is asynchronous. There is no result.
+If a <code>sender</code> is specified a message result of the target actor of the <code>tell</code> will be sent back to the <code>sender</code></p>
 
-<p>Generally <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> does not expect a response. But a <code>sender</code> can be specified as optionl parameter to <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a>.
+<p>Generally <code>tell</code> does not expect a response. But a <code>sender</code> can be specified as optionl parameter to <code>tell</code>.
 If a <code>sender</code> is specified, then the message handling behavior will send the <code>car</code> of the <code>cons</code> result to the specified <code>sender</code>.</p>
 
 <p>A <code>sender</code> can also be part of the message contract.</p>
 
-<p><a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> can be used in two environments:</p>
+<p><code>tell</code> can be used in two environments:</p>
 
 <ol>
 <li>outside an actor</li>
 </ol>
 
-<p>By default this sends a message as fire &amp; forget. Since this is not inside an actor, no actor can be inferred as <code>sender</code>. A <code>sender</code> can be defined as optional parameter as part of <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a>.</p>
+<p>By default this sends a message as fire &amp; forget. Since this is not inside an actor, no actor can be inferred as <code>sender</code>. A <code>sender</code> can be defined as optional parameter as part of <code>tell</code>.</p>
 
 <ol>
 <li>inside an actors as part of the <code>receive</code> function</li>
 </ol>
 
-<p>As <code>sender</code> can be specified when <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a> is used inside of an actor. Currently the framework doesn't automatically infer the <code>sender</code> when no <code>sender</code> is explicitly specified.</p>
+<p>As <code>sender</code> can be specified when <code>tell</code> is used inside of an actor. Currently the framework doesn't automatically infer the <code>sender</code> when no <code>sender</code> is explicitly specified.</p>
 
 <p>=&gt; This is a future enhancement.</p></li>
 </ul>
@@ -1143,11 +1157,11 @@ If a <code>sender</code> is specified, then the message handling behavior will s
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" >ASK-S</a></span></span> <span class="locative-args">ACTOR MESSAGE &amp;KEY TIME-OUT</span></span></p>
 
-<p>Sends a message to the <code>actor</code>. <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> is synchronous and waits for a result.
+<p>Sends a message to the <code>actor</code>. <code>ask-s</code> is synchronous and waits for a result.
 Specify <code>timeout</code> if a message is to be expected after a certain time.
 An <code>:handler-error</code> with <code>timeout</code> condition will be returned if the call timed out.</p>
 
-<p><a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> assumes, no matter if <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> is issued from outside or inside an actor, that the response is delivered back to the caller. That's why <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> does block the execution until the result is available. The <code>receive</code> function handler must specify the result as the <code>car</code> of the cons result.</p></li>
+<p><code>ask-s</code> assumes, no matter if <code>ask-s</code> is issued from outside or inside an actor, that the response is delivered back to the caller. That's why <code>ask-s</code> does block the execution until the result is available. The <code>receive</code> function handler must specify the result as the <code>car</code> of the cons result.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29'></a></p>
@@ -1159,7 +1173,7 @@ An <code>:handler-error</code> with <code>timeout</code> condition will be retur
 Specify <code>timeout</code> if a message is to be expected after a certain time.
 An <code>:handler-error</code> with <code>timeout</code> condition will be returned is the call timed out.</p>
 
-<p>An <a href="#x-28CL-GSERVER-2EACTOR-3AASK-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK GENERIC-FUNCTION)"><code>ask</code></a> is similar to a <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> in that the caller gets back a result 
+<p>An <code>ask</code> is similar to a <a href="#x-28CL-GSERVER-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:ASK-S GENERIC-FUNCTION)"><code>ask-s</code></a> in that the caller gets back a result 
 but it doesn't have to actively wait for it. Instead a <code>future</code> wraps the result.
 However, the internal message handling is based on <a href="#x-28CL-GSERVER-2EACTOR-3ATELL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR:TELL GENERIC-FUNCTION)"><code>tell</code></a>.
 How this works is that the message to the target <code>actor</code> is not 'sent' using the callers thread
@@ -1192,7 +1206,7 @@ The <code>new-behavior</code> function must accept 3 parameters: the actor insta
 
 <p>This is the <code>actor-context</code> every actor is composed of.
 When the actor is created from scratch it has no <code>actor-context</code>.
-When created through the <code>actor-context</code>s, or system's <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20-28MGL-PAX-3AMACRO-29-29" title="(CL-GSERVER.ACTOR:ACTOR-OF (MGL-PAX:MACRO))"><code>actor-of</code></a> function an <code>actor-context</code> will be set.</p></li>
+When created through the <code>actor-context</code>s, or system's <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20MGL-PAX-3AMACRO-29" title="(CL-GSERVER.ACTOR:ACTOR-OF MGL-PAX:MACRO)"><code>actor-of</code></a> function an <code>actor-context</code> will be set.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-3APATH-20GENERIC-FUNCTION-29'></a></p>
@@ -1338,10 +1352,10 @@ When the actor is created through the <code>actor-context</code> of an actor, or
 then it will be populated with a message-box.</p></li>
 </ul>
 
-<p><a id='x-28CL-GSERVER-2EACTOR-CELL-3A-2ASENDER-2A-20-28VARIABLE-29-29'></a></p>
+<p><a id='x-28CL-GSERVER-2EACTOR-CELL-3A-2ASENDER-2A-20VARIABLE-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CELL-3A-2ASENDER-2A-20-28VARIABLE-29-29" >*SENDER*</a></span></span> <span class="locative-args">NIL</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CELL-3A-2ASENDER-2A-20VARIABLE-29" >*SENDER*</a></span></span> <span class="locative-args">NIL</span></span></p>
 
 <p>The <code>*sender*</code> is dynamically bound and available in <code>receive</code> function, when it is known.</p></li>
 </ul>
@@ -1353,7 +1367,7 @@ then it will be populated with a message-box.</p></li>
 
 <p>Handles calls to the server. Must be implemented by subclasses.
 The convention here is to return a <code>cons</code> with values to be returned to caller as <code>car</code>, and the new state as <code>cdr</code>.
-<a href="#x-28CL-GSERVER-2EACTOR-CELL-3AHANDLE-CALL-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CELL:HANDLE-CALL GENERIC-FUNCTION)"><code>handle-call</code></a> is executed in the default message dispatcher thread.</p></li>
+<code>handle-call</code> is executed in the default message dispatcher thread.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CELL-3AHANDLE-CAST-20GENERIC-FUNCTION-29'></a></p>
@@ -1434,7 +1448,7 @@ If a `sender' is specified the result will be sent to the sender.</p></li>
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EMESSAGEB-3AMESSAGE-BOX-BASE-20CLASS-29" >MESSAGE-BOX-BASE</a></span></span></span></p>
 
-<p>The user does not need to create a message-box manually. It is automatically created and added to the <code>actor</code> when the actor is created through <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20-28MGL-PAX-3AMACRO-29-29" title="(CL-GSERVER.ACTOR:ACTOR-OF (MGL-PAX:MACRO))"><code>act:actor-of</code></a> or <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION)"><code>ac:actor-of</code></a>.</p></li>
+<p>The user does not need to create a message-box manually. It is automatically created and added to the <code>actor</code> when the actor is created through <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-OF-20MGL-PAX-3AMACRO-29" title="(CL-GSERVER.ACTOR:ACTOR-OF MGL-PAX:MACRO)"><code>act:actor-of</code></a> or <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION)"><code>ac:actor-of</code></a>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EMESSAGEB-3ANAME-20-28MGL-PAX-3AREADER-20CL-GSERVER-2EMESSAGEB-3AMESSAGE-BOX-BASE-29-29'></a></p>
@@ -1478,10 +1492,10 @@ Don't make it too small. A queue size of 1000 might be a good choice.</p></li>
 <li><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EMESSAGEB-3ASTOP-20-28METHOD-20NIL-20-28CL-GSERVER-2EMESSAGEB-3AMESSAGE-BOX-BASE-29-29-29" >STOP</a></span></span> <span class="locative-args">(SELF MESSAGE-BOX-BASE)</span></span></li>
 </ul>
 
-<p><a id='x-28CL-GSERVER-2EMESSAGEB-3AWITH-SUBMIT-HANDLER-20-28MGL-PAX-3AMACRO-29-29'></a></p>
+<p><a id='x-28CL-GSERVER-2EMESSAGEB-3AWITH-SUBMIT-HANDLER-20MGL-PAX-3AMACRO-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EMESSAGEB-3AWITH-SUBMIT-HANDLER-20-28MGL-PAX-3AMACRO-29-29" >WITH-SUBMIT-HANDLER</a></span></span> <span class="locative-args">(MSGBOX MESSAGE WITHREPLY-P TIME-OUT) &amp;REST BODY</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EMESSAGEB-3AWITH-SUBMIT-HANDLER-20MGL-PAX-3AMACRO-29" >WITH-SUBMIT-HANDLER</a></span></span> <span class="locative-args">(MSGBOX MESSAGE WITHREPLY-P TIME-OUT) &amp;REST BODY</span></span></p>
 
 <p>Macro to let the caller specify a message handler function.
 Use this instead of <a href="#x-28CL-GSERVER-2EMESSAGEB-3ASUBMIT-20GENERIC-FUNCTION-29" title="(CL-GSERVER.MESSAGEB:SUBMIT GENERIC-FUNCTION)"><code>submit</code></a>.</p></li>
@@ -1511,7 +1525,7 @@ this kind of queue because each message-box (and with that each actor) requires 
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EMESSAGEB-3ASUBMIT-20-28METHOD-20NIL-20-28CL-GSERVER-2EMESSAGEB-3AMESSAGE-BOX-2FBT-20T-20T-20T-20T-29-29-29" >SUBMIT</a></span></span> <span class="locative-args">(SELF MESSAGE-BOX/BT) MESSAGE WITHREPLY-P TIME-OUT HANDLER-FUN</span></span></p>
 
-<p>Alternatively use <a href="#x-28CL-GSERVER-2EMESSAGEB-3AWITH-SUBMIT-HANDLER-20-28MGL-PAX-3AMACRO-29-29" title="(CL-GSERVER.MESSAGEB:WITH-SUBMIT-HANDLER (MGL-PAX:MACRO))"><code>with-submit-handler</code></a> from your code to handle the message after it was 'popped' from the queue.
+<p>Alternatively use <a href="#x-28CL-GSERVER-2EMESSAGEB-3AWITH-SUBMIT-HANDLER-20MGL-PAX-3AMACRO-29" title="(CL-GSERVER.MESSAGEB:WITH-SUBMIT-HANDLER MGL-PAX:MACRO)"><code>with-submit-handler</code></a> from your code to handle the message after it was 'popped' from the queue.
 The <code>handler-fun</code> argument here will be <code>funcall</code>ed when the message was 'popped'.</p></li>
 </ul>
 
@@ -1747,7 +1761,7 @@ Returns <code>t</code> if entry existed, <code>nil</code> otherwise.</p></li>
 <p><code>fun</code>: is a 1-arity function taking the hash-table. This function can operate on the hash-table without interference from other threads. The result of this function must be a hash-table.<br/>
 <code>hash-agent</code>: is the <code>hash-agent</code> instance.</p>
 
-<p>The result of <a href="#x-28CL-GSERVER-2EAGENT-2EHASH-3AAGENT-DOHASH-20FUNCTION-29" title="(CL-GSERVER.AGENT.HASH:AGENT-DOHASH FUNCTION)"><code>agent-dohash</code></a> is <code>T</code>.</p></li>
+<p>The result of <code>agent-dohash</code> is <code>T</code>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EAGENT-2EARRAY-3A-40ARRAY-AGENT-20MGL-PAX-3ASECTION-29'></a></p>
@@ -1777,14 +1791,14 @@ Use this to get notified of error when using the update functions of the agent.<
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-ELT-20FUNCTION-29" >AGENT-ELT</a></span></span> <span class="locative-args">INDEX ARRAY-AGENT</span></span></p>
 
-<p>Retrieves the value of the specified index of the array. <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-ELT-20FUNCTION-29" title="(CL-GSERVER.AGENT.ARRAY:AGENT-ELT FUNCTION)"><code>agent-elt</code></a> allows <code>setf</code>ing like:</p>
+<p>Retrieves the value of the specified index of the array. <code>agent-elt</code> allows <code>setf</code>ing like:</p>
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">setf <span class="paren2">(<span class="code">agent-elt 0 cut</span>)</span> 11</span>)</span></span></code></pre>
 
 <p><code>index</code>: the index to retrieve.<br/>
 <code>array-agent</code>: the array agent instance.</p>
 
-<p>In case of error <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-ELT-20FUNCTION-29" title="(CL-GSERVER.AGENT.ARRAY:AGENT-ELT FUNCTION)"><code>agent-elt</code></a> returns the error condition that <code>elt</code> raises.</p>
+<p>In case of error <code>agent-elt</code> returns the error condition that <code>elt</code> raises.</p>
 
 <p>The <code>setf</code> functionality will call <code>err-fun</code> on error if it has been configured.</p></li>
 </ul>
@@ -1845,7 +1859,7 @@ Use this to get notified of error when using the update functions of the agent.<
 <p><code>fun</code>: is a 1-arity function taking the array. This function can operate on the array without interference from other threads. The result of this function must be an array which will be the new agent state.<br/>
 <code>array-agent</code>: is the <code>array-agent</code> instance.</p>
 
-<p>The result of <a href="#x-28CL-GSERVER-2EAGENT-2EARRAY-3AAGENT-DOARRAY-20FUNCTION-29" title="(CL-GSERVER.AGENT.ARRAY:AGENT-DOARRAY FUNCTION)"><code>agent-doarray</code></a> is <code>T</code>.</p></li>
+<p>The result of <code>agent-doarray</code> is <code>T</code>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29'></a></p>
@@ -1879,7 +1893,7 @@ However, the workers are created in the given <a href="#x-28CL-GSERVER-2EACTOR-C
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29" >MAKE-DISPATCHER</a></span></span> <span class="locative-args">ACTOR-CONTEXT IDENTIFIER &amp;REST CONFIG</span></span></p>
 
 <p>Default constructor.
-This creates a <a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:SHARED-DISPATCHER CLASS)"><code>disp:shared-dispatcher</code></a> with the given dispatcher config, see <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" title="(CL-GSERVER.ACTOR-SYSTEM:*DEFAULT-CONFIG* (VARIABLE))"><code>asys:*default-config*</code></a>.
+This creates a <a href="#x-28CL-GSERVER-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29" title="(CL-GSERVER.DISPATCHER:SHARED-DISPATCHER CLASS)"><code>disp:shared-dispatcher</code></a> with the given dispatcher config, see <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20VARIABLE-29" title="(CL-GSERVER.ACTOR-SYSTEM:*DEFAULT-CONFIG* VARIABLE)"><code>asys:*default-config*</code></a>.
 Each worker is based on a <code>:pinned</code> actor meaning that it has its own thread.
 Specify an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> where actors needed in the dispatcher are created in.</p></li>
 </ul>
@@ -1890,7 +1904,7 @@ Specify an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" 
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-20GENERIC-FUNCTION-29" >DISPATCH</a></span></span> <span class="locative-args">DISPATCHER DISPATCHER-EXEC-FUN</span></span></p>
 
 <p>Dispatches a function (<code>dispatch-exec-fun</code>) to a worker of the dispatcher to execute there.
-<a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-20GENERIC-FUNCTION-29" title="(CL-GSERVER.DISPATCHER:DISPATCH GENERIC-FUNCTION)"><code>dispatch</code></a> does a <code>ask-s</code> to a <code>dispatcher</code> worker, which means this call will block.</p></li>
+<code>dispatch</code> does a <code>ask-s</code> to a <code>dispatcher</code> worker, which means this call will block.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-ASYNC-20GENERIC-FUNCTION-29'></a></p>
@@ -1899,7 +1913,7 @@ Specify an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" 
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-ASYNC-20GENERIC-FUNCTION-29" >DISPATCH-ASYNC</a></span></span> <span class="locative-args">DISPATCHER DISPATCHER-EXEC-FUN</span></span></p>
 
 <p>Dispatches a function to a worker of the dispatcher to execute there.
-<a href="#x-28CL-GSERVER-2EDISPATCHER-3ADISPATCH-ASYNC-20GENERIC-FUNCTION-29" title="(CL-GSERVER.DISPATCHER:DISPATCH-ASYNC GENERIC-FUNCTION)"><code>dispatch-async</code></a> does a <code>tell</code> to a <code>dispatcher</code> worker and is asynchronous.</p></li>
+<code>dispatch-async</code> does a <code>tell</code> to a <code>dispatcher</code> worker and is asynchronous.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EDISPATCHER-3ASTOP-20GENERIC-FUNCTION-29'></a></p>
@@ -2193,12 +2207,12 @@ Or if you want to listen to all lists, subscribe with <code>'cons</code>.</p></l
 
 <h6>[in package CL-GSERVER.TASKS with nicknames TASKS]</h6>
 
-<p><a id='x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20-28MGL-PAX-3AMACRO-29-29'></a></p>
+<p><a id='x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20MGL-PAX-3AMACRO-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20-28MGL-PAX-3AMACRO-29-29" >WITH-CONTEXT</a></span></span> <span class="locative-args">(CONTEXT &amp;OPTIONAL (DISPATCHER <code>:SHARED</code>)) &amp;BODY BODY</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20MGL-PAX-3AMACRO-29" >WITH-CONTEXT</a></span></span> <span class="locative-args">(CONTEXT &amp;OPTIONAL (DISPATCHER <code>:SHARED</code>)) &amp;BODY BODY</span></span></p>
 
-<p><a href="#x-28CL-GSERVER-2ETASKS-3AWITH-CONTEXT-20-28MGL-PAX-3AMACRO-29-29" title="(CL-GSERVER.TASKS:WITH-CONTEXT (MGL-PAX:MACRO))"><code>with-context</code></a> creates an environment where the <code>tasks</code> package functions should be used in.
+<p><code>with-context</code> creates an environment where the <code>tasks</code> package functions should be used in.
 <code>context</code> can be either an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>asys:actor-system</code></a>, an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a>, or an <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>act:actor</code></a> (or subclass).
 <code>dispatcher</code> specifies the dispatcher where the tasks is executed in (like thread-pool).
 The tasks created using the <code>tasks</code> functions will then be created in the given context.</p>
@@ -2216,7 +2230,7 @@ The tasks created using the <code>tasks</code> functions will then be created in
 
 <p>Since the default <code>:shared</code> dispatcher should mainly be used for the message dispatching, 
 but not so much for longer running tasks it is possible to create an actor system with additional
-dispatchers. This additional dispatcher can be utilized for <code>tasks</code>. Be aware that the config as used below is merged with the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" title="(CL-GSERVER.ACTOR-SYSTEM:*DEFAULT-CONFIG* (VARIABLE))"><code>asys:*default-config*</code></a> which means that the dispatcher <code>:foo</code> here is really an additional dispatcher.</p>
+dispatchers. This additional dispatcher can be utilized for <code>tasks</code>. Be aware that the config as used below is merged with the <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20VARIABLE-29" title="(CL-GSERVER.ACTOR-SYSTEM:*DEFAULT-CONFIG* VARIABLE)"><code>asys:*default-config*</code></a> which means that the dispatcher <code>:foo</code> here is really an additional dispatcher.</p>
 
 <pre><code><span class="code"><span class="comment">;; create actor-system with additional (custom) dispatcher
 </span><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">asys:make-actor-system '<span class="paren3">(<span class="code"><span class="keyword">:dispatchers</span> <span class="paren4">(<span class="code"><span class="keyword">:foo</span> <span class="paren5">(<span class="code"><span class="keyword">:workers</span> 16</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span>
@@ -2231,7 +2245,7 @@ dispatchers. This additional dispatcher can be utilized for <code>tasks</code>. 
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-YIELD-20FUNCTION-29" >TASK-YIELD</a></span></span> <span class="locative-args">FUN &amp;OPTIONAL TIME-OUT</span></span></p>
 
-<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-YIELD-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-YIELD FUNCTION)"><code>task-yield</code></a> runs the given function <code>fun</code> by blocking and waiting for a response from the <code>task</code>, or until the given timeout was elapsed.
+<p><code>task-yield</code> runs the given function <code>fun</code> by blocking and waiting for a response from the <code>task</code>, or until the given timeout was elapsed.
 <code>fun</code> must be a 0-arity function.</p>
 
 <p>A normal response from the actor is passed back as the response value.
@@ -2253,7 +2267,7 @@ If the timeout elapsed the response is: <code>(values :handler-error utils:ask-t
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-START-20FUNCTION-29" >TASK-START</a></span></span> <span class="locative-args">FUN</span></span></p>
 
-<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-START-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-START FUNCTION)"><code>task-start</code></a> runs the given function <code>fun</code> asynchronously.
+<p><code>task-start</code> runs the given function <code>fun</code> asynchronously.
 <code>fun</code> must be a 0-arity function.
 Use this if you don't care about any response or result, i.e. for I/O side-effects.
 It returns <code>(values :ok &lt;task&gt;)</code>. `<task> is in fact an actor given back as reference.
@@ -2265,12 +2279,12 @@ The task is automatically stopped and removed from the context and will not be a
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" >TASK-ASYNC</a></span></span> <span class="locative-args">FUN &amp;KEY ON-COMPLETE-FUN</span></span></p>
 
-<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> schedules the function <code>fun</code> for asynchronous execution.
+<p><code>task-async</code> schedules the function <code>fun</code> for asynchronous execution.
 <code>fun</code> must be a 0-arity function.
 <code>on-complete-fun</code> is a 1-arity completion handler function. When called the result is delivered.
 The completion handler function parameter may also be a <code>(cons :handler-error condition)</code> construct in case an error happened within the message handling.</p>
 
-<p>Using <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> provides two alternatives:</p>
+<p>Using <code>task-async</code> provides two alternatives:</p>
 
 <ul>
 <li><p>together with <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a></p></li>
@@ -2280,8 +2294,8 @@ The completion handler function parameter may also be a <code>(cons :handler-err
 <p>In fact it is possible to call <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> as well, but then you probably don't need a completion handler.
 Using the completion handler makes the processing complete asynchronous.</p>
 
-<p>The result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> is a <code>task</code>.
-Store this <code>task</code> for a call to <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> (even with or without using <code>on-complete-fun</code>).
+<p>The result of <code>task-async</code> is a <code>task</code>.
+Store this <code>task</code> for a call to <code>task-async</code> (even with or without using <code>on-complete-fun</code>).
 When <em>not</em> using <code>on-complete-fun</code> users must call either <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> or <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-SHUTDOWN-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-SHUTDOWN FUNCTION)"><code>task-shutdown</code></a> for the task to be cleaned up.
 When using <code>on-complete-fun</code> this is done for you.</p>
 
@@ -2309,9 +2323,9 @@ When using <code>on-complete-fun</code> this is done for you.</p>
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" >TASK-AWAIT</a></span></span> <span class="locative-args">TASK &amp;OPTIONAL TIME-OUT</span></span></p>
 
-<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> waits (by blocking) until a result has been generated for a previous <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> by passing the <code>task</code> result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> to <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a>.
-Specify <code>time-out</code> in seconds. If <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> times out a <code>(cons :handler-error 'ask-timeout)</code> will be returned.
-<a href="#x-28CL-GSERVER-2ETASKS-3ATASK-AWAIT-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-AWAIT FUNCTION)"><code>task-await</code></a> also stops the <code>task</code> that is the result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a>, so it is of no further use.</p></li>
+<p><code>task-await</code> waits (by blocking) until a result has been generated for a previous <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> by passing the <code>task</code> result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a> to <code>task-await</code>.
+Specify <code>time-out</code> in seconds. If <code>task-await</code> times out a <code>(cons :handler-error 'ask-timeout)</code> will be returned.
+<code>task-await</code> also stops the <code>task</code> that is the result of <a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC FUNCTION)"><code>task-async</code></a>, so it is of no further use.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-SHUTDOWN-20FUNCTION-29'></a></p>
@@ -2319,7 +2333,7 @@ Specify <code>time-out</code> in seconds. If <a href="#x-28CL-GSERVER-2ETASKS-3A
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-SHUTDOWN-20FUNCTION-29" >TASK-SHUTDOWN</a></span></span> <span class="locative-args">TASK</span></span></p>
 
-<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-SHUTDOWN-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-SHUTDOWN FUNCTION)"><code>task-shutdown</code></a> shuts down a task in order to clean up resources.</p></li>
+<p><code>task-shutdown</code> shuts down a task in order to clean up resources.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-STREAM-20FUNCTION-29'></a></p>
@@ -2327,7 +2341,7 @@ Specify <code>time-out</code> in seconds. If <a href="#x-28CL-GSERVER-2ETASKS-3A
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-STREAM-20FUNCTION-29" >TASK-ASYNC-STREAM</a></span></span> <span class="locative-args">FUN LST</span></span></p>
 
-<p><a href="#x-28CL-GSERVER-2ETASKS-3ATASK-ASYNC-STREAM-20FUNCTION-29" title="(CL-GSERVER.TASKS:TASK-ASYNC-STREAM FUNCTION)"><code>task-async-stream</code></a> concurrently applies <code>fun</code> on all elements of <code>lst</code>.
+<p><code>task-async-stream</code> concurrently applies <code>fun</code> on all elements of <code>lst</code>.
 <code>fun</code> must be a one-arity function taking an element of <code>lst</code>.</p>
 
 <p>The concurrency depends on the number of available <code>:shared</code> dispatcher workers.

@@ -50,7 +50,8 @@
                                 :name "counter-actor"
                                 :state 0
                                 :receive *receive-fun*))
-            (max-loop 10000)
+            #-sbcl (max-loop 10000)
+            #+sbcl (max-loop (* 8 25))
             (per-thread (/ max-loop 8)))
        (setf (act-cell:msgbox cut) (make-instance 'mesgb:message-box/bt :max-queue-size ,queue-size))
        ,@body
@@ -65,7 +66,8 @@
            (cut (ac:actor-of system (lambda ()
                                       (make-instance 'counter-actor :state 0
                                                                     :receive *receive-fun*))))
-           (max-loop 10000)
+            #-sbcl (max-loop 10000)
+            #+sbcl (max-loop (* 8 25))
            (per-thread (/ max-loop 8)))
       (unwind-protect
            ,@body
@@ -125,8 +127,3 @@
                        (ask-s cut :sub))))
                  (loop repeat 8 collect "n")))
     (is (= 8 (ask-s cut :get)))))
-
-(defun run-tests ()
-  (time (run! 'counter-mp-unbounded))
-  (time (run! 'counter-mp-unbounded--mixed))
-  (time (run! 'counter-mp-bounded)))

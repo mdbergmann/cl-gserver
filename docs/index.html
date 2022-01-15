@@ -89,6 +89,8 @@
 
 <h3>Version history</h3>
 
+<p><strong>Version 1.11.0 (16.1.2022):</strong> Changes to <code>AC:FIND-ACTORS</code>. Breaking API change. See API documentation for details.</p>
+
 <p><strong>Version 1.10.0:</strong> Logging abstraction. Use your own logging facility. cl-gserver doesn't lock you in but provides support for log4cl. Support for other logging facilities can be easily added so that the logging of cl-gserver  will use your chosen logging library. See below for more details.</p>
 
 <p><strong>Version 1.9.0:</strong> Use wheel timer for <code>ask</code> timeouts.</p>
@@ -263,15 +265,9 @@ When creating an actor it is possible to specify the <code>dispatcher-id</code>.
 can still be looked up and used. The <code>actor-context</code> protocol
 contains a function <code>find-actors</code> which works like this:</p>
 
-<pre><code><span class="code"><span class="paren1">(<span class="code">first <span class="paren2">(<span class="code">ac:find-actors 
-                 <span class="special">*system*</span>
-                 <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code">actor</span>)</span> <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_73.html#IDX157" class="symbol">string=</a> <span class="string">"answerer"</span> 
-                                          <span class="paren5">(<span class="code">act-cell:name actor</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+<pre><code><span class="code"><span class="paren1">(<span class="code">first <span class="paren2">(<span class="code">ac:find-actors <span class="special">*system*</span> <span class="string">"answerer"</span></span>)</span></span>)</span></span></code></pre>
 
-<p><code>find-actors</code> takes as first parameter the actor context.
-This can be either the actor system, or the context of an actor. The
-second parameter is a test function. This example makes a string
-comparison on the actor name. So the above function will output:</p>
+<p>See additional parameters and options here: <a href="https://mdbergmann.github.io/cl-gserver/index.html#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29" >API documentation</a></p>
 
 <pre><code><span class="code">#&lt;ACTOR answerer, running: T, state: NIL, message-box: #&lt;MESSAGE-BOX/DP mesgb-9687, processed messages: 0, max-queue-size: 0, queue: #&lt;QUEUE-UNBOUNDED #x30200263C95D&gt;&gt;&gt;</span></code></pre>
 
@@ -816,17 +812,9 @@ See <a href="#x-28CL-GSERVER-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29" title="(CL-GS
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29" >FIND-ACTORS</a></span></span> <span class="locative-args">(SELF ACTOR-SYSTEM) TEST-FUN</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29" >FIND-ACTORS</a></span></span> <span class="locative-args">(SELF ACTOR-SYSTEM) PATH</span></span></p>
 
 <p>See <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:FIND-ACTORS GENERIC-FUNCTION)"><code>ac:find-actors</code></a></p></li>
-</ul>
-
-<p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTOR-BY-NAME-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29'></a></p>
-
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTOR-BY-NAME-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29" >FIND-ACTOR-BY-NAME</a></span></span> <span class="locative-args">(SELF ACTOR-SYSTEM) NAME</span></span></p>
-
-<p>See <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTOR-BY-NAME-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:FIND-ACTOR-BY-NAME GENERIC-FUNCTION)"><code>ac:find-actor-by-name</code></a></p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AALL-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-29-29-29'></a></p>
@@ -893,17 +881,9 @@ An <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20T-29-29-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20T-29-29-29" >FIND-ACTORS</a></span></span> <span class="locative-args">(SELF ACTOR-CONTEXT) TEST-FUN</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20T-29-29-29" >FIND-ACTORS</a></span></span> <span class="locative-args">(SELF ACTOR-CONTEXT) PATH</span></span></p>
 
 <p>See <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:FIND-ACTORS GENERIC-FUNCTION)"><code>ac:find-actors</code></a></p></li>
-</ul>
-
-<p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTOR-BY-NAME-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20T-29-29-29'></a></p>
-
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTOR-BY-NAME-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20T-29-29-29" >FIND-ACTOR-BY-NAME</a></span></span> <span class="locative-args">(SELF ACTOR-CONTEXT) NAME</span></span></p>
-
-<p>See <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTOR-BY-NAME-20GENERIC-FUNCTION-29" title="(CL-GSERVER.ACTOR-CONTEXT:FIND-ACTOR-BY-NAME GENERIC-FUNCTION)"><code>ac:find-actor-by-name</code></a></p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AALL-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-29-29-29'></a></p>
@@ -978,35 +958,42 @@ Current exists:</p>
 
 <p>Creates and adds actors to the given context.</p>
 
-<p>Both an <code>actor-system</code> and an <code>actor</code> are composed of an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a>.
+<p>Both an <code>AC:ACTOR-SYSTEM</code> and an <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>ACT:ACTOR</code></a> are composed of an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>AC:ACTOR-CONTEXT</code></a>.
 When an <code>actor-system</code> is specified as context (<code>actor-system</code> implements parts of the protocol) then the new actor will be a new root actor.</p>
 
 <p>When the new actor should be a child of another actor, then the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a> of the (to be) parent <code>actor</code> should be specified.
 Creating an actor via <code>actor-of</code> will also add the <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>actor-context</code></a> as watcher of the actor. This watching can be used for different purposes. Right now the <code>actor</code> is removed from the context when it was stopped.</p>
 
-<p>Specify the dispatcher type (<code>dispatcher-id</code>) as either:
-<code>:shared</code> to have this actor use the shared message dispatcher of the context
-<code>:pinned</code> to have this actor run it's own message box thread (faster, but more resource are bound.)</p>
+<p>Specify the dispatcher type (<code>dispatcher-id</code>) as either:</p>
 
-<p>Specify <code>queue-size</code> with:
-0: for a unbounded queue
-gt 0: for a bounded queue (preferably a size &gt; 100)</p></li>
+<ul>
+<li><p><code>:shared</code> to have this actor use the shared message dispatcher of the context</p></li>
+<li><p><code>:pinned</code> to have this actor run it's own message box thread (faster, but more resource are bound.)</p></li>
+</ul>
+
+<p>Specify <code>queue-size</code> with:</p>
+
+<ul>
+<li><p>0: for a unbounded queue</p></li>
+<li><p>gt 0: for a bounded queue (preferably a size &gt; 100)</p></li>
+</ul></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29" >FIND-ACTORS</a></span></span> <span class="locative-args">CONTEXT TEST-FUN</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29" >FIND-ACTORS</a></span></span> <span class="locative-args">CONTEXT PATH &amp;KEY TEST KEY</span></span></p>
 
-<p>Returns actors of this context where <code>test-fun</code> provides 'truth'.</p></li>
-</ul>
-
-<p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTOR-BY-NAME-20GENERIC-FUNCTION-29'></a></p>
+<p>Returns actors to be found by the criteria of:</p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTOR-BY-NAME-20GENERIC-FUNCTION-29" >FIND-ACTOR-BY-NAME</a></span></span> <span class="locative-args">CONTEXT NAME</span></span></p>
+<li><p><code>context</code>: an <a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>AC:ACTOR-CONTEXT</code></a>, or an <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>ACT:ACTOR</code></a> or an <a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20CLASS-29" title="(CL-GSERVER.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS)"><code>ASYS:ACTOR-SYSTEM</code></a> as all three implement <code>find-actors</code>.</p></li>
+<li><p><code>path</code>: a path designator to be found. This can be just an actor name, like 'foo', then <code>find-actors</code> will only look in the given context for the actor. It can also be: 'foo/bar', a relative path, in whcih case <code>find-actors</code> will traverse the path (here 'bar' is a child of 'foo') to the last context and will try to find the actor by name there, 'bar' in this case. Also possible is a root path like '/user/foo/bar' which will start traversing contexts started from the root context, which is the actor-system.</p></li>
+<li><p><code>test</code>: a 2-arie test function where the 1st argument is the <code>path</code>, the 2nd is the a result of the <code>key</code> function (which defaults to <a href="#x-28CL-GSERVER-2EACTOR-CELL-3ANAME-20-28MGL-PAX-3AREADER-20CL-GSERVER-2EACTOR-CELL-3AACTOR-CELL-29-29" title="(CL-GSERVER.ACTOR-CELL:NAME (MGL-PAX:READER CL-GSERVER.ACTOR-CELL:ACTOR-CELL))"><code>ACT-CELL:NAME</code></a>, so the name of the actor). The default function for <code>test</code> is <code>STRING=</code>. However, in case of a multi-subpath <code>path</code> both <code>test</code> and <code>key</code> only apply to the last path component, which designates the actor name to be found.</p></li>
+<li><p><code>key</code>: a 1-arie function applied on an actor instance. Defaults to <a href="#x-28CL-GSERVER-2EACTOR-CELL-3ANAME-20-28MGL-PAX-3AREADER-20CL-GSERVER-2EACTOR-CELL-3AACTOR-CELL-29-29" title="(CL-GSERVER.ACTOR-CELL:NAME (MGL-PAX:READER CL-GSERVER.ACTOR-CELL:ACTOR-CELL))"><code>ACT-CELL:NAME</code></a>.</p></li>
+</ul>
 
-<p>Returns an actor for the given name, when it exists.</p></li>
+<p>Depending on <code>test</code> function the last path component can be used as a wildcard when using a <code>test</code> function like <code>STR:STARTS-WITH-P</code> or <code>STR:CONTAINSP</code> for example.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AALL-ACTORS-20GENERIC-FUNCTION-29'></a></p>
@@ -1202,7 +1189,7 @@ The <code>new-behavior</code> function must accept 3 parameters: the actor insta
 <p><a id='x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29" >CONTEXT</a></span></span> <span class="locative-args">X</span></span></p>
 
 <p>This is the <code>actor-context</code> every actor is composed of.
 When the actor is created from scratch it has no <code>actor-context</code>.
@@ -1239,9 +1226,9 @@ I.e.: when it stopped. The message being sent in this case is: <code>(cons :stop
 <p><a id='x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-3AWATCHERS-20GENERIC-FUNCTION-29" >WATCHERS</a></span></span> <span class="locative-args">X</span></span></p>
 
-<p>Returns a list of watchers of <code>actor</code>.</p></li>
+<p>Returns a list of watchers of <a href="#x-28CL-GSERVER-2EACTOR-3AACTOR-20CLASS-29" title="(CL-GSERVER.ACTOR:ACTOR CLASS)"><code>actor</code></a>.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EEVENTSTREAM-3ASUBSCRIBE-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20CL-GSERVER-2EACTOR-3AACTOR-29-29-29'></a></p>
@@ -1271,15 +1258,7 @@ I.e.: when it stopped. The message being sent in this case is: <code>(cons :stop
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20T-29-29-29'></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20T-29-29-29" >FIND-ACTORS</a></span></span> <span class="locative-args">(ACTOR ACTOR) TEST-FUN</span></span></p>
-
-<p><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> protocol implementation.</p></li>
-</ul>
-
-<p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTOR-BY-NAME-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20T-29-29-29'></a></p>
-
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTOR-BY-NAME-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20T-29-29-29" >FIND-ACTOR-BY-NAME</a></span></span> <span class="locative-args">(ACTOR ACTOR) NAME</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-3AACTOR-20T-29-29-29" >FIND-ACTORS</a></span></span> <span class="locative-args">(ACTOR ACTOR) PATH</span></span></p>
 
 <p><a href="#x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-CONTEXT-20CLASS-29" title="(CL-GSERVER.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS)"><code>ac:actor-context</code></a> protocol implementation.</p></li>
 </ul>

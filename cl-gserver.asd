@@ -1,7 +1,7 @@
 (defsystem "cl-gserver"
-  :version "1.10.0"
+  :version "1.11.0"
   :author "Manfred Bergmann"
-  :license "AGPL"
+  :license "Apache-2"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
   :depends-on ("cl-gserver/logif"
                "cl-gserver/logif-simple"
@@ -62,7 +62,6 @@
 
 (defsystem "cl-gserver/tests"
   :author "Manfred Bergmann"
-  :license "AGPL"
   :depends-on ("cl-gserver"
                "fiveam"
                "cl-mock")
@@ -100,7 +99,6 @@
 
 (defsystem "cl-gserver/docs"
   :author "Manfred Bergmann"
-  :license "AGPL"
   :description "Documentation for cl-gserver"
   :depends-on ("cl-gserver"
                "mgl-pax")
@@ -110,7 +108,6 @@
 
 (defsystem "cl-gserver/logif"
   :author "Manfred Bergmann"
-  :license "AGPL"
   :description "Logging interface api"
   :components ((:module "src"
                 :components
@@ -120,7 +117,6 @@
 
 (defsystem "cl-gserver/logif-simple"
   :author "Manfred Bergmann"
-  :license "AGPL"
   :description "Logging interface - simple implementation"
   :depends-on ("cl-gserver/logif")
   :components ((:module "src"
@@ -131,7 +127,6 @@
 
 (defsystem "cl-gserver/logif-log4cl"
   :author "Manfred Bergmann"
-  :license "AGPL"
   :description "Logging interface - log4cl implementation"
   :depends-on ("cl-gserver/logif" "log4cl")
   :components ((:module "src"
@@ -152,7 +147,6 @@
 #|
 
 TODOs:
-- remove blackbird and create own future
 
 |#
 

@@ -134,15 +134,63 @@
       (notify cut actor :stopped)
       (is (= 0 (length (all-actors cut)))))))
 
-(test find-actors-test
+(test find-actors--in-same-context-by-name
   "Test for finding actors"
   (with-fixture test-system ()
     (let ((context (make-actor-context system)))
       (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
       (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
-      (is (= 2 (length
-                (find-actors context
-                             (lambda (actor) (str:starts-with-p "foo" (act-cell:name actor))))))))))
+      (is (= 1 (length (find-actors context "foo" :test #'string=))))
+      (is (= 1 (length (find-actors context "foo2" :test #'string=)))))))
+
+(test find-actors--in-same-context--name-starts-with
+  "Test for finding actors"
+  (with-fixture test-system ()
+    (let ((context (make-actor-context system)))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
+      (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
+      (is (= 2 (length (find-actors context "foo" :test #'str:starts-with-p)))))))
+
+(test find-actors--in-child-context--by-name
+  "Test for finding actors"
+  (with-fixture test-system ()
+    (let* ((context (make-actor-context system))
+           (act1 (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))))
+      (actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo2")))
+      (is (= 1 (length (find-actors context "foo/foo2" :test #'string=))))
+      (is (= 1 (length (find-actors (act:context act1) "foo2")))))))
+
+(test find-actors--in-child-context--error-on-path-component
+  "Test for finding actors"
+  (with-fixture test-system ()
+    (let* ((context (make-actor-context system))
+           (act1 (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))))
+      (actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo2")))
+      (is (typep
+           (handler-case
+               (find-actors context "err/foo2")
+             (error (c) c))
+           'error)))))
+
+(test find-actors--empty-path-argument
+  "Test for finding actors"
+  (with-fixture test-system ()
+    (let* ((context (make-actor-context system))
+           (act1 (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))))
+      (actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo2")))
+      (is (null (find-actors context ""))))))
+
+(test find-actors--from-root--delegate-to-system
+  "Test for finding actors"
+  (with-fixture test-system ()
+    (let* ((context system)
+           (act1 (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))))
+      (print context)
+      (print act1)
+      (actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo2")))
+      (actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo3")))
+      (is (= 1 (length (find-actors (make-actor-context system) "/user/foo/foo2"))))
+      (is (= 2 (length (find-actors (make-actor-context system) "/user/foo/foo" :test #'str:starts-with-p)))))))
 
 (test stop-actor--by-context
   "Tests stopping an actor."
@@ -175,7 +223,7 @@
       (actor-of context (lambda () (make-actor (lambda ()) :name "foo")))
       (actor-of context (lambda () (make-actor (lambda ()) :name "foo2")))
       (shutdown context)
-      (is (= 0 (length (find-actors context (lambda (a) (act-cell:running-p a)))))))))
+      (is (= 0 (length (all-actors context)))))))
 
 (test enforce-unique-actor-names
   "Test that all actors in a context have a unique name."
@@ -192,14 +240,3 @@
           (assert (string= "Actor with name 'foo' already exists!"
                            (format nil "~a" c)))
           (is-true t))))))
-
-(test remove-and-add-actors--find-actor-by-name
-  "Tests removing and again adding actors !!! this tests private API"
-  (with-fixture test-system ()
-    (let ((context (make-actor-context system)))
-      (ac::%add-actor context (make-instance 'act-cell:actor-cell :name :foo))
-      (is (find-actor-by-name context :foo))
-      (ac::%remove-actor context (make-instance 'act-cell:actor-cell :name :foo))
-      (is (= 0 (length (all-actors context))))
-      (ac::%add-actor context (make-instance 'act-cell:actor-cell :name :foo))
-      (is (find-actor-by-name context :foo)))))

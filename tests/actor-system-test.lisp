@@ -83,9 +83,7 @@ We use internal API here only for this test, do not use this otherwise."
 
     (ac:shutdown system)
     (is-true (assert-cond (lambda ()
-                            (= 0 (length (ac:find-actors
-                                          system
-                                          (lambda (actor) (act-cell:running-p actor)))))) 2))))
+                            (= 0 (length (ac:all-actors system)))) 2))))
 
 (test actor-of--verify-proper-root-path
   "Tests whether actors and contexts are created with proper paths."
@@ -147,22 +145,35 @@ We use internal API here only for this test, do not use this otherwise."
   (with-fixture test-system ()
     (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
           (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2"))))
-          (act3 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :shared :context-key :internal))
-          (act4 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")) :shared :context-key :internal)))
-      (is (eq act1 (first (ac:find-actors cut (lambda (x) (string= "foo" (act-cell:name x)))))))
-      (is (eq act2 (first (ac:find-actors cut (lambda (x) (string= "foo2" (act-cell:name x)))))))
-      (is (eq act3 (first (asys::%find-actors cut (lambda (x) (string= "foo" (act-cell:name x))) :context-key :internal))))
-      (is (eq act4 (first (asys::%find-actors cut (lambda (x) (string= "foo2" (act-cell:name x))) :context-key :internal))))
-      (is (eq nil (ac:find-actors cut (lambda (x) (declare (ignore x))))))
-      (is (= 2 (length (ac:find-actors cut #'identity)))))))
+          (act3 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo3")) :shared :context-key :internal))
+          (act4 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo4")) :shared :context-key :internal)))
+      (is (eq act1 (first (ac:find-actors cut "foo"))))
+      (is (eq act2 (first (ac:find-actors cut "foo2"))))
+      (is (eq act3 (first (asys::%find-actors cut "foo3" :test #'string=
+                                                        :key #'act-cell:name
+                                                        :context-key :internal))))
+      (is (eq act4 (first (asys::%find-actors cut "foo4" :test #'string=
+                                                         :key #'act-cell:name
+                                                         :context-key :internal))))
+      (is (= 2 (length (ac:all-actors cut)))))))
 
-(test find-actor-by-name--in-system
-  "Tests finding an actor by name."
+(test find-actors--from-root
+  "Test for finding actors"
   (with-fixture test-system ()
-    (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
-          (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")))))
-      (is (eq act1 (ac:find-actor-by-name cut "foo")))
-      (is (eq act2 (ac:find-actor-by-name cut "foo2"))))))
+    (let* ((context cut)
+           (act1 (ac:actor-of context (lambda () (make-actor (lambda ()) :name "foo")))))
+      (ac:actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo2")))
+      (ac:actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo3")))
+      (is (= 1 (length (ac:find-actors context "/user/foo/foo2"))))
+      (is (= 2 (length (ac:find-actors context "/user/foo/foo" :test #'str:starts-with-p)))))))
+
+(test find-actors--no-root--using-user-context
+  "Test for finding actors"
+  (with-fixture test-system ()
+    (let* ((context cut)
+           (act1 (ac:actor-of context (lambda () (make-actor (lambda ()) :name "foo")))))
+      (ac:actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo2")))
+      (is (= 1 (length (ac:find-actors context "foo/foo2")))))))
 
 (test all-actors--in-system-user-context
   "Retrieves all actors in user actor context of system."

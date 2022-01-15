@@ -12,7 +12,6 @@
                     ev:unsubscribe
                     ev:publish
                     ac:find-actors
-                    ac:find-actor-by-name
                     ac:all-actors))
 
 (defclass actor (actor-cell)
@@ -303,13 +302,9 @@ In any case stop the actor-cell."
 ;; actor-context protocol impl (partial)
 ;; --------------------------------------
 
-(defmethod find-actors ((actor actor) test-fun)
+(defmethod find-actors ((actor actor) path &key (test #'string=) (key #'act-cell:name))
   "`ac:actor-context` protocol implementation."
-  (ac:find-actors (context actor) test-fun))
-
-(defmethod find-actor-by-name ((actor actor) name)
-  "`ac:actor-context` protocol implementation."
-  (ac:find-actor-by-name (context actor) name))
+  (ac:find-actors (context actor) path :test test :key key))
 
 (defmethod all-actors ((actor actor))
   "`ac:actor-context` protocol implementation."

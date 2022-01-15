@@ -7,7 +7,6 @@
   ;; ac protocol
   (ac:actor-of (pax:method () (asys:actor-system t)))
   (ac:find-actors (pax:method () (asys:actor-system t)))
-  (ac:find-actor-by-name (pax:method () (asys:actor-system t)))
   (ac:all-actors (pax:method () (asys:actor-system)))
   (ac:stop (pax:method () (asys:actor-system t)))
   (ac:shutdown (pax:method () (asys:actor-system)))
@@ -17,7 +16,6 @@
 (pax:defsection @ac-protocol (:title "Actor-Context protocol")
   (ac:actor-of generic-function)
   (ac:find-actors generic-function)
-  (ac:find-actor-by-name generic-function)
   (ac:all-actors generic-function)
   (ac:stop generic-function)
   (ac:shutdown generic-function))
@@ -28,7 +26,6 @@
 
   (ac:actor-of (pax:method () (ac:actor-context t)))
   (ac:find-actors (pax:method () (ac:actor-context t)))
-  (ac:find-actor-by-name (pax:method () (ac:actor-context t)))
   (ac:all-actors (pax:method () (ac:actor-context)))
   (ac:stop (pax:method () (ac:actor-context t)))
   (ac:shutdown (pax:method () (ac:actor-context)))
@@ -104,7 +101,6 @@
   (ev:publish (pax:method () (act:actor t)))
   ;; actor-context protocol
   (ac:find-actors (pax:method () (act:actor t)))
-  (ac:find-actor-by-name (pax:method () (act:actor t)))
   (ac:all-actors (pax:method () (act:actor)))
   
   (act-cell:@actor-cell pax:section)

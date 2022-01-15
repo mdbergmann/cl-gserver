@@ -6,6 +6,8 @@ cl-gserver is a 'message passing' library/framework with actors similar to Erlan
 
 ### Version history
 
+**Version 1.11.0 (16.1.2022):** Changes to `AC:FIND-ACTORS`. Breaking API change. See API documentation for details.
+
 **Version 1.10.0:** Logging abstraction. Use your own logging facility. cl-gserver doesn't lock you in but provides support for log4cl. Support for other logging facilities can be easily added so that the logging of cl-gserver  will use your chosen logging library. See below for more details.
 
 **Version 1.9.0:** Use wheel timer for `ask` timeouts.
@@ -187,16 +189,10 @@ can still be looked up and used. The `actor-context` protocol
 contains a function `find-actors` which works like this:
 
 ```elisp
-(first (ac:find-actors 
-                 *system*
-                 (lambda (actor) (string= "answerer" 
-                                          (act-cell:name actor)))))
+(first (ac:find-actors *system* "answerer"))
 ```
 
-`find-actors` takes as first parameter the actor context.
-This can be either the actor system, or the context of an actor. The
-second parameter is a test function. This example makes a string
-comparison on the actor name. So the above function will output:
+See additional parameters and options here: [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29)
 
 ```
 #<ACTOR answerer, running: T, state: NIL, message-box: #<MESSAGE-BOX/DP mesgb-9687, processed messages: 0, max-queue-size: 0, queue: #<QUEUE-UNBOUNDED #x30200263C95D>>>

@@ -6,7 +6,6 @@
                     ac:make-actor-context
                     ac:actor-of
                     ac:find-actors
-                    ac:find-actor-by-name
                     ac:all-actors
                     ac:shutdown
                     ac:stop
@@ -122,14 +121,18 @@ Users should use `actor-of`."
     :dispatcher-id dispatcher-id
     :queue-size queue-size))
 
-(defun %find-actors (system test-fun &key context-key)
+(defun %find-actors (system path &key test key context-key)
   "Private API to find actors in both contexts the actor-system supports.
-Users should use `find-actors`."
-  (ac:find-actors (actor-context-for-key context-key system) test-fun))
-
-(defun %find-actor-by-name (system name &key context-key)
-  "Private API to find an actor by name in the specified context."
-  (ac:find-actor-by-name (actor-context-for-key context-key system) name))
+Users should use `ac:find-actors`."
+  (let* ((root-path (format nil "/~a/" (string-downcase (symbol-name context-key))))
+         (effective-path (if (str:starts-with-p "/" path)
+                             (str:replace-first root-path "" path)
+                             path)))
+    (ac:find-actors
+     (actor-context-for-key context-key system)
+     effective-path
+     :test test
+     :key key)))
 
 (defun %all-actors (system context-key)
   (ac:all-actors (actor-context-for-key context-key system)))
@@ -142,13 +145,9 @@ Users should use `find-actors`."
   "See `ac:actor-of`"
   (%actor-of self create-fun dispatcher-id :context-key :user :queue-size queue-size))
 
-(defmethod find-actors ((self actor-system) test-fun)
+(defmethod find-actors ((self actor-system) path &key (test #'string=) (key #'act-cell:name))
   "See `ac:find-actors`"
-  (%find-actors self test-fun :context-key :user))
-
-(defmethod find-actor-by-name ((self actor-system) name)
-  "See `ac:find-actor-by-name`"
-  (%find-actor-by-name self name :context-key :user))
+  (%find-actors self path :test test :key key :context-key :user))
 
 (defmethod all-actors ((self actor-system))
   "See `ac:all-actors`"

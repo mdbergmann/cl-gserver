@@ -55,10 +55,17 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
                                 :dispatcher dispatcher
                                 :max-queue-size queue-size)))))
 
+(defun %find-actor-by-name (context name)
+  (find-if (lambda (a)
+             (let ((seq-name (act-cell:name a)))
+               (or (eq name seq-name)
+                   (string= name seq-name))))
+           (actors context)))
+
 (defun %verify-actor (context actor)
   "Checks certain things on the actor before it is attached to the context."
   (let* ((actor-name (act-cell:name actor))
-         (exists-actor-p (find-actor-by-name context actor-name)))
+         (exists-actor-p (%find-actor-by-name context actor-name)))
     (when exists-actor-p
       (lf:lerror "Actor with name '~a' already exists!" actor-name)
       (error (make-condition 'actor-name-exists :name actor-name)))))
@@ -95,18 +102,29 @@ An `act:actor` contains an `actor-context`."
       (act:watch created self)
       (%add-actor self created))))
 
-(defmethod find-actors ((self actor-context) test-fun)
+(defun %find-actors (context path &key test key)
+  (let ((actors-to-search (all-actors context)))
+    (utils:filter (lambda (x)
+                    (funcall test path (funcall key x)))
+                  actors-to-search)))
+
+;; test 2-arry function with 'path' and 'act-cell-name' (default)
+(defmethod find-actors ((self actor-context) path &key (test #'string=) (key #'act-cell:name))
   "See `ac:find-actors`"
-  (utils:filter test-fun (all-actors self)))
-
-(defmethod find-actor-by-name ((self actor-context) name)
-  "See `ac:find-actor-by-name`"
-  (find-if (lambda (a)
-             (let ((seq-name (act-cell:name a)))
-               (or (eq name seq-name)
-                   (string= name seq-name))))
-           (actors self)))
-
+  (if (str:starts-with-p "/" path)
+      ;; root path, delegate to system
+      (find-actors (system self) path :test test :key key)  
+      (let ((path-comps (str:split "/" path))
+            (context self))
+        (loop :for path-comp :in (butlast path-comps)
+              :for actor = (find path-comp (all-actors context)
+                                 :test #'string=
+                                 :key #'act-cell:name)
+              :do (if actor
+                      (setf context (act:context actor))
+                      (error (format nil "Cannot find path component ~a" path-comp))))
+        (%find-actors context (car (last path-comps)) :test test :key key))))
+        
 (defmethod all-actors ((self actor-context))
   "See `ac:all-actors`"
   (actors self))

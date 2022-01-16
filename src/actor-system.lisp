@@ -69,6 +69,7 @@ Or even simpler via `act:actor-of` which is a convenience macro:
 
 (defun make-actor-system (&optional config)
   "Creates an `actor-system`.
+
 Allows to provide an optional configuration. See `asys:*default-config*`.
 If no config is provided the default config is used.
 Is a config provided then it is merged with the default config.

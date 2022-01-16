@@ -56,14 +56,14 @@ Or even simpler via `act:actor-of` which is a convenience macro:
 
 (defmethod print-object ((obj actor-system) stream)
   (print-unreadable-object (obj stream :type t)
-    (with-slots (dispatchers config internal-actor-context user-actor-context) obj
+    (with-slots (config internal-actor-context user-actor-context) obj
       (format stream "config: ~a, user actors: ~a, internal actors: ~a"
               config
               (length (ac:all-actors user-actor-context))
               (length (ac:all-actors internal-actor-context))))))
 
 (defmethod initialize-instance :after ((self actor-system) &key)
-  (with-slots (user-actor-context internal-actor-context timeout-timer) self
+  (with-slots (user-actor-context internal-actor-context) self
     (setf user-actor-context (ac:make-actor-context self "/user"))
     (setf internal-actor-context (ac:make-actor-context self "/internal"))))
 
@@ -76,33 +76,46 @@ Config options in the existing config override the default config.
 See `config:config-from`."
   (let ((system-config (config:merge-config config *default-config*))
         (system (make-instance 'actor-system)))
-    (with-slots (dispatchers config internal-actor-context eventstream timeout-timer) system
+    (with-slots (config internal-actor-context) system
       (setf config system-config)
-      (setf eventstream (ev:make-eventstream internal-actor-context))
-
-      (setf timeout-timer (wt:make-wheel-timer
-                           (%get-timeout-timer-config config)))
-      (setf dispatchers (make-dispatchers-from-config
-                         (%get-dispatcher-config config)
-                         internal-actor-context)))
+      (%register-eventstream system internal-actor-context)
+      (%register-timeout-timer system (%get-timeout-timer-config config))
+      (%register-dispatchers system (%get-dispatcher-config config) internal-actor-context))
     (lf:linfo system)
     system))
 
-(defun %get-timeout-timer-config (system-config)
-  (config:retrieve-section system-config :timeout-timer))
+(defun %get-timeout-timer-config (config)
+  (config:retrieve-section config :timeout-timer))
 
-(defun %get-dispatcher-config (system-config)
-  (config:retrieve-section system-config :dispatchers))
+(defun %get-dispatcher-config (config)
+  (config:retrieve-section config :dispatchers))
 
-(defun make-dispatchers-from-config (config internal-actor-context)
+(defun %register-eventstream (system actor-context)
+  (with-slots (eventstream) system
+    (setf eventstream (ev:make-eventstream actor-context))))
+
+(defun %register-timeout-timer (system timer-config)
+  (with-slots (timeout-timer) system
+    (setf timeout-timer (wt:make-wheel-timer timer-config))))
+
+(defun %register-dispatchers (system dispatcher-config actor-context)
   "Creates a plist of dispatchers for the `:dispatchers` configuration section."
-  (loop :for dispatcher-key :in (config:retrieve-keys config)
-        :for dispatcher-section = (config:retrieve-section config dispatcher-key)
-        :append (list dispatcher-key
-                      (apply #'disp:make-dispatcher
-                             internal-actor-context
-                             dispatcher-key
-                             dispatcher-section))))
+  (loop :for dispatcher-key :in (config:retrieve-keys dispatcher-config)
+        :for dispatcher-section = (config:retrieve-section dispatcher-config dispatcher-key)
+        :do (register-dispatcher system
+                                 dispatcher-key
+                                 (apply #'disp:make-dispatcher
+                                        actor-context
+                                        dispatcher-key
+                                        dispatcher-section))))
+
+(defun register-dispatcher (system dispatcher-id dispatcher)
+  "Registers a dispatcher to the actor-system.
+
+- `dispatcher-id`: should be something unique, like a global symbol, except `:shared` as this is the default internal dispatcher. Registering another dispatcher using `:shared` will override the default internal dispatcher.
+- `dispatcher`: the dispatcher instance."
+  (with-slots (dispatchers) system
+    (setf dispatchers (append (list dispatcher-id dispatcher) dispatchers))))
 
 ;; ----------------------------------------
 ;; Private Api

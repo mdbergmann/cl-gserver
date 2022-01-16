@@ -10,7 +10,6 @@
 
 (defsystem "cl-gserver/plain"
   :author "Manfred Bergmann"
-  :license "AGPL"
   :description "cl-gserver with no logging. combine with one of the logging interfaces."
   :depends-on ("alexandria"
                "bordeaux-threads"

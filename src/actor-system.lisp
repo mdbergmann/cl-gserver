@@ -77,11 +77,11 @@ Config options in the existing config override the default config.
 See `config:config-from`."
   (let ((system-config (config:merge-config config *default-config*))
         (system (make-instance 'actor-system)))
-    (with-slots (config internal-actor-context) system
-      (setf config system-config)
+    (with-slots (internal-actor-context) system
+      (%register-config system system-config)
       (%register-eventstream system internal-actor-context)
-      (%register-timeout-timer system (%get-timeout-timer-config config))
-      (%register-dispatchers system (%get-dispatcher-config config) internal-actor-context))
+      (%register-timeout-timer system (%get-timeout-timer-config system-config))
+      (%register-dispatchers system (%get-dispatcher-config system-config) internal-actor-context))
     (lf:linfo system)
     system))
 
@@ -90,6 +90,10 @@ See `config:config-from`."
 
 (defun %get-dispatcher-config (config)
   (config:retrieve-section config :dispatchers))
+
+(defun %register-config (system new-config)
+  (with-slots (config) system
+    (setf config new-config)))
 
 (defun %register-eventstream (system actor-context)
   (with-slots (eventstream) system

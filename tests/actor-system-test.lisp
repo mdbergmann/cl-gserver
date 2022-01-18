@@ -57,6 +57,14 @@
     (is (= 3 (length (disp:workers (getf (asys::dispatchers system) :foo)))))
     (ac:shutdown system)))
 
+(test create-system--additional-dispatcher--manually
+  "Creates an actor system with an additional custom dispatcher."
+  (let ((system (make-actor-system)))
+    (register-new-dispatcher system :foo-disp :workers 2 :strategy :round-robin)
+    (is (= 4 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
+    (is (= 2 (length (disp:workers (getf (asys::dispatchers system) :foo-disp)))))
+    (ac:shutdown system)))
+
 (test create-system--check-defaults
   "Checking defaults on the system"
   (let ((system (make-actor-system)))

@@ -6,6 +6,8 @@
            #:dispatchers
            #:eventstream
            #:timeout-timer
+           #:register-dispatcher
+           #:register-new-dispatcher
            #:*default-config*))
 
 (in-package :cl-gserver.actor-system)

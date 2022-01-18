@@ -4,6 +4,8 @@
   (asys:actor-system class)
   (asys:make-actor-system function)
   (asys:*default-config* variable)
+  (asys:register-dispatcher function)
+  (asys:register-new-dispatcher function)
   ;; ac protocol
   (ac:actor-of (pax:method () (asys:actor-system t)))
   (ac:find-actors (pax:method () (asys:actor-system t)))

@@ -108,19 +108,10 @@ See `config:config-from`."
   (loop :for dispatcher-key :in (config:retrieve-keys dispatcher-config)
         :for dispatcher-section = (config:retrieve-section dispatcher-config dispatcher-key)
         :do (register-dispatcher system
-                                 dispatcher-key
                                  (apply #'disp:make-dispatcher
                                         actor-context
                                         dispatcher-key
                                         dispatcher-section))))
-
-(defun register-dispatcher (system dispatcher-id dispatcher)
-  "Registers a dispatcher to the actor-system.
-
-- `dispatcher-id`: should be something unique, like a global symbol, except `:shared` as this is the default internal dispatcher. Registering another dispatcher using `:shared` will override the default internal dispatcher.
-- `dispatcher`: the dispatcher instance."
-  (with-slots (dispatchers) system
-    (setf dispatchers (append (list dispatcher-id dispatcher) dispatchers))))
 
 ;; ----------------------------------------
 ;; Private Api
@@ -154,6 +145,31 @@ Users should use `ac:find-actors`."
 
 (defun %all-actors (system context-key)
   (ac:all-actors (actor-context-for-key context-key system)))
+
+;; ----------------------------------------
+;; Public Api
+;; ----------------------------------------
+
+(defun register-dispatcher (system dispatcher)
+  "Registers a dispatcher to the actor-system.
+
+- `system`: the actor-system
+- `dispatcher`: the dispatcher instance."
+  (with-slots (dispatchers) system
+    (setf dispatchers (append (list (disp:identifier dispatcher) dispatcher) dispatchers))))
+
+(defun register-new-dispatcher (system dispatcher-id &key workers strategy)
+  "Makes and registers a new dispatcher.
+
+- `system`: the actor-system
+- `dispatcher-id`: the dispatcher identifier. Usually a global symbol like `:foo`
+- `:workers`: key argument for the number of workers.
+- `:strategy`: key argument for the dispatcher strategy (:random or :round-robin)"
+  (register-dispatcher system
+                       (disp:make-dispatcher (actor-context-for-key :internal system)
+                                             dispatcher-id
+                                             :workers workers
+                                             :strategy strategy)))
 
 ;; ----------------------------------------
 ;; Public Api / actor-context protocol

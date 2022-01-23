@@ -18,4 +18,6 @@
     :timeout-timer
     (:resolution 500 :max-size 1000)
     :eventstream
-    (:dispatcher-id :shared)))
+    (:dispatcher-id :shared))
+  "The default config used when creating an `asys:actor-system`.
+The actor-system constructor allows to provide custom config options that override the default.")

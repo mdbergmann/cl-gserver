@@ -29,8 +29,8 @@
   `:max-size`: the maximum size of timer functions this wheel can handle."
   (let ((instance (make-instance 'wheel-timer)))
     (setf (wheel instance)
-          (tw:make-wheel (config:retrieve-value config :max-size)
-                         (config:retrieve-value config :resolution)))
+          (tw:make-wheel (getf config :max-size)
+                         (getf config :resolution)))
     (tw:initialize-timer-wheel (wheel instance))
     instance))
 

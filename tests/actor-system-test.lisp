@@ -40,7 +40,8 @@
            (is (typep (asys::user-actor-context system) 'ac:actor-context))
            (is (= 4 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
 
-           (is (not (null (asys:timeout-timer system)))))
+           (is (not (null (asys:timeout-timer system))))
+           (is (not (null (asys:eventstream system)))))
       (ac:shutdown system))
       ))
 

@@ -21,17 +21,17 @@ The subscriber is then only notified when events are posted with the exact same 
 
 See more information at the `ev:subscribe` function."))
 
-(defun make-eventstream (actor-context &key (dispatcher-id :shared))
+(defun make-eventstream (actor-context &rest config)
   "Creating an eventstream is done by the `asys:actor-system` which is then available system wide. 
 But in theory it can be created individually by just passing an `ac:actor-context` (though I don't know what would be the reason to create an eventstream for the context of a single actor. Maybe to address only a certain hierarchy in the actor tree.)
 
 - `actor-context`: the `ac:actor-context` where the eventstream actor should be created in.
-- `dispatcher-id`: the dispatcher id to be used by the eventstream actor. Defaults to `:shared`."
+- `config`: is a plist with the `:dispatcher-id` key and a dispatcher id as value. Defaults to `:shared`. This dispatcher type should be used by the actor."
   (let ((ev (make-instance 'eventstream)))
     (with-slots (ev-actor) ev
       (setf ev-actor (actor-of (actor-context
                                 (gensym "eventstream-actor-"))
-                       :dispatcher dispatcher-id
+                       :dispatcher (getf config :dispatcher-id :shared)
                        :receive (lambda (ev-stream msg state)
                                   (handler-case
                                       (ev-receive ev ev-stream msg state)

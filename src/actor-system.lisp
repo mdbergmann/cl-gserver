@@ -80,7 +80,7 @@ See `config:config-from`."
     (with-slots (internal-actor-context) system
       (%register-config system system-config)
       (%register-dispatchers system (%get-dispatcher-config system-config) internal-actor-context)
-      (%register-eventstream system internal-actor-context)
+      (%register-eventstream system (%get-eventstream-config system-config) internal-actor-context)
       (%register-timeout-timer system (%get-timeout-timer-config system-config)))
     (lf:linfo system)
     system))
@@ -91,13 +91,16 @@ See `config:config-from`."
 (defun %get-dispatcher-config (config)
   (config:retrieve-section config :dispatchers))
 
+(defun %get-eventstream-config (config)
+  (config:retrieve-section config :eventstream))
+
 (defun %register-config (system new-config)
   (with-slots (config) system
     (setf config new-config)))
 
-(defun %register-eventstream (system actor-context)
+(defun %register-eventstream (system ev-config actor-context)
   (with-slots (eventstream) system
-    (setf eventstream (ev:make-eventstream actor-context))))
+    (setf eventstream (ev:make-eventstream actor-context ev-config))))
 
 (defun %register-timeout-timer (system timer-config)
   (with-slots (timeout-timer) system

@@ -75,6 +75,8 @@
            (is (equal (asys::%get-timeout-timer-config (asys::config system))
                       '(:resolution 500
                         :max-size 1000)))
+           (is (equal (asys::%get-eventstream-config (asys::config system))
+                      '(:dispatcher-id :shared)))
            (let ((dispatchers (dispatchers system)))
              (is-true (typep (getf dispatchers :shared) 'shared-dispatcher))
              (is (= 4 (length (workers (getf dispatchers :shared)))))))

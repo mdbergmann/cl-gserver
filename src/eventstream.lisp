@@ -9,8 +9,7 @@
   ((subscribers :initform '()
                 :reader subscribers)
    (ev-actor :initform nil))
-  (:documentation "Eventstream facility allows to post/publish messages/events in the `asys:actor-system`
-and actors that did subscribe, to listen on those events.
+  (:documentation "Eventstream facility allows to post/publish messages/events in the `asys:actor-system` and actors that did subscribe, to listen on those events.
 
 The eventstream is driven by an actor. The processing of the sent events is guaranteed to be as they arrive.
 
@@ -22,14 +21,17 @@ The subscriber is then only notified when events are posted with the exact same 
 
 See more information at the `ev:subscribe` function."))
 
-(defun make-eventstream (actor-context)
+(defun make-eventstream (actor-context &key (dispatcher-id :shared))
   "Creating an eventstream is done by the `asys:actor-system` which is then available system wide. 
-But in theory it can be created individually by just passing an `ac:actor-context` (though I don't know what would be the reason to create an eventstream for the context of a single actor. Maybe to address only a certain hierarchy in the actor tree.)"
+But in theory it can be created individually by just passing an `ac:actor-context` (though I don't know what would be the reason to create an eventstream for the context of a single actor. Maybe to address only a certain hierarchy in the actor tree.)
+
+- `actor-context`: the `ac:actor-context` where the eventstream actor should be created in.
+- `dispatcher-id`: the dispatcher id to be used by the eventstream actor. Defaults to `:shared`."
   (let ((ev (make-instance 'eventstream)))
     (with-slots (ev-actor) ev
       (setf ev-actor (actor-of (actor-context
                                 (gensym "eventstream-actor-"))
-                       :dispatcher :pinned
+                       :dispatcher dispatcher-id
                        :receive (lambda (ev-stream msg state)
                                   (handler-case
                                       (ev-receive ev ev-stream msg state)
@@ -48,7 +50,6 @@ But in theory it can be created individually by just passing an `ac:actor-contex
   (cons t state))
 
 (defun subscribers-for (subscribers msg-type msg)
-  ;;(format t "msg-type, msg: ~a, ~a~%" msg-type msg)
   (flet ((no-type-registered-p (elem) (null elem))
          (equal-string-p (elem) (and (stringp msg)
                                      (typep elem 'string)

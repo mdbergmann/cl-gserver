@@ -24,10 +24,20 @@
          (&body)
       (ac:shutdown system))))
 
-(test make-eventstream
-  "Creates an event stream."
-  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 0))))))
-    (is (make-eventstream system))
+(test make-eventstream--shared
+  "Creates an event stream using the shared dispatcher."
+  (let* ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 0)))))
+         (ev (make-eventstream system)))
+    (is (not (null ev)))
+    (is (typep (act-cell:msgbox (slot-value ev 'ev::ev-actor)) 'mesgb:message-box/dp))
+    (ac:shutdown system)))
+
+(test make-eventstream--pinned
+  "Creates an event stream using pinned dispatcher."
+  (let* ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 0)))))
+         (ev (make-eventstream system :dispatcher-id :pinned)))
+    (is (not (null ev)))
+    (is (typep (act-cell:msgbox (slot-value ev 'ev::ev-actor)) 'mesgb:message-box/bt))
     (ac:shutdown system)))
 
 (test subscribe-ev--all

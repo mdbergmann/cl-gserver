@@ -79,9 +79,9 @@ See `config:config-from`."
         (system (make-instance 'actor-system)))
     (with-slots (internal-actor-context) system
       (%register-config system system-config)
+      (%register-dispatchers system (%get-dispatcher-config system-config) internal-actor-context)
       (%register-eventstream system internal-actor-context)
-      (%register-timeout-timer system (%get-timeout-timer-config system-config))
-      (%register-dispatchers system (%get-dispatcher-config system-config) internal-actor-context))
+      (%register-timeout-timer system (%get-timeout-timer-config system-config)))
     (lf:linfo system)
     system))
 
@@ -112,10 +112,6 @@ See `config:config-from`."
                                         actor-context
                                         dispatcher-key
                                         dispatcher-section))))
-
-;; ----------------------------------------
-;; Private Api
-;; ----------------------------------------
 
 (defun actor-context-for-key (context-key system)
   (case context-key

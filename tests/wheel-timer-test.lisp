@@ -13,7 +13,7 @@
 
 (test make-wheel-timer
   "Tests making a wheel timer with config"
-  (let ((cut (make-wheel-timer '(:resolution 100 :max-size 100))))
+  (let ((cut (make-wheel-timer :resolution 100 :max-size 100)))
     (unwind-protect
          (progn
            (is (not (null cut))))
@@ -21,7 +21,7 @@
 
 (test schedule
   "Tests executing a scheduled timer function."
-  (let ((cut (make-wheel-timer '(:resolution 100 :max-size 100)))
+  (let ((cut (make-wheel-timer :resolution 100 :max-size 100))
         (callback))
     (unwind-protect
          (progn

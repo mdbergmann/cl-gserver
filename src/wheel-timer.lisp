@@ -21,7 +21,7 @@
               (tw:wheel-resolution wheel)
               (length (tw::slots wheel))))))
 
-(defun make-wheel-timer (config)
+(defun make-wheel-timer (&rest config)
   "Creates a new `wheel-timer`.
 
 `config` is a parameter for a list of key parameters including:

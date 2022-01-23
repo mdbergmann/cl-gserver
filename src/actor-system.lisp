@@ -100,11 +100,14 @@ See `config:config-from`."
 
 (defun %register-eventstream (system ev-config actor-context)
   (with-slots (eventstream) system
-    (setf eventstream (ev:make-eventstream actor-context ev-config))))
+    (setf eventstream (apply #'ev:make-eventstream
+                             actor-context
+                             ev-config))))
 
 (defun %register-timeout-timer (system timer-config)
   (with-slots (timeout-timer) system
-    (setf timeout-timer (wt:make-wheel-timer timer-config))))
+    (setf timeout-timer (apply #'wt:make-wheel-timer
+                               timer-config))))
 
 (defun %register-dispatchers (system dispatcher-config actor-context)
   "Creates a plist of dispatchers for the `:dispatchers` configuration section."

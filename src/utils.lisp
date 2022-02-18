@@ -30,12 +30,12 @@
 (defun filter (fun lst)
   (mapcan (lambda (x) (if (funcall fun x) (list x))) lst))
 
-(defun wait-cond (cond-fun &optional (sleep-time 0.02) (max-time 12))
+(defun wait-cond (cond-fun &optional (sleep-time 0.05) (max-time 12))
   (let ((wait-acc 0))
     (if (not (funcall cond-fun))
         (loop
            (sleep sleep-time)
-           (+ sleep-time wait-acc)
+           (incf wait-acc sleep-time)
            (when (or (funcall cond-fun) (> wait-acc max-time)) (return))))))
 
 (define-condition ask-timeout (serious-condition)

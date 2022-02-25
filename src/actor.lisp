@@ -72,7 +72,7 @@ To stop an actors message processing in order to cleanup resouces you should `te
 (defmacro actor-of ((context
                      &optional (name nil))
                     &body body
-                    &key receive (init nil) (dispatcher :shared) (state nil) (type ''actor))
+                    &key receive (init nil) (destroy nil) (dispatcher :shared) (state nil) (type ''actor))
   "Simple interface for creating an actor.
 
 This is the preferred way to create an actor that runs within an `ac:actor-context`.
@@ -88,6 +88,8 @@ The new actor is created in the given context.
   Usually expressed as `(lambda (self msg state))`.
 - `:init`: is an optional initialization function with one argument: the actor instance (self).
 This represents a 'start' hook that is called after the actor was fully initialized.
+- `:destroy`: is an optional destroy function also with the actor instance as argument.
+This function allows to unsubsribe from event-stream or such.
 - `:state` key can be used to initialize with a state.
 - `:dispatcher` key can be used to define the message dispatcher manually.
   Options are `:shared` (default) and `:pinned`.
@@ -103,7 +105,8 @@ This represents a 'start' hook that is called after the actor was fully initiali
                                :state ,state
                                :name ,name
                                :type ,type
-                               :init ,init))
+                               :init ,init
+                               :destroy ,destroy))
          :dispatcher-id ,dispatcher))))
 
 (defmethod make-actor (receive &key name state (type 'actor) (init nil) (destroy nil))

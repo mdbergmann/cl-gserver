@@ -108,7 +108,7 @@ An `act:actor` contains an `actor-context`."
                     (funcall test path (funcall key x)))
                   actors-to-search)))
 
-;; test 2-arry function with 'path' and 'act-cell-name' (default)
+;; test 2-arity function with 'path' and 'act-cell-name' (default)
 (defmethod find-actors ((self actor-context) path &key (test #'string=) (key #'act-cell:name))
   "See `ac:find-actors`"
   (if (str:starts-with-p "/" path)

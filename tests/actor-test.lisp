@@ -372,11 +372,12 @@
            (is (string= "/user/foo1/foo2/foo3" (path actor-actor))))
       (ac:shutdown sys))))
 
-(test actor-of-macro--with-init-and-receive
+(test actor-of-macro--with-init-destroy-and-receive
   "Tests the macro by specifying the receive function and init function as plist parameters."
   (let ((sys (asys:make-actor-system)))
     (unwind-protect
          (let* ((init-called nil)
+                (destroy-called nil)
                 (actor (actor-of (sys "foo")
                          :init (lambda (self)
                                  (declare (ignore self))
@@ -384,7 +385,13 @@
                          :receive (lambda (self msg state)
                                     (declare (ignore self))
                                     (when (string= "Foo" msg)
-                                      (cons "Bar" state))))))
+                                      (cons "Bar" state)))
+                         :destroy (lambda (self)
+                                    (declare (ignore self))
+                                    (setf destroy-called t)))))
            (is (string= "Bar" (ask-s actor "Foo")))
-           (is-true init-called))
+           (is-true init-called)
+           (is-false destroy-called)
+           (ask-s actor :stop)
+           (is-true destroy-called))
       (ac:shutdown sys))))

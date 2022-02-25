@@ -41,7 +41,7 @@ Specify `queue-size` with:
 
 - `context`: an `AC:ACTOR-CONTEXT`, or an `ACT:ACTOR` or an `ASYS:ACTOR-SYSTEM` as all three implement `find-actors`.
 - `path`: a path designator to be found. This can be just an actor name, like 'foo', then `find-actors` will only look in the given context for the actor. It can also be: 'foo/bar', a relative path, in whcih case `find-actors` will traverse the path (here 'bar' is a child of 'foo') to the last context and will try to find the actor by name there, 'bar' in this case. Also possible is a root path like '/user/foo/bar' which will start traversing contexts started from the root context, which is the actor-system.
-- `test`: a 2-arie test function where the 1st argument is the `path`, the 2nd is the a result of the `key` function (which defaults to `ACT-CELL:NAME`, so the name of the actor). The default function for `test` is `STRING=`. However, in case of a multi-subpath `path` both `test` and `key` only apply to the last path component, which designates the actor name to be found.
+- `test`: a 2-arity test function where the 1st argument is the `path`, the 2nd is the a result of the `key` function (which defaults to `ACT-CELL:NAME`, so the name of the actor). The default function for `test` is `STRING=`. However, in case of a multi-subpath `path` both `test` and `key` only apply to the last path component, which designates the actor name to be found.
 - `key`: a 1-arie function applied on an actor instance. Defaults to `ACT-CELL:NAME`.
 
 Depending on `test` function the last path component can be used as a wildcard when using a `test` function like `STR:STARTS-WITH-P` or `STR:CONTAINSP` for example."))

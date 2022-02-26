@@ -6,6 +6,8 @@ cl-gserver is a 'message passing' library/framework with actors similar to Erlan
 
 ### Version history
 
+**Version 1.12.0 (26.2.2022):** Refactored and cleaned up the available `actor-of` facilities. There is now only one. If you used the macro before, you may have to adapt slightly.
+
 **Version 1.11.1 (25.2.2022):** Minor additions to `actor-of` macro to allow specifying a `destroy` function.
 
 **Version 1.11.0 (16.1.2022):** Changes to `AC:FIND-ACTORS`. Breaking API change. See API documentation for details.
@@ -132,7 +134,7 @@ is:
 Let's create an actor.
 
 ```elisp
-(act:actor-of (*system* "answerer")
+(ac:actor-of *system* :name "answerer"
   :receive
   (lambda (self msg state)
     (let ((output (format nil "Hello ~a" msg)))
@@ -162,7 +164,7 @@ Had we stored the actor to a variable, say `*answerer*` we
 can create a child actor of that by doing:
 
 ```elisp
-(act:actor-of (*answerer* "child-answerer")
+(ac:actor-of *answerer* :name "child-answerer"
     :receive 
     (lambda (self msg state)
         (let ((output (format nil "~a" "Hello-child ~a" msg)))
@@ -321,9 +323,9 @@ To demonstrate this we could setup an example 'sleeper' actor:
 
 ```elisp
 (ac:actor-of *system* 
-             (lambda () (act:make-actor 
-                           (lambda (self msg state)
-                             (sleep 5)))))
+    :receive 
+    (lambda (self msg state)
+        (sleep 5)))
 ```
 
 If we store this to `*sleeper*` and do the following, the
@@ -587,7 +589,7 @@ Here is a simple example:
 ```elisp
 (defparameter *sys* (asys:make-actor-system))
 
-(act:actor-of (*sys* "listener")
+(ac:actor-of *sys* :name "listener"
   :init (lambda (self)
           (ev:subscribe self self 'string))
   :receive (lambda (self msg state)

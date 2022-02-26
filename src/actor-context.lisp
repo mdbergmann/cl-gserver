@@ -113,6 +113,7 @@ An `act:actor` contains an `actor-context`."
                        (init nil) (destroy nil)
                        (dispatcher :shared) (state nil)
                        (type 'act:actor) (name nil))
+  "See `ac:actor-of`."
   (check-type receive function "a function!")
   (%actor-of context
              (lambda () (act:make-actor receive

@@ -7,7 +7,7 @@
   (asys:register-dispatcher function)
   (asys:register-new-dispatcher function)
   ;; ac protocol
-  (ac:actor-of (pax:method () (asys:actor-system t)))
+  (ac:actor-of (pax:method () (asys:actor-system)))
   (ac:find-actors (pax:method () (asys:actor-system t)))
   (ac:all-actors (pax:method () (asys:actor-system)))
   (ac:stop (pax:method () (asys:actor-system t)))
@@ -26,7 +26,7 @@
   (ac:actor-context class)
   (ac:make-actor-context function)
 
-  (ac:actor-of (pax:method () (ac:actor-context t)))
+  (ac:actor-of (pax:method () (ac:actor-context)))
   (ac:find-actors (pax:method () (ac:actor-context t)))
   (ac:all-actors (pax:method () (ac:actor-context)))
   (ac:stop (pax:method () (ac:actor-context t)))
@@ -85,7 +85,6 @@
 (in-package :act)
 (pax:defsection @actor (:title "Actor")
   (act:actor class)
-  (act:actor-of pax:macro)
   (act:make-actor generic-function)
   (act:tell generic-function)
   (act:ask-s generic-function)
@@ -104,6 +103,7 @@
   ;; actor-context protocol
   (ac:find-actors (pax:method () (act:actor t)))
   (ac:all-actors (pax:method () (act:actor)))
+  (ac:actor-of (pax:method () (act:actor)))
   
   (act-cell:@actor-cell pax:section)
   (mesgb:@message-box-base pax:section)

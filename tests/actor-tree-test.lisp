@@ -22,25 +22,21 @@
 
   (with-fixture test-system ()
     (let* ((root (ac:actor-of system
-                   (lambda () (act:make-actor
-                          (lambda (self msg state)
-                            (declare (ignore self msg state)))
-                          :name "1"))))
-           (first (ac:actor-of (act:context root)
-                    (lambda () (act:make-actor
-                           (lambda (self msg state)
-                             (declare (ignore self msg state)))
-                           :name "2"))))
-           (second (ac:actor-of (act:context first)
-                     (lambda () (act:make-actor
-                            (lambda (self msg state)
+                   :receive (lambda (self msg state)
                               (declare (ignore self msg state)))
-                            :name "3"))))
+                   :name "1"))
+           (first (ac:actor-of (act:context root)
+                    :receive (lambda (self msg state)
+                               (declare (ignore self msg state)))
+                    :name "2"))
+           (second (ac:actor-of (act:context first)
+                     :receive (lambda (self msg state)
+                                (declare (ignore self msg state)))
+                     :name "3"))
            (third (ac:actor-of (act:context second)
-                    (lambda () (act:make-actor
-                           (lambda (self msg state)
-                             (declare (ignore self msg state)))
-                           :name "4")))))
+                    :receive (lambda (self msg state)
+                               (declare (ignore self msg state)))
+                    :name "4")))
 
       (is (string= "/user/1" (act:path root)))
       (is (string= "/user/1/2" (act:path first)))

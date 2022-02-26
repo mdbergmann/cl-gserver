@@ -83,11 +83,10 @@ A `shared-dispatcher` is automatically setup by an `asys:actor-system`."))
 `num` only has the purpose to give the worker a name which includes a number.
 `dispatcher-ident is the dispatcher identifier."
   (ac:actor-of actor-context
-    (lambda ()
-      (act:make-actor #'receive
-                      :type 'dispatch-worker
-                      :name (format nil "dispatch(~a)-worker-~a" dispatcher-ident num)))
-    :dispatcher-id :pinned))
+    :receive #'receive
+    :type 'dispatch-worker
+    :name (format nil "dispatch(~a)-worker-~a" dispatcher-ident num)
+    :dispatcher :pinned))
 
 (defun receive (self message current-state)
   "The worker receive function."

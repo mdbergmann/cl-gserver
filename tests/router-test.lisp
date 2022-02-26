@@ -18,7 +18,7 @@
       (ac:shutdown system))))
 
 (defun make-actor (context)
-  (act:actor-of (context)
+  (ac:actor-of context
     :receive (lambda (self msg state)
                (declare (ignore self))
                (cons msg state))))
@@ -86,14 +86,12 @@
 (test router--ask
   "Tests 'ask' on the router which forwards to an actor chosen by the strategy."
   (with-fixture system-fixture ()
-    (let* ((actor-creator (lambda ()
-                            (act:make-actor
-                             (lambda (self msg state)
-                               (declare (ignore self msg state))
-                               (cons :foo 1)))))
+    (let* ((receive-fun (lambda (self msg state)
+                          (declare (ignore self msg state))
+                          (cons :foo 1)))
            (cut (make-router :routees (list
-                                       (ac:actor-of system actor-creator)
-                                       (ac:actor-of system actor-creator)))))
+                                       (ac:actor-of system :receive receive-fun)
+                                       (ac:actor-of system :receive receive-fun)))))
       (is (every (lambda (x) (typep x 'future:future))
                  (loop :repeat 5
                        :collect (ask cut "Foo")))))))

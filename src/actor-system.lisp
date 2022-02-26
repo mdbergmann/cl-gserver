@@ -124,13 +124,25 @@ See `config:config-from`."
     (:internal (internal-actor-context system))
     (otherwise (user-actor-context system))))
 
-(defun %actor-of (system create-fun dispatcher-id &key (context-key :user) (queue-size 0))
+(defun %actor-of (system
+                  &key receive
+                    init
+                    destroy
+                    dispatcher
+                    state
+                    (type 'act:actor)
+                    name
+                    (context-key :user))
   "Private API to create system actors. Context-key is either `:internal` or `:user`
 Users should use `actor-of`."
   (ac:actor-of (actor-context-for-key context-key system)
-    create-fun
-    :dispatcher-id dispatcher-id
-    :queue-size queue-size))
+    :receive receive
+    :init init
+    :destroy destroy
+    :dispatcher dispatcher
+    :state state
+    :type type
+    :name name))
 
 (defun %find-actors (system path &key test key context-key)
   "Private API to find actors in both contexts the actor-system supports.
@@ -177,9 +189,18 @@ Users should use `ac:find-actors`."
 ;; Public Api / actor-context protocol
 ;; ----------------------------------------
 
-(defmethod actor-of ((self actor-system) create-fun &key (dispatcher-id :shared) (queue-size 0))
+(defmethod actor-of ((system actor-system)
+                     &key receive (init nil) (destroy nil) (dispatcher :shared) (state nil) (type 'act:actor) (name nil))
   "See `ac:actor-of`"
-  (%actor-of self create-fun dispatcher-id :context-key :user :queue-size queue-size))
+  (%actor-of system
+    :receive receive
+    :init init
+    :destroy destroy
+    :dispatcher dispatcher
+    :state state
+    :type type
+    :name name
+    :context-key :user))
 
 (defmethod find-actors ((self actor-system) path &key (test #'string=) (key #'act-cell:name))
   "See `ac:find-actors`"

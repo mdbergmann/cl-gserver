@@ -87,10 +87,10 @@
   "Shutting down should stop all actors whether pinned or shared.
 We use internal API here only for this test, do not use this otherwise."
   (let ((system (make-actor-system)))
-    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :user)
-    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :user)
-    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :pinned :context-key :internal)
-    (asys::%actor-of system (lambda () (make-actor (lambda ()))) :shared :context-key :internal)
+    (asys::%actor-of system :receive (lambda ()) :dispatcher :pinned :context-key :user)
+    (asys::%actor-of system :receive (lambda ()) :dispatcher :shared :context-key :user)
+    (asys::%actor-of system :receive (lambda ()) :dispatcher :pinned :context-key :internal)
+    (asys::%actor-of system :receive (lambda ()) :dispatcher :shared :context-key :internal)
 
     (ac:shutdown system)
     (is-true (assert-cond (lambda ()
@@ -99,14 +99,14 @@ We use internal API here only for this test, do not use this otherwise."
 (test actor-of--verify-proper-root-path
   "Tests whether actors and contexts are created with proper paths."
   (with-fixture test-system ()
-    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo")) :dispatcher-id :shared)))
+    (let ((actor (ac:actor-of cut :name "foo" :receive (lambda ()) :dispatcher :shared)))
       (is (string= "/user/foo" (act:path actor)))
       (is (string= "/user/foo" (ac:id (act:context actor)))))))
 
 (test actor-of--shared--user
   "Creates actors in the system in user context with shared dispatcher."
   (with-fixture test-system ()
-    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :dispatcher-id :shared)))
+    (let ((actor (ac:actor-of cut :receive (lambda ()) :dispatcher :shared)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/dp))
       (is (not (null (act:context actor))))
@@ -117,7 +117,7 @@ We use internal API here only for this test, do not use this otherwise."
 (test actor-of--shared--internal
   "Creates actors in the system in internal context with shared dispatcher."
   (with-fixture test-system ()
-    (let ((actor (asys::%actor-of cut (lambda () (make-actor (lambda ()))) :shared :context-key :internal)))
+    (let ((actor (asys::%actor-of cut :receive (lambda ()) :dispatcher :shared :context-key :internal)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/dp))
       (is (not (null (act:context actor))))
@@ -130,7 +130,7 @@ We use internal API here only for this test, do not use this otherwise."
 (test actor-of--pinned--user
   "Creates actors in the system in user context with pinned dispatcher."
   (with-fixture test-system ()
-    (let ((actor (ac:actor-of cut (lambda () (make-actor (lambda ()))) :dispatcher-id :pinned)))
+    (let ((actor (ac:actor-of cut :receive (lambda ()) :dispatcher :pinned)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/bt))
       (is (not (null (act:context actor))))
@@ -141,7 +141,7 @@ We use internal API here only for this test, do not use this otherwise."
 (test actor-of--pinned--internal
   "Creates actors in the system in internal context with pinned dispatcher."
   (with-fixture test-system ()
-    (let ((actor (asys::%actor-of cut (lambda () (make-actor (lambda ()))) :pinned :context-key :internal)))
+    (let ((actor (asys::%actor-of cut :receive (lambda ()) :dispatcher :pinned :context-key :internal)))
       (is (not (null actor)))
       (is (typep (act-cell:msgbox actor) 'mesgb:message-box/bt))
       (is (not (null (act:context actor))))
@@ -154,15 +154,15 @@ We use internal API here only for this test, do not use this otherwise."
 (test find-actors--in-system
   "Test finding actors in system."
   (with-fixture test-system ()
-    (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
-          (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2"))))
-          (act3 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo3")) :shared :context-key :internal))
-          (act4 (asys::%actor-of cut (lambda () (make-actor (lambda ()) :name "foo4")) :shared :context-key :internal)))
+    (let ((act1 (ac:actor-of cut :name "foo" :receive (lambda ())))
+          (act2 (ac:actor-of cut :name "foo2" :receive (lambda ())))
+          (act3 (asys::%actor-of cut :name "foo3" :receive (lambda ()) :dispatcher :shared :context-key :internal))
+          (act4 (asys::%actor-of cut :name "foo4" :receive (lambda ()) :dispatcher :shared :context-key :internal)))
       (is (eq act1 (first (ac:find-actors cut "foo"))))
       (is (eq act2 (first (ac:find-actors cut "foo2"))))
       (is (eq act3 (first (asys::%find-actors cut "foo3" :test #'string=
-                                                        :key #'act-cell:name
-                                                        :context-key :internal))))
+                                                         :key #'act-cell:name
+                                                         :context-key :internal))))
       (is (eq act4 (first (asys::%find-actors cut "foo4" :test #'string=
                                                          :key #'act-cell:name
                                                          :context-key :internal))))
@@ -172,9 +172,9 @@ We use internal API here only for this test, do not use this otherwise."
   "Test for finding actors"
   (with-fixture test-system ()
     (let* ((context cut)
-           (act1 (ac:actor-of context (lambda () (make-actor (lambda ()) :name "foo")))))
-      (ac:actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo2")))
-      (ac:actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo3")))
+           (act1 (ac:actor-of context :name "foo" :receive (lambda ()))))
+      (ac:actor-of (act:context act1) :name "foo2" :receive (lambda ()))
+      (ac:actor-of (act:context act1) :name "foo3" :receive (lambda ()))
       (is (= 1 (length (ac:find-actors context "/user/foo/foo2"))))
       (is (= 2 (length (ac:find-actors context "/user/foo/foo" :test #'str:starts-with-p)))))))
 
@@ -182,15 +182,15 @@ We use internal API here only for this test, do not use this otherwise."
   "Test for finding actors"
   (with-fixture test-system ()
     (let* ((context cut)
-           (act1 (ac:actor-of context (lambda () (make-actor (lambda ()) :name "foo")))))
-      (ac:actor-of (act:context act1) (lambda () (make-actor (lambda ()) :name "foo2")))
+           (act1 (ac:actor-of context :name "foo" :receive (lambda ()))))
+      (ac:actor-of (act:context act1) :name "foo2" :receive (lambda ()))
       (is (= 1 (length (ac:find-actors context "foo/foo2")))))))
 
 (test all-actors--in-system-user-context
   "Retrieves all actors in user actor context of system."
   (with-fixture test-system ()
-    (let ((act1 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
-          (act2 (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo2")))))
+    (let ((act1 (ac:actor-of cut :name "foo" :receive (lambda ())))
+          (act2 (ac:actor-of cut :name "foo2" :receive (lambda ()))))
       (is (= 2 (length (ac:all-actors cut))))
       (is (some (lambda (x) (eq act1 x)) (ac:all-actors cut)))
       (is (some (lambda (x) (eq act2 x)) (ac:all-actors cut))))))
@@ -199,7 +199,7 @@ We use internal API here only for this test, do not use this otherwise."
   "Tests stopping an actor. This pretty much does the same as the method in actor-context."
   (with-fixture test-system ()
     (with-mocks ()
-      (let ((act (ac:actor-of cut (lambda () (make-actor (lambda ()) :name "foo"))))
+      (let ((act (ac:actor-of cut :name "foo" :receive (lambda ())))
             (call-to-stop-done nil))
         (answer (act-cell:stop actor-to-stop)
           (progn
@@ -214,7 +214,7 @@ We use internal API here only for this test, do not use this otherwise."
   "Creating many actors should not pose a problem."
   (with-fixture test-system ()
     (let ((actors (loop :repeat 100
-                        collect (act:actor-of (cut)
+                        collect (ac:actor-of cut
                                   :receive (lambda (self msg state)
                                              (declare (ignore self))
                                              (cons (format nil "reply: ~a" msg) state)))))
@@ -230,7 +230,7 @@ We use internal API here only for this test, do not use this otherwise."
   "Subscribe to eventstream, publish and receive. IntegTest."
   (with-fixture test-system ()
     (let* ((ev-received)
-           (ev-listener (act:actor-of (cut)
+           (ev-listener (ac:actor-of cut
                           :receive (lambda (self msg state)
                                      (declare (ignore self state))
                                      (setf ev-received msg)

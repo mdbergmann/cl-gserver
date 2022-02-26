@@ -58,7 +58,7 @@ dispatchers. This additional dispatcher can be utilized for `tasks`. Be aware th
    "A dedicated `act:actor` subclass used for tasks."))
 
 (defun make-task (context dispatcher)
-  (act:actor-of (context)
+  (ac:actor-of context
     :dispatcher dispatcher
     :type 'task
     :receive (lambda (self msg state)

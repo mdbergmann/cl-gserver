@@ -17,24 +17,27 @@
            #:actor-name-exists))
 (in-package :cl-gserver.actor-context)
 
-(defgeneric actor-of (context create-fun &key dispatcher-id queue-size)
-  (:documentation "Creates and adds actors to the given context.
+(defgeneric actor-of (context
+                      &key receive init destroy dispatcher state type name)
+  (:documentation "Interface for creating an actor.
 
-Both an `AC:ACTOR-SYSTEM` and an `ACT:ACTOR` are composed of an `AC:ACTOR-CONTEXT`.
-When an `actor-system` is specified as context (`actor-system` implements parts of the protocol) then the new actor will be a new root actor.
+**!!! Attention:** this factory function wraps the `act:make-actor` functionality to something more simple to use. 
+Using this function there is no need to use both `act:make-actor`.
 
-When the new actor should be a child of another actor, then the `actor-context` of the (to be) parent `actor` should be specified.
-Creating an actor via `actor-of` will also add the `actor-context` as watcher of the actor. This watching can be used for different purposes. Right now the `actor` is removed from the context when it was stopped.
+`context` is either an `asys:actor-system`, an `ac:actor-context`, or an `act:actor` (any type of actor).
+The new actor is created in the given context.
 
-Specify the dispatcher type (`dispatcher-id`) as either:
-
-- `:shared` to have this actor use the shared message dispatcher of the context
-- `:pinned` to have this actor run it's own message box thread (faster, but more resource are bound.)
-
-Specify `queue-size` with:
-
-- 0: for a unbounded queue
-- gt 0: for a bounded queue (preferably a size > 100)"))
+- `:receive` is required and must be a 3-arity lambda with arguments: 1. the actor, 2. the message, 3. the state
+  Usually expressed as `(lambda (self msg state))`.
+- `:init`: is an optional initialization function with one argument: the actor instance (self).
+This represents a 'start' hook that is called after the actor was fully initialized.
+- `:destroy`: is an optional destroy function also with the actor instance as argument.
+This function allows to unsubsribe from event-stream or such.
+- `:state` key can be used to initialize with a state.
+- `:dispatcher` key can be used to define the message dispatcher manually.
+  Options are `:shared` (default) and `:pinned`.
+- `:type` can specify a custom actor class. See `act:make-actor` for more info.
+- `:name` to set a specific name to the actor, otherwise a random name will be used."))
 
 (defgeneric find-actors (context path &key test key)
   (:documentation "Returns actors to be found by the criteria of:

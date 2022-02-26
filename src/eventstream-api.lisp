@@ -4,7 +4,6 @@
   (:import-from #:utils
                 #:filter)
   (:import-from #:act
-                #:actor-of
                 #:tell)
   (:export #:eventstream
            #:make-eventstream

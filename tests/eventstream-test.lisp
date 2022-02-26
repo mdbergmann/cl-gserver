@@ -61,9 +61,9 @@
   "Actor system and Actor implement the ev protocol"
   (with-fixture test-system ()
     (is (subscribe system (act:make-actor (lambda ()))))
-    (is (subscribe (act:actor-of (system)
-                        :receive (lambda ()))
-                      (act:make-actor (lambda ()))))))
+    (is (subscribe (ac:actor-of system
+                     :receive (lambda ()))
+                     (act:make-actor (lambda ()))))))
 
 (test unsubscribe-ev
   "Test unsubscribing."
@@ -77,9 +77,9 @@
   "Actor system and Actor implement the ev protocol"
   (with-fixture test-system ()
     (is (unsubscribe system (act:make-actor (lambda ()))))
-    (is (unsubscribe (act:actor-of (system)
-                          :receive (lambda ()))
-                      (act:make-actor (lambda ()))))))
+    (is (unsubscribe (ac:actor-of system
+                       :receive (lambda ()))
+                     (act:make-actor (lambda ()))))))
 
 (defclass my-class () ())
 (defclass my-sub-class (my-class) ())
@@ -88,11 +88,11 @@
   "Publish a message to eventstream."
   (with-fixture test-ev ()
     (let* ((ev-received)
-           (ev-listener (act:actor-of (system)
-                         :receive (lambda (self msg state)
-                                    (declare (ignore self state))
-                                    (setf ev-received msg)
-                                    (cons nil nil)))))
+           (ev-listener (ac:actor-of system
+                          :receive (lambda (self msg state)
+                                     (declare (ignore self state))
+                                     (setf ev-received msg)
+                                     (cons nil nil)))))
       ;; all
       (subscribe cut ev-listener)
       (publish cut "Foo")
@@ -204,9 +204,9 @@
   "Actor system and Actor implement the ev protocol"
   (with-fixture test-system ()
     (is (publish system "Foo"))
-    (is (publish (act:actor-of (system)
-                      :receive (lambda ()))
-                    "Foo"))))
+    (is (publish (ac:actor-of system
+                   :receive (lambda ()))
+                 "Foo"))))
 
 (defstruct counters
   (string 0)
@@ -230,13 +230,13 @@
                                (when (equalp '("foo" "bar" "buzz") msg)
                                  (incf (counters-list state))))))
                           (cons t state)))
-           (actor1 (act:actor-of (system "actor 1")
+           (actor1 (ac:actor-of system :name "actor 1"
                      :state (make-counters)
                      :init (lambda (self)
                              (subscribe system self "Awaited message1")
                              (subscribe system self 'cons))
                      :receive receive-fun))
-           (actor2 (act:actor-of (system "actor 2")
+           (actor2 (ac:actor-of system :name "actor 2"
                      :state (make-counters)
                      :init (lambda (self)
                              (subscribe system self '("foo" "bar" "buzz"))

@@ -2,7 +2,6 @@
   (:use :cl)
   (:nicknames :act)
   (:export #:make-actor
-           #:actor-of
            #:actor
            #:tell
            #:ask-s

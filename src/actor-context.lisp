@@ -21,8 +21,8 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
 ;; private functions
 ;; --------------------------------------
 
-(defmethod actors ((self actor-context))
-  (atomic:atomic-get (slot-value self 'actors)))
+(defmethod actors ((context actor-context))
+  (atomic:atomic-get (slot-value context 'actors)))
 
 (defun %get-shared-dispatcher (system identifier)
   (getf (asys:dispatchers system) identifier))
@@ -62,6 +62,12 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
                    (string= name seq-name))))
            (actors context)))
 
+(defun %find-actors (context path &key test key)
+  (let ((actors-to-search (all-actors context)))
+    (utils:filter (lambda (x)
+                    (funcall test path (funcall key x)))
+                  actors-to-search)))
+
 (defun %verify-actor (context actor)
   "Checks certain things on the actor before it is attached to the context."
   (let* ((actor-name (act-cell:name actor))
@@ -80,6 +86,13 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
                            (utils:mkstr (id context) "/" (act-cell:name actor)))))
     actor))
 
+(defun %actor-of (context create-fun &key (dispatcher :shared) (queue-size 0))
+  "See `ac:actor-of`"
+  (let ((created (%create-actor context create-fun dispatcher queue-size)))
+    (when created
+      (act:watch created context)
+      (%add-actor context created))))
+
 ;; --------------------------------------
 ;; public interface
 ;; --------------------------------------
@@ -95,27 +108,29 @@ An `act:actor` contains an `actor-context`."
       (setf system actor-system))
     context))
 
-(defmethod actor-of ((self actor-context) create-fun &key (dispatcher-id :shared) (queue-size 0))
-  "See `ac:actor-of`"
-  (let ((created (%create-actor self create-fun dispatcher-id queue-size)))
-    (when created
-      (act:watch created self)
-      (%add-actor self created))))
-
-(defun %find-actors (context path &key test key)
-  (let ((actors-to-search (all-actors context)))
-    (utils:filter (lambda (x)
-                    (funcall test path (funcall key x)))
-                  actors-to-search)))
+(defmethod actor-of ((context actor-context)
+                     &key receive
+                       (init nil) (destroy nil)
+                       (dispatcher :shared) (state nil)
+                       (type 'act:actor) (name nil))
+  (check-type receive function "a function!")
+  (%actor-of context
+             (lambda () (act:make-actor receive
+                                   :state state
+                                   :name name
+                                   :type type
+                                   :init init
+                                   :destroy destroy))
+             :dispatcher dispatcher))
 
 ;; test 2-arity function with 'path' and 'act-cell-name' (default)
-(defmethod find-actors ((self actor-context) path &key (test #'string=) (key #'act-cell:name))
+(defmethod find-actors ((context actor-context) path &key (test #'string=) (key #'act-cell:name))
   "See `ac:find-actors`"
   (if (str:starts-with-p "/" path)
       ;; root path, delegate to system
-      (find-actors (system self) path :test test :key key)  
+      (find-actors (system context) path :test test :key key)  
       (let ((path-comps (str:split "/" path))
-            (context self))
+            (context context))
         (loop :for path-comp :in (butlast path-comps)
               :for actor = (find path-comp (all-actors context)
                                  :test #'string=
@@ -125,19 +140,19 @@ An `act:actor` contains an `actor-context`."
                       (error (format nil "Cannot find path component ~a" path-comp))))
         (%find-actors context (car (last path-comps)) :test test :key key))))
         
-(defmethod all-actors ((self actor-context))
+(defmethod all-actors ((context actor-context))
   "See `ac:all-actors`"
-  (actors self))
+  (actors context))
 
-(defmethod stop ((self actor-context) actor)
+(defmethod stop ((context actor-context) actor)
   "See `ac:stop`"
   (act-cell:stop actor))
 
-(defmethod shutdown ((self actor-context))
+(defmethod shutdown ((context actor-context))
   "See `ac:shutdown`"
-  (dolist (actor (all-actors self))
+  (dolist (actor (all-actors context))
     (act-cell:stop actor)))
 
-(defmethod notify ((self actor-context) actor notification)
+(defmethod notify ((context actor-context) actor notification)
   (case notification
-    (:stopped (%remove-actor self actor))))
+    (:stopped (%remove-actor context actor))))

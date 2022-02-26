@@ -2,6 +2,8 @@
   (:use :cl :fiveam :cl-mock :cl-gserver.actor :cl-gserver.future)
   (:import-from #:utils
                 #:assert-cond)
+  (:import-from #:ac
+                #:actor-of)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -92,7 +94,7 @@
                                  (declare (ignore self msg state)))
                                0
                                t)
-    (let ((child-actor (actor-of ((act:context cut))
+    (let ((child-actor (actor-of cut
                          :receive (lambda (self msg state)
                                     (declare (ignore self msg state))))))
       (is (not (null child-actor)))
@@ -106,8 +108,7 @@
                                  (declare (ignore self msg state)))
                                0
                                t)
-    (let ((watcher (actor-of ((act:context cut))
-                     :receive (lambda ()))))
+    (let ((watcher (actor-of cut :receive (lambda ()))))
       (watch cut watcher)
       (is (= 1 (length (watchers cut))))
       (unwatch cut watcher)
@@ -121,7 +122,7 @@
                                t)
     ;; we need an actor as watcher that is not the 'child' of the to be watched actor.
     (let* ((stopped-msg-received nil)
-           (watcher (actor-of ((ac:system (act:context cut)))
+           (watcher (actor-of (ac:system (act:context cut))
                       :receive (lambda (self msg state)
                                  (declare (ignore self))
                                  (case (car msg)
@@ -140,7 +141,7 @@
                                  (declare (ignore self msg state)))
                                0
                                t)
-    (let ((child-actor (actor-of ((act:context cut))
+    (let ((child-actor (actor-of cut
                          :receive (lambda (self msg state)
                                     (declare (ignore self msg state))))))
       (act-cell:stop cut)
@@ -155,7 +156,7 @@
                                  (declare (ignore self msg state)))
                                0
                                t)
-    (let ((child-actor (actor-of ((act:context cut))
+    (let ((child-actor (actor-of cut
                          :receive (lambda (self msg state)
                                     (declare (ignore self msg state))))))
       (with-mocks ()
@@ -208,7 +209,7 @@
   (with-fixture actor-fixture ((lambda ())
                                0
                                t)
-    (let* ((actor (actor-of ((act:context cut))
+    (let* ((actor (actor-of cut
                     :receive (lambda (self msg state)
                                (declare (ignore self msg))
                                (sleep 2)
@@ -229,7 +230,7 @@
         (progn
           (format t "Dispatch called...~%")
           (sleep 2)))
-      (let* ((actor (actor-of ((act:context cut))
+      (let* ((actor (actor-of cut
                       :receive (lambda (self msg state)
                                  (declare (ignore self msg state)))))
              (result (ask-s actor "foo" :time-out 0.5)))
@@ -243,7 +244,7 @@
   (with-fixture actor-fixture ((lambda ())
                                0
                                t)
-    (let* ((actor (actor-of ((act:context cut))
+    (let* ((actor (actor-of cut
                     :receive (lambda (self msg state)
                                (declare (ignore self msg))
                                (sleep 2)
@@ -262,7 +263,7 @@
     (let* ((the-context (context cut))
            (many-actors (loop :for i :from 1 :to 2000
                               :collect
-                              (actor-of (the-context)
+                              (actor-of the-context
                                 :receive (lambda (self msg state)
                                            (declare (ignore self msg state))
                                            (sleep 2)))))
@@ -338,7 +339,7 @@
       (unbecome cut)
       (is (eq :receive (ask-s cut :some))))))
 
-(test actor-of-macro
+(test actor-of
   "Tests the convenience actor-of macro"
   (let ((sys (asys:make-actor-system)))
     (unwind-protect
@@ -346,14 +347,14 @@
                                (declare (ignore self))
                                (when (string= "Foo" msg)
                                  (cons "Bar" state))))
-                (actor (actor-of (sys) :receive receive-fun))
-                (custom-actor (actor-of (sys) :receive receive-fun :type 'custom-actor)))
+                (actor (actor-of sys :receive receive-fun))
+                (custom-actor (actor-of sys :receive receive-fun :type 'custom-actor)))
            (is (string= "Bar" (ask-s actor "Foo")))
            (is (string= "Bar" (ask-s custom-actor "Foo")))
            (is (typep custom-actor 'custom-actor)))
       (ac:shutdown sys))))
 
-(test actor-of-macro--figure-context
+(test actor-of--create-in-right-context
   "Tests to conveniently specify three types as context: asys, ac and actor"
   (let ((sys (asys:make-actor-system)))
     (unwind-protect
@@ -361,9 +362,9 @@
                                (declare (ignore self))
                                (when (string= "Foo" msg)
                                  (cons "Bar" state))))
-                (system-actor (actor-of (sys "foo1") :receive receive-fun))
-                (ac-actor (actor-of ((act:context system-actor) "foo2") :receive receive-fun))
-                (actor-actor (actor-of (ac-actor "foo3") :receive receive-fun)))
+                (system-actor (actor-of sys :name "foo1" :receive receive-fun))
+                (ac-actor (actor-of (act:context system-actor) :name "foo2" :receive receive-fun))
+                (actor-actor (actor-of ac-actor :name "foo3" :receive receive-fun)))
            (is (string= "Bar" (ask-s system-actor "Foo")))
            (is (string= "/user/foo1" (path system-actor)))
            (is (string= "Bar" (ask-s ac-actor "Foo")))
@@ -378,7 +379,7 @@
     (unwind-protect
          (let* ((init-called nil)
                 (destroy-called nil)
-                (actor (actor-of (sys "foo")
+                (actor (actor-of sys :name "foo"
                          :init (lambda (self)
                                  (declare (ignore self))
                                  (setf init-called t))

@@ -63,9 +63,8 @@
     (format t "Running system tests (~a)...~%" ,dispatcher-strategy)
     (let* ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 4
                                                                     :strategy ,dispatcher-strategy)))))
-           (cut (ac:actor-of system (lambda ()
-                                      (make-instance 'counter-actor :state 0
-                                                                    :receive *receive-fun*))))
+           (cut (ac:actor-of system
+                  :receive *receive-fun* :type 'counter-actor :state 0))
             #-sbcl (max-loop 10000)
             #+sbcl (max-loop (* 8 25))
            (per-thread (/ max-loop 8)))

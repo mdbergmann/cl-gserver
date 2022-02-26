@@ -29,8 +29,8 @@ But in theory it can be created individually by just passing an `ac:actor-contex
 - `config`: is a plist with the `:dispatcher-id` key and a dispatcher id as value. Defaults to `:shared`. This dispatcher type should be used by the actor."
   (let ((ev (make-instance 'eventstream)))
     (with-slots (ev-actor) ev
-      (setf ev-actor (actor-of (actor-context
-                                (gensym "eventstream-actor-"))
+      (setf ev-actor (ac:actor-of actor-context
+                       :name (gensym "eventstream-actor-")
                        :dispatcher (getf config :dispatcher-id :shared)
                        :receive (lambda (ev-stream msg state)
                                   (handler-case

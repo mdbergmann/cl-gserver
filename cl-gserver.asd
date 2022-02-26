@@ -1,5 +1,5 @@
 (defsystem "cl-gserver"
-  :version "1.11.1"
+  :version "1.12.0"
   :author "Manfred Bergmann"
   :license "Apache-2"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."

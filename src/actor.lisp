@@ -12,7 +12,8 @@
                     ev:unsubscribe
                     ev:publish
                     ac:find-actors
-                    ac:all-actors))
+                    ac:all-actors
+                    ac:actor-of))
 
 (defclass actor (actor-cell)
   ((receive :initarg :receive
@@ -64,50 +65,6 @@ The `:no-reply` result works for `ask` and `tell`, because also `ask` is based o
 `ask-s` is really only useful if a synchronous result is required and should be avoided otherwise.
 
 To stop an actors message processing in order to cleanup resouces you should `tell` (or `ask-s`) the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
-
-;; --------------------------------------
-;; Convenience macro for creating actors
-;; --------------------------------------
-
-(defmacro actor-of ((context
-                     &optional (name nil))
-                    &body body
-                    &key receive (init nil) (destroy nil) (dispatcher :shared) (state nil) (type ''actor))
-  "Simple interface for creating an actor.
-
-This is the preferred way to create an actor that runs within an `ac:actor-context`.
-
-**!!! Attention:** this macro wraps the `act:make-actor` and `ac:actor-of` functionality to something more simple to use. 
-Using this macro there is no need to use both `ac:actor-of` and `act:make-actor`.
-
-`context` is either an `asys:actor-system`, an `ac:actor-context`, or an `act:actor` (any type of actor).
-The new actor is created in the given context.
-
-- `name` is optional. Specify when a static name is needed.
-- `:receive` is required and must be a lambda with arguments 1. the actor, 2. the message, 3. the state
-  Usually expressed as `(lambda (self msg state))`.
-- `:init`: is an optional initialization function with one argument: the actor instance (self).
-This represents a 'start' hook that is called after the actor was fully initialized.
-- `:destroy`: is an optional destroy function also with the actor instance as argument.
-This function allows to unsubsribe from event-stream or such.
-- `:state` key can be used to initialize with a state.
-- `:dispatcher` key can be used to define the message dispatcher manually.
-  Options are `:shared` (default) and `:pinned`.
-- `:type` can specify a custom actor class. See `act:make-actor` for more info."
-  (declare (ignore body))
-  (let ((unwrapped-context (gensym)))
-    `(let* ((,unwrapped-context (etypecase ,context
-                                  (asys:actor-system ,context)
-                                  (ac:actor-context ,context)
-                                  (act:actor (act:context ,context)))))
-       (ac:actor-of ,unwrapped-context
-         (lambda () (act:make-actor ,receive
-                               :state ,state
-                               :name ,name
-                               :type ,type
-                               :init ,init
-                               :destroy ,destroy))
-         :dispatcher-id ,dispatcher))))
 
 (defmethod make-actor (receive &key name state (type 'actor) (init nil) (destroy nil))
   (make-instance type
@@ -312,3 +269,15 @@ In any case stop the actor-cell."
 (defmethod all-actors ((actor actor))
   "`ac:actor-context` protocol implementation."
   (ac:all-actors (context actor)))
+
+(defmethod actor-of ((actor actor)
+                     &key receive (init nil) (destroy nil) (dispatcher :shared) (state nil) (type 'act:actor) (name nil))
+  "`ac:actor-context` protocol implementation"
+  (ac:actor-of (context actor)
+    :receive receive
+    :init init
+    :destroy destroy
+    :dispatcher dispatcher
+    :state state
+    :type type
+    :name name))

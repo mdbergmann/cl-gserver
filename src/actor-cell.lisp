@@ -190,11 +190,10 @@ In case no messge-box is configured this function respnds with `:no-message-hand
            message
            withreply-p
            time-out)
-          (macroexpand
-           (with-sender sender
-             (process-response actor-cell
-                               (handle-message actor-cell message withreply-p)
-                               sender))))
+          (with-sender sender
+            (process-response actor-cell
+                              (handle-message actor-cell message withreply-p)
+                              sender)))
     (utils:ask-timeout (c)
       (lf:lwarn "~a: ask-s timeout: ~a" (name actor-cell) c)
       (process-response actor-cell

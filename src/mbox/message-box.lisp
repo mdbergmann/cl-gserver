@@ -69,7 +69,9 @@ Don't make it too small. A queue size of 1000 might be a good choice."))
 (defmacro with-submit-handler ((msgbox message withreply-p time-out) &rest body)
   "Macro to let the caller specify a message handler function.
 Use this instead of `submit`."
-  `(submit ,msgbox ,message ,withreply-p ,time-out (lambda (message) ,@body)))
+  `(submit ,msgbox ,message ,withreply-p ,time-out (lambda (message)
+                                                     (declare (ignore message))
+                                                     ,@body)))
 
 (defun wait-and-probe-for-result (msgbox push-item)
   (with-slots (time-out handler-result cancelled-p) push-item

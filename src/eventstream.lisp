@@ -76,7 +76,7 @@ But in theory it can be created individually by just passing an `ac:actor-contex
 (defmethod subscribe ((ev-stream eventstream) (subscriber act:actor) &optional pattern)
   "Subscribe to `ev:eventstream`."
   (with-slots (subscribers) ev-stream
-    (setf subscribers (cons `(,subscriber ,pattern) subscribers))))
+    (push `(,subscriber ,pattern) subscribers)))
 
 (defmethod unsubscribe ((ev-stream eventstream) (unsubscriber act:actor))
   "Unsubscribe to `ev:eventstream`."

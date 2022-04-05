@@ -152,7 +152,7 @@ To stop an actors message processing in order to cleanup resouces you should `te
 
 (defmethod watch ((self actor) watcher)
   (with-slots (watchers) self
-    (setf watchers (cons watcher watchers))))
+    (push watcher watchers)))
 
 (defmethod unwatch ((self actor) watcher)
   (with-slots (watchers) self

@@ -4,6 +4,14 @@
 
 cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.
 
+cl-gserver features:
+
+- Actors with `ask` and `tell` operations. `ask` can be asynchronous or synchronous.
+- Agents: Agents are a specialization of Actors for wrapping state with a standardized interface of `init`, `get` and `set`. There are also specialized Agents for CLs array and hash-map.
+- Router: Router offers a similar interface as Actor with `ask` and `tell` but collects multiple Actors for load-balancing.
+- EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages.
+- Tasks: a simple API for concurrency.
+
 ### Version history
 
 **Version 1.12.0 (26.2.2022):** Refactored and cleaned up the available `actor-of` facilities. There is now only one. If you used the macro before, you may have to adapt slightly.

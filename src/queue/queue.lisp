@@ -76,7 +76,7 @@
     (bt:with-lock-held (lock)
       (cl-speedy-queue:enqueue element queue)
       (bt:condition-notify cvar))))
-    
+
 
 (defun backpressure-if-necessary-on (queue yield-threshold)
   (loop :for queue-count = (get-queue-count queue)
@@ -98,29 +98,11 @@
   (with-slots (queue lock cvar) self
     (bt:with-lock-held (lock)
       (lf:ldebug "Lock aquired...")
-      #-ccl (if (> (get-queue-count queue) 0)
-                (dequeue/no-wait queue)
-                (dequeue/wait queue cvar lock))
-      #+ccl (dequeue/wait queue cvar lock)
-      ;; this loop was suggested in a bordeaux-threads GitHub issue conversation.
-      ;; but it doesn't work on CCL.
-      ;; (progn
-      ;;   (loop
-      ;;     :while (emptyq-p self)
-      ;;     :do (dequeue/wait queue cvar lock))
-      ;;   (dequeue/no-wait queue))
-      )))
-
-(defun dequeue/no-wait (queue)
-  (lf:ldebug "Dequeue without wait...")
-  (cl-speedy-queue:dequeue queue))
-
-(defun dequeue/wait (queue cvar lock)
-  (lf:ldebug "Going to sleep...")
-  (bt:condition-wait cvar lock)
-  (lf:ldebug "Awoken, processing queue...")
-  (cl-speedy-queue:dequeue queue))
+      (loop :while (cl-speedy-queue:queue-empty-p queue)
+            :do (bt:condition-wait cvar lock)
+            :finally (return (cl-speedy-queue:dequeue queue))))))
 
 (defmethod emptyq-p ((self queue-bounded))
   (with-slots (queue) self
     (cl-speedy-queue:queue-empty-p queue)))
+

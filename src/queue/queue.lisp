@@ -101,17 +101,3 @@
       (loop :while (cl-speedy-queue:queue-empty-p queue)
             :do (bt:condition-wait cvar lock)
             :finally (return (cl-speedy-queue:dequeue queue))))))
-
-(defun dequeue/no-wait (queue)
-  (lf:ldebug "Dequeue without wait...")
-  (cl-speedy-queue:dequeue queue))
-
-(defun dequeue/wait (queue cvar lock)
-  (lf:ldebug "Going to sleep...")
-  (bt:condition-wait cvar lock)
-  (lf:ldebug "Awoken, processing queue...")
-  (cl-speedy-queue:dequeue queue))
-
-(defmethod emptyq-p ((self queue-bounded))
-  (with-slots (queue) self
-    (cl-speedy-queue:queue-empty-p queue)))

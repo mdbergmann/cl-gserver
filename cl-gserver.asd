@@ -57,7 +57,8 @@
                   :components
                   ((:file "agent-usecase-commons")
                    (:file "hash-agent")
-                   (:file "array-agent")))))))
+                   (:file "array-agent")))
+                 (:file "package")))))
 
 (defsystem "cl-gserver/tests"
   :author "Manfred Bergmann"

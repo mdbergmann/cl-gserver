@@ -271,7 +271,10 @@ In any case stop the actor-cell."
   (ac:all-actors (context actor)))
 
 (defmethod actor-of ((actor actor)
-                     &key receive (init nil) (destroy nil) (dispatcher :shared) (state nil) (type 'act:actor) (name nil))
+                     &key receive
+                       (init nil) (destroy nil)
+                       (dispatcher :shared) (state nil)
+                       (type 'act:actor) (name nil))
   "`ac:actor-context` protocol implementation"
   (ac:actor-of (context actor)
     :receive receive

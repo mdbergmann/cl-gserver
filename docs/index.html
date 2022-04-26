@@ -87,6 +87,16 @@
 
 <p>cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.</p>
 
+<p>cl-gserver features:</p>
+
+<ul>
+<li>Actors with <code>ask</code> and <code>tell</code> operations. <code>ask</code> can be asynchronous or synchronous.</li>
+<li>Agents: Agents are a specialization of Actors for wrapping state with a standardized interface of <code>init</code>, <code>get</code> and <code>set</code>. There are also specialized Agents for CLs array and hash-map.</li>
+<li>Router: Router offers a similar interface as Actor with <code>ask</code> and <code>tell</code> but collects multiple Actors for load-balancing.</li>
+<li>EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages.</li>
+<li>Tasks: a simple API for concurrency.</li>
+</ul>
+
 <h3>Version history</h3>
 
 <p><strong>Version 1.12.0 (26.2.2022):</strong> Refactored and cleaned up the available <code>actor-of</code> facilities. There is now only one. If you used the macro before, you may have to adapt slightly.</p>
@@ -835,6 +845,14 @@ The actor-system constructor allows to provide custom config options that overri
 <li><p><code>:workers</code>: key argument for the number of workers.</p></li>
 <li><p><code>:strategy</code>: key argument for the dispatcher strategy (:random or :round-robin)</p></li>
 </ul></li>
+</ul>
+
+<p><a id='x-28CL-GSERVER-2EACTOR-SYSTEM-3AEVSTREAM-20-28MGL-PAX-3AREADER-20CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-29-29'></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#x-28CL-GSERVER-2EACTOR-SYSTEM-3AEVSTREAM-20-28MGL-PAX-3AREADER-20CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-29-29" >EVSTREAM</a></span></span> <span class="locative-args">ACTOR-SYSTEM</span> <span class="locative-args">(= <code>NIL</code>)</span></span></p>
+
+<p>The system event stream. See <a href="#x-28CL-GSERVER-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29" title="(CL-GSERVER.EVENTSTREAM:EVENTSTREAM CLASS)"><code>ev:eventstream</code></a> for more info.</p></li>
 </ul>
 
 <p><a id='x-28CL-GSERVER-2EACTOR-CONTEXT-3AACTOR-OF-20-28METHOD-20NIL-20-28CL-GSERVER-2EACTOR-SYSTEM-3AACTOR-SYSTEM-29-29-29'></a></p>

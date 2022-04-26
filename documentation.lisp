@@ -6,6 +6,7 @@
   (asys:*default-config* variable)
   (asys:register-dispatcher function)
   (asys:register-new-dispatcher function)
+  (asys:evstream (pax:reader actor-system))
   ;; ac protocol
   (ac:actor-of (pax:method () (asys:actor-system)))
   (ac:find-actors (pax:method () (asys:actor-system t)))

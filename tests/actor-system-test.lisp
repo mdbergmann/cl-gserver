@@ -41,7 +41,7 @@
            (is (= 4 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
 
            (is (not (null (asys:timeout-timer system))))
-           (is (not (null (asys:eventstream system)))))
+           (is (not (null (asys:evstream system)))))
       (ac:shutdown system))
       ))
 
@@ -235,7 +235,7 @@ We use internal API here only for this test, do not use this otherwise."
                                      (declare (ignore self state))
                                      (setf ev-received msg)
                                      (cons nil nil)))))
-      (ev:subscribe (eventstream cut) ev-listener)
-      (ev:publish (eventstream cut) "Foo")
+      (ev:subscribe (evstream cut) ev-listener)
+      (ev:publish (evstream cut) "Foo")
       (is (assert-cond (lambda () (equal ev-received "Foo")) 1))
-      (ev:unsubscribe (eventstream cut) ev-listener))))
+      (ev:unsubscribe (evstream cut) ev-listener))))

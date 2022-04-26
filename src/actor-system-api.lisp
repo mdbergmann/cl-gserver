@@ -4,7 +4,7 @@
   (:export #:make-actor-system
            #:actor-system
            #:dispatchers
-           #:eventstream
+           #:evstream
            #:timeout-timer
            #:register-dispatcher
            #:register-new-dispatcher

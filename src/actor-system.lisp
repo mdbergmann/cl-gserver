@@ -33,7 +33,7 @@
                        :documentation
                        "Internal API: an actor context for agents/actors created by the user.")
    (eventstream :initform nil
-                :reader eventstream
+                :reader evstream
                 :documentation
                 "The system event stream. See `ev:eventstream` for more info.")
    (timeout-timer :initform nil
@@ -190,7 +190,10 @@ Users should use `ac:find-actors`."
 ;; ----------------------------------------
 
 (defmethod actor-of ((system actor-system)
-                     &key receive (init nil) (destroy nil) (dispatcher :shared) (state nil) (type 'act:actor) (name nil))
+                     &key receive
+                       (init nil) (destroy nil)
+                       (dispatcher :shared) (state nil)
+                       (type 'act:actor) (name nil))
   "See `ac:actor-of`"
   (%actor-of system
     :receive receive
@@ -226,12 +229,12 @@ Users should use `ac:find-actors`."
 
 (defmethod subscribe ((system actor-system) (subscriber act:actor) &optional pattern)
   "Convenience. Allows to subscribe to `ev:eventstream` by just providing the `asys:actor-system`."
-  (ev:subscribe (eventstream system) subscriber pattern))
+  (ev:subscribe (evstream system) subscriber pattern))
 
 (defmethod unsubscribe ((system actor-system) (unsubscriber act:actor))
   "Convenience. Allows to unsubscribe to `ev:eventstream` by just providing the `asys:actor-system`."
-  (ev:unsubscribe (eventstream system) unsubscriber))
+  (ev:unsubscribe (evstream system) unsubscriber))
 
 (defmethod publish ((system actor-system) message)
   "Convenience. Allows to publish to `ev:eventstream` by just providing the `asys:actor-system`."
-  (ev:publish (eventstream system) message))
+  (ev:publish (evstream system) message))

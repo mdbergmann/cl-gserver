@@ -96,6 +96,22 @@ We use internal API here only for this test, do not use this otherwise."
     (is-true (assert-cond (lambda ()
                             (= 0 (length (ac:all-actors system)))) 2))))
 
+(test shutdown-system--with-wait
+  "Test shutting down the system by waiting for all actor to stop."
+  (let* ((system (make-actor-system))
+         (act1 (ac:actor-of system :receive (lambda (a b c)
+                                              (declare (ignore a b c))
+                                              (sleep 0.01)) :dispatcher :shared))
+         (act2 (ac:actor-of system :receive (lambda (a b c)
+                                              (declare (ignore a b c))
+                                              (sleep 0.01)) :dispatcher :shared))
+         (start-time (get-internal-real-time)))
+    (act:tell act1 :foo)
+    (act:tell act2 :foo)
+    (ac:shutdown system :wait nil)
+    (is (> (- (get-internal-real-time) start-time) 600))
+    (is (= 0 (length (ac:all-actors system))))))
+
 (test actor-of--verify-proper-root-path
   "Tests whether actors and contexts are created with proper paths."
   (with-fixture test-system ()
@@ -198,17 +214,9 @@ We use internal API here only for this test, do not use this otherwise."
 (test stop-actor--in-system
   "Tests stopping an actor. This pretty much does the same as the method in actor-context."
   (with-fixture test-system ()
-    (with-mocks ()
-      (let ((act (ac:actor-of cut :name "foo" :receive (lambda ())))
-            (call-to-stop-done nil))
-        (answer (act-cell:stop actor-to-stop)
-          (progn
-            (assert (eq actor-to-stop act))
-            (setf call-to-stop-done t)
-            nil))
-        (ac:stop cut act)
-        (is-true (assert-cond (lambda () call-to-stop-done) 1))
-        (is (= 1 (length (invocations 'act-cell:stop))))))))
+    (let ((act (ac:actor-of cut :name "foo" :receive (lambda ()))))
+      (ac:stop cut act)
+      (is (eq :stopped (act:ask-s act :foo))))))
 
 (test creating-some-actors--and-collect-responses
   "Creating many actors should not pose a problem."

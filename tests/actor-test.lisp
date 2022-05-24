@@ -215,7 +215,6 @@
                                (sleep 2)
                                (cons :my-result state))))
            (result (ask-s actor "foo" :time-out 0.5)))
-      ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
       (is (eq :handler-error (car result)))
       (is (typep (cdr result) 'utils:ask-timeout))
       (is (eq :stopped (ask-s actor :stop))))))
@@ -234,10 +233,8 @@
                       :receive (lambda (self msg state)
                                  (declare (ignore self msg state)))))
              (result (ask-s actor "foo" :time-out 0.5)))
-        ;; we're expecting a timeout error here. But BT on CCL raises an 'interrupted' error.
         (is (eq :handler-error (car result)))
-        (is (typep (cdr result) 'utils:ask-timeout))
-        (is (= 1 (length (invocations 'disp:dispatch-async))))))))
+        (is (typep (cdr result) 'utils:ask-timeout))))))
 
 (test ask--shared--timeout
   "Tests for ask timeout."

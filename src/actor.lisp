@@ -116,11 +116,11 @@ To stop an actors message processing in order to cleanup resouces you should `te
 
 ;; -------- children handling ----------
 
-(defun stop-children (actor)
+(defun stop-children (actor &optional (wait nil))
   (let ((context (context actor)))
     (when context
       (dolist (child (ac:all-actors context))
-        (stop child)))))
+        (stop child wait)))))
 
 (defun notify-watchers-about-stop (actor)
   (dolist (watcher (watchers actor))
@@ -158,11 +158,11 @@ To stop an actors message processing in order to cleanup resouces you should `te
   (with-slots (watchers) self
     (setf watchers (utils:filter (lambda (w) (not (eq watcher w))) watchers))))
 
-(defmethod stop ((self actor))
+(defmethod stop ((self actor) &optional (wait nil))
   "If this actor has an `actor-context`, also stop all children.
 In any case stop the actor-cell."
-  (stop-children self)
-  (call-next-method)
+  (stop-children self wait)
+  (call-next-method self wait)
   (notify-watchers-about-stop self))
 
 ;; -------------------------------

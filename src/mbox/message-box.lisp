@@ -54,10 +54,12 @@ Don't make it too small. A queue size of 1000 might be a good choice."))
 (defgeneric submit (message-box-base message withreply-p time-out handler-fun)
   (:documentation "Submit a message to the mailbox to be queued and handled."))
 
-(defgeneric stop (message-box-base)
-  (:documentation "Stops the message processing."))
+(defgeneric stop (message-box-base &optional wait)
+  (:documentation "Stops the message processing.
+Provide `wait` EQ `T` to wait until the actor cell is stopped."))
 
-(defmethod stop ((self message-box-base))
+(defmethod stop ((self message-box-base) &optional (wait nil))
+  (declare (ignore wait))
   (with-slots (processed-messages) self
     (lf:ldebug "~a: processed messages: ~a" (name self) processed-messages)))
 
@@ -153,8 +155,8 @@ this kind of queue because each message-box (and with that each actor) requires 
 (defun message-processing-loop (msgbox)
   "The message processing loop."
   (loop
-     (pop-queue-and-process msgbox)
-     (when (not (slot-value msgbox 'should-run)) (return))))
+    :while (slot-value msgbox 'should-run)
+    :do (pop-queue-and-process msgbox)))
 
 (defun pop-queue-and-process (msgbox)
   "This blocks until a new queue item arrived."
@@ -208,7 +210,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
     t))
   
 (defun submit/reply (msgbox queue message time-out handler-fun)
-  "This requires some more action. This function has to provide a result and so it's has to wait until
+  "This requires some more action. This function has to provide a result and so it has to wait until
 The queue thread has processed the message."
   (let* ((my-handler-result 'no-result)
          (my-handler-fun (lambda (msg)
@@ -238,13 +240,14 @@ The queue thread has processed the message."
     (lf:ltrace "~a: withreply: result should be available: ~a" (name msgbox) my-handler-result)
     my-handler-result))
 
-(defmethod stop ((self message-box/bt))
+(defmethod stop ((self message-box/bt) &optional (wait nil))
   (when (next-method-p)
     (call-next-method))
   (with-slots (queue-thread should-run) self
-    (setf should-run nil)
-    (submit self :trigger-closing-the-wait-handler nil nil
-            (lambda (msg) (declare (ignore msg))))))
+    ;; the next just enforces a 'pop' on the queue to make the message processing stop
+    (submit self :trigger-ending-the-processing-loop wait nil
+            (lambda (msg) (declare (ignore msg))))
+    (setf should-run nil)))
 
 
 ;; ----------------------------------------
@@ -346,6 +349,7 @@ handling of the message on the dispatcher queue thread."
   (declare (ignore msgbox))
   (dispatch-async dispatcher dispatcher-fun))
 
-(defmethod stop ((self message-box/dp))
+(defmethod stop ((self message-box/dp) &optional (wait nil))
+  (declare (ignore wait))
   (when (next-method-p)
     (call-next-method)))

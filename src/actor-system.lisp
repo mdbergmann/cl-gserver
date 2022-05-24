@@ -213,15 +213,15 @@ Users should use `ac:find-actors`."
   "See `ac:all-actors`"
   (%all-actors self :user))
 
-(defmethod stop ((self actor-system) actor)
+(defmethod stop ((self actor-system) actor &key (wait nil))
   "See `ac:stop`"
-  (act-cell:stop actor))
+  (act-cell:stop actor wait))
 
-(defmethod shutdown ((self actor-system))
+(defmethod shutdown ((self actor-system) &key (wait nil))
   "See `ac:shutdown`"
   (wt:shutdown-wheel-timer (timeout-timer self))
-  (ac:shutdown (user-actor-context self))
-  (ac:shutdown (internal-actor-context self)))
+  (ac:shutdown (user-actor-context self) :wait wait)
+  (ac:shutdown (internal-actor-context self) :wait wait))
 
 ;; ----------------------------------------
 ;; Public Api / eventcontext protocol

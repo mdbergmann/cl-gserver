@@ -196,18 +196,10 @@
 (test stop-actor--by-context
   "Tests stopping an actor."
   (with-fixture test-system ()
-    (with-mocks ()
-      (let* ((cut (make-actor-context system))
-             (actor (actor-of cut :receive (lambda ())))
-             (cell-stop-called nil))
-        (answer (act-cell:stop actor-to-stop)
-          (progn 
-            (assert (eq actor-to-stop actor))
-            (setf cell-stop-called t)
-            nil))
-        (stop cut actor)
-        (is-true cell-stop-called)
-        (is (= 1 (length (invocations 'act-cell:stop))))))))
+    (let* ((cut (make-actor-context system))
+           (actor (actor-of cut :receive (lambda ()))))
+      (stop cut actor)
+      (is (eq :stopped (act:ask-s actor :foo))))))
 
 (test retrieve-all-actors
   "Retrieves all actors"

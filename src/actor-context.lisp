@@ -145,14 +145,14 @@ An `act:actor` contains an `actor-context`."
   "See `ac:all-actors`"
   (actors context))
 
-(defmethod stop ((context actor-context) actor)
+(defmethod stop ((context actor-context) actor &key (wait nil))
   "See `ac:stop`"
-  (act-cell:stop actor))
+  (act-cell:stop actor wait))
 
-(defmethod shutdown ((context actor-context))
+(defmethod shutdown ((context actor-context) &key (wait nil))
   "See `ac:shutdown`"
   (dolist (actor (all-actors context))
-    (act-cell:stop actor)))
+    (act-cell:stop actor wait)))
 
 (defmethod notify ((context actor-context) actor notification)
   (case notification

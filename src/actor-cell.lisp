@@ -109,8 +109,9 @@ The convention here is to return a `cons` with values to be returned to caller a
    "Handles casts to the server. Must be implemented by subclasses.
 Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
 
-(defgeneric stop (actor-cell)
-  (:documentation "Stops the actor-cell."))
+(defgeneric stop (actor-cell &optional wait)
+  (:documentation "Stops the actor-cell.
+`wait`: waits until the cell is stopped."))
 
 ;; ---------------------------------
 ;; Impl
@@ -152,13 +153,13 @@ If a `sender' is specified the result will be sent to the sender."
   (with-slots (internal-state) actor-cell
     (slot-value internal-state 'running)))
 
-(defmethod stop ((self actor-cell))
+(defmethod stop ((self actor-cell) &optional (wait nil))
   (lf:ldebug "~a: stopping on actor-cell: ~a" (name self) self)
   (with-slots (msgbox internal-state) self
     (when (slot-value internal-state 'running)
-      (when msgbox
-        (mesgb:stop msgbox))
       (setf (slot-value internal-state 'running) nil)
+      (when msgbox
+        (mesgb:stop msgbox wait))
       (after-stop self))))
 
 ;; -----------------------------------------------    
@@ -249,7 +250,7 @@ and if it got cancelled, in which case we respond just with `:cancelled`."
 (defun handle-message-internal (actor-cell msg)
   "A `:stop` message will response with `:stopping` and the user handlers are not called.
 Otherwise the result is `:resume` to resume user message handling."
-  (lf:ldebug "~a: internal handle-call: ~a" (name actor-cell) msg)
+  (lf:ldebug "~a: internal handle-message: ~a" (name actor-cell) msg)
   (case msg
     (:stop :stopping)
     (t :resume)))

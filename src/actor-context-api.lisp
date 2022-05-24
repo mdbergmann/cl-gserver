@@ -52,17 +52,19 @@ Depending on `test` function the last path component can be used as a wildcard w
 (defgeneric all-actors (context)
   (:documentation "Retrieves all actors of this context as a list"))
 
-(defgeneric stop (context actor)
+(defgeneric stop (context actor &key wait)
   (:documentation
    "Stops the given actor on the context. 
 The context may either be an `actor-context`, or an `actor-system`.
-The actor is then also removed from the context."))
+The actor is then also removed from the context.
+Specify `wait` as `T` to block until the actor is stopped (default `NIL`)."))
 
-(defgeneric shutdown (context)
+(defgeneric shutdown (context &key wait)
   (:documentation
    "Stops all actors in this context.
 When the context is an `actor-context` this still stop the actor context and all its actors.
-For the `actor-system` it will stop the whole system with all actors."))
+For the `actor-system` it will stop the whole system with all actors.
+Specify `wait` as `T` to block until all actors of the context are stopped (default `NIL`)."))
 
 (defgeneric notify (context actor notification)
   (:documentation

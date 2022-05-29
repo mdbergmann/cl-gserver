@@ -197,14 +197,14 @@ In any case stop the actor-cell."
 (defmethod ask ((self actor) message &key (time-out nil))
   (future:make-future
    (lambda (promise-fun)
-     (lf:ldebug "Executing future function...")
+     (log:debug "Executing future function...")
      (let* ((context (context self))
             (system (if context (ac:system context) nil))
             (timed-out-p nil)
             (result-received-p nil)
             (waiting-actor nil))
        (flet ((handle-timeout (&optional cause)
-                (lf:linfo "Timeout condition: ~a" cause)
+                (log:info "Timeout condition: ~a" cause)
                 (setf timed-out-p t)
                 (funcall promise-fun
                          (cons :handler-error
@@ -213,7 +213,7 @@ In any case stop the actor-cell."
                                                :cause cause)))
                 (tell waiting-actor :stop))
               (handle-error (&optional cause)
-                (lf:lwarn "~a" cause)
+                (log:warn "~a" cause)
                 (funcall promise-fun
                          (cons :handler-error cause))
                 (tell waiting-actor :stop)))
@@ -221,7 +221,7 @@ In any case stop the actor-cell."
                (with-waiting-actor self message system time-out
                  (lambda (result)
                    (setf result-received-p t)
-                   (lf:linfo "Result: ~a, timed-out:~a" result timed-out-p)
+                   (log:info "Result: ~a, timed-out:~a" result timed-out-p)
                    (unless timed-out-p
                      (funcall promise-fun result)))))
          (when time-out

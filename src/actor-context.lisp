@@ -73,7 +73,7 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
   (let* ((actor-name (act-cell:name actor))
          (exists-actor-p (%find-actor-by-name context actor-name)))
     (when exists-actor-p
-      (lf:lerror "Actor with name '~a' already exists!" actor-name)
+      (log:error "Actor with name '~a' already exists!" actor-name)
       (error (make-condition 'actor-name-exists :name actor-name)))))
 
 (defun %create-actor (context create-fun dispatcher-id queue-size)

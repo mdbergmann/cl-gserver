@@ -12,7 +12,7 @@
 
 (in-suite actor-cell-tests)
 
-(lf:config :level :warn)
+(log:config :warn)
 
 (defparameter *after-stop-val* nil)
 
@@ -143,7 +143,7 @@
   "testing error handling"
   (with-fixture cell-fixture ((lambda (cell message current-state)
                                 (declare (ignore cell current-state))
-                                (lf:linfo "Raising error condition...")
+                                (log:info "Raising error condition...")
                                 (cond
                                  ((eq :err (car message))
                                   (error "Foo Error"))))

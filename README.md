@@ -14,6 +14,8 @@ cl-gserver features:
 
 ### Version history
 
+**Version 1.12.2 (29.5.2022):** Removed the logging abstraction again. Less code to maintain. log4cl is featureful enough for users to either use it, or use something else in the applications that are based on cl-gserver.
+
 **Version 1.12.1 (25.5.2022):** Shutdown and stop of actor, actor context and actor system can now wait for a full shutdown/stop of all actors to really have a clean system shutdown.
 
 **Version 1.12.0 (26.2.2022):** Refactored and cleaned up the available `actor-of` facilities. There is now only one. If you used the macro before, you may have to adapt slightly.
@@ -674,11 +676,13 @@ Some words on immutability. cl-gserver does _not_ make deep copies of the actor 
 
 ### Logging
 
-cl-gserver does its own logging using different log levels from 'trace' to 'error'. By default it uses its own logging implementation which just dumps the log string to stdout. However, the logging is abstracted in a way that allows to integrate the logging of cl-gserver to use your chosen logging library. The way this works is that cl-gserver uses a set of macros to do the logging. Those macros can be overridden by custom implementation. This is quite simple. I.e. an implementation for log4cl is included, see [logif-log4cl.lisp](/src/logif/logif-log4cl.lisp).
+cl-gserver does its own logging using different log levels from 'trace' to 'error'. It uses log4cl. If you wish to also use log4cl in your application but find that cl-gserver is too noisy in debug and trace logging you can change the log level for the 'cl-gserver package only by:
 
-The important point to note is that the log implementations must come in separate ASDF systems so that they can be loaded first, before any of the code of cl-gserver is loaded and compiled. See the main system 'cl-gserver' for this in [cl-gserver.asd](/cl-gserver.asd). Instead of 'logif-simple' you may choose 'logif-log4cl', or your own implementation.
+```
+(log:config '(cl-gserver) :warn)
+```
 
-However, you may also just use the logging facility of cl-gserver in the package `cl-gserver.logif`. It's limited though but might be expanded later. The level config can be done via i.e.: `(lf:config :level :debug)`. If you use log4cl then you just use the log4cl config functionality.
+This will tell log4cl to do any logging for cl-gserver in warn level.
 
 ### Benchmarks
 

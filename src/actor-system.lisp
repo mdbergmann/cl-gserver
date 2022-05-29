@@ -82,7 +82,7 @@ See `config:config-from`."
       (%register-dispatchers system (%get-dispatcher-config system-config) internal-actor-context)
       (%register-eventstream system (%get-eventstream-config system-config) internal-actor-context)
       (%register-timeout-timer system (%get-timeout-timer-config system-config)))
-    (lf:linfo system)
+    (log:info system)
     system))
 
 (defun %get-timeout-timer-config (config)

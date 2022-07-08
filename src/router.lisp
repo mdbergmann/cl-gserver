@@ -81,7 +81,7 @@ A router `strategy` defines how one of the actors is determined as the forwardin
   (let* ((routees (slot-value router 'routees))
          (strategy-fun (strategy-fun router))
          (actor-index (funcall strategy-fun (length routees))))
-    (lf:ldebug "Using index from strategy: ~a" actor-index)
+    (log:debug "Using index from strategy: ~a" actor-index)
     actor-index))
 
 (defun routees (router)

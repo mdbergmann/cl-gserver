@@ -12,7 +12,7 @@
 
 (in-suite actor-mp-tests)
 
-(lf:config :level :warn)
+(log:config :warn)
 
 (defparameter *receive-fun* (lambda (self message current-state)
                               (declare (ignore self))

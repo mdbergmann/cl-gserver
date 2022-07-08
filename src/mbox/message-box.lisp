@@ -54,12 +54,14 @@ Don't make it too small. A queue size of 1000 might be a good choice."))
 (defgeneric submit (message-box-base message withreply-p time-out handler-fun)
   (:documentation "Submit a message to the mailbox to be queued and handled."))
 
-(defgeneric stop (message-box-base)
-  (:documentation "Stops the message processing."))
+(defgeneric stop (message-box-base &optional wait)
+  (:documentation "Stops the message processing.
+Provide `wait` EQ `T` to wait until the actor cell is stopped."))
 
-(defmethod stop ((self message-box-base))
+(defmethod stop ((self message-box-base) &optional (wait nil))
+  (declare (ignore wait))
   (with-slots (processed-messages) self
-    (lf:ldebug "~a: processed messages: ~a" (name self) processed-messages)))
+    (log:debug "~a: processed messages: ~a" (name self) processed-messages)))
 
 
 ;; ----------------------------------------
@@ -77,7 +79,7 @@ Use this instead of `submit`."
   (with-slots (time-out handler-result cancelled-p) push-item
     (unless
         (utils:assert-cond (lambda () (not (eq 'no-result handler-result))) time-out 0.1)
-      (lf:lwarn "~a: time-out elapsed but result not available yet!" (name msgbox))
+      (log:warn "~a: time-out elapsed but result not available yet!" (name msgbox))
       (setf cancelled-p t)
       (error 'utils:ask-timeout :wait-time time-out))))
 
@@ -153,15 +155,15 @@ this kind of queue because each message-box (and with that each actor) requires 
 (defun message-processing-loop (msgbox)
   "The message processing loop."
   (loop
-     (pop-queue-and-process msgbox)
-     (when (not (slot-value msgbox 'should-run)) (return))))
+    :while (slot-value msgbox 'should-run)
+    :do (pop-queue-and-process msgbox)))
 
 (defun pop-queue-and-process (msgbox)
   "This blocks until a new queue item arrived."
-  (lf:ltrace "~a: trying to pop from queue..." (name msgbox))
+  (log:trace "~a: trying to pop from queue..." (name msgbox))
   (with-slots (queue) msgbox
     (let ((item (queue:popq queue)))
-      (lf:ldebug "~a: got item: ~a" (name msgbox) item)
+      (log:debug "~a: got item: ~a" (name msgbox) item)
       (process-queue-item msgbox item)
       (incf (slot-value msgbox 'processed-messages)))))
 
@@ -171,7 +173,7 @@ message is 'interrupted' when the message was 'cancelled'.
 This should happen in conjunction with the outer time-out in `submit/reply'."
   (with-slots (message handler-fun withreply-p withreply-lock withreply-cvar cancelled-p time-out) item
     (when cancelled-p
-      (lf:lwarn "~a: item got cancelled: ~a" (name msgbox) item)
+      (log:warn "~a: item got cancelled: ~a" (name msgbox) item)
       (when withreply-p
         (bt:condition-notify withreply-cvar))
       (return-from process-queue-item :cancelled))
@@ -190,7 +192,7 @@ This should happen in conjunction with the outer time-out in `submit/reply'."
 (defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun)
 "Alternatively use `with-submit-handler` from your code to handle the message after it was 'popped' from the queue.
 The `handler-fun` argument here will be `funcall`ed when the message was 'popped'."
-  (lf:ltrace "~a: submit message: ~a" (name self) message)
+  (log:trace "~a: submit message: ~a" (name self) message)
   (with-slots (queue) self
     (if withreply-p
         (submit/reply self queue message time-out handler-fun)
@@ -203,19 +205,19 @@ The submitting code has to await the side-effect and possibly handle a timeout."
   (let ((push-item (make-message-item/bt
                     :message message
                     :handler-fun handler-fun)))
-    (lf:ldebug "~a: pushing item to queue: ~a" (name msgbox) push-item)
+    (log:debug "~a: pushing item to queue: ~a" (name msgbox) push-item)
     (queue:pushq queue push-item)
     t))
   
 (defun submit/reply (msgbox queue message time-out handler-fun)
-  "This requires some more action. This function has to provide a result and so it's has to wait until
+  "This requires some more action. This function has to provide a result and so it has to wait until
 The queue thread has processed the message."
   (let* ((my-handler-result 'no-result)
          (my-handler-fun (lambda (msg)
                            ;; wrap the `handler-fun' so that we can get a function result.
-                           (lf:ltrace "~a: withreply: handler-fun..." (name msgbox))
+                           (log:trace "~a: withreply: handler-fun..." (name msgbox))
                            (setf my-handler-result (funcall handler-fun msg))
-                           (lf:ltrace "~a: withreply: handler-fun result: ~a" (name msgbox) my-handler-result)))
+                           (log:trace "~a: withreply: handler-fun result: ~a" (name msgbox) my-handler-result)))
          (withreply-lock (bt:make-lock))
          (withreply-cvar (bt:make-condition-variable))
          (push-item (make-message-item/bt
@@ -227,24 +229,25 @@ The queue thread has processed the message."
                      :handler-fun my-handler-fun
                      :handler-result my-handler-result)))
 
-    (lf:ltrace "~a: withreply: waiting for arrival of result..." (name msgbox))
+    (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
     (bt:with-lock-held (withreply-lock)
-      (lf:ltrace "~a: pushing item to queue: ~a" (name msgbox) push-item)
+      (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
       (queue:pushq queue push-item)
 
       (if time-out
           (wait-and-probe-for-result msgbox push-item)
           (bt:condition-wait withreply-cvar withreply-lock)))
-    (lf:ltrace "~a: withreply: result should be available: ~a" (name msgbox) my-handler-result)
+    (log:trace "~a: withreply: result should be available: ~a" (name msgbox) my-handler-result)
     my-handler-result))
 
-(defmethod stop ((self message-box/bt))
+(defmethod stop ((self message-box/bt) &optional (wait nil))
   (when (next-method-p)
     (call-next-method))
   (with-slots (queue-thread should-run) self
-    (setf should-run nil)
-    (submit self :trigger-closing-the-wait-handler nil nil
-            (lambda (msg) (declare (ignore msg))))))
+    ;; the next just enforces a 'pop' on the queue to make the message processing stop
+    (submit self :trigger-ending-the-processing-loop wait nil
+            (lambda (msg) (declare (ignore msg))))
+    (setf should-run nil)))
 
 
 ;; ----------------------------------------
@@ -281,7 +284,7 @@ It knows the message-box of the origin actor and acts on it.
 It pops the ,essage from the message-boxes queue and calls the `handler-fun` on it.
 The `handler-fun' is part of the message item."
   (with-slots (name queue) msgbox
-    (lf:ltrace "~a: popping message..." name)
+    (log:trace "~a: popping message..." name)
     (let ((popped-item (popq queue)))
       (handle-popped-item popped-item msgbox))))
 
@@ -289,9 +292,9 @@ The `handler-fun' is part of the message item."
   "Handles the popped message. Means: calls the `handler-fun` on the message."
   (with-slots (name lock) msgbox
     (with-slots (message cancelled-p handler-fun handler-result) popped-item
-      (lf:ldebug "~a: popped message: ~a" name popped-item)
+      (log:debug "~a: popped message: ~a" name popped-item)
       (when cancelled-p
-        (lf:lwarn "~a: item got cancelled: ~a" name popped-item))
+        (log:warn "~a: item got cancelled: ~a" name popped-item))
       (unless cancelled-p
         ;; protect the actor from concurrent state changes on the shared dispatcher
         (bt:acquire-lock lock t)
@@ -318,7 +321,7 @@ handling of the message on the dispatcher queue thread."
                       :time-out time-out))
           (dispatcher-fun (lambda () (funcall #'dispatcher-exec-fun self))))
 
-      (lf:linfo "~a: enqueuing... withreply-p: ~a, time-out: ~a, message: ~a"
+      (log:info "~a: enqueuing... withreply-p: ~a, time-out: ~a, message: ~a"
                 (name self) withreply-p time-out message)
       (pushq queue push-item)
 
@@ -346,6 +349,7 @@ handling of the message on the dispatcher queue thread."
   (declare (ignore msgbox))
   (dispatch-async dispatcher dispatcher-fun))
 
-(defmethod stop ((self message-box/dp))
+(defmethod stop ((self message-box/dp) &optional (wait nil))
+  (declare (ignore wait))
   (when (next-method-p)
     (call-next-method)))

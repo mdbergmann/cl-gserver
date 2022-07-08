@@ -1,17 +1,10 @@
 (defsystem "cl-gserver"
-  :version "1.12.0"
+  :version "1.12.2"
   :author "Manfred Bergmann"
   :license "Apache-2"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
-  :depends-on ("cl-gserver/logif"
-               "cl-gserver/logif-simple"
-               "cl-gserver/plain")
-  :in-order-to ((test-op (test-op "cl-gserver/tests"))))
-
-(defsystem "cl-gserver/plain"
-  :author "Manfred Bergmann"
-  :description "cl-gserver with no logging. combine with one of the logging interfaces."
   :depends-on ("alexandria"
+               "log4cl"
                "bordeaux-threads"
                "lparallel"
                "cl-speedy-queue"
@@ -58,7 +51,8 @@
                   ((:file "agent-usecase-commons")
                    (:file "hash-agent")
                    (:file "array-agent")))
-                 (:file "package")))))
+                 (:file "package"))))
+  :in-order-to ((test-op (test-op "cl-gserver/tests"))))
 
 (defsystem "cl-gserver/tests"
   :author "Manfred Bergmann"
@@ -68,7 +62,6 @@
   :components ((:module "tests"
                 :components
                 ((:file "all-test")
-                 (:file "logif-simple-test")
                  (:file "atomic-test")
                  (:file "config-test")
                  (:file "wheel-timer-test")
@@ -104,36 +97,6 @@
                "mgl-pax")
   :components ((:file "documentation")))
 
-;; logging interface
-
-(defsystem "cl-gserver/logif"
-  :author "Manfred Bergmann"
-  :description "Logging interface api"
-  :components ((:module "src"
-                :components
-                ((:module "logif"
-                  :components
-                  ((:file "logif")))))))
-
-(defsystem "cl-gserver/logif-simple"
-  :author "Manfred Bergmann"
-  :description "Logging interface - simple implementation"
-  :depends-on ("cl-gserver/logif")
-  :components ((:module "src"
-                :components
-                ((:module "logif"
-                  :components
-                  ((:file "logif-simple")))))))
-
-(defsystem "cl-gserver/logif-log4cl"
-  :author "Manfred Bergmann"
-  :description "Logging interface - log4cl implementation"
-  :depends-on ("cl-gserver/logif" "log4cl")
-  :components ((:module "src"
-                :components
-                ((:module "logif"
-                  :components
-                  ((:file "logif-log4cl")))))))
 
 ;; load system
 ;; (asdf:load-system "cl-gserver")

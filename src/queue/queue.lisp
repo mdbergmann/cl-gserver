@@ -64,7 +64,7 @@
             ((<= max-items 10) 2)
             ((<= max-items 20) 8)
             (t (* (/ max-items 100) 95))))  ; 95%
-    (lf:linfo "Yield threshold at: ~a" yield-threshold)
+    (log:info "Yield threshold at: ~a" yield-threshold)
 
     (setf queue (cl-speedy-queue:make-queue max-items))))
 
@@ -83,11 +83,11 @@
         :for loop-count :from 0
         :if (and (> loop-count 100) (> queue-count yield-threshold))
           :do (progn
-                (lf:lwarn "Unable to reduce queue pressure!")
+                (log:warn "Unable to reduce queue pressure!")
                 (error "Unable to reduce queue pressure. Consider increasing queue-size or use more threads!"))
         :while (> queue-count yield-threshold)
         :do (progn
-              (lf:ldebug "back-pressure, doing thread-yield (~a/~a)." queue-count yield-threshold)
+              (log:debug "back-pressure, doing thread-yield (~a/~a)." queue-count yield-threshold)
               (bt:thread-yield)
               (sleep .01))))
 
@@ -97,7 +97,7 @@
 (defmethod popq ((self queue-bounded))
   (with-slots (queue lock cvar) self
     (bt:with-lock-held (lock)
-      (lf:ldebug "Lock aquired...")
+      (log:debug "Lock aquired...")
       (loop :while (cl-speedy-queue:queue-empty-p queue)
             :do (bt:condition-wait cvar lock)
             :finally (return (cl-speedy-queue:dequeue queue))))))

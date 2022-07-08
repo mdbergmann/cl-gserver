@@ -116,11 +116,11 @@ To stop an actors message processing in order to cleanup resouces you should `te
 
 ;; -------- children handling ----------
 
-(defun stop-children (actor)
+(defun stop-children (actor &optional (wait nil))
   (let ((context (context actor)))
     (when context
       (dolist (child (ac:all-actors context))
-        (stop child)))))
+        (stop child wait)))))
 
 (defun notify-watchers-about-stop (actor)
   (dolist (watcher (watchers actor))
@@ -158,11 +158,11 @@ To stop an actors message processing in order to cleanup resouces you should `te
   (with-slots (watchers) self
     (setf watchers (utils:filter (lambda (w) (not (eq watcher w))) watchers))))
 
-(defmethod stop ((self actor))
+(defmethod stop ((self actor) &optional (wait nil))
   "If this actor has an `actor-context`, also stop all children.
 In any case stop the actor-cell."
-  (stop-children self)
-  (call-next-method)
+  (stop-children self wait)
+  (call-next-method self wait)
   (notify-watchers-about-stop self))
 
 ;; -------------------------------
@@ -197,14 +197,14 @@ In any case stop the actor-cell."
 (defmethod ask ((self actor) message &key (time-out nil))
   (future:make-future
    (lambda (promise-fun)
-     (lf:ldebug "Executing future function...")
+     (log:debug "Executing future function...")
      (let* ((context (context self))
             (system (if context (ac:system context) nil))
             (timed-out-p nil)
             (result-received-p nil)
             (waiting-actor nil))
        (flet ((handle-timeout (&optional cause)
-                (lf:linfo "Timeout condition: ~a" cause)
+                (log:info "Timeout condition: ~a" cause)
                 (setf timed-out-p t)
                 (funcall promise-fun
                          (cons :handler-error
@@ -213,7 +213,7 @@ In any case stop the actor-cell."
                                                :cause cause)))
                 (tell waiting-actor :stop))
               (handle-error (&optional cause)
-                (lf:lwarn "~a" cause)
+                (log:warn "~a" cause)
                 (funcall promise-fun
                          (cons :handler-error cause))
                 (tell waiting-actor :stop)))
@@ -221,7 +221,7 @@ In any case stop the actor-cell."
                (with-waiting-actor self message system time-out
                  (lambda (result)
                    (setf result-received-p t)
-                   (lf:linfo "Result: ~a, timed-out:~a" result timed-out-p)
+                   (log:info "Result: ~a, timed-out:~a" result timed-out-p)
                    (unless timed-out-p
                      (funcall promise-fun result)))))
          (when time-out

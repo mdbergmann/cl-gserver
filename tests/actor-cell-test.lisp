@@ -12,7 +12,9 @@
 
 (in-suite actor-cell-tests)
 
-(lf:config :level :warn)
+(log:config :warn)
+
+(defparameter *after-stop-val* nil)
 
 (def-fixture cell-fixture (call-fun cast-fun pre-start-fun after-stop-fun state)
   (defclass test-cell (actor-cell) ())
@@ -26,6 +28,8 @@
   (defmethod after-stop ((cell test-cell))
     (when after-stop-fun
       (funcall after-stop-fun cell)))
+
+  (setf *after-stop-val* nil)
   
   (let ((cut (make-instance 'test-cell
                             :state state)))
@@ -54,7 +58,6 @@
                               0)
     (is (string= "pre-start-fun-executed" (call cut :foo)))))
 
-(defparameter *after-stop-val* nil)
 (test run-after-stop-fun
   "Tests the execution of `after-stop'"
   (with-fixture cell-fixture ((lambda (self message current-state)
@@ -69,7 +72,25 @@
     (call cut :stop)
     (is (string= "after-stop-fun-executed" *after-stop-val*))))
 
-(test no-message-box
+(test run-after-stop-fun--with-wait-for-stop
+  "Tests the execution of `after-stop' but using the `stop` function of the cell."
+  (with-fixture cell-fixture (nil
+                              (lambda (self message current-state)
+                                (declare (ignore self message))
+                                (sleep 0.3)
+                                (cons current-state current-state))
+                              nil
+                              (lambda (self)
+                                (declare (ignore self))
+                                (setf *after-stop-val* "after-stop-fun-executed"))
+                              0)
+    (let ((now (get-internal-real-time)))
+      (cast cut :wait)  ;; send message that waits a bit but is async
+      (stop cut t)  ;; stop has to wait until stopped
+      (is (> (- (get-internal-real-time) now) 300))
+      (is (string= "after-stop-fun-executed" *after-stop-val*)))))
+
+(Test no-message-box
   "Test responds with :no-message-handling when no msgbox is configured."
   (defclass no-msg-server (actor-cell) ())
   (defmethod handle-call ((cell no-msg-server) message current-state)
@@ -122,7 +143,7 @@
   "testing error handling"
   (with-fixture cell-fixture ((lambda (cell message current-state)
                                 (declare (ignore cell current-state))
-                                (lf:linfo "Raising error condition...")
+                                (log:info "Raising error condition...")
                                 (cond
                                  ((eq :err (car message))
                                   (error "Foo Error"))))
@@ -197,9 +218,8 @@
 (defmethod handle-call ((cell stopping-cell) message current-state)
   (cons message current-state))
 
-(test stopping-cell
+(test stopping-cell--using-message
   "Stopping a cell stops the message handling and frees resources."
   (let ((cut (make-instance 'stopping-cell)))
     (setf (msgbox cut) (make-instance 'mesgb:message-box/bt))
     (is (eq :stopped (call cut :stop)))))
-

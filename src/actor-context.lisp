@@ -73,7 +73,7 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
   (let* ((actor-name (act-cell:name actor))
          (exists-actor-p (%find-actor-by-name context actor-name)))
     (when exists-actor-p
-      (lf:lerror "Actor with name '~a' already exists!" actor-name)
+      (log:error "Actor with name '~a' already exists!" actor-name)
       (error (make-condition 'actor-name-exists :name actor-name)))))
 
 (defun %create-actor (context create-fun dispatcher-id queue-size)
@@ -145,14 +145,14 @@ An `act:actor` contains an `actor-context`."
   "See `ac:all-actors`"
   (actors context))
 
-(defmethod stop ((context actor-context) actor)
+(defmethod stop ((context actor-context) actor &key (wait nil))
   "See `ac:stop`"
-  (act-cell:stop actor))
+  (act-cell:stop actor wait))
 
-(defmethod shutdown ((context actor-context))
+(defmethod shutdown ((context actor-context) &key (wait nil))
   "See `ac:shutdown`"
   (dolist (actor (all-actors context))
-    (act-cell:stop actor)))
+    (act-cell:stop actor wait)))
 
 (defmethod notify ((context actor-context) actor notification)
   (case notification

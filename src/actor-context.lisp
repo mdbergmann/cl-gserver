@@ -28,22 +28,20 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
   (getf (asys:dispatchers system) identifier))
 
 (defun %add-actor (context actor)
-  (let ((atomic-actors (slot-value context 'actors))
-        (actors (actors context)))
-    (if (atomic:atomic-cas atomic-actors actors (cons actor actors))
-        actor
-        (error "Unable to add actor!"))))
+  (let ((atomic-actors (slot-value context 'actors)))
+    (atomic:atomic-swap atomic-actors (lambda (old-actors)
+                                        (cons actor old-actors)))
+    actor))
 
 (defun %remove-actor (context actor)
-  (let ((atomic-actors (slot-value context 'actors))
-        (actors (actors context)))
-    (atomic:atomic-cas atomic-actors
-                       actors
-                       (remove-if (lambda (a)
-                                    (or (eq a actor)
-                                        (string= (act-cell:name a)
-                                                 (act-cell:name actor))))
-                                  actors))))
+  (let ((atomic-actors (slot-value context 'actors)))
+    (atomic:atomic-swap atomic-actors
+                        (lambda (old-actors)
+                          (remove-if (lambda (a)
+                                       (or (eq a actor)
+                                           (string= (act-cell:name a)
+                                                    (act-cell:name actor))))
+                                     old-actors)))))
 
 (defun %message-box-for-dispatcher-id (context dispatcher-id queue-size)
   (case dispatcher-id
@@ -129,7 +127,7 @@ An `act:actor` contains an `actor-context`."
   "See `ac:find-actors`"
   (if (str:starts-with-p "/" path)
       ;; root path, delegate to system
-      (find-actors (system context) path :test test :key key)  
+      (find-actors (system context) path :test test :key key)
       (let ((path-comps (str:split "/" path))
             (context context))
         (loop :for path-comp :in (butlast path-comps)
@@ -140,7 +138,7 @@ An `act:actor` contains an `actor-context`."
                       (setf context (act:context actor))
                       (error (format nil "Cannot find path component ~a" path-comp))))
         (%find-actors context (car (last path-comps)) :test test :key key))))
-        
+
 (defmethod all-actors ((context actor-context))
   "See `ac:all-actors`"
   (actors context))

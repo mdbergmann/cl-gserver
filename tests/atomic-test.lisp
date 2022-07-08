@@ -17,10 +17,14 @@
 
 (test swap-reference
   "Swap a reference."
-  (let* ((ref (make-atomic-reference :value '()))
-         (old (atomic-get ref)))
-    (is-true (atomic-cas ref old '(1 2)))
-    (is (equal '(1 2) (atomic-get ref)))))
+  (let* ((ref (make-atomic-reference :value '(0)))
+         (fn1 #'append)
+         (args (list 1 2))
+         (fn2 (lambda (lst) (apply #'+ lst))))
+    (is (equal '(0 1 2) (atomic-swap ref fn1 args))) ; test with rest args
+    (is (equal '(0 1 2) (atomic-get ref)))
+    (is (= 3 (atomic-swap ref fn2))) ; test without rest args
+    (is (= 3 (atomic-get ref)))))
 
 (test make-atomic-integer
   "Tests making an atomic integer"
@@ -29,37 +33,9 @@
 (test swap-integer
   "Swap an intreger value."
   (let* ((value (make-atomic-integer :value 5))
-         (old (atomic-get value)))
-    (is-true (atomic-cas value old 2))))
-
-(test setf-integer
-  "Test atomic-setf for integer type."
-  (let ((value (make-atomic-integer :value 0))
-        (minus -1)
-        (plus  1)
-        (zero  0))
-    (is (= minus (atomic-setf value minus)))
-    (is (= minus (atomic-get value)))
-    (is (= plus (atomic-setf value plus)))
-    (is (= plus (atomic-get value)))
-    (is (= zero (atomic-setf value zero)))
-    (is (= zero (atomic-get value)))))
-
-(test setf-object
-  "Test atomic-setf other than integer type"
-  (let* ((ref (make-atomic-reference :value '()))
-         (kwd :kwd)
-         (int 8)
-         (lst '(1 2))
-         (obj (make-array 1))
-         (empty nil))
-    (is (eq kwd (atomic-setf ref kwd)))
-    (is (eq kwd (atomic-get ref)))
-    (is (eq int (atomic-setf ref int)))
-    (is (eq int (atomic-get ref)))
-    (is (eq lst (atomic-setf ref lst)))
-    (is (eq lst (atomic-get ref)))
-    (is (eq obj (atomic-setf ref obj)))
-    (is (eq obj (atomic-get ref)))
-    (is (eq empty (atomic-setf ref empty)))
-    (is (eq empty (atomic-get ref)))))
+         (fn1 #'+)
+         (fn2 #'1+))
+    (is (= 8 (atomic-swap value fn1 1 2)))
+    (is (= 8 (atomic-get value)))
+    (is (= 9 (atomic-swap value fn2)))
+    (is (= 9 (atomic-get value)))))

@@ -23,15 +23,22 @@
   #-ccl
   `(car (slot-value ,ref 'cell)))
 
-(defmethod atomic-cas ((ref atomic-reference) expected new)
-  (atomics:cas (atomic-place ref) expected new))
+(defmethod atomic-cas ((ref atomic-reference) old new)
+  "Synonym for COMPARE-AND-SWAP.
+Atomically store NEW in the cell slot of REF if OLD is eq to the current value of cell slot.
+Return non-NIL if this atomic operaion succeeded, or return NIL if it failed."
+  (atomics:cas (atomic-place ref) old new))
 
 (defmethod atomic-get ((ref atomic-reference))
   (atomic-place ref))
 
-(defmethod atomic-setf ((ref atomic-reference) new)
+(defmethod atomic-swap ((ref atomic-reference) fn &rest args)
+  "Updates the cell value of REF atomically to the value returned by calling function
+FN with ARGS and the previous cell value of REF. The first argument of FN should be
+the previous cell value of REF."
   (loop :for old = (atomic-get ref)
-        :until (atomics:cas (atomic-place ref) old new)
+        :for new = (apply fn old args)
+        :until (atomic-cas ref old new)
         :finally (return new)))
 
 ;; --------------- integer/long --------------
@@ -57,7 +64,8 @@
 (defmethod atomic-cas ((int atomic-integer) expected new)
   (atomics:cas (atomic-place int) expected new))
 
-(defmethod atomic-setf ((int atomic-integer) new)
+(defmethod atomic-swap ((int atomic-integer) fn &rest args)
   (loop :for old = (atomic-get int)
-        :until (atomics:cas (atomic-place int) old new)
+        :for new = (apply fn old args)
+        :until (atomic-cas int old new)
         :finally (return new)))

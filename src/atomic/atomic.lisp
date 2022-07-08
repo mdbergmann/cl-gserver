@@ -10,21 +10,36 @@
   cell)
 
 (defun make-atomic-reference (&key (value nil))
-  (%make-atomic-reference value))
+  #+ccl (%make-atomic-reference (make-array 1 :initial-element value))
+  #-ccl (%make-atomic-reference (cons value nil)))
 
 (defmethod print-object ((ref atomic-reference) stream)
   (print-unreadable-object (ref stream :type t :identity t)
     (format stream "~S" (atomic-get ref))))
 
-(defmethod atomic-cas ((ref atomic-reference) expected new)
-  (let* ((*the-ref* (slot-value ref 'cell))
-         (cas-result (atomics:cas *the-ref* expected new)))
-    (when cas-result
-      (setf (slot-value ref 'cell) *the-ref*))
-    cas-result))
+(defmacro atomic-place (ref)
+  #+ccl
+  `(svref (slot-value ,ref 'cell) 0)
+  #-ccl
+  `(car (slot-value ,ref 'cell)))
+
+(defmethod atomic-cas ((ref atomic-reference) old new)
+  "Synonym for COMPARE-AND-SWAP.
+Atomically store NEW in the cell slot of REF if OLD is eq to the current value of cell slot.
+Return non-NIL if this atomic operaion succeeded, or return NIL if it failed."
+  (atomics:cas (atomic-place ref) old new))
 
 (defmethod atomic-get ((ref atomic-reference))
-  (slot-value ref 'cell))
+  (atomic-place ref))
+
+(defmethod atomic-swap ((ref atomic-reference) fn &rest args)
+  "Updates the cell value of REF atomically to the value returned by calling function
+FN with ARGS and the previous cell value of REF. The first argument of FN should be
+the previous cell value of REF."
+  (loop :for old = (atomic-get ref)
+        :for new = (apply fn old args)
+        :until (atomic-cas ref old new)
+        :finally (return new)))
 
 ;; --------------- integer/long --------------
 
@@ -36,18 +51,21 @@
   cell)
 
 (defun make-atomic-integer (&key (value 0))
-  (%make-atomic-integer value))
+  #+ccl (%make-atomic-reference (make-array 1 :initial-element value))
+  #-ccl (%make-atomic-reference (cons value nil)))
 
 (defmethod print-object ((int atomic-integer) stream)
   (print-unreadable-object (int stream :type t :identity t)
     (format stream "~S" (atomic-get int))))
 
 (defmethod atomic-get ((int atomic-integer))
-  (slot-value int 'cell))
+  (atomic-place int))
 
 (defmethod atomic-cas ((int atomic-integer) expected new)
-  (let* ((*the-int* (slot-value int 'cell))
-         (cas-result (atomics:cas *the-int* expected new)))
-    (when cas-result
-      (setf (slot-value int 'cell) *the-int*))
-    cas-result))
+  (atomics:cas (atomic-place int) expected new))
+
+(defmethod atomic-swap ((int atomic-integer) fn &rest args)
+  (loop :for old = (atomic-get int)
+        :for new = (apply fn old args)
+        :until (atomic-cas int old new)
+        :finally (return new)))

@@ -25,12 +25,9 @@
   "Returns a let-over-lambda that implements a round-robin strategy."
   (let ((index (atomic:make-atomic-integer)))
     (lambda (len)
-      (let* ((old (atomic:atomic-get index))
-             (new (if (< old (1- len))
-                      (1+ old)
-                      0)))
-        (atomic:atomic-cas index old new)
-        new))))
+      (atomic:atomic-swap index
+                          (lambda (old)
+                            (if (< old (1- len)) (1+ old) 0))))))
 
 (defun get-strategy-fun (strategy)
   (cond

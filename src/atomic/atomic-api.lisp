@@ -3,8 +3,8 @@
   (:nicknames :atomic)
   (:export #:make-atomic-reference
            #:make-atomic-integer
-           #:atomic-cas
-           #:atomic-get))
+           #:atomic-get
+           #:atomic-swap))
 
 (in-package :cl-gserver.atomic)
 
@@ -13,3 +13,6 @@
 
 (defgeneric atomic-cas (atomic expected new)
   (:documentation "Set `new` value. The current value must be `extented`."))
+
+(defgeneric atomic-swap (atomic fn &rest args)
+  (:documentation "Update the the atomic object to the value returned by calling function `fn` with the previous value of the atomic object and `args`."))

@@ -25,7 +25,6 @@
                  (:file "config")
                  (:file "wheel-timer")
                  (:file "utils")
-                 (:file "actor-api")
                  (:file "dispatcher-api")
                  (:module "queue"
                   :components
@@ -33,11 +32,12 @@
                  (:module "mbox"
                   :components
                   ((:file "message-box")))
+                 (:file "actor-cell")
+                 (:file "actor-api")
                  (:file "eventstream-api")
                  (:file "actor-system-api")
                  (:file "actor-context-api")
                  (:file "fcomputation")
-                 (:file "actor-cell")
                  (:file "actor")
                  (:file "agent")
                  (:file "eventstream")

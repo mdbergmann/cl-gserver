@@ -12,9 +12,62 @@
            #:path
            #:watch
            #:unwatch
-           #:watchers))
+           #:watchers)
+  (:import-from #:act-cell
+                #:actor-cell))
 
 (in-package :cl-gserver.actor)
+
+(defclass actor (actor-cell)
+  ((receive :initarg :receive
+            :initform (error "'receive' must be specified!")
+            :reader receive
+            :documentation
+            "`receive` is a function that has to take 3 parameters:
+- `self`: the actor instance
+- `msg`: the received message
+- `state`: the current state of the actor
+The `sender` of the message, if available, is accessible with `*sender*` from within
+the receive function or a behavior.")
+   (behavior :initform nil
+             :documentation
+             "Behavior function applied via `act:become` and reverted via `act:unbecome`
+`act:behavior` function takes the same parameters as `act:receive`.")
+   (init-fun :initarg :init
+             :initform nil
+             :documentation "Init hook.
+Function is called when actor was initialized.
+`act:context` is all setup at that time.
+Parameter of the lambda is the actor itself.")
+   (destroy-fun :initarg :destroy
+                :initform nil
+                :documentation "Destroy hook.
+Function is called when actor was stopped.
+Parameter of the lambda is the actor itself.")
+   (context :initform nil
+            :accessor context
+            :documentation "The `ac:actor-context`")
+   (watchers :initform '()
+             :reader watchers
+             :documentation "List of watchers of this actor."))
+  (:documentation
+   "This is the `actor` class.
+
+The `actor` does its message handling using the `receive` function.
+
+The `receive` function has to return a `cons` constructed of a message to be sent back to caller (`car`), if applicable, and the new state of the actor (as `cdr`).
+I.e.: `(cons <my-response> <my-new-state>)`
+
+There is asynchronous `tell` (no response), a synchronous `ask-s` and asynchronous `ask` which all can be used to send messages to the actor. The 'ask' variants provide a response from the actor where 'tell' is only fire-and-forget.
+
+If the 'send' operation was `ask-s` or `ask` then the `car` part of the `cons` result will be sent back to the caller.
+In case of a `tell` operation there will be no response and the `car` of the `cons` is ignored, if there is no sender (see `sender` argument to `tell`). If there is a sender defined (which must be an actor), then the `car` of the `cons` result is sent (using `tell`) to the sender.  
+It is possible to specify `:no-reply` as `car` of `cons` in this case (`tell` with sender), which has the effect that the result is _not_ sent to the sender even if one exists. This is for the case that the user wants to handle the state and the notifications to a sender himself. It is useful when the message handling code for a particular message (in `receive`) should be executed in a special thread-pool, because long running operations within `receive` will block the message handling of the actor.
+
+The `:no-reply` result works for `ask` and `tell`, because also `ask` is based on `tell`.
+`ask-s` is really only useful if a synchronous result is required and should be avoided otherwise.
+
+To stop an actors message processing in order to cleanup resouces you should `tell` (or `ask-s`) the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
 
 (defgeneric make-actor (receive &key name state type init destroy)
   (:documentation

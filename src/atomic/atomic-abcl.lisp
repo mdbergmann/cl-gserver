@@ -14,7 +14,7 @@ MIT License
 
 (defmethod print-object ((aint atomic-integer) stream)
   (print-unreadable-object (aint stream :type t :identity t)
-    (format stream "~S" (atomic-integer-value aint))))
+    (format stream "~S" (atomic-get aint))))
 
 (deftype %atomic-integer-value ()
   '(unsigned-byte 63))
@@ -34,9 +34,20 @@ MIT License
   (java:jcall +atomic-long-cas+ (atomic-integer-cell int)
               old new))
 
+(defmethod atomic-swap ((int atomic-integer) fn &rest args)
+  (loop :for old = (atomic-get int)
+        :for new = (apply fn old args)
+        :until (atomic-cas int old new)
+        :finally (return new)))
+
 (defconstant +atomic-long-incf+
   (java:jmethod "java.util.concurrent.atomic.AtomicLong" "getAndAdd"
                 (java:jclass "long")))
+
+(defmethod atomic-incf ((int atomic-integer) &optional (diff 1))
+  "Atomically increments cell value of INT by DIFF, and returns the cell value of INT before the increment."
+  (declare (type %atomic-integer-value diff))
+  (java:jcall  +atomic-long-incf+ (atomic-integer-cell int) diff))
 
 (defconstant +atomic-long-get+
   (java:jmethod "java.util.concurrent.atomic.AtomicLong" "get"))
@@ -88,3 +99,9 @@ MIT License
 (defmethod atomic-get ((ref atomic-reference))
   (declare (optimize (safety 0) (speed 3)))
   (java:jcall +atomic-reference-get+ (atomic-reference-cell ref)))
+
+(defmethod atomic-swap ((ref atomic-reference) fn &rest args)
+  (loop :for old = (atomic-get ref)
+        :for new = (apply fn old args)
+        :until (atomic-cas ref old new)
+        :finally (return new)))

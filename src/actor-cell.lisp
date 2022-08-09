@@ -110,7 +110,8 @@ The convention here is to return a `cons` with values to be returned to caller a
 Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
 
 (defgeneric stop (actor-cell &optional wait)
-  (:documentation "Stops the actor-cell.
+  (:documentation "Stops the actor-cells message processing gracefully.
+This is not an immediate stop.
 `wait`: waits until the cell is stopped."))
 
 ;; ---------------------------------

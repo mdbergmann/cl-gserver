@@ -56,6 +56,8 @@ Don't make it too small. A queue size of 1000 might be a good choice."))
 
 (defgeneric stop (message-box-base &optional wait)
   (:documentation "Stops the message processing.
+The message processing is not terminated while a message is still processed.
+Rather it is a graceful stop by waiting until a message has been processed.
 Provide `wait` EQ `T` to wait until the actor cell is stopped."))
 
 (defmethod stop ((self message-box-base) &optional (wait nil))

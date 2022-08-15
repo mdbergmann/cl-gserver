@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.agent.usecase-commons
+(defpackage :sento.agent.usecase-commons
   (:use :cl)
   (:nicknames :agent.usecase-commons)
   (:export #:model
@@ -8,7 +8,7 @@
            #:with-update-handler
            #:with-get-handler))
 
-(in-package :cl-gserver.agent.usecase-commons)
+(in-package :sento.agent.usecase-commons)
 
 (defstruct model
   (object nil)

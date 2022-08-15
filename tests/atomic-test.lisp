@@ -1,13 +1,13 @@
-(defpackage :cl-gserver.atomic-test
-  (:use :cl :fiveam :cl-gserver.atomic)
+(defpackage :sento.atomic-test
+  (:use :cl :fiveam :sento.atomic)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.atomic-test)
+(in-package :sento.atomic-test)
 
 (def-suite atomic-tests
   :description "Tests for atomic."
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite atomic-tests)
 

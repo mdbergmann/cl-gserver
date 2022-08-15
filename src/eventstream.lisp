@@ -1,5 +1,5 @@
 
-(in-package :cl-gserver.eventstream)
+(in-package :sento.eventstream)
 
 (shadowing-import '(ev:subscribe
                     ev:unsubscribe

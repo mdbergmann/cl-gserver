@@ -1,7 +1,7 @@
-(defpackage :cl-gserver.agent
-  (:use :cl :cl-gserver.actor)
+(defpackage :sento.agent
+  (:use :cl :sento.actor)
   (:nicknames :agt)
-  (:import-from #:cl-gserver.actor-cell
+  (:import-from #:sento.actor-cell
                 #:running-p
                 #:state
                 #:msgbox)
@@ -15,7 +15,7 @@
            #:agent-stop
            #:agent))
 
-(in-package :cl-gserver.agent)
+(in-package :sento.agent)
 
 (defclass agent (actor) ()
   (:documentation

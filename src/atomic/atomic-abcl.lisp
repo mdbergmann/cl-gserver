@@ -5,7 +5,7 @@ Atomic Reference added by: manfred@nnamgreb.de
 MIT License
 |#
 
-(in-package :cl-gserver.atomic)
+(in-package :sento.atomic)
 
 (defstruct (atomic-integer
             (:constructor %make-atomic-integer (cell)))

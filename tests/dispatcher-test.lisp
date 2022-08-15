@@ -1,16 +1,16 @@
-(defpackage :cl-gserver.dispatcher-test
-  (:use :cl :fiveam :cl-gserver.dispatcher
-        :cl-gserver.actor)
+(defpackage :sento.dispatcher-test
+  (:use :cl :fiveam :sento.dispatcher
+        :sento.actor)
   (:import-from #:utils
                 #:assert-cond)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.dispatcher-test)
+(in-package :sento.dispatcher-test)
 
 (def-suite dispatcher-tests
   :description "Tests for dispatcher"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite dispatcher-tests)
 

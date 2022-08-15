@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.queue
+(defpackage :sento.queue
   (:use :cl)
   (:nicknames :queue)
   (:export #:queue-unbounded
@@ -7,7 +7,7 @@
            #:popq
            #:emptyq-p))
 
-(in-package :cl-gserver.queue)
+(in-package :sento.queue)
 
 (defclass queue-base ()
   ((queue :initform nil))

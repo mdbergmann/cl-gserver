@@ -1,14 +1,14 @@
-(defpackage :cl-gserver.actor-mp-test
+(defpackage :sento.actor-mp-test
   (:use :cl :fiveam :act)
   (:export #:run!
            #:all-tests
            #:nil))
 
-(in-package :cl-gserver.actor-mp-test)
+(in-package :sento.actor-mp-test)
 
 (def-suite actor-mp-tests
   :description "actor mp tests"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite actor-mp-tests)
 

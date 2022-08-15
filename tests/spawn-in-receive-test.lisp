@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.spawn-in-receive-test
+(defpackage :sento.spawn-in-receive-test
   (:use :cl :fiveam)
   (:import-from #:utils
                 #:assert-cond)
@@ -7,11 +7,11 @@
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.spawn-in-receive-test)
+(in-package :sento.spawn-in-receive-test)
 
 (def-suite spawn-in-receive-tests
   :description "Tests doing the work in 'receive' in a separate thread"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite spawn-in-receive-tests)
 

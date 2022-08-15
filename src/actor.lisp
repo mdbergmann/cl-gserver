@@ -1,5 +1,5 @@
 
-(in-package :cl-gserver.actor)
+(in-package :sento.actor)
 
 (shadowing-import '(act-cell:pre-start
                     act-cell:after-stop

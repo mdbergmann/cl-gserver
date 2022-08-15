@@ -1,5 +1,5 @@
-(defpackage :cl-gserver.agent.array
-  (:use :cl :cl-gserver.agent.usecase-commons)
+(defpackage :sento.agent.array
+  (:use :cl :sento.agent.usecase-commons)
   (:nicknames :agtarray)
   (:export #:make-array-agent
            #:agent-elt
@@ -9,7 +9,7 @@
            #:agent-delete
            #:agent-doarray))
 
-(in-package :cl-gserver.agent.array)
+(in-package :sento.agent.array)
 
 (defun make-array-agent (context &key
                                    initial-array

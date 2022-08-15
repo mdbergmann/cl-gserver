@@ -1,13 +1,13 @@
-(defpackage :cl-gserver.wheel-timer-test
-  (:use :cl :fiveam :cl-gserver.wheel-timer)
+(defpackage :sento.wheel-timer-test
+  (:use :cl :fiveam :sento.wheel-timer)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.wheel-timer-test)
+(in-package :sento.wheel-timer-test)
 
 (def-suite wheel-timer-tests
   :description "Tests for wheel timer"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite wheel-timer-tests)
 

@@ -1,13 +1,13 @@
-(defpackage :cl-gserver.config-test
-  (:use :cl :fiveam :cl-gserver.config)
+(defpackage :sento.config-test
+  (:use :cl :fiveam :sento.config)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.config-test)
+(in-package :sento.config-test)
 
 (def-suite config-tests
   :description "Tests for config parsing"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite config-tests)
 

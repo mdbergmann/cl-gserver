@@ -1,13 +1,13 @@
-(defpackage :cl-gserver.eventstream-test
-  (:use :cl :fiveam :cl-gserver.eventstream :cl-gserver.utils)
+(defpackage :sento.eventstream-test
+  (:use :cl :fiveam :sento.eventstream :sento.utils)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.eventstream-test)
+(in-package :sento.eventstream-test)
 
 (def-suite eventstream-tests
   :description "Tests for eventstream facility"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite eventstream-tests)
 

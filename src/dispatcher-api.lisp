@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.dispatcher
+(defpackage :sento.dispatcher
   (:use :cl)
   (:nicknames :disp)
   (:export #:dispatcher-base
@@ -12,7 +12,7 @@
            #:stop
            #:make-dispatcher-worker))
 
-(in-package :cl-gserver.dispatcher)
+(in-package :sento.dispatcher)
 
 (defgeneric workers (dispatcher)
   (:documentation

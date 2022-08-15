@@ -1,11 +1,11 @@
-(defpackage :cl-gserver.tests
+(defpackage :sento.tests
   (:use :cl :fiveam)
   (:export #:run!
            #:all-tests
            #:nil
            #:test-suite))
 
-(in-package :cl-gserver.tests)
+(in-package :sento.tests)
 
 (def-suite test-suite
   :description "All catching test suite.")

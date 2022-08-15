@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.wheel-timer
+(defpackage :sento.wheel-timer
   (:use :cl)
   (:nicknames :wt)
   (:export #:wheel-timer
@@ -6,7 +6,7 @@
            #:schedule
            #:shutdown-wheel-timer))
 
-(in-package :cl-gserver.wheel-timer)
+(in-package :sento.wheel-timer)
 
 (defclass wheel-timer ()
   ((wheel :initform nil

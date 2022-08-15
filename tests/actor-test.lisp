@@ -1,5 +1,5 @@
-(defpackage :cl-gserver.actor-test
-  (:use :cl :fiveam :cl-mock :cl-gserver.actor :cl-gserver.future)
+(defpackage :sento.actor-test
+  (:use :cl :fiveam :cl-mock :sento.actor :sento.future)
   (:import-from #:utils
                 #:assert-cond)
   (:import-from #:ac
@@ -8,11 +8,11 @@
            #:all-tests
            #:nil))
 
-(in-package :cl-gserver.actor-test)
+(in-package :sento.actor-test)
 
 (def-suite actor-tests
   :description "actor tests"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite actor-tests)
 

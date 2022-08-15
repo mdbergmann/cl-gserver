@@ -1,13 +1,13 @@
-(defpackage :cl-gserver.agent.array-test
-  (:use :cl :fiveam :cl-gserver.agent.array)
+(defpackage :sento.agent.array-test
+  (:use :cl :fiveam :sento.agent.array)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.agent.array-test)
+(in-package :sento.agent.array-test)
 
 (def-suite agent.array-tests
   :description "Tests for array agent"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite agent.array-tests)
 

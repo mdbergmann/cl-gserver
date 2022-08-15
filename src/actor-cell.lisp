@@ -1,5 +1,5 @@
-(defpackage :cl-gserver.actor-cell
-  (:use :cl :cl-gserver.utils)
+(defpackage :sento.actor-cell
+  (:use :cl :sento.utils)
   (:nicknames :act-cell)
   (:import-from #:mesgb
                 #:delayed-cancellable-message
@@ -22,7 +22,7 @@
            #:cast
            #:running-p))
 
-(in-package :cl-gserver.actor-cell)
+(in-package :sento.actor-cell)
 
 (defvar *sender* nil
   "The `*sender*` is dynamically bound and available in `receive` function, when it is known.")
@@ -66,7 +66,7 @@ See `actor-context` `actor-of` method for more information on this.
 
 To stop an `actor` message handling and you can send the `:stop` message 
 either via `call` (which will respond with `:stopped`) or `cast`.
-This is to cleanup thread resources when the Gserver is not needed anymore.
+This is to cleanup thread resources when the actor is not needed anymore.
 
 Note: the `actor-cell` uses `call` and `cast` functions which translate to `ask-s` and `tell` on the `actor`."))
 

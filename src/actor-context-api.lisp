@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.actor-context
+(defpackage :sento.actor-context
   (:use :cl)
   (:nicknames :ac)
   (:export #:actor-context
@@ -15,7 +15,7 @@
            #:id
            ;; conditions
            #:actor-name-exists))
-(in-package :cl-gserver.actor-context)
+(in-package :sento.actor-context)
 
 (defgeneric actor-of (context
                       &key receive init destroy dispatcher state type name)

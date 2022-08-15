@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.future
+(defpackage :sento.future
   (:use :cl :blackbird)
   (:nicknames :future)
   (:export #:future
@@ -7,7 +7,7 @@
            #:on-completed
            #:get-result))
 
-(in-package :cl-gserver.future)
+(in-package :sento.future)
 
 (defclass future ()
   ((promise :initform nil))

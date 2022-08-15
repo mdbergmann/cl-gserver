@@ -1,5 +1,5 @@
-;;(push #P"~/Development/MySources/cl-gserver/" asdf:*central-registry*)
-(asdf:load-system "cl-gserver")
+;;(push #P"~/Development/MySources/sento/" asdf:*central-registry*)
+(asdf:load-system "sento")
 
 (log:config :warn)
 
@@ -97,7 +97,7 @@
 
 
 ;; (defun runner-lp ()
-;;   (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-lsr))
+;;   (setf *msgbox* (make-instance 'sento.messageb::message-box-lsr))
 ;;   (setf lparallel:*kernel* (lparallel:make-kernel +threads+))
 ;;   (setf *counter* 0)
 
@@ -110,10 +110,10 @@
 ;;             (lparallel:receive-result chan))))
 ;;     (format t "Counter: ~a~%" *counter*)
 ;;     (lparallel:end-kernel)
-;;     (cl-gserver.messageb::stop *msgbox*)))
+;;     (sento.messageb::stop *msgbox*)))
 
 ;; (defun runner-lp2 ()
-;;   (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-lsr))
+;;   (setf *msgbox* (make-instance 'sento.messageb::message-box-lsr))
 ;;   (setf lparallel:*kernel* (lparallel:make-kernel +threads+))
 ;;   (setf *counter* 0)
 
@@ -131,10 +131,10 @@
 ;;           (assert-cond (lambda () (= *counter* (max-loop))) 5)))
 ;;     (format t "Counter: ~a~%" *counter*)
 ;;     (lparallel:end-kernel)
-;;     (cl-gserver.messageb::stop *msgbox*)))
+;;     (sento.messageb::stop *msgbox*)))
 
 ;; (defun runner-lp3 ()
-;;   (setf *msgbox* (make-instance 'cl-gserver.messageb::message-box-lsr))
+;;   (setf *msgbox* (make-instance 'sento.messageb::message-box-lsr))
 ;;   (setf lparallel:*kernel* (lparallel:make-kernel +threads+))
 ;;   (setf *counter* 0)
 
@@ -147,4 +147,4 @@
 ;;                         (loop repeat +threads+ collect *per-thread*)))
 ;;     (format t "Counter: ~a~%" *counter*)
 ;;     (lparallel:end-kernel)
-;;     (cl-gserver.messageb::stop *msgbox*)))
+;;     (sento.messageb::stop *msgbox*)))

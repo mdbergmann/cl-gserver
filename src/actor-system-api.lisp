@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.actor-system
+(defpackage :sento.actor-system
   (:use :cl)
   (:nicknames :asys)
   (:export #:make-actor-system
@@ -10,7 +10,7 @@
            #:register-new-dispatcher
            #:*default-config*))
 
-(in-package :cl-gserver.actor-system)
+(in-package :sento.actor-system)
 
 (defparameter *default-config*
   '(:dispatchers

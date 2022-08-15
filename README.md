@@ -2,9 +2,9 @@
 
 ### Introduction - Actor framework featuring actors and agents
 
-cl-gserver is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.
+__Sento__ is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.
 
-cl-gserver features:
+sento features:
 
 - Actors with `ask` and `tell` operations. `ask` can be asynchronous or synchronous.
 - Agents: Agents are a specialization of Actors for wrapping state with a standardized interface of `init`, `get` and `set`. There are also specialized Agents for CLs array and hash-map.
@@ -14,7 +14,9 @@ cl-gserver features:
 
 ### Version history
 
-**Version 1.12.2 (29.5.2022):** Removed the logging abstraction again. Less code to maintain. log4cl is featureful enough for users to either use it, or use something else in the applications that are based on cl-gserver.
+**Version 1.13.0 (16.8.2022):** Rename to "Sento"
+
+**Version 1.12.2 (29.5.2022):** Removed the logging abstraction again. Less code to maintain. log4cl is featureful enough for users to either use it, or use something else in the applications that are based on sento.
 
 **Version 1.12.1 (25.5.2022):** Shutdown and stop of actor, actor context and actor system can now wait for a full shutdown/stop of all actors to really have a clean system shutdown.
 
@@ -24,7 +26,7 @@ cl-gserver features:
 
 **Version 1.11.0 (16.1.2022):** Changes to `AC:FIND-ACTORS`. Breaking API change. See API documentation for details.
 
-**Version 1.10.0:** Logging abstraction. Use your own logging facility. cl-gserver doesn't lock you in but provides support for log4cl. Support for other logging facilities can be easily added so that the logging of cl-gserver  will use your chosen logging library. See below for more details.
+**Version 1.10.0:** Logging abstraction. Use your own logging facility. sento doesn't lock you in but provides support for log4cl. Support for other logging facilities can be easily added so that the logging of sento  will use your chosen logging library. See below for more details.
 
 **Version 1.9.0:** Use wheel timer for `ask` timeouts.
 
@@ -38,7 +40,7 @@ cl-gserver features:
 
 **Version 1.7.4:** more convenience additions for task-async (completion-handler)
 
-**Version 1.7.3:** cleaned up dependencies. Now cl-gserver works on SBCL, CCL, LispWorks, Allegro and ABCL
+**Version 1.7.3:** cleaned up dependencies. Now sento works on SBCL, CCL, LispWorks, Allegro and ABCL
 
 **Version 1.7.2:** allowing to choose the dispatcher strategy via configuration
 
@@ -68,7 +70,7 @@ The proposed default way to query for a result from another actor should
 be an asynchronous `ask`. `ask-s` (synchronous) is
 of course still possible.
 
-**Version 1.0** of `cl-gserver` library comes with quite a
+**Version 1.0** of `sento` library comes with quite a
 few new features (compared to the previous 0.x versions). 
 One of the major new features is that an actor is not
 bound to it's own message dispatcher thread. Instead, when an
@@ -453,7 +455,7 @@ resources.
 An Agent is a specialized Actor. It is meant primarily for maintaining
 state and comes with some conveniences to do that.
 
-To use an Agent import `cl-gserver.agent` package.
+To use an Agent import `sento.agent` package.
 
 There is no need to subclass an Agent. Rather create a facade to
 customize an agent. See below.
@@ -672,17 +674,17 @@ See the [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#t
 
 ### Immutability
 
-Some words on immutability. cl-gserver does _not_ make deep copies of the actor states. So whatever is returned from `receive` function as part of the `(cons back-msg state)` is just `setf`ed to the actor state. The user is responsible to make deep copies if necessary in an immutable environment. The user is responsible to _not_ implictly modify the actor state outside of the actor.
+Some words on immutability. sento does _not_ make deep copies of the actor states. So whatever is returned from `receive` function as part of the `(cons back-msg state)` is just `setf`ed to the actor state. The user is responsible to make deep copies if necessary in an immutable environment. The user is responsible to _not_ implictly modify the actor state outside of the actor.
 
 ### Logging
 
-cl-gserver does its own logging using different log levels from 'trace' to 'error'. It uses log4cl. If you wish to also use log4cl in your application but find that cl-gserver is too noisy in debug and trace logging you can change the log level for the 'cl-gserver package only by:
+sento does its own logging using different log levels from 'trace' to 'error'. It uses log4cl. If you wish to also use log4cl in your application but find that sento is too noisy in debug and trace logging you can change the log level for the 'sento package only by:
 
 ```
-(log:config '(cl-gserver) :warn)
+(log:config '(sento) :warn)
 ```
 
-This will tell log4cl to do any logging for cl-gserver in warn level.
+This will tell log4cl to do any logging for sento in warn level.
 
 ### Benchmarks
 

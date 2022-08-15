@@ -1,14 +1,14 @@
-(defpackage :cl-gserver.actor-cell-test
-  (:use :cl :fiveam :cl-gserver.actor-cell)
+(defpackage :sento.actor-cell-test
+  (:use :cl :fiveam :sento.actor-cell)
   (:export #:run!
            #:all-tests
            #:nil))
 
-(in-package :cl-gserver.actor-cell-test)
+(in-package :sento.actor-cell-test)
 
 (def-suite actor-cell-tests
   :description "actor-cell tests"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite actor-cell-tests)
 

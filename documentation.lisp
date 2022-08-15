@@ -208,11 +208,11 @@
   (config:retrieve-keys function)
   (config:merge-config function))
 
-(defpackage :cl-gserver.docs)
-(in-package :cl-gserver.docs)
+(defpackage :sento.docs)
+(in-package :sento.docs)
 
 (pax:defsection @readme (:title "Introduction")
-  (README.md (pax:include #.(asdf:system-relative-pathname :cl-gserver "README.md"))))
+  (README.md (pax:include #.(asdf:system-relative-pathname :sento "README.md"))))
 
 (pax:defsection @api (:title "API documentation")
   (asys:@actor-system pax:section)
@@ -225,6 +225,6 @@
   (tasks:@tasks pax:section)
   (config:@config pax:section))
 
-(pax:defsection @cl-gserver (:title "cl-gserver documentation")
+(pax:defsection @sento (:title "sento documentation")
   (@readme pax:section)
   (@api pax:section))

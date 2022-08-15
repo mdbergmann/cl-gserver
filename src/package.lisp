@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.user
+(defpackage :sento.user
   (:use :cl :asys :ac :act :agt :agthash :agtarray :ev :tasks :future)
-  (:nicknames :gs-user))
-(in-package :cl-gserver.user)
+  (:nicknames :sento-user))
+(in-package :sento.user)

@@ -1,13 +1,13 @@
-(defpackage :cl-gserver.actor-tree-test
+(defpackage :sento.actor-tree-test
   (:use :cl :fiveam)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.actor-tree-test)
+(in-package :sento.actor-tree-test)
 
 (def-suite actor-tree-tests
   :description "Tests on actor trees."
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite actor-tree-tests)
 

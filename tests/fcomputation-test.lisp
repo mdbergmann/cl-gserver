@@ -1,15 +1,15 @@
-(defpackage :cl-gserver.future-test
-  (:use :cl :fiveam :cl-gserver.future)
+(defpackage :sento.future-test
+  (:use :cl :fiveam :sento.future)
   (:import-from #:utils
                 #:assert-cond)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.future-test)
+(in-package :sento.future-test)
 
 (def-suite future-tests
   :description "Future tests"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite future-tests)
 

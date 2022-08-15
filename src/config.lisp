@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.config
+(defpackage :sento.config
   (:use :cl)
   (:nicknames :config)
   (:export #:config-from
@@ -7,7 +7,7 @@
            #:retrieve-keys
            #:merge-config))
 
-(in-package :cl-gserver.config)
+(in-package :sento.config)
 
 (defun config-from (config-string)
   "Parses the given config-string, represented by common lisp s-expressions.

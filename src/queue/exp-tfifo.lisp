@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.queue
+(defpackage :sento.queue
   (:use :cl)
   (:nicknames :queue)
   (:export #:queue-tfifo
@@ -7,7 +7,7 @@
            #:pushq
            #:popq))
 
-(in-package :cl-gserver.queue)
+(in-package :sento.queue)
 
 (defclass queue-tfifo (queue-base)
     ((queue :initform (stmx.util:tfifo))))

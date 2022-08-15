@@ -1,16 +1,16 @@
-(defpackage :cl-gserver.agent-test
-  (:use :cl :fiveam :cl-gserver.agent)
+(defpackage :sento.agent-test
+  (:use :cl :fiveam :sento.agent)
   (:import-from #:utils
                 #:assert-cond)
   (:export #:run!
            #:all-tests
            #:nil))
 
-(in-package :cl-gserver.agent-test)
+(in-package :sento.agent-test)
 
 (def-suite agent-tests
   :description "agent tests"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite agent-tests)
 

@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.tasks
+(defpackage :sento.tasks
   (:use :cl)
   (:nicknames :tasks)
   (:import-from #:binding-arrows
@@ -12,7 +12,7 @@
            #:task-shutdown
            #:task-async-stream))
 
-(in-package :cl-gserver.tasks)
+(in-package :sento.tasks)
 
 (defvar *task-context*)
 (defvar *task-dispatcher*)

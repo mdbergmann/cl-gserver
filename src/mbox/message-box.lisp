@@ -1,5 +1,5 @@
-(defpackage :cl-gserver.messageb
-  (:use :cl :cl-gserver.utils :cl-gserver.queue)
+(defpackage :sento.messageb
+  (:use :cl :sento.utils :sento.queue)
   (:import-from #:disp
                 #:dispatch
                 #:dispatch-async)
@@ -14,7 +14,7 @@
            #:with-submit-handler
            #:stop))
 
-(in-package :cl-gserver.messageb)
+(in-package :sento.messageb)
 
 (defclass message-box-base ()
   ((name :initform (string (gensym "mesgb-"))

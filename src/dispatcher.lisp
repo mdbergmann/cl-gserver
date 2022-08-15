@@ -1,5 +1,5 @@
 
-(in-package :cl-gserver.dispatcher)
+(in-package :sento.dispatcher)
 
 (shadowing-import '(mesgb:message-box/bt
                     act:actor))

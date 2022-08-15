@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.actor
+(defpackage :sento.actor
   (:use :cl)
   (:nicknames :act)
   (:export #:make-actor
@@ -16,7 +16,7 @@
   (:import-from #:act-cell
                 #:actor-cell))
 
-(in-package :cl-gserver.actor)
+(in-package :sento.actor)
 
 (defclass actor (actor-cell)
   ((receive :initarg :receive

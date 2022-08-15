@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.utils
+(defpackage :sento.utils
   (:nicknames :utils)
   (:use :cl)
   (:import-from #:alexandria
@@ -13,7 +13,7 @@
            #:make-timer
            #:collect-backtrace))
 
-(in-package :cl-gserver.utils)
+(in-package :sento.utils)
 
 (defun mkstr (&rest args)
   "Converts all parameters to string and concatenates them."

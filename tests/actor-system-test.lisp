@@ -1,5 +1,5 @@
-(defpackage :cl-gserver.actor-system-test
-  (:use :cl :fiveam :cl-mock :cl-gserver.actor-system)
+(defpackage :sento.actor-system-test
+  (:use :cl :fiveam :cl-mock :sento.actor-system)
   (:import-from #:act
                 #:actor
                 #:make-actor)
@@ -11,11 +11,11 @@
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.actor-system-test)
+(in-package :sento.actor-system-test)
 
 (def-suite actor-system-tests
   :description "Tests for the actor system"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite actor-system-tests)
 

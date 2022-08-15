@@ -1,15 +1,15 @@
-(defpackage :cl-gserver.actor-context-test
-  (:use :cl :fiveam :cl-mock :cl-gserver.actor-context)
+(defpackage :sento.actor-context-test
+  (:use :cl :fiveam :cl-mock :sento.actor-context)
   (:import-from #:act
                 #:make-actor)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.actor-context-test)
+(in-package :sento.actor-context-test)
 
 (def-suite actor-context-tests
   :description "Tests for actor context"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite actor-context-tests)
 

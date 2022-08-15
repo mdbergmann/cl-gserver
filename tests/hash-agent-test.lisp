@@ -1,13 +1,13 @@
-(defpackage :cl-gserver.agent.hash-test
-  (:use :cl :fiveam :cl-gserver.agent.hash)
+(defpackage :sento.agent.hash-test
+  (:use :cl :fiveam :sento.agent.hash)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.agent.hash-test)
+(in-package :sento.agent.hash-test)
 
 (def-suite agent.hash-tests
   :description "Tests for hash agent"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite agent.hash-tests)
 

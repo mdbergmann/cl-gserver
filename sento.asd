@@ -1,5 +1,5 @@
-(defsystem "cl-gserver"
-  :version "1.12.2"
+(defsystem "sento"
+  :version "2.0.0"
   :author "Manfred Bergmann"
   :license "Apache-2"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -52,11 +52,11 @@
                    (:file "hash-agent")
                    (:file "array-agent")))
                  (:file "package"))))
-  :in-order-to ((test-op (test-op "cl-gserver/tests"))))
+  :in-order-to ((test-op (test-op "sento/tests"))))
 
-(defsystem "cl-gserver/tests"
+(defsystem "sento/tests"
   :author "Manfred Bergmann"
-  :depends-on ("cl-gserver"
+  :depends-on ("sento"
                "fiveam"
                "cl-mock")
   :components ((:module "tests"
@@ -82,30 +82,30 @@
                  (:file "actor-tree-test")
                  (:file "spawn-in-receive-test")
                  )))
-  :description "Test system for cl-gserver"
+  :description "Test system for sento"
   :perform (test-op (op c) (symbol-call :fiveam :run!
                                         (uiop:find-symbol* '#:test-suite
-                                                           '#:cl-gserver.tests))))
+                                                           '#:sento.tests))))
 
 
 ;; documentation
 
-(defsystem "cl-gserver/docs"
+(defsystem "sento/docs"
   :author "Manfred Bergmann"
-  :description "Documentation for cl-gserver"
-  :depends-on ("cl-gserver"
+  :description "Documentation for sento"
+  :depends-on ("sento"
                "mgl-pax")
   :components ((:file "documentation")))
 
 
 ;; load system
-;; (asdf:load-system "cl-gserver")
+;; (asdf:load-system "sento")
 ;;
 ;; test system
-;; (asdf:test-system "cl-gserver/tests")
+;; (asdf:test-system "sento/tests")
 ;;
-;; (hlp:document (asdf:find-system :cl-gserver) :only-exported t)
-;; (pax:update-asdf-system-html-docs cl-gserver.docs:@cl-gserver :cl-gserver :target-dir #P"~/docs/")
+;; (hlp:document (asdf:find-system :sento) :only-exported t)
+;; (pax:update-asdf-system-html-docs sento.docs:@sento :sento :target-dir #P"~/docs/")
 
 #|
 

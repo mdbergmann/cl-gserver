@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.eventstream
+(defpackage :sento.eventstream
   (:use :cl)
   (:nicknames :ev)
   (:import-from #:utils
@@ -11,7 +11,7 @@
            #:unsubscribe
            #:publish))
 
-(in-package :cl-gserver.eventstream)
+(in-package :sento.eventstream)
 
 (defgeneric subscribe (eventstream subscriber &optional pattern)
   (:documentation

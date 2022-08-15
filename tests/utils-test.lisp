@@ -1,15 +1,15 @@
-(defpackage :cl-gserver.utils-test
-  (:use :cl :fiveam :cl-gserver.utils)
+(defpackage :sento.utils-test
+  (:use :cl :fiveam :sento.utils)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.utils-test)
+(in-package :sento.utils-test)
 
-(def-suite cl-gserver.utils-test
+(def-suite sento.utils-test
   :description "Suite for utils"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
-(in-suite cl-gserver.utils-test)
+(in-suite sento.utils-test)
 
 (test timer--create
   "Test create timer"

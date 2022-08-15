@@ -1,4 +1,4 @@
-(in-package :cl-gserver.actor-context)
+(in-package :sento.actor-context)
 
 (defclass actor-context ()
   ((id :initarg :id

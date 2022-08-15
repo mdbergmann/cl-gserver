@@ -1,5 +1,5 @@
-(defpackage :cl-gserver.agent.hash
-  (:use :cl :cl-gserver.agent.usecase-commons)
+(defpackage :sento.agent.hash
+  (:use :cl :sento.agent.usecase-commons)
   (:nicknames :agthash)
   (:export #:make-hash-agent
            #:agent-gethash
@@ -7,7 +7,7 @@
            #:agent-clrhash
            #:agent-dohash))
 
-(in-package :cl-gserver.agent.hash)
+(in-package :sento.agent.hash)
 
 
 (defun make-hash-agent (context &key

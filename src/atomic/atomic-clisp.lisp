@@ -1,4 +1,4 @@
-(in-package :cl-gserver.atomic)
+(in-package :sento.atomic)
 
 ;; ---------- reference -------------
 

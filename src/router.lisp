@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.router
+(defpackage :sento.router
   (:use :cl)
   (:nicknames :router)
   (:import-from #:act
@@ -15,7 +15,7 @@
            #:ask-s
            #:ask))
 
-(in-package :cl-gserver.router)
+(in-package :sento.router)
 
 (defun make-random-strategy ()
   "The default, built-in strategy: random."

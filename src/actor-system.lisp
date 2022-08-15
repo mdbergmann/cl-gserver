@@ -1,5 +1,5 @@
 
-(in-package :cl-gserver.actor-system)
+(in-package :sento.actor-system)
 
 (shadowing-import '(disp:make-dispatcher
                     disp:make-dispatcher-worker

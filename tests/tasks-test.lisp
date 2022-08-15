@@ -1,9 +1,9 @@
-(defpackage :cl-gserver.tasks-test
-  (:use :cl :fiveam :cl-gserver.utils :cl-gserver.tasks)
+(defpackage :sento.tasks-test
+  (:use :cl :fiveam :sento.utils :sento.tasks)
   (:export #:run!
            #:all-tests
            #:nil))
-(in-package :cl-gserver.tasks-test)
+(in-package :sento.tasks-test)
 
 (def-fixture system-fixture ()
   ;; creates an additional dispatcher called FOO
@@ -19,7 +19,7 @@
 
 (def-suite tasks-tests
   :description "Task tests"
-  :in cl-gserver.tests:test-suite)
+  :in sento.tests:test-suite)
 
 (in-suite tasks-tests)
 

@@ -1,4 +1,4 @@
-(defpackage :cl-gserver.atomic
+(defpackage :sento.atomic
   (:use :cl)
   (:nicknames :atomic)
   (:export #:make-atomic-reference
@@ -6,7 +6,7 @@
            #:atomic-get
            #:atomic-swap))
 
-(in-package :cl-gserver.atomic)
+(in-package :sento.atomic)
 
 (defgeneric atomic-get (atomic)
   (:documentation "Retrieve value from atomic object."))

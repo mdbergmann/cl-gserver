@@ -23,7 +23,7 @@
 (defun assert-cond (assert-fun max-time &optional (sleep-time 0.05))
   (do ((wait-time sleep-time (+ wait-time sleep-time))
        (fun-result nil (funcall assert-fun)))
-      ((eq fun-result t) (return t))
+      ((not (null fun-result)) (return t))
     (if (> wait-time max-time) (return)
         (sleep sleep-time))))
 

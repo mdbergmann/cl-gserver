@@ -193,6 +193,8 @@
 (in-package :tasks)
 (pax:defsection @tasks (:title "Tasks")
   (tasks:with-context pax:macro)
+  (tasks:*task-context* variable)
+  (tasks:*task-dispatcher* variable)
   (tasks:task-yield function)
   (tasks:task-start function)
   (tasks:task-async function)

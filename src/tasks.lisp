@@ -16,8 +16,8 @@
 
 (in-package :sento.tasks)
 
-(defvar *task-context* "Optionally set this globally to use the API without using `with-context`.")
-(defvar *task-dispatcher* "Optionally set a dispatcher id. Same applies here as for `*task-context*`.")
+(defvar *task-context* nil "Optionally set this globally to use the API without using `with-context`.")
+(defvar *task-dispatcher* nil "Optionally set a dispatcher id. Same applies here as for `*task-context*`.")
 
 (defmacro with-context ((context &optional (dispatcher :shared)) &body body)
   "`with-context` creates an environment where the `tasks` package functions should be used in.

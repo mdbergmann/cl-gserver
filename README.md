@@ -668,6 +668,8 @@ What happens in this example is that the list `'(1 2 3 4 5)` is passed to `task-
 It is possible to specify a second argument to the `with-context` macro to specify the dispatcher that should be used for the tasks.  
 The concurrency here depends on the number of dispatcher workers.
 
+As alternative, or in special circumstances, it is also possible to setf `*task-context*` and `*task-dispatcher*` special variables which allows to use **tasks** without `with-context` macro.
+
 Be also aware that the `:shared` dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for `tasks` when you plan to operate longer running operations.
 
 See the [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#toc-2-8-tasks) for more details.

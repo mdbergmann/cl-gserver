@@ -707,6 +707,8 @@ The subscription here is done using the <code>:init</code> hook of the actor. Th
 <p>It is possible to specify a second argument to the <code>with-context</code> macro to specify the dispatcher that should be used for the tasks.<br/>
 The concurrency here depends on the number of dispatcher workers.</p>
 
+<p>As alternative, or in special circumstances, it is also possible to setf <code>*task-context*</code> and <code>*task-dispatcher*</code> special variables which allows to use <strong>tasks</strong> without <code>with-context</code> macro.</p>
+
 <p>Be also aware that the <code>:shared</code> dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for <code>tasks</code> when you plan to operate longer running operations.</p>
 
 <p>See the <a href="https://mdbergmann.github.io/cl-gserver/index.html#toc-2-8-tasks" >API documentation</a> for more details.</p>
@@ -2415,6 +2417,20 @@ dispatchers. This additional dispatcher can be utilized for <code>tasks</code>. 
 <span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span> <span class="keyword">:foo</span></span>)</span>
   <span class="paren2">(<span class="code">task-yield <span class="paren3">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code">+ 1 1</span>)</span></span>)</span></span>)</span></span>)</span>
 </span></code></pre></li>
+</ul>
+
+<p><a id="x-28SENTO-2ETASKS-3A-2ATASK-CONTEXT-2A-20VARIABLE-29"></a>
+<a id="SENTO.TASKS:*TASK-CONTEXT*%20VARIABLE"></a></p>
+
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.TASKS:*TASK-CONTEXT*%20VARIABLE" >*TASK-CONTEXT*</a></span></span> <span class="locative-args">&quot;Optionally set this globally to use the API without using `with-context`.&quot;</span></span></li>
+</ul>
+
+<p><a id="x-28SENTO-2ETASKS-3A-2ATASK-DISPATCHER-2A-20VARIABLE-29"></a>
+<a id="SENTO.TASKS:*TASK-DISPATCHER*%20VARIABLE"></a></p>
+
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.TASKS:*TASK-DISPATCHER*%20VARIABLE" >*TASK-DISPATCHER*</a></span></span> <span class="locative-args">&quot;Optionally set a dispatcher id. Same applies here as for `*task-context*`.&quot;</span></span></li>
 </ul>
 
 <p><a id="x-28SENTO-2ETASKS-3ATASK-YIELD-20FUNCTION-29"></a>

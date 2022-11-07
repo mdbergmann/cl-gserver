@@ -94,7 +94,7 @@
   :author "Manfred Bergmann"
   :description "Documentation for sento"
   :depends-on ("sento"
-               "mgl-pax")
+               "mgl-pax/full")
   :components ((:file "documentation")))
 
 

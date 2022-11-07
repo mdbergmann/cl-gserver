@@ -111,8 +111,15 @@ Same convention as for 'handle-call' except that no return is sent to the caller
 
 (defgeneric stop (actor-cell &optional wait)
   (:documentation "Stops the actor-cells message processing gracefully.
-This is not an immediate stop.
-`wait`: waits until the cell is stopped."))
+This is not an immediate stop.  
+There are two ways to stop an actor (cell).
+
+1. by calling this function.
+It is not an immediate stop.
+`wait`: waits until the cell is stopped.
+
+2. by sending `:stop` to the actor (cell).
+This won't allow to wait when the actor is stopped, even not with `ask-s`."))
 
 ;; ---------------------------------
 ;; Impl

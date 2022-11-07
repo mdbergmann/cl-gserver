@@ -108,7 +108,7 @@
 
 (defmethod stop ((self actor) &optional (wait nil))
   "If this actor has an `actor-context`, also stop all children.
-In any case stop the actor-cell."
+In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping."
   (stop-children self wait)
   (call-next-method self wait)
   (notify-watchers-about-stop self))

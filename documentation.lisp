@@ -80,8 +80,8 @@
   (future:future class)
   (future:make-future function)
   (future:complete-p function)
-  (future:on-completed function)
-  (future:get-result function))
+  (future:fcompleted function)
+  (future:fresult function))
 
 (in-package :act)
 (pax:defsection @actor (:title "Actor")

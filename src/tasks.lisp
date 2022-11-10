@@ -160,7 +160,7 @@ Example:
   (let ((task (make-task *task-context* *task-dispatcher*)))
     (if on-complete-fun
         (progn
-          (future:on-completed (act:ask task (cons :exec fun))
+          (future:fcompleted (act:ask task (cons :exec fun))
                                (lambda (result)
                                  (funcall on-complete-fun result)
                                  (act:tell task :stop)))

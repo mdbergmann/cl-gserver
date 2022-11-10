@@ -286,12 +286,12 @@ from the actor where the message was sent to. With this received
 result the future is fulfilled. So `ask` is async, it
 returns immediately with a `future`. That
 `future` can be queried until it is fulfilled. Better is
-though to setup an `on-completed` handler function on it.
+though to setup an `fcompleted` handler function on it.
 
 So we can do:
 
 ```elisp
-(future:on-completed
+(future:fcompleted
           (act:ask *answerer* "Buzz")
           (lambda (result)
             (format t "Received result: ~a~%" result)))
@@ -312,7 +312,7 @@ Returns with:
 Then we can setup a completion handler on the future:
 
 ```elisp
-(future:on-completed 
+(future:fcompleted 
           *
           (lambda (result)
             (format t "Received result: ~a~%" result)))

@@ -2,10 +2,12 @@
   (:use :cl :blackbird)
   (:nicknames :future)
   (:export #:future
+           #:with-fut
            #:make-future
+           #:futurep
            #:complete-p
-           #:on-completed
-           #:get-result
+           #:fcompleted
+           #:fresult
            #:fmap))
 
 (in-package :sento.future)
@@ -24,6 +26,28 @@ The `future` is used as part of `act:ask` but is available as a general utility.
   (print-unreadable-object (obj stream :type t)
     (with-slots (promise) obj
       (format stream "promise: ~a" promise))))
+
+(defmacro with-fut (fun)
+  "`with-fut` is a convenience macro that makes crteating futures very easy.
+Here is an example:
+
+`fun`: a function to be executed for the delays execution (future).
+The future will be resolved by the return value of `fun`.
+
+```elisp
+  (is (= 3
+         (-> (with-fut 0)
+           (fmap (lambda (value)
+                   (with-fut (+ value 1))))
+           (fmap (lambda (value)
+                   (with-fut (+ value 1))))
+           (fmap (lambda (value)
+                   (with-fut (+ value 1))))
+           (fresult))))
+```
+"
+  `(make-future (lambda (resolve-fun)
+                  (funcall resolve-fun ,fun))))
 
 (defun make-future (resolve-fun)
   "Creates a future. `resolve-fun` is the lambda that is executed when the future is created.
@@ -56,12 +80,16 @@ Create a future with:
       (setf promise p))
     future))
 
+(defun futurep (object)
+  "Checks if type of `object` if `future`."
+  (typep object 'future))
+
 (defun complete-p (future)
   "Is `future` completed? Returns either `t` or `nil`."
   (with-slots (promise) future
     (promise-finished-p promise)))
 
-(defun on-completed (future completed-fun)
+(defun fcompleted (future completed-fun)
   "Install an on-completion handler function on the given `future`.
 If the `future` is already complete then the `completed-fun` function is called immediately.
 `completed-fun` takes a parameter which represents the fulfilled promise (the value with which the `future` was fulfilled)."
@@ -69,7 +97,7 @@ If the `future` is already complete then the `completed-fun` function is called 
     (attach promise completed-fun))
   nil)
 
-(defun get-result (future)
+(defun fresult (future)
   "Get the computation result. If not yet available `:not-ready` is returned."
   (with-slots (promise) future
     (let ((the-promise (blackbird-base::lookup-forwarded-promise promise)))

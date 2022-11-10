@@ -362,7 +362,7 @@ though to setup an <code>on-completed</code> handler function on it.</p>
 
 <p>So we can do:</p>
 
-<pre><code><span class="code"><span class="paren1">(<span class="code">future:on-completed
+<pre><code><span class="code"><span class="paren1">(<span class="code">future:fcompleted
           <span class="paren2">(<span class="code">act:ask <span class="special">*answerer*</span> <span class="string">"Buzz"</span></span>)</span>
           <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">result</span>)</span>
             <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"Received result: ~a~%"</span> result</span>)</span></span>)</span></span>)</span></span></code></pre>
@@ -377,7 +377,7 @@ though to setup an <code>on-completed</code> handler function on it.</p>
 
 <p>Then we can setup a completion handler on the future:</p>
 
-<pre><code><span class="code"><span class="paren1">(<span class="code">future:on-completed 
+<pre><code><span class="code"><span class="paren1">(<span class="code">future:fcompleted 
           <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX107" class="symbol">*</a>
           <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">result</span>)</span>
             <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"Received result: ~a~%"</span> result</span>)</span></span>)</span></span>)</span></span></code></pre>

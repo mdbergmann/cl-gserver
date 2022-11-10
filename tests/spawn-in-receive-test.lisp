@@ -41,10 +41,10 @@ This requires to return `:no-reply' in `receive' and sending the response via `*
                 (no-spawn-fut (act:ask actor :no-spawn))
                 (spawn-fut (act:ask actor :do-spawn)))
            (is-true (assert-cond (lambda () (future:complete-p no-spawn-fut)) 1))
-           (is (eq :no-spawn-result (future:get-result no-spawn-fut)))
+           (is (eq :no-spawn-result (future:fresult no-spawn-fut)))
 
            (is-true (assert-cond (lambda () (future:complete-p spawn-fut)) 1))
-           (is (eq :spawn-result (future:get-result spawn-fut))))
+           (is (eq :spawn-result (future:fresult spawn-fut))))
       (ac:shutdown system))))
 
 (defun run-tests ()

@@ -180,13 +180,13 @@
                                0
                                nil)
     (let ((future (ask cut '(:add 0 5))))
-      (is (eq :not-ready (get-result future)))
+      (is (eq :not-ready (fresult future)))
       (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
-      (is (= 5 (get-result future))))))
+      (is (= 5 (fresult future))))))
 
 
 (test single-actor--handle-ask-2
-  "Test handle a composable asynchronous call. on-completed before completion."
+  "Test handle a composable asynchronous call. fcompleted before completion."
 
   (with-fixture actor-fixture ((lambda (self msg state)
                                         (declare (ignore self))
@@ -197,12 +197,12 @@
                                0
                                nil)
     (let ((future (ask cut '(:add 0 5)))
-          (on-completed-result nil))
-      (is (eq :not-ready (get-result future)))
-      (on-completed future (lambda (result)
-                             (setf on-completed-result result)))
+          (fcompleted-result nil))
+      (is (eq :not-ready (fresult future)))
+      (fcompleted future (lambda (result)
+                             (setf fcompleted-result result)))
       (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
-      (is (= 5 (get-result future))))))
+      (is (= 5 (fresult future))))))
 
 (test ask-s--shared--timeout
   "Tests for ask-s timeout."
@@ -248,9 +248,9 @@
                                (cons :my-result state))))
            (future (ask actor "foo" :time-out 0.5)))
       (utils:wait-cond (lambda () (complete-p future)))
-      (is (eq :handler-error (car (get-result future))))
-      (format t "error: ~a~%" (cdr (get-result future)))
-      (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
+      (is (eq :handler-error (car (fresult future))))
+      (format t "error: ~a~%" (cdr (fresult future)))
+      (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
 
 (test ask--shared--timeout--many
   "Tests creation of many actors and ask messages with timeouts."
@@ -270,7 +270,7 @@
                   (every
                    (lambda (n) (and (consp n)
                                (typep (cdr n) 'utils:ask-timeout)))
-                   (mapcar #'get-result futures)))
+                   (mapcar #'fresult futures)))
                 0.7))
       (print (length futures)))))
 
@@ -297,8 +297,8 @@
                                nil)
     (let ((future (ask cut "foo" :time-out 0.5)))
       (utils:wait-cond (lambda () (complete-p future)))
-      (is (eq :handler-error (car (get-result future))))
-      (is (typep (cdr (get-result future)) 'utils:ask-timeout)))))
+      (is (eq :handler-error (car (fresult future))))
+      (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
 
 (test allow--no-reply--response
   "Tests to allow `:no-reply' for `tell', `ask-s' and `ask'"
@@ -313,7 +313,7 @@
     (is (eq :no-reply (ask-s cut :foo)))
     (let ((fut (ask cut :foo)))
       (assert-cond (lambda () (complete-p fut)) 1.0)
-      (is (eq :manual-reply (get-result fut))))
+      (is (eq :manual-reply (fresult fut))))
   ))
 
 (test become-and-unbecome-a-different-behavior

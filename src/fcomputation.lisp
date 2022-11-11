@@ -3,6 +3,7 @@
   (:nicknames :future)
   (:export #:future
            #:with-fut
+           #:with-fut-resolve
            #:make-future
            #:futurep
            #:complete-p
@@ -27,12 +28,12 @@ The `future` is used as part of `act:ask` but is available as a general utility.
     (with-slots (promise) obj
       (format stream "promise: ~a" promise))))
 
-(defmacro with-fut (fun)
-  "`with-fut` is a convenience macro that makes crteating futures very easy.
+(defmacro with-fut (comput-fun)
+  "`with-fut` is a convenience macro that makes creating futures very easy.
 Here is an example:
 
-`fun`: a function to be executed for the delays execution (future).
-The future will be resolved by the return value of `fun`.
+`comput-fun`: a function to be executed for the delayed execution (future).
+The future will be resolved by the return value of `comput-fun`.
 
 ```elisp
   (is (= 3
@@ -47,23 +48,27 @@ The future will be resolved by the return value of `fun`.
 ```
 "
   `(make-future (lambda (resolve-fun)
-                  (funcall resolve-fun ,fun))))
+                  (funcall resolve-fun ,comput-fun))))
 
-(defun make-future (resolve-fun)
-  "Creates a future. `resolve-fun` is the lambda that is executed when the future is created.
-`resolve-fun` takes a parameter which is the `resolve-fun` funtion. `resolve-fun` function
-takes the `promise` as parameter which is the computed value. Calling `resolve-fun` with the promise
+(defmacro with-fut-resolve (comput-fun)
+  `(make-future (lambda (resolve-fun)
+                  (funcall ,comput-fun resolve-fun))))
+
+(defun make-future (execute-fun)
+  "Creates a future. `execute-fun` is the lambda that is executed when the future is created.
+`execute-fun` takes a parameter which is the `execute-fun` funtion. `execute-fun` function
+takes the `promise` as parameter which is the computed value. Calling `execute-fun` with the promise
 will fulfill the `future`.  
-Manually calling `resolve-fun` to fulfill the `future` is in contrast to just fulfill the `future` from a return value. The benefit of the `resolve-fun` is flexibility. In  a multi-threaded environment `resolve-fun` could spawn a thread, in which case `resolve-fun` would return immediately but no promise can be given at that time. The `resolve-fun` can be called from a thread and provide the promise.
+Manually calling `execute-fun` to fulfill the `future` is in contrast to just fulfill the `future` from a return value. The benefit of the `execute-fun` is flexibility. In  a multi-threaded environment `execute-fun` could spawn a thread, in which case `execute-fun` would return immediately but no promise-value can be given at that time. The `execute-fun` can be called from a thread and provide the promise.
 
 Create a future with:
 
 ```elisp
-(make-future (lambda (resolve-fun) 
+(make-future (lambda (execute-fun) 
                (let ((promise (delayed-computation)))
                  (bt:make-thread (lambda ()
                    (sleep 0.5)
-                   (funcall resolve-fun promise))))))
+                   (funcall execute-fun promise))))))
 ```
 "
   (let ((future (make-instance 'future)))
@@ -71,7 +76,7 @@ Create a future with:
       (setf promise
             (create-promise (lambda (resolve-fn reject-fn)
                               (declare (ignore reject-fn))
-                              (funcall resolve-fun resolve-fn)))))
+                              (funcall execute-fun resolve-fn)))))
     future))
 
 (defun make-future-plain (p)
@@ -107,6 +112,10 @@ If the `future` is already complete then the `completed-fun` function is called 
             (car values))))))
 
 (defun fmap (future map-fun)
+  "`fmap` maps futures.
+
+`map-fun` is a function with arity-1 taking a parameter that represents the previous futures result.
+`map-fun` can either return a new `future:future`, or just the result of a computation."
   (with-slots (promise) future
     (let* ((the-promise (blackbird-base::lookup-forwarded-promise promise))
            (cb-return-promise (blackbird-base::make-promise :name nil))
@@ -120,12 +129,17 @@ If the `future` is already complete then the `completed-fun` function is called 
                              ;; (format t "cb-return: ~a~%" cb-return)
                              ;; the below is a special treatment to make this
                              ;; work with out 'future'
+                             (format t "cb-return: ~a~%" cb-return)
                              (let ((new-cb-return
                                      (cond
                                        ((typep (car cb-return) 'future)
                                         (list (slot-value (car cb-return) 'promise)))
                                        (t
                                         cb-return))))
+                               (format t "new-cb-return: ~a~%" new-cb-return)
+                               (when (promisep (car new-cb-return))
+                                 (format t "promise values: ~a~%"
+                                         (blackbird-base::promise-values (car new-cb-return))))
                                (apply #'blackbird-base::finish
                                       (append
                                        (list cb-return-promise)

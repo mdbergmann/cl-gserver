@@ -68,28 +68,39 @@
                             1)))))
 
 (test mapping-using-arrows
-  "Tests fmap using arrows aka threading"
-  (is (= 3
-         (-> (with-fut 0)
-           (fmap (lambda (value)
-                   (with-fut (+ value 1))))
-           (fmap (lambda (value)
-                   (with-fut (+ value 1))))
-           (fmap (lambda (value)
-                   (with-fut (+ value 1))))
-           (fresult)))))
+  "Tests fmap using arrows aka threading with
+mixed future, normal and async-future map-fun result."
+  (let ((completed-val))
+    (-> (with-fut 0)
+      (fmap (lambda (value)
+              (+ value 1)))
+      (fmap (lambda (value)
+              (with-fut-resolve
+                  (lambda (resolve-fun)
+                    (bt:make-thread
+                     (lambda ()
+                       (sleep 0.2)
+                       (funcall resolve-fun (+ value 1))))))))
+      (fmap (lambda (value)
+              (with-fut (+ value 1))))
+      (fcompleted (lambda (compl-value)
+                    (setf completed-val compl-value))))
+    (is-true (assert-cond
+              (lambda () (eq completed-val 3)) 1))))
 
 (test mapping--fut-errors
   "Tests fmap but one future errors"
-  (is (= 3
-         (-> (with-fut 0)
-           (fmap (lambda (value)
-                   (with-fut (+ value 1))))
-           (fmap (lambda (value)
-                   (with-fut (error "foo"))))
-           (fmap (lambda (value)
-                   (with-fut (+ value 1))))
-           (fresult)))))
+  (is (= "foo"
+         (handler-case
+             (-> (with-fut 0)
+               (fmap (lambda (value)
+                       (with-fut (+ value 1))))
+               (fmap (lambda (value)
+                       (with-fut (error "foo"))))
+               (fmap (lambda (value)
+                       (with-fut (+ value 1))))
+               (fresult))
+           (error (c) c)))))
 
 (test mapping-with-fcompleted
   (let ((completed-val))

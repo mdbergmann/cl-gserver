@@ -9,7 +9,8 @@
            #:complete-p
            #:fcompleted
            #:fresult
-           #:fmap))
+           #:fmap
+           #:resolve))
 
 (in-package :sento.future)
 
@@ -28,31 +29,17 @@ The `future` is used as part of `act:ask` but is available as a general utility.
     (with-slots (promise) obj
       (format stream "promise: ~a" promise))))
 
-(defmacro with-fut (comput-fun)
-  "`with-fut` is a convenience macro that makes creating futures very easy.
-Here is an example:
-
-`comput-fun`: a function to be executed for the delayed execution (future).
-The future will be resolved by the return value of `comput-fun`.
-
-```elisp
-  (is (= 3
-         (-> (with-fut 0)
-           (fmap (lambda (value)
-                   (with-fut (+ value 1))))
-           (fmap (lambda (value)
-                   (with-fut (+ value 1))))
-           (fmap (lambda (value)
-                   (with-fut (+ value 1))))
-           (fresult))))
-```
-"
+(defmacro with-fut (&body body)
   `(make-future (lambda (resolve-fun)
-                  (funcall resolve-fun ,comput-fun))))
+                  (let ((result (progn ,@body)))
+                    (funcall resolve-fun result)))))
 
-(defmacro with-fut-resolve (comput-fun)
-  `(make-future (lambda (resolve-fun)
-                  (funcall ,comput-fun resolve-fun))))
+(defmacro with-fut-resolve (&body body)
+  `(macrolet ((resolve (resolve-form)
+                `(make-future (lambda (resolve-fun)
+                                (let ((resolved ,resolve-form))
+                                  (funcall resolve-fun resolved))))))
+     ,@body))
 
 (defun make-future (execute-fun)
   "Creates a future. `execute-fun` is the lambda that is executed when the future is created.

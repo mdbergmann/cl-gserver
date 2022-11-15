@@ -9,6 +9,7 @@
            #:complete-p
            #:fcompleted
            #:fresult
+           #:frecover
            #:fmap
            #:resolve))
 
@@ -98,6 +99,10 @@ If the `future` is already complete then the `completed-fun` function is called 
             :not-ready
             (car values))))))
 
+(defmacro frecover (future &rest handler-forms)
+  `(with-slots (promise) ,future
+     (make-future-plain (catcher promise ,@handler-forms))))
+
 (defun fmap (future map-fun)
   "`fmap` maps futures.
 
@@ -116,17 +121,17 @@ If the `future` is already complete then the `completed-fun` function is called 
                              ;; (format t "cb-return: ~a~%" cb-return)
                              ;; the below is a special treatment to make this
                              ;; work with out 'future'
-                             (format t "cb-return: ~a~%" cb-return)
+                             ;; (format t "cb-return: ~a~%" cb-return)
                              (let ((new-cb-return
                                      (cond
                                        ((typep (car cb-return) 'future)
                                         (list (slot-value (car cb-return) 'promise)))
                                        (t
                                         cb-return))))
-                               (format t "new-cb-return: ~a~%" new-cb-return)
-                               (when (promisep (car new-cb-return))
-                                 (format t "promise values: ~a~%"
-                                         (blackbird-base::promise-values (car new-cb-return))))
+                               ;;(format t "new-cb-return: ~a~%" new-cb-return)
+                               ;; (when (promisep (car new-cb-return))
+                               ;;   (format t "promise values: ~a~%"
+                               ;;           (blackbird-base::promise-values (car new-cb-return))))
                                (apply #'blackbird-base::finish
                                       (append
                                        (list cb-return-promise)

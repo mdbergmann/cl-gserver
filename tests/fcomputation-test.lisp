@@ -85,19 +85,20 @@ mixed future, normal and async-future map-fun result."
     (is-true (assert-cond
               (lambda () (eq completed-val 3)) 1))))
 
-;; (test mapping--fut-errors
-;;   "Tests fmap but one future errors"
-;;   (is (= "foo"
-;;          (handler-case
-;;              (-> (with-fut 0)
-;;                (fmap (lambda (value)
-;;                        (with-fut (+ value 1))))
-;;                (fmap (lambda (value)
-;;                        (error "foo")))
-;;                (fmap (lambda (value)
-;;                        (with-fut (+ value 1))))
-;;                (fresult))
-;;            (error (c) c)))))
+(test mapping--fut-errors
+  "Tests fmap but one future errors, catch it with `frecover'"
+  (is (string= "foo"
+               (fresult
+                (frecover
+                 (-> (with-fut 0)
+                   (fmap (lambda (value)
+                           (with-fut (+ value 1))))
+                   (fmap (lambda (value)
+                           (declare (ignore value))
+                           (error "foo")))
+                   (fmap (lambda (value)
+                           (+ value 1))))
+                 (error (c) (format nil "~a" c)))))))
 
 (test mapping-with-fcompleted
   (let ((completed-val))

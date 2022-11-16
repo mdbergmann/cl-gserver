@@ -21,9 +21,7 @@
    "The wrapped [blackbird](https://orthecreedence.github.io/blackbird/) `promise`, here called `future`.  
 Not all features of blackbird's `promise` are supported.  
 This `future` wrapper changes the terminology. A `future` is a delayed computation.
-A `promise` is the fulfillment of the delayed computation.
-
-The `future` is used as part of `act:ask` but is available as a general utility."))
+A `promise` is the fulfillment of the delayed computation."))
 
 (defmethod print-object ((obj future) stream)
   (print-unreadable-object (obj stream :type t)
@@ -31,11 +29,28 @@ The `future` is used as part of `act:ask` but is available as a general utility.
       (format stream "promise: ~a" promise))))
 
 (defmacro with-fut (&body body)
+  "Convenience macro for creating a `future`.
+
+The `future` will be resolved with the result of the body form."
   `(make-future (lambda (resolve-fun)
                   (let ((result (progn ,@body)))
                     (funcall resolve-fun result)))))
 
 (defmacro with-fut-resolve (&body body)
+  "Convenience macro for creating a `future` that must be resolved manually via `resolve`.
+
+This allows to spawn threads or other asynchronous operations as part of `body`.
+However, you have to `resolve` the future eventually by applying a result on `resolve`.
+
+Example:
+
+```
+(with-fut-resolve
+  (bt:make-thread
+   (lambda ()
+     (resolve (do-some-lengthy-calculation)))))
+```
+"
   `(macrolet ((resolve (resolve-form)
                 `(make-future (lambda (resolve-fun)
                                 (let ((resolved ,resolve-form))
@@ -74,7 +89,7 @@ Create a future with:
     future))
 
 (defun futurep (object)
-  "Checks if type of `object` if `future`."
+  "Checks if type of `object` is `future`."
   (typep object 'future))
 
 (defun complete-p (future)
@@ -83,7 +98,7 @@ Create a future with:
     (promise-finished-p promise)))
 
 (defun fcompleted (future completed-fun)
-  "Install an on-completion handler function on the given `future`.
+  "Install an completion handler function on the given `future`.
 If the `future` is already complete then the `completed-fun` function is called immediately.
 `completed-fun` takes a parameter which represents the fulfilled promise (the value with which the `future` was fulfilled)."
   (with-slots (promise) future
@@ -100,6 +115,25 @@ If the `future` is already complete then the `completed-fun` function is called 
             (car values))))))
 
 (defmacro frecover (future &rest handler-forms)
+  "Catch errors in futures using `frecover`
+It works similar to `handler-case`.
+
+Example:
+
+```
+(fresult
+ (frecover
+  (-> (with-fut 0)
+    (fmap (lambda (value)
+            (with-fut (+ value 1))))
+    (fmap (lambda (value)
+            (declare (ignore value))
+            (error \"foo\")))
+    (fmap (lambda (value)
+            (+ value 1))))
+  (error (c) (format nil \"~a\" c))))
+```
+"
   `(with-slots (promise) ,future
      (make-future-plain (catcher promise ,@handler-forms))))
 

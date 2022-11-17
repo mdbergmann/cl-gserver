@@ -14,7 +14,7 @@ sento features:
 
 ### Version history
 
-**Version 2.1.0 (17.11.2022):** Reworked the `future` package. Nicer symtax and futures can now be mapped.
+**Version 2.1.0 (17.11.2022):** Reworked the `future` package. Nicer syntax and futures can now be mapped.
 
 **Version 2.0.0 (16.8.2022):** Rename to "Sento". Incompatible change due to package names and system have changed.
 

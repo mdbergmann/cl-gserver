@@ -97,13 +97,18 @@ Create a future with:
   (with-slots (promise) future
     (promise-finished-p promise)))
 
-(defun fcompleted (future completed-fun)
-  "Install an completion handler function on the given `future`.
-If the `future` is already complete then the `completed-fun` function is called immediately.
-`completed-fun` takes a parameter which represents the fulfilled promise (the value with which the `future` was fulfilled)."
+(defun %fcompleted (future completed-fun)
   (with-slots (promise) future
     (attach promise completed-fun))
   nil)
+
+(defmacro fcompleted (future (result) &body body)
+  "Completion handler on the given `future`.
+
+If the `future` is already complete then the `body` executed immediately.  
+`result` represents the future result.
+`body` is executed when future completed."
+  `(%fcompleted ,future (lambda (,result) ,@body)))
 
 (defun fresult (future)
   "Get the computation result. If not yet available `:not-ready` is returned."
@@ -125,12 +130,12 @@ Example:
  (frecover
   (-> (with-fut 0)
     (fmap (value)
-            (with-fut (+ value 1))))
+      (with-fut (+ value 1))))
     (fmap (value)
-            (declare (ignore value))
-            (error \"foo\")))
+      (declare (ignore value))
+      (error \"foo\")))
     (fmap (value)
-            (+ value 1))))
+      (+ value 1))))
   (error (c) (format nil \"~a\" c))))
 ```
 "

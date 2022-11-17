@@ -161,9 +161,9 @@ Example:
     (if on-complete-fun
         (progn
           (future:fcompleted (act:ask task (cons :exec fun))
-                               (lambda (result)
-                                 (funcall on-complete-fun result)
-                                 (act:tell task :stop)))
+              (result)
+            (funcall on-complete-fun result)
+            (act:tell task :stop))
           task)
         (progn 
           (act:tell task (cons :exec fun))

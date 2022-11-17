@@ -199,8 +199,8 @@
     (let ((future (ask cut '(:add 0 5)))
           (fcompleted-result nil))
       (is (eq :not-ready (fresult future)))
-      (fcompleted future (lambda (result)
-                             (setf fcompleted-result result)))
+      (fcompleted future (result)
+        (setf fcompleted-result result))
       (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
       (is (= 5 (fresult future))))))
 

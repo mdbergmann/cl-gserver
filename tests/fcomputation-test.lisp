@@ -36,7 +36,7 @@
   (let ((future (make-future (lambda (resolve-fun)
                                (funcall resolve-fun "fulfilled"))))
         (completed-value nil))
-    (fcompleted future (lambda (value) (setf completed-value value)))
+    (fcompleted future (value) (setf completed-value value))
     (is (string= "fulfilled" completed-value))))
 
 (test complete-with-delay
@@ -49,7 +49,7 @@
                                   (funcall resolve-fun "fulfilled"))))))
         (completed-value))
     (is (eq :not-ready (fresult future)))
-    (fcompleted future (lambda (value) (setf completed-value value)))
+    (fcompleted future (value) (setf completed-value value))
     (is (eq t (assert-cond (lambda () (string= "fulfilled" completed-value)) 1)))))
 
 (test mapping-futures--with-fut-macro
@@ -77,8 +77,8 @@ mixed future, normal and async-future map-fun result."
             (fresolve (+ value 1))))
       (fmap (value)
           (+ value 1))
-      (fcompleted (lambda (compl-value)
-                    (setf completed-val compl-value))))
+      (fcompleted (compl-value)
+          (setf completed-val compl-value)))
     (is-true (assert-cond
               (lambda () (eq completed-val 3)) 1))))
 
@@ -102,8 +102,8 @@ mixed future, normal and async-future map-fun result."
     (-> (with-fut 0)
       (fmap (value)
         (with-fut (+ value 1)))
-      (fcompleted (lambda (value)
-                    (setf completed-val value))))
+      (fcompleted (value)
+          (setf completed-val value)))
     (is-true (assert-cond (lambda ()
                             (= 1 completed-val))
                           1))))

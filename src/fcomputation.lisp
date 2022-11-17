@@ -186,5 +186,6 @@ Example:
   "`fmap` maps a future.
 
 `future` is the future that is mapped.
-`result` is the result of the future when it completed."
+`result` is the result of the future when it completed.
+`body` is the form that executes when the future is completed. The result of `body` generates a new future."
   `(%fmap ,future (lambda (,result) ,@body)))

@@ -293,8 +293,8 @@ So we can do:
 ```elisp
 (future:fcompleted
           (act:ask *answerer* "Buzz")
-          (lambda (result)
-            (format t "Received result: ~a~%" result)))
+          (result)
+            (format t "Received result: ~a~%" result))
 ```
 
 Well, one step at a time:
@@ -314,7 +314,7 @@ Then we can setup a completion handler on the future:
 ```elisp
 (future:fcompleted 
           *
-          (lambda (result)
+          (result)
             (format t "Received result: ~a~%" result)))
 ```
 

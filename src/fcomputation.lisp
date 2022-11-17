@@ -107,7 +107,18 @@ Create a future with:
 
 If the `future` is already complete then the `body` executed immediately.  
 `result` represents the future result.
-`body` is executed when future completed."
+`body` is executed when future completed.
+
+Example:
+
+```
+(fcompleted (with-fut
+              (sleep .5)
+              1)
+            (result)
+  (format t \"Future result ~a~%\" result))
+```
+"
   `(%fcompleted ,future (lambda (,result) ,@body)))
 
 (defun fresult (future)
@@ -129,8 +140,6 @@ Example:
 (fresult
  (frecover
   (-> (with-fut 0)
-    (fmap (value)
-      (with-fut (+ value 1))))
     (fmap (value)
       (declare (ignore value))
       (error \"foo\")))
@@ -187,5 +196,13 @@ Example:
 
 `future` is the future that is mapped.
 `result` is the result of the future when it completed.
-`body` is the form that executes when the future is completed. The result of `body` generates a new future."
+`body` is the form that executes when the future is completed. The result of `body` generates a new future.
+
+Example:
+
+```
+(fmap (with-fut 0) (result)
+  (1+ result))
+```
+"
   `(%fmap ,future (lambda (,result) ,@body)))

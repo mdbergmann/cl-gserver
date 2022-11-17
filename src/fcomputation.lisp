@@ -11,7 +11,7 @@
            #:fresult
            #:frecover
            #:fmap
-           #:resolve))
+           #:fresolve))
 
 (in-package :sento.future)
 
@@ -48,10 +48,10 @@ Example:
 (with-fut-resolve
   (bt:make-thread
    (lambda ()
-     (resolve (do-some-lengthy-calculation)))))
+     (fresolve (do-some-lengthy-calculation)))))
 ```
 "
-  `(macrolet ((resolve (resolve-form)
+  `(macrolet ((fresolve (resolve-form)
                 `(make-future (lambda (resolve-fun)
                                 (let ((resolved ,resolve-form))
                                   (funcall resolve-fun resolved))))))
@@ -124,12 +124,12 @@ Example:
 (fresult
  (frecover
   (-> (with-fut 0)
-    (fmap (lambda (value)
+    (fmap (value)
             (with-fut (+ value 1))))
-    (fmap (lambda (value)
+    (fmap (value)
             (declare (ignore value))
             (error \"foo\")))
-    (fmap (lambda (value)
+    (fmap (value)
             (+ value 1))))
   (error (c) (format nil \"~a\" c))))
 ```
@@ -137,11 +137,7 @@ Example:
   `(with-slots (promise) ,future
      (make-future-plain (catcher promise ,@handler-forms))))
 
-(defun fmap (future map-fun)
-  "`fmap` maps futures.
-
-`map-fun` is a function with arity-1 taking a parameter that represents the previous futures result.
-`map-fun` can either return a new `future:future`, or just the result of a computation."
+(defun %fmap (future map-fun)
   (with-slots (promise) future
     (let* ((the-promise (blackbird-base::lookup-forwarded-promise promise))
            (cb-return-promise (blackbird-base::make-promise :name nil))
@@ -180,3 +176,10 @@ Example:
         (blackbird-base::wrap-callback cb-wrapped))
       (blackbird-base::run-promise the-promise)
       (make-future-plain cb-return-promise))))
+
+(defmacro fmap (future (result) &body body)
+  "`fmap` maps a future.
+
+`future` is the future that is mapped.
+`result` is the result of the future when it completed."
+  `(%fmap ,future (lambda (,result) ,@body)))

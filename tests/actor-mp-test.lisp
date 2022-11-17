@@ -1,5 +1,5 @@
 (defpackage :sento.actor-mp-test
-  (:use :cl :fiveam :act)
+  (:use :cl :fiveam :act :future)
   (:export #:run!
            #:all-tests
            #:nil))

@@ -85,7 +85,7 @@
   (future:fcompleted function)
   (future:fresult function)
   (future:fmap function)
-  (future:frecover function))
+  (future:frecover pax:macro))
 
 (in-package :act)
 (pax:defsection @actor (:title "Actor")

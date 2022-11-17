@@ -14,6 +14,8 @@ sento features:
 
 ### Version history
 
+**Version 2.1.0 (17.11.2022):** Reworked the `future` package. Nicer symtax and futures can now be mapped.
+
 **Version 2.0.0 (16.8.2022):** Rename to "Sento". Incompatible change due to package names and system have changed.
 
 **Version 1.12.2 (29.5.2022):** Removed the logging abstraction again. Less code to maintain. log4cl is featureful enough for users to either use it, or use something else in the applications that are based on sento.
@@ -327,6 +329,32 @@ This will print after a bit:
 Hello Buzz
 Received result: Hello Buzz
 ```
+
+**Mapping futures with fmap**
+
+Let's asume we have such a simple actor that just increments the value passed to it.
+
+```
+(defparameter *incer*
+  (actor-of *sys*
+            :receive (lambda (self value state)
+                       (declare (ignore self state))
+                       (cons (1+ value) state))))
+```
+
+Since `ask` returns a future it is possible to map multiple `ask` operations like this:
+
+```
+(-> (ask *incer* 0)
+  (fmap (result)
+      (ask *incer* result))
+  (fmap (result)
+      (ask *incer* result))
+  (fcompleted (result)
+      (format t "result: ~a~%" result)
+    (assert (= result 3))))
+```
+
 
 #### ask-s and ask with timeout
 

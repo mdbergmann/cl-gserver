@@ -102,6 +102,8 @@
 
 <h3>Version history</h3>
 
+<p><strong>Version 2.1.0 (17.11.2022):</strong> Reworked the <code>future</code> package. Nicer symtax and futures can now be mapped.</p>
+
 <p><strong>Version 2.0.0 (16.8.2022):</strong> Rename to &quot;Sento&quot;. Incompatible change due to package names and system have changed.</p>
 
 <p><strong>Version 1.12.2 (29.5.2022):</strong> Removed the logging abstraction again. Less code to maintain. log4cl is featureful enough for users to either use it, or use something else in the applications that are based on sento.</p>
@@ -358,14 +360,14 @@ from the actor where the message was sent to. With this received
 result the future is fulfilled. So <code>ask</code> is async, it
 returns immediately with a <code>future</code>. That
 <code>future</code> can be queried until it is fulfilled. Better is
-though to setup an <code>on-completed</code> handler function on it.</p>
+though to setup an <code>fcompleted</code> handler function on it.</p>
 
 <p>So we can do:</p>
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">future:fcompleted
           <span class="paren2">(<span class="code">act:ask <span class="special">*answerer*</span> <span class="string">"Buzz"</span></span>)</span>
-          <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">result</span>)</span>
-            <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"Received result: ~a~%"</span> result</span>)</span></span>)</span></span>)</span></span></code></pre>
+          <span class="paren2">(<span class="code">result</span>)</span>
+            <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"Received result: ~a~%"</span> result</span>)</span></span>)</span></span></code></pre>
 
 <p>Well, one step at a time:</p>
 
@@ -379,8 +381,8 @@ though to setup an <code>on-completed</code> handler function on it.</p>
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">future:fcompleted 
           <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX107" class="symbol">*</a>
-          <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">result</span>)</span>
-            <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"Received result: ~a~%"</span> result</span>)</span></span>)</span></span>)</span></span></code></pre>
+          <span class="paren2">(<span class="code">result</span>)</span>
+            <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"Received result: ~a~%"</span> result</span>)</span></span>)</span>)</span></code></pre>
 
 <p>Remember '*' is the last result in the REPL which is the future
 here.</p>
@@ -389,6 +391,27 @@ here.</p>
 
 <pre><code><span class="code">Hello Buzz
 Received result: Hello Buzz</span></code></pre>
+
+<p><strong>Mapping futures with fmap</strong></p>
+
+<p>Let's asume we have such a simple actor that just increments the value passed to it.</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*incer*</span>
+  <span class="paren2">(<span class="code">actor-of <span class="special">*sys*</span>
+            <span class="keyword">:receive</span> <span class="paren3">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren4">(<span class="code">self value state</span>)</span>
+                       <span class="paren4">(<span class="code">declare <span class="paren5">(<span class="code">ignore self state</span>)</span></span>)</span>
+                       <span class="paren4">(<span class="code">cons <span class="paren5">(<span class="code">1+ value</span>)</span> state</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>Since <code>ask</code> returns a future it is possible to map multiple <code>ask</code> operations like this:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">-&gt; <span class="paren2">(<span class="code">ask <span class="special">*incer*</span> 0</span>)</span>
+  <span class="paren2">(<span class="code">fmap <span class="paren3">(<span class="code">result</span>)</span>
+      <span class="paren3">(<span class="code">ask <span class="special">*incer*</span> result</span>)</span></span>)</span>
+  <span class="paren2">(<span class="code">fmap <span class="paren3">(<span class="code">result</span>)</span>
+      <span class="paren3">(<span class="code">ask <span class="special">*incer*</span> result</span>)</span></span>)</span>
+  <span class="paren2">(<span class="code">fcompleted <span class="paren3">(<span class="code">result</span>)</span>
+      <span class="paren3">(<span class="code">format t <span class="string">"result: ~a~%"</span> result</span>)</span>
+    <span class="paren3">(<span class="code">assert <span class="paren4">(<span class="code">= result 3</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
 
 <h4>ask-s and ask with timeout</h4>
 
@@ -1489,8 +1512,16 @@ Same convention as for 'handle-call' except that no return is sent to the caller
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:STOP%20GENERIC-FUNCTION" >STOP</a></span></span> <span class="locative-args">ACTOR-CELL &amp;OPTIONAL WAIT</span></span></p>
 
 <p>Stops the actor-cells message processing gracefully.
-This is not an immediate stop.
+This is not an immediate stop.<br/>
+There are two ways to stop an actor (cell).</p>
+
+<ol>
+<li><p>by calling this function.
+It is not an immediate stop.
 <code>wait</code>: waits until the cell is stopped.</p></li>
+<li><p>by sending <code>:stop</code> to the actor (cell).
+This won't allow to wait when the actor is stopped, even not with <code>ask-s</code>.</p></li>
+</ol></li>
 </ul>
 
 <p><a id="x-28SENTO-2EACTOR-CELL-3ACALL-20FUNCTION-29"></a>
@@ -1688,9 +1719,37 @@ handling of the message on the dispatcher queue thread.</p></li>
 <p>The wrapped <a href="https://orthecreedence.github.io/blackbird/" >blackbird</a> <code>promise</code>, here called <code>future</code>.<br/>
 Not all features of blackbird's <code>promise</code> are supported.<br/>
 This <code>future</code> wrapper changes the terminology. A <code>future</code> is a delayed computation.
-A <code>promise</code> is the fulfillment of the delayed computation.</p>
+A <code>promise</code> is the fulfillment of the delayed computation.</p></li>
+</ul>
 
-<p>The <code>future</code> is used as part of <a href="#SENTO.ACTOR:ASK%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK GENERIC-FUNCTION"><code>act:ask</code></a> but is available as a general utility.</p></li>
+<p><a id="x-28SENTO-2EFUTURE-3AWITH-FUT-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FUTURE:WITH-FUT%20MGL-PAX:MACRO"></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:WITH-FUT%20MGL-PAX:MACRO" >WITH-FUT</a></span></span> <span class="locative-args">&amp;BODY BODY</span></span></p>
+
+<p>Convenience macro for creating a <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a>.</p>
+
+<p>The <code>future</code> will be resolved with the result of the body form.</p></li>
+</ul>
+
+<p><a id="x-28SENTO-2EFUTURE-3AWITH-FUT-RESOLVE-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FUTURE:WITH-FUT-RESOLVE%20MGL-PAX:MACRO"></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:WITH-FUT-RESOLVE%20MGL-PAX:MACRO" >WITH-FUT-RESOLVE</a></span></span> <span class="locative-args">&amp;BODY BODY</span></span></p>
+
+<p>Convenience macro for creating a <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a> that must be resolved manually via <code>resolve</code>.</p>
+
+<p>This allows to spawn threads or other asynchronous operations as part of <code>body</code>.
+However, you have to <code>resolve</code> the future eventually by applying a result on <code>resolve</code>.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">with-fut-resolve</span></i>
+  <span class="paren2">(<span class="code">bt:make-thread
+   <span class="paren3">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren4">(<span class="code"></span>)</span>
+     <span class="paren4">(<span class="code">fresolve <span class="paren5">(<span class="code">do-some-lengthy-calculation</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre></li>
 </ul>
 
 <p><a id="x-28SENTO-2EFUTURE-3AMAKE-FUTURE-20FUNCTION-29"></a>
@@ -1700,18 +1759,18 @@ A <code>promise</code> is the fulfillment of the delayed computation.</p>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:MAKE-FUTURE%20FUNCTION" >MAKE-FUTURE</a></span></span> <span class="locative-args">EXECUTE-FUN</span></span></p>
 
 <p>Creates a future. <code>execute-fun</code> is the lambda that is executed when the future is created.
-<code>execute-fun</code> takes a parameter which is the <code>resolve-fun</code> funtion. <code>resolve-fun</code> function
-takes the <code>promise</code> as parameter which is the computed value. Calling <code>resolve-fun</code> with the promise
+<code>execute-fun</code> takes a parameter which is the <code>execute-fun</code> funtion. <code>execute-fun</code> function
+takes the <code>promise</code> as parameter which is the computed value. Calling <code>execute-fun</code> with the promise
 will fulfill the <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a>.<br/>
-Manually calling <code>resolve-fun</code> to fulfill the <code>future</code> is in contrast to just fulfill the <code>future</code> from a return value. The benefit of the <code>resolve-fun</code> is flexibility. In  a multi-threaded environment <code>execute-fun</code> could spawn a thread, in which case <code>execute-fun</code> would return immediately but no promise can be given at that time. The <code>resolve-fun</code> can be called from a thread and provide the promise.</p>
+Manually calling <code>execute-fun</code> to fulfill the <code>future</code> is in contrast to just fulfill the <code>future</code> from a return value. The benefit of the <code>execute-fun</code> is flexibility. In  a multi-threaded environment <code>execute-fun</code> could spawn a thread, in which case <code>execute-fun</code> would return immediately but no promise-value can be given at that time. The <code>execute-fun</code> can be called from a thread and provide the promise.</p>
 
 <p>Create a future with:</p>
 
-<pre><code><span class="code"><span class="paren1">(<span class="code">make-future <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">resolve-fun</span>)</span> 
+<pre><code><span class="code"><span class="paren1">(<span class="code">make-future <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">execute-fun</span>)</span> 
                <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">promise <span class="paren6">(<span class="code">delayed-computation</span>)</span></span>)</span></span>)</span>
                  <span class="paren4">(<span class="code">bt:make-thread <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren6">(<span class="code"></span>)</span>
                    <span class="paren6">(<span class="code">sleep 0.5</span>)</span>
-                   <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_232.html#IDX618" class="symbol">funcall</a> resolve-fun promise</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre></li>
+                   <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_232.html#IDX618" class="symbol">funcall</a> execute-fun promise</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre></li>
 </ul>
 
 <p><a id="x-28SENTO-2EFUTURE-3ACOMPLETE-P-20FUNCTION-29"></a>
@@ -1723,24 +1782,74 @@ Manually calling <code>resolve-fun</code> to fulfill the <code>future</code> is 
 <p>Is <code>future</code> completed? Returns either <code>t</code> or <code>nil</code>.</p></li>
 </ul>
 
-<p><a id="x-28SENTO-2EFUTURE-3AON-COMPLETED-20FUNCTION-29"></a>
-<a id="SENTO.FUTURE:ON-COMPLETED%20FUNCTION"></a></p>
+<p><a id="x-28SENTO-2EFUTURE-3AFCOMPLETED-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FUTURE:FCOMPLETED%20MGL-PAX:MACRO"></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:ON-COMPLETED%20FUNCTION" >ON-COMPLETED</a></span></span> <span class="locative-args">FUTURE COMPLETED-FUN</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FCOMPLETED%20MGL-PAX:MACRO" >FCOMPLETED</a></span></span> <span class="locative-args">FUTURE (RESULT) &amp;BODY BODY</span></span></p>
 
-<p>Install an on-completion handler function on the given <code>future</code>.
-If the <code>future</code> is already complete then the <code>completed-fun</code> function is called immediately.
-<code>completed-fun</code> takes a parameter which represents the fulfilled promise (the value with which the <code>future</code> was fulfilled).</p></li>
+<p>Completion handler on the given <code>future</code>.</p>
+
+<p>If the <code>future</code> is already complete then the <code>body</code> executed immediately.<br/>
+<code>result</code> represents the future result.
+<code>body</code> is executed when future completed.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">fcompleted <span class="paren2">(<span class="code"><i><span class="symbol">with-fut</span></i>
+              <span class="paren3">(<span class="code">sleep .5</span>)</span>
+              1</span>)</span>
+            <span class="paren2">(<span class="code">result</span>)</span>
+  <span class="paren2">(<span class="code">format t <span class="string">"Future result ~a~%"</span> result</span>)</span></span>)</span></span></code></pre></li>
 </ul>
 
-<p><a id="x-28SENTO-2EFUTURE-3AGET-RESULT-20FUNCTION-29"></a>
-<a id="SENTO.FUTURE:GET-RESULT%20FUNCTION"></a></p>
+<p><a id="x-28SENTO-2EFUTURE-3AFRESULT-20FUNCTION-29"></a>
+<a id="SENTO.FUTURE:FRESULT%20FUNCTION"></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:GET-RESULT%20FUNCTION" >GET-RESULT</a></span></span> <span class="locative-args">FUTURE</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FRESULT%20FUNCTION" >FRESULT</a></span></span> <span class="locative-args">FUTURE</span></span></p>
 
 <p>Get the computation result. If not yet available <code>:not-ready</code> is returned.</p></li>
+</ul>
+
+<p><a id="x-28SENTO-2EFUTURE-3AFMAP-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FUTURE:FMAP%20MGL-PAX:MACRO"></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FMAP%20MGL-PAX:MACRO" >FMAP</a></span></span> <span class="locative-args">FUTURE (RESULT) &amp;BODY BODY</span></span></p>
+
+<p><code>fmap</code> maps a future.</p>
+
+<p><code>future</code> is the future that is mapped.
+<code>result</code> is the result of the future when it completed.
+<code>body</code> is the form that executes when the future is completed. The result of <code>body</code> generates a new future.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">fmap <span class="paren2">(<span class="code"><i><span class="symbol">with-fut</span></i> 0</span>)</span> <span class="paren2">(<span class="code">result</span>)</span>
+  <span class="paren2">(<span class="code">1+ result</span>)</span></span>)</span></span></code></pre></li>
+</ul>
+
+<p><a id="x-28SENTO-2EFUTURE-3AFRECOVER-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FUTURE:FRECOVER%20MGL-PAX:MACRO"></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FRECOVER%20MGL-PAX:MACRO" >FRECOVER</a></span></span> <span class="locative-args">FUTURE &amp;REST HANDLER-FORMS</span></span></p>
+
+<p>Catch errors in futures using <code>frecover</code>
+It works similar to <a href="http://www.lispworks.com/documentation/HyperSpec/Body/m_hand_1.htm" title="HANDLER-CASE MGL-PAX:MACRO"><code>handler-case</code></a>.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">fresult
+ <span class="paren2">(<span class="code">frecover
+  <span class="paren3">(<span class="code">-&gt; <span class="paren4">(<span class="code"><i><span class="symbol">with-fut</span></i> 0</span>)</span>
+    <span class="paren4">(<span class="code">fmap <span class="paren5">(<span class="code">value</span>)</span>
+      <span class="paren5">(<span class="code">declare <span class="paren6">(<span class="code">ignore value</span>)</span></span>)</span>
+      <span class="paren5">(<span class="code">error <span class="string">"foo"</span></span>)</span></span>)</span></span>)</span>
+    <span class="paren3">(<span class="code">fmap <span class="paren4">(<span class="code">value</span>)</span>
+      <span class="paren4">(<span class="code">+ value 1</span>)</span></span>)</span></span>)</span></span>)</span>
+  <span class="paren1">(<span class="code">error <span class="paren2">(<span class="code">c</span>)</span> <span class="paren2">(<span class="code">format nil <span class="string">"~a"</span> c</span>)</span></span>)</span>))</span></code></pre></li>
 </ul>
 
 <p><a id="x-28SENTO-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29"></a>
@@ -2423,14 +2532,18 @@ dispatchers. This additional dispatcher can be utilized for <code>tasks</code>. 
 <a id="SENTO.TASKS:*TASK-CONTEXT*%20VARIABLE"></a></p>
 
 <ul>
-<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.TASKS:*TASK-CONTEXT*%20VARIABLE" >*TASK-CONTEXT*</a></span></span> <span class="locative-args">&quot;Optionally set this globally to use the API without using `with-context`.&quot;</span></span></li>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.TASKS:*TASK-CONTEXT*%20VARIABLE" >*TASK-CONTEXT*</a></span></span> <span class="locative-args">NIL</span></span></p>
+
+<p>Optionally set this globally to use the API without using <a href="#SENTO.TASKS:WITH-CONTEXT%20MGL-PAX:MACRO" title="SENTO.TASKS:WITH-CONTEXT MGL-PAX:MACRO"><code>with-context</code></a>.</p></li>
 </ul>
 
 <p><a id="x-28SENTO-2ETASKS-3A-2ATASK-DISPATCHER-2A-20VARIABLE-29"></a>
 <a id="SENTO.TASKS:*TASK-DISPATCHER*%20VARIABLE"></a></p>
 
 <ul>
-<li><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.TASKS:*TASK-DISPATCHER*%20VARIABLE" >*TASK-DISPATCHER*</a></span></span> <span class="locative-args">&quot;Optionally set a dispatcher id. Same applies here as for `*task-context*`.&quot;</span></span></li>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.TASKS:*TASK-DISPATCHER*%20VARIABLE" >*TASK-DISPATCHER*</a></span></span> <span class="locative-args">NIL</span></span></p>
+
+<p>Optionally set a dispatcher id. Same applies here as for <a href="#SENTO.TASKS:*TASK-CONTEXT*%20VARIABLE" title="SENTO.TASKS:*TASK-CONTEXT* VARIABLE"><code>*task-context*</code></a>.</p></li>
 </ul>
 
 <p><a id="x-28SENTO-2ETASKS-3ATASK-YIELD-20FUNCTION-29"></a>

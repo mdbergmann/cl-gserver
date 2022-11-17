@@ -82,9 +82,9 @@
   (future:with-fut-resolve pax:macro)
   (future:make-future function)
   (future:complete-p function)
-  (future:fcompleted function)
+  (future:fcompleted pax:macro)
   (future:fresult function)
-  (future:fmap function)
+  (future:fmap pax:macro)
   (future:frecover pax:macro))
 
 (in-package :act)

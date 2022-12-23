@@ -115,11 +115,12 @@ This is not an immediate stop.
 There are two ways to stop an actor (cell).
 
 1. by calling this function.
-It is not an immediate stop.
-`wait`: waits until the cell is stopped.
+It is not an immediate stop. The actor will finish the current message processing.  
+`wait`: waits until the cell is stopped.  
 
 2. by sending `:stop` to the actor (cell).
-This won't allow to wait when the actor is stopped, even not with `ask-s`."))
+This won't allow to wait when the actor is stopped, even not with `ask-s`.
+The `:stop` message (symbol) is normally processed by the actors message processing."))
 
 ;; ---------------------------------
 ;; Impl

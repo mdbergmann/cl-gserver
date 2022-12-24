@@ -5,6 +5,7 @@
                 #:with-gensyms)
   (:export #:mkstr
            #:assert-cond
+           #:assert-c
            #:filter
            #:wait-cond
            #:ask-timeout
@@ -26,6 +27,11 @@
       ((not (null fun-result)) (return t))
     (if (> wait-time max-time) (return)
         (sleep sleep-time))))
+
+(defmacro assert-c (max-time &body body)
+  `(assert-cond (lambda ()
+                  ,@body)
+                ,max-time))
 
 (defun filter (fun lst)
   (mapcan (lambda (x) (if (funcall fun x) (list x))) lst))

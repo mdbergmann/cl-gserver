@@ -39,15 +39,15 @@
 
 (test stash-actor-can-unstash-messages
   (with-fixture test-context ()
-    (let* ((do-stash-message nil)
+    (let* ((do-stash-message t)
            (handled-unstash nil)
            (cut (ac:actor-of system
                              :type 'stash-actor
                              :receive
                              (lambda (self msg state)
-                               (unless do-stash-message
-                                 (stash:stash self msg))
                                (when do-stash-message
+                                 (stash:stash self msg))
+                               (unless do-stash-message
                                  (case msg
                                    (:unstash
                                     (progn
@@ -57,12 +57,12 @@
                                     (progn
                                       (setf handled-unstash t)
                                       (cons :no-reply state)))))))))
-      (act:ask-s cut :to-be-stashed-msg) ;; to be sure synchronous so we don't have to await
-      (is-false handled-unstash)
-      (setf do-stash-message t)
+      (act:tell cut :to-be-stashed-msg)
+      (utils:assert-c 0.5 (has-stashed-messages cut))
+      (setf do-stash-message nil)
       (is (eq :unstashed (act:ask-s cut :unstash)))
       (is-true handled-unstash)
-      (is (= (length (stash::stashed-messages cut)) 0)))))
+      (is-false (has-stashed-messages cut)))))
 
 
 (run! 'stash-tests)

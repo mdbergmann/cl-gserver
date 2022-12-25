@@ -2,6 +2,7 @@
   (:use :cl)
   (:nicknames :stash)
   (:export #:stashing
+           #:has-stashed-messages
            #:stash
            #:unstash-all)
   )
@@ -12,6 +13,10 @@
   ((stashed-messages :initform '()
                      :reader stashed-messages))
   (:documentation ""))
+
+(defun has-stashed-messages (stashing)
+  (with-slots (stashed-messages) stashing
+    (not (null (car stashed-messages)))))
 
 (defun stash (stashing msg)
   (with-slots (stashed-messages) stashing

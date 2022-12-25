@@ -21,7 +21,8 @@
 (defun stash (stashing msg)
   (with-slots (stashed-messages) stashing
     (setf stashed-messages
-          (cons `(,msg . ,act-cell:*sender*) stashed-messages))))
+          (cons `(,msg . ,act-cell:*sender*) stashed-messages)))
+  t)
 
 (defun unstash-all (stashing)
   (assert (typep stashing 'act:actor) nil "Not an actor")

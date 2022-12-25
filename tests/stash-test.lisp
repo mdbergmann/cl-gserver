@@ -32,7 +32,8 @@
                             :type 'stash-actor
                             :receive (lambda (self msg state)
                                        (declare (ignore state))
-                                       (stash:stash self msg)))))
+                                       (stash:stash self msg)
+                                       (cons :no-reply state)))))
       (act:tell cut :to-be-stashed-msg)
       (is-true (utils:assert-c 0.5
                  (= (length (stash::stashed-messages cut)) 1))))))
@@ -46,7 +47,8 @@
                              :receive
                              (lambda (self msg state)
                                (when do-stash-message
-                                 (stash:stash self msg))
+                                 (stash:stash self msg)
+                                 (cons :no-reply state))
                                (unless do-stash-message
                                  (case msg
                                    (:unstash
@@ -78,7 +80,8 @@
                              :receive
                              (lambda (self msg state)
                                (when do-stash-message
-                                 (stash:stash self msg))
+                                 (stash:stash self msg)
+                                 (cons :no-reply state))
                                (unless do-stash-message
                                  (case msg
                                    (:unstash

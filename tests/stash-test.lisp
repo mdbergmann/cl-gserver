@@ -64,5 +64,36 @@
       (is-true handled-unstash)
       (is-false (has-stashed-messages cut)))))
 
+(test stash-actor-can-unstash-messages-with-preserving-sender
+  (with-fixture test-context ()
+    (let* ((do-stash-message t)
+           (received-msg nil)
+           (sender (ac:actor-of system
+                                :receive
+                                (lambda (self msg state)
+                                  (setf received-msg msg)
+                                  (cons nil state))))
+           (cut (ac:actor-of system
+                             :type 'stash-actor
+                             :receive
+                             (lambda (self msg state)
+                               (when do-stash-message
+                                 (stash:stash self msg))
+                               (unless do-stash-message
+                                 (case msg
+                                   (:unstash
+                                    (progn
+                                      (stash:unstash-all self)
+                                      (cons :unstashed state)))
+                                   (:to-be-stashed-msg
+                                    (progn
+                                      (act:tell act-cell:*sender* :stashed-msg-reply)
+                                      (cons :no-reply state)))))))))
+      (act:tell cut :to-be-stashed-msg sender)
+      (utils:assert-c 0.5 (has-stashed-messages cut))
+      (setf do-stash-message nil)
+      (is (eq :unstashed (act:ask-s cut :unstash)))
+      (is-true (utils:assert-c 0.5
+                 (eq received-msg :stashed-msg-reply))))))
 
 (run! 'stash-tests)

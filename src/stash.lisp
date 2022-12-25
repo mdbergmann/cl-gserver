@@ -20,13 +20,16 @@
 
 (defun stash (stashing msg)
   (with-slots (stashed-messages) stashing
-    (setf stashed-messages (cons msg stashed-messages))))
+    (setf stashed-messages
+          (cons `(,msg . ,act-cell:*sender*) stashed-messages))))
 
 (defun unstash-all (stashing)
   (assert (typep stashing 'act:actor) nil "Not an actor")
   (with-slots (stashed-messages) stashing
-    (loop :for msg :in stashed-messages
+    (loop :for amsg :in stashed-messages
+          :for msg = (car amsg)
+          :for sender = (cdr amsg)
           :do
-             (act-cell::submit-message stashing msg nil nil nil))
+             (act-cell::submit-message stashing msg nil sender nil))
     (setf stashed-messages '()))
   t)

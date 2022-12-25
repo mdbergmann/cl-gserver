@@ -2,7 +2,8 @@
   (:use :cl)
   (:nicknames :stash)
   (:export #:stashing
-           #:stash)
+           #:stash
+           #:unstash-all)
   )
 
 (in-package :sento.stash)
@@ -12,9 +13,15 @@
                      :reader stashed-messages))
   (:documentation ""))
 
-(defgeneric stash (stashing msg)
-  (:documentation ""))
-
-(defmethod stash ((self stashing) msg)
-  (with-slots (stashed-messages) self
+(defun stash (stashing msg)
+  (with-slots (stashed-messages) stashing
     (setf stashed-messages (cons msg stashed-messages))))
+
+(defun unstash-all (stashing)
+  (assert (typep stashing 'act:actor) nil "Not an actor")
+  (with-slots (stashed-messages) stashing
+    (loop :for msg :in stashed-messages
+          :do
+             (act-cell::submit-message stashing msg nil nil nil))
+    (setf stashed-messages '()))
+  t)

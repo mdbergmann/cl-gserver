@@ -35,36 +35,8 @@
                                        (stash:stash self msg)
                                        (cons :no-reply state)))))
       (act:tell cut :to-be-stashed-msg)
-      (is-true (utils:assert-c 0.5
+      (is-true (utils:await-cond 0.5
                  (= (length (stash::stashed-messages cut)) 1))))))
-
-(test stash-actor-can-unstash-messages
-  (with-fixture test-context ()
-    (let* ((do-stash-message t)
-           (handled-unstash nil)
-           (cut (ac:actor-of system
-                             :type 'stash-actor
-                             :receive
-                             (lambda (self msg state)
-                               (when do-stash-message
-                                 (stash:stash self msg)
-                                 (cons :no-reply state))
-                               (unless do-stash-message
-                                 (case msg
-                                   (:unstash
-                                    (progn
-                                      (stash:unstash-all self)
-                                      (cons :unstashed state)))
-                                   (:to-be-stashed-msg
-                                    (progn
-                                      (setf handled-unstash t)
-                                      (cons :no-reply state)))))))))
-      (act:tell cut :to-be-stashed-msg)
-      (utils:assert-c 0.5 (has-stashed-messages cut))
-      (setf do-stash-message nil)
-      (is (eq :unstashed (act:ask-s cut :unstash)))
-      (is-true handled-unstash)
-      (is-false (has-stashed-messages cut)))))
 
 (test stash-actor-can-unstash-messages-with-preserving-sender
   (with-fixture test-context ()
@@ -93,10 +65,12 @@
                                       (act:tell act-cell:*sender* :stashed-msg-reply)
                                       (cons :no-reply state)))))))))
       (act:tell cut :to-be-stashed-msg sender)
-      (utils:assert-c 0.5 (has-stashed-messages cut))
+      (utils:await-cond 0.5 (has-stashed-messages cut))
       (setf do-stash-message nil)
       (is (eq :unstashed (act:ask-s cut :unstash)))
-      (is-true (utils:assert-c 0.5
+      (is-true (utils:await-cond 0.5
                  (eq received-msg :stashed-msg-reply))))))
+
+;; check on order of stash/unstash
 
 (run! 'stash-tests)

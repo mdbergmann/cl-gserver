@@ -247,7 +247,7 @@
                                (sleep 2)
                                (cons :my-result state))))
            (future (ask actor "foo" :time-out 0.5)))
-      (utils:wait-cond (lambda () (complete-p future)))
+      (utils:await-cond 1.0 (complete-p future))
       (is (eq :handler-error (car (fresult future))))
       (format t "error: ~a~%" (cdr (fresult future)))
       (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
@@ -296,7 +296,7 @@
                                0
                                nil)
     (let ((future (ask cut "foo" :time-out 0.5)))
-      (utils:wait-cond (lambda () (complete-p future)))
+      (utils:await-cond 1.0 (complete-p future))
       (is (eq :handler-error (car (fresult future))))
       (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
 

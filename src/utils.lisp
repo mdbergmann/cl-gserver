@@ -5,7 +5,7 @@
                 #:with-gensyms)
   (:export #:mkstr
            #:assert-cond
-           #:assert-c
+           #:await-cond
            #:filter
            #:wait-cond
            #:ask-timeout
@@ -22,13 +22,16 @@
     (dolist (a args) (princ a stream))))
 
 (defun assert-cond (assert-fun max-time &optional (sleep-time 0.05))
+  "Obsolete, use `await-cond' instead."
   (do ((wait-time sleep-time (+ wait-time sleep-time))
        (fun-result nil (funcall assert-fun)))
       ((not (null fun-result)) (return t))
     (if (> wait-time max-time) (return)
         (sleep sleep-time))))
 
-(defmacro assert-c (max-time &body body)
+(defmacro await-cond (max-time &body body)
+  "Awaits condition. Probes repeatedly.
+If after `max-time' condition is not `t' it is considered failed."
   `(assert-cond (lambda ()
                   ,@body)
                 ,max-time))
@@ -37,12 +40,12 @@
   (mapcan (lambda (x) (if (funcall fun x) (list x))) lst))
 
 (defun wait-cond (cond-fun &optional (sleep-time 0.05) (max-time 12))
-  (let ((wait-acc 0))
-    (if (not (funcall cond-fun))
-        (loop
-           (sleep sleep-time)
-           (incf wait-acc sleep-time)
-           (when (or (funcall cond-fun) (> wait-acc max-time)) (return))))))
+  (loop
+    :with wait-acc = 0
+    :unless (or (funcall cond-fun) (> wait-acc max-time))
+      :do (progn
+            (sleep sleep-time)
+            (incf wait-acc sleep-time))))
 
 (define-condition ask-timeout (serious-condition)
   ((wait-time :initform nil

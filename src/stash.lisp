@@ -31,6 +31,8 @@
           :for msg = (car amsg)
           :for sender = (cdr amsg)
           :do
+             ;; `submit-message' is internal API but can be used here
+             ;; to implement this functionality
              (act-cell::submit-message stashing msg nil sender nil))
     (setf stashed-messages '()))
   t)

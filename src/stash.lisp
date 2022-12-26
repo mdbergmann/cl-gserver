@@ -5,7 +5,7 @@
                 #:*sender*
                 #:submit-message)
   (:export #:stashing
-           #:has-stashed-messages
+           #:has-stashed-messages-p
            #:stash
            #:unstash-all)
   )
@@ -14,10 +14,12 @@
 
 (defclass stashing ()
   ((stashed-messages :initform '()
-                     :reader stashed-messages))
+                     :reader stashed-messages
+                     :documentation "Stash is an unbounded list.
+Stash items are a tuple (alist) of `msg' and `sender'."))
   (:documentation ""))
 
-(defun has-stashed-messages (stashing)
+(defun has-stashed-messages-p (stashing)
   (with-slots (stashed-messages) stashing
     (not (null (car stashed-messages)))))
 

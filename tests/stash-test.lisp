@@ -36,7 +36,7 @@
                                        (cons :no-reply state)))))
       (act:tell cut :to-be-stashed-msg)
       (is-true (utils:await-cond 0.5
-                 (has-stashed-messages cut))))))
+                 (has-stashed-messages-p cut))))))
 
 (test stash-actor-can-unstash-messages-with-preserving-sender
   (with-fixture test-context ()
@@ -65,7 +65,7 @@
                                         (act:tell act-cell:*sender* :stashed-msg-reply)
                                         (cons :no-reply state)))))))))
       (act:tell cut :to-be-stashed-msg sender)
-      (utils:await-cond 0.5 (has-stashed-messages cut))
+      (utils:await-cond 0.5 (has-stashed-messages-p cut))
       (setf do-stash-message nil)
       (is (eq :unstashed (act:ask-s cut :unstash)))
       (is-true (utils:await-cond 0.5

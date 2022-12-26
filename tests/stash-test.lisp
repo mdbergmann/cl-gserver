@@ -36,7 +36,7 @@
                                        (cons :no-reply state)))))
       (act:tell cut :to-be-stashed-msg)
       (is-true (utils:await-cond 0.5
-                 (= (length (stash::stashed-messages cut)) 1))))))
+                 (has-stashed-messages cut))))))
 
 (test stash-actor-can-unstash-messages-with-preserving-sender
   (with-fixture test-context ()
@@ -51,19 +51,19 @@
                              :type 'stash-actor
                              :receive
                              (lambda (self msg state)
-                               (when do-stash-message
-                                 (stash:stash self msg)
-                                 (cons :no-reply state))
-                               (unless do-stash-message
-                                 (case msg
-                                   (:unstash
-                                    (progn
-                                      (stash:unstash-all self)
-                                      (cons :unstashed state)))
-                                   (:to-be-stashed-msg
-                                    (progn
-                                      (act:tell act-cell:*sender* :stashed-msg-reply)
-                                      (cons :no-reply state)))))))))
+                               (if do-stash-message
+                                   (progn 
+                                     (stash:stash self msg)
+                                     (cons :no-reply state))
+                                   (case msg
+                                     (:unstash
+                                      (progn
+                                        (stash:unstash-all self)
+                                        (cons :unstashed state)))
+                                     (:to-be-stashed-msg
+                                      (progn
+                                        (act:tell act-cell:*sender* :stashed-msg-reply)
+                                        (cons :no-reply state)))))))))
       (act:tell cut :to-be-stashed-msg sender)
       (utils:await-cond 0.5 (has-stashed-messages cut))
       (setf do-stash-message nil)

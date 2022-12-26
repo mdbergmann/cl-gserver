@@ -40,6 +40,7 @@ If after `max-time' condition is not `t' it is considered failed."
   (mapcan (lambda (x) (if (funcall fun x) (list x))) lst))
 
 (defun wait-cond (cond-fun &optional (sleep-time 0.05) (max-time 12))
+  "Waits until `cond-fun' is not `nil' or `max-time' elapsed."
   (loop
     :with wait-acc = 0
     :unless (or (funcall cond-fun) (> wait-acc max-time))

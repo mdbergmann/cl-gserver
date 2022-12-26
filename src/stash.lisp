@@ -1,6 +1,9 @@
 (defpackage :sento.stash
   (:use :cl)
   (:nicknames :stash)
+  (:import-from #:act-cell
+                #:*sender*
+                #:submit-message)
   (:export #:stashing
            #:has-stashed-messages
            #:stash
@@ -21,7 +24,7 @@
 (defun stash (stashing msg)
   (with-slots (stashed-messages) stashing
     (setf stashed-messages
-          (cons `(,msg . ,act-cell:*sender*) stashed-messages)))
+          (cons `(,msg . ,*sender*) stashed-messages)))
   t)
 
 (defun unstash-all (stashing)
@@ -33,6 +36,6 @@
           :do
              ;; `submit-message' is internal API but can be used here
              ;; to implement this functionality
-             (act-cell::submit-message stashing msg nil sender nil))
+             (submit-message stashing msg nil sender nil))
     (setf stashed-messages '()))
   t)

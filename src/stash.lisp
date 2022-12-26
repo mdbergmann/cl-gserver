@@ -32,7 +32,7 @@ Stash items are a tuple (alist) of `msg' and `sender'."))
 (defun unstash-all (stashing)
   (assert (typep stashing 'act:actor) nil "Not an actor")
   (with-slots (stashed-messages) stashing
-    (loop :for amsg :in stashed-messages
+    (loop :for amsg :in (reverse stashed-messages)
           :for msg = (car amsg)
           :for sender = (cdr amsg)
           :do

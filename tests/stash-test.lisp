@@ -71,6 +71,33 @@
       (is-true (utils:await-cond 0.5
                  (eq received-msg :stashed-msg-reply))))))
 
-;; check on order of stash/unstash
-
-(run! 'stash-tests)
+(test unstash-order-is-as-stash-order
+  "Checks that `unstash-all' unstashes in the same order as messages were stashed."
+  (with-fixture test-context ()
+    (let* ((do-stash-message t)
+           (unstashed-recv '())
+           (cut (ac:actor-of system
+                             :type 'stash-actor
+                             :receive
+                             (lambda (self msg state)
+                               (if do-stash-message
+                                   (progn 
+                                     (stash:stash self msg)
+                                     (cons :no-reply state))
+                                   (case msg
+                                     (:unstash
+                                      (progn
+                                        (stash:unstash-all self)
+                                        (cons :unstashed state)))
+                                     (otherwise
+                                      (progn
+                                        (setf unstashed-recv (cons msg unstashed-recv))
+                                        (cons :no-reply state))))))))
+           (msgs '(msg-1 msg-2 msg-3 msg-4 msg-5)))
+      (loop :for msg in msgs
+            :do (act:tell cut msg))
+      (utils:await-cond 0.5 (= (length (stash::stashed-messages cut)) 5))
+      (setf do-stash-message nil)
+      (act:ask-s cut :unstash)
+      (is-true (utils:await-cond 0.5 (= (length unstashed-recv) 5)))
+      (is (equalp msgs (reverse unstashed-recv))))))

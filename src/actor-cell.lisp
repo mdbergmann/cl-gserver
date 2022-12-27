@@ -12,6 +12,7 @@
            #:msgbox
            #:state
            #:*sender*
+           #:*self*
            ;; API
            #:handle-call
            #:handle-cast
@@ -24,6 +25,8 @@
 
 (in-package :sento.actor-cell)
 
+(defvar *self* nil
+  "The 'own' actor instance. Dynamically bound and available upon calling 'receive' function.")
 (defvar *sender* nil
   "The `*sender*` is dynamically bound and available in `receive` function, when it is known.")
 
@@ -248,7 +251,9 @@ and if it got cancelled, in which case we respond just with `:cancelled`."
   (handler-case
       (let ((internal-handle-result (handle-message-internal actor-cell message)))
         (case internal-handle-result
-          (:resume (handle-message-user actor-cell message withreply-p))
+          (:resume
+           (let ((*self* actor-cell))
+             (handle-message-user actor-cell message withreply-p)))
           (t internal-handle-result)))
     (t (c)
       (log:error "~a: error condition was raised: ~%~a~%"

@@ -19,8 +19,22 @@
                      :documentation "Stash is an unbounded list.
 Stash items are a tuple (alist) of `msg' and `sender'."))
   (:documentation "`stashing` is a mixin class to `act:actor`.
-It can 'stash' away arriving messages which should not be handled now, but later, after the actor is 'able' to handle them.
-See function descriptions below.
+It can 'stash' away arriving messages which should not be handled now, but later, after the actor is 'able' to handle them. Create an actor class that can stash like this:
+
+```
+(defclass stash-actor (actor stashing) ())
+```
+
+Then create an actor by specifying this type:
+
+```
+(actor-of system
+          :type 'stash-actor
+          :receive (lambda (self msg state)
+                     ...))
+```
+
+For stash and unstash see function descriptions below.
 
 The main use-case is for `act:tell` and `act:ask`. `act:ask-s` will not work.
 timeouts are ignored because it is not clear how long stashed messages will reside in stash.

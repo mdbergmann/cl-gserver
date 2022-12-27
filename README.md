@@ -14,6 +14,8 @@ sento features:
 
 ### Version history
 
+**Version 2.2.0 (27.12.2022):** Added stashing and unstashing of messages.
+
 **Version 2.1.0 (17.11.2022):** Reworked the `future` package. Nicer syntax and futures can now be mapped.
 
 **Version 2.0.0 (16.8.2022):** Rename to "Sento". Incompatible change due to package names and system have changed.
@@ -459,6 +461,12 @@ response: 'my new behavior for: Foo'.
 To revert back to the default behavior as defined by the
 `receive` function of the constructor you may call
 `unbecome`.
+
+#### Stashing messages
+
+Stashing allows the actor to `stash` away messages for when the actor is in a state that doesn't allow it to handle certain messages. `unstash-all` can unstash all stashed messages.
+
+See: [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.STASH:@STASHING%20MGL-PAX:SECTION) for more info.
 
 #### Creating actors without a system
 

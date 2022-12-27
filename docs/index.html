@@ -60,15 +60,16 @@
 <li><a href="#SENTO.AGENT.HASH:@HASH-AGENT%20MGL-PAX:SECTION" title="Hash-table agent">2.4.1 Hash-table agent</a></li>
 <li><a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION" title="Array/Vector agent">2.4.2 Array/Vector agent</a></li>
 </ul></li>
-<li><a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">2.5 Dispatcher</a>
+<li><a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">2.5 Stashing</a></li>
+<li><a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">2.6 Dispatcher</a>
 
 <ul>
-<li><a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">2.5.1 Shared dispatcher</a></li>
+<li><a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">2.6.1 Shared dispatcher</a></li>
 </ul></li>
-<li><a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">2.6 Router</a></li>
-<li><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">2.7 Eventstream</a></li>
-<li><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">2.8 Tasks</a></li>
-<li><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">2.9 Config</a></li>
+<li><a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">2.7 Router</a></li>
+<li><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">2.8 Eventstream</a></li>
+<li><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">2.9 Tasks</a></li>
+<li><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">2.10 Config</a></li>
 </ul></li>
 </ul>
 
@@ -101,6 +102,8 @@
 </ul>
 
 <h3>Version history</h3>
+
+<p><strong>Version 2.2.0 (27.12.2022):</strong> Added stashing and unstashing of messages.</p>
 
 <p><strong>Version 2.1.0 (17.11.2022):</strong> Reworked the <code>future</code> package. Nicer symtax and futures can now be mapped.</p>
 
@@ -508,6 +511,12 @@ response: 'my new behavior for: Foo'.</p>
 <p>To revert back to the default behavior as defined by the
 <code>receive</code> function of the constructor you may call
 <code>unbecome</code>.</p>
+
+<h4>Stashing messages</h4>
+
+<p>Stashing allows the actor to <code>stash</code> away messages for when the actor is in a state that doesn't allow it to handle certain messages. <code>unstash-all</code> can unstash all stashed messages.</p>
+
+<p>See: <a href="https://mdbergmann.github.io/cl-gserver/index.html#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" >API documentation</a> for more info.</p>
 
 <h4>Creating actors without a system</h4>
 
@@ -1517,10 +1526,11 @@ There are two ways to stop an actor (cell).</p>
 
 <ol>
 <li><p>by calling this function.
-It is not an immediate stop.
-<code>wait</code>: waits until the cell is stopped.</p></li>
+It is not an immediate stop. The actor will finish the current message processing.<br/>
+<code>wait</code>: waits until the cell is stopped.  </p></li>
 <li><p>by sending <code>:stop</code> to the actor (cell).
-This won't allow to wait when the actor is stopped, even not with <code>ask-s</code>.</p></li>
+This won't allow to wait when the actor is stopped, even not with <code>ask-s</code>.
+The <code>:stop</code> message (symbol) is normally processed by the actors message processing.</p></li>
 </ol></li>
 </ul>
 
@@ -2005,7 +2015,7 @@ Returns <code>t</code> if entry existed, <code>nil</code> otherwise.</p></li>
 <p><a id="x-28SENTO-2EAGENT-2EARRAY-3A-40ARRAY-AGENT-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION"></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.AGENT.HASH:@HASH-AGENT%20MGL-PAX:SECTION" title="Hash-table agent">&#8592;</a> <a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION" title="Agent">&#8593;</a> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8594;</a> <a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION" title="Array/Vector agent">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.AGENT.HASH:@HASH-AGENT%20MGL-PAX:SECTION" title="Hash-table agent">&#8592;</a> <a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION" title="Agent">&#8593;</a> <a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">&#8594;</a> <a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION" title="Array/Vector agent">&#8634;</a></span></span></p>
 
 <h4><a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION">2.4.2 Array/Vector agent</a></h4>
 
@@ -2108,12 +2118,72 @@ Use this to get notified of error when using the update functions of the agent.<
 <p>The result of <code>agent-doarray</code> is <code>T</code>.</p></li>
 </ul>
 
+<p><a id="x-28SENTO-2ESTASH-3A-40STASHING-20MGL-PAX-3ASECTION-29"></a>
+<a id="SENTO.STASH:@STASHING%20MGL-PAX:SECTION"></a></p>
+
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION" title="Array/Vector agent">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8594;</a> <a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">&#8634;</a></span></span></p>
+
+<h3><a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION">2.5 Stashing</a></h3>
+
+<h6>[in package SENTO.STASH with nicknames STASH]</h6>
+
+<p><a id="x-28SENTO-2ESTASH-3ASTASHING-20CLASS-29"></a>
+<a id="SENTO.STASH:STASHING%20CLASS"></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.STASH:STASHING%20CLASS" >STASHING</a></span></span></span></p>
+
+<p><code>stashing</code> is a mixin class to <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>act:actor</code></a>.
+It can 'stash' away arriving messages which should not be handled now, but later, after the actor is 'able' to handle them. Create an actor class that can stash like this:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defclass</span></i> stash-actor <span class="paren2">(<span class="code">actor stashing</span>)</span> <span class="paren2">(<span class="code"></span>)</span></span>)</span></span></code></pre>
+
+<p>Then create an actor by specifying this type:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">actor-of system
+          <span class="keyword">:type</span> 'stash-actor
+          <span class="keyword">:receive</span> <span class="paren2">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren3">(<span class="code">self msg state</span>)</span>
+                     ...</span>)</span></span>)</span></span></code></pre>
+
+<p>For stash and unstash see function descriptions below.</p>
+
+<p>The main use-case is for <a href="#SENTO.ACTOR:TELL%20GENERIC-FUNCTION" title="SENTO.ACTOR:TELL GENERIC-FUNCTION"><code>act:tell</code></a> and <a href="#SENTO.ACTOR:ASK%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK GENERIC-FUNCTION"><code>act:ask</code></a>. <a href="#SENTO.ACTOR:ASK-S%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK-S GENERIC-FUNCTION"><code>act:ask-s</code></a> will not work.
+timeouts are ignored because it is not clear how long stashed messages will reside in stash.
+However the <code>sender</code>, if given (on <code>act:tell</code>), is preserved.</p></li>
+</ul>
+
+<p><a id="x-28SENTO-2ESTASH-3ASTASH-20FUNCTION-29"></a>
+<a id="SENTO.STASH:STASH%20FUNCTION"></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.STASH:STASH%20FUNCTION" >STASH</a></span></span> <span class="locative-args">MSG</span></span></p>
+
+<p>Stash <code>msg</code> for later unstash.
+On stashing a message the actor should respond with: <code>(cons :no-reply state)</code>
+to avoid returning a response to sender (if given).</p>
+
+<p>This function is expected to be run from within 'receive' function.</p></li>
+</ul>
+
+<p><a id="x-28SENTO-2ESTASH-3AUNSTASH-ALL-20FUNCTION-29"></a>
+<a id="SENTO.STASH:UNSTASH-ALL%20FUNCTION"></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.STASH:UNSTASH-ALL%20FUNCTION" >UNSTASH-ALL</a></span></span></span></p>
+
+<p>Unstash all messages.
+Messages are re-submitted to the actor in the order they were stashed.
+Resubmitting means they are added to the end of the queue like any ordinary message would.</p>
+
+<p>This function is expected to be run from within 'receive' function.</p></li>
+</ul>
+
 <p><a id="x-28SENTO-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION"></a></p>
 
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION" title="Array/Vector agent">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">&#8594;</a> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">&#8594;</a> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8634;</a></span></span></p>
 
-<h3><a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION">2.5 Dispatcher</a></h3>
+<h3><a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION">2.6 Dispatcher</a></h3>
 
 <h6>[in package SENTO.DISPATCHER with nicknames DISP]</h6>
 
@@ -2213,7 +2283,7 @@ Only use the defined interface here to talk to them.</p></li>
 
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8592;</a> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8593;</a> <a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">&#8594;</a> <a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">&#8634;</a></span></span></p>
 
-<h4><a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION">2.5.1 Shared dispatcher</a></h4>
+<h4><a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION">2.6.1 Shared dispatcher</a></h4>
 
 <p><a id="x-28SENTO-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29"></a>
 <a id="SENTO.DISPATCHER:SHARED-DISPATCHER%20CLASS"></a></p>
@@ -2233,7 +2303,7 @@ The default strategy of choosing a worker is <code>:random</code>.</p>
 
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">&#8594;</a> <a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">&#8634;</a></span></span></p>
 
-<h3><a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION">2.6 Router</a></h3>
+<h3><a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION">2.7 Router</a></h3>
 
 <h6>[in package SENTO.ROUTER with nicknames ROUTER]</h6>
 
@@ -2325,7 +2395,7 @@ Otherwise see: <code>act:ask</code>.</p></li>
 
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8594;</a> <a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">&#8634;</a></span></span></p>
 
-<h3><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION">2.7 Eventstream</a></h3>
+<h3><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION">2.8 Eventstream</a></h3>
 
 <h6>[in package SENTO.EVENTSTREAM with nicknames EV]</h6>
 
@@ -2490,7 +2560,7 @@ Or if you want to listen to all lists, subscribe with <code>'cons</code>.</p></l
 
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8594;</a> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8634;</a></span></span></p>
 
-<h3><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION">2.8 Tasks</a></h3>
+<h3><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION">2.9 Tasks</a></h3>
 
 <h6>[in package SENTO.TASKS with nicknames TASKS]</h6>
 
@@ -2679,7 +2749,7 @@ If all workers are busy then the computation of <code>fun</code> is queued.</p>
 
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8634;</a></span></span></p>
 
-<h3><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION">2.9 Config</a></h3>
+<h3><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION">2.10 Config</a></h3>
 
 <h6>[in package SENTO.CONFIG with nicknames CONFIG]</h6>
 

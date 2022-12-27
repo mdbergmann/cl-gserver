@@ -163,6 +163,12 @@
 
   (disp:@shared-dispatcher pax:section))
 
+(in-package :stash)
+(pax:defsection @stashing (:title "Stashing")
+  (stash:stashing class)
+  (stash:stash function)
+  (stash:unstash-all function))
+
 (in-package :router)
 (pax:defsection @router (:title "Router")
   (router:router class)
@@ -225,6 +231,7 @@
   (ac:@actor-context pax:section)
   (act:@actor pax:section)
   (agt:@agent pax:section)
+  (stash:@stashing pax:section)
   (disp:@dispatcher pax:section)
   (router:@router pax:section)
   (ev:@eventstream pax:section)

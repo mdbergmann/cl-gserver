@@ -1,5 +1,5 @@
 (defsystem "sento"
-  :version "2.1.0"
+  :version "2.2.0"
   :author "Manfred Bergmann"
   :license "Apache-2"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."

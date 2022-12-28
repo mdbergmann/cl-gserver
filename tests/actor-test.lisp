@@ -318,22 +318,31 @@
 
 (test become-and-unbecome-a-different-behavior
   "Test switching behaviors"
-  (let ((receive (lambda (self msg state)
-                   (declare (ignore self msg))
-                   (cons :receive state)))
-        (beh1 (lambda (self msg state)
-                (declare (ignore self msg))
-                (cons :behavior1 state)))
-        (beh2 (lambda (self msg state)
-                (declare (ignore self msg))
-                (cons :behavior2 state))))  
+  (let* ((beh2 (lambda (self msg state)
+                 (declare (ignore self msg))
+                 (case msg
+                   (:unbecome
+                    (unbecome)))
+                 (cons :behavior2 state)))
+         (beh1 (lambda (self msg state)
+                 (declare (ignore self msg))
+                 (case msg
+                   (:behavior2
+                    (become beh2)))
+                 (cons :behavior1 state)))
+         (receive (lambda (self msg state)
+                    (declare (ignore self msg))
+                    (case msg
+                      (:behavior1
+                       (become beh1)))
+                    (cons :receive state))))
     (with-fixture actor-fixture (receive 0 t)
       (is (eq :receive (ask-s cut :some)))
-      (become cut beh1)
+      (ask-s cut :behavior1)
       (is (eq :behavior1 (ask-s cut :some)))
-      (become cut beh2)
+      (ask-s cut :behavior2)
       (is (eq :behavior2 (ask-s cut :some)))
-      (unbecome cut)
+      (ask-s cut :unbecome)
       (is (eq :receive (ask-s cut :some))))))
 
 (test actor-of

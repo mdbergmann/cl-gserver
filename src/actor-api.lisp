@@ -27,8 +27,7 @@
 - `self`: the actor instance
 - `msg`: the received message
 - `state`: the current state of the actor
-The `sender` of the message, if available, is accessible with `*sender*` from within
-the receive function or a behavior.")
+The `sender` of the message, if available, is accessible with `*sender*` from within the receive function or a behavior.")
    (behavior :initform nil
              :documentation
              "Behavior function applied via `act:become` and reverted via `act:unbecome`
@@ -137,14 +136,16 @@ but instead an anonymous `actor` is started behind the scenes and this in fact m
 the message to the target `actor`. It does sent itself along as 'sender'.
 The target `actor` tells a response back to the initial `sender`. When that happens and the anonymous `actor` received the response the `future` will be fulfilled with the `promise`."))
 
-(defgeneric become (actor new-behavior)
+(defgeneric become (new-behavior)
   (:documentation
    "Changes the receive of the actor to the given `new-behavior` function.
-The `new-behavior` function must accept 3 parameters: the actor instance, the message and the current state."))
+The `new-behavior` function must accept 3 parameters: the actor instance, the message and the current state.
+This function should be called from within the behavior receive function."))
 
-(defgeneric unbecome (actor)
+(defgeneric unbecome ()
   (:documentation
-   "Reverts any behavior applied via `become` back to the default `receive` function."))
+   "Reverts any behavior applied via `become` back to the default `receive` function.
+This function should be called from within the behavior receive function."))
 
 (defgeneric context (actor)
   (:documentation

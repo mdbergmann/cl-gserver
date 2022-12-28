@@ -437,30 +437,34 @@ take three parameters:
 The behavior then can pattern match (or do some matching by other means)
 on the received message alone, or in combination with the current state.
 
-The default behavior of the actor is given on actor construction using
-the default constructor `make-actor`.
+The default behavior of the actor is given on actor construction using `:receive` key.
 
-During the lifetime of an actor the behavior can be changed using
-`become`.
+During the lifetime of an actor the behavior can be changed using `become`.
 
 So we remember the `*answerer*` which responds with 'Hello Foo' when
 we send `(act:ask-s *answerer* "Foo")`. We can now change the behavior
 with:
 
 ```elisp
-(act:become *answerer* 
-            (lambda (self msg state)
-              (cons (format nil "my new behavior for: ~a" msg) state)))
+(ac:actor-of *system*
+             :receive
+             (lambda (self msg state)
+               (case msg
+                 (:become-other
+                   (become (lambda (self msg state)
+                             (cons 
+                               "my new behavior"
+                               state)))))
+               (cons (format nil "Hello ~s" msg) state)))
 ```
 
 When we now send `(act:ask-s *answerer* "Foo")` we will get the
-response: 'my new behavior for: Foo'.
+response: 'my new behavior'.
 
 **Reverting `become` / `unbecome`**
 
 To revert back to the default behavior as defined by the
-`receive` function of the constructor you may call
-`unbecome`.
+`receive` function of the constructor you may call `unbecome` from within the current behavior function.
 
 #### Stashing messages
 

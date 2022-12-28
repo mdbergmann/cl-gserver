@@ -6,6 +6,7 @@
                     act-cell:handle-call
                     act-cell:handle-cast
                     act-cell:stop
+                    act-cell:*self*
                     future:make-future
                     ev:subscribe
                     ev:unsubscribe
@@ -86,12 +87,12 @@
 (defmethod ask-s ((self actor) message &key (time-out nil))
   (act-cell:call self message :time-out time-out))
 
-(defmethod become ((self actor) new-behavior)
-  (with-slots (behavior) self
+(defmethod become (new-behavior)
+  (with-slots (behavior) *self*
     (setf behavior new-behavior)))
 
-(defmethod unbecome ((self actor))
-  (with-slots (behavior) self
+(defmethod unbecome ()
+  (with-slots (behavior) *self*
     (setf behavior nil)))
 
 (defmethod path ((self actor))

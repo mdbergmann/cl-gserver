@@ -440,34 +440,31 @@ on the received message alone, or in combination with the current state.
 The default behavior of the actor is given on actor construction using `:receive` key.
 
 During the lifetime of an actor the behavior can be changed using `become`.
+`unbecome` will restore the default behavior.
 
-So we remember the `*answerer*` which responds with 'Hello Foo' when
-we send `(act:ask-s *answerer* "Foo")`. We can now change the behavior
-with:
+Here is an example:
 
 ```elisp
 (ac:actor-of *system*
              :receive
              (lambda (self msg state)
                (case msg
-                 (:become-other
-                  (become (lambda (self msg state)
-                            (case msg
-                              (:unbecome
-                               (unbecome)))
-                            (cons 
-                              "my new behavior"
-                              state)))))
-               (cons (format nil "Hello ~s" msg) state)))
+                 (:open
+                  (progn
+                    (unstash-all)
+                    (become (lambda (self msg state)
+                              (case msg
+                                (:write
+                                 ;; do something
+                                 )
+                                (:close
+                                 (unbecome))
+                                (otherwise
+                                 (stash msg)))
+                              (cons :no-reply state)))))
+                 (otherwise (stash msg)))
+               (cons :no-reply state)))
 ```
-
-When we now send `(act:ask-s *answerer* "Foo")` we will get the
-response: 'my new behavior'.
-
-**Reverting `become` / `unbecome`**
-
-To revert back to the default behavior as defined by the
-`receive` function of the constructor you may call `unbecome` from within the current behavior function.
 
 #### Stashing messages
 

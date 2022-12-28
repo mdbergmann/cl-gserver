@@ -452,6 +452,9 @@ with:
                (case msg
                  (:become-other
                   (become (lambda (self msg state)
+                            (case msg
+                              (:unbecome
+                               (unbecome)))
                             (cons 
                               "my new behavior"
                               state)))))

@@ -430,8 +430,8 @@ defined for the actors at play.
 An actor can change behavior. The behavior is just a lambda that has to
 take three parameters:
 
-1.  the actor's instance - usually called `self`
-2.  the received message - maybe call `msg`?
+1.  the actor's instance - `self`
+2.  the received message - `msg`
 3.  the current state of the actor
 
 The behavior then can pattern match (or do some matching by other means)
@@ -451,10 +451,10 @@ with:
              (lambda (self msg state)
                (case msg
                  (:become-other
-                   (become (lambda (self msg state)
-                             (cons 
-                               "my new behavior"
-                               state)))))
+                  (become (lambda (self msg state)
+                            (cons 
+                              "my new behavior"
+                              state)))))
                (cons (format nil "Hello ~s" msg) state)))
 ```
 

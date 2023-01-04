@@ -57,8 +57,8 @@ When the actor is created through the `actor-context` of an actor, or the `actor
 then it will be populated with a message-box."))
   (:documentation
    "`actor-cell` is the base of the `actor`.
-It is meant to encapsulate state, but also to execute async operations.
-State can be changed by calling into the server via `call` or `cast`.
+It encapsulates state and can executes async operations.
+State can be changed by `setf`ing `*state*` special variable from inside `receive` function, via calling `call` or `cast`.
 Where `call` is waiting for a result and `cast` does not.
 For each `call` and `cast` handlers must be implemented by subclasses.
 
@@ -107,13 +107,13 @@ Note: the `actor-cell` uses `call` and `cast` functions which translate to `ask-
 (defgeneric handle-call (actor-cell message current-state)
   (:documentation
    "Handles calls to the server. Must be implemented by subclasses.
-The convention here is to return a `cons` with values to be returned to caller as `car`, and the new state as `cdr`.
-`handle-call` is executed in the default message dispatcher thread."))
+The result of the last expression of this function is returned back to the 'caller'.
+State of the cell can be changed via `setf`ing `*state*` variable."))
 
 (defgeneric handle-cast (actor-cell message current-state)
   (:documentation
    "Handles casts to the server. Must be implemented by subclasses.
-Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately."))
+State of the cell can be changed via `setf`ing `*state*` variable."))
 
 (defgeneric stop (actor-cell &optional wait)
   (:documentation "Stops the actor-cells message processing gracefully.
@@ -146,8 +146,7 @@ The `:stop` message (symbol) is normally processed by the actors message process
 Specify a timeout in seconds if you require a result within a certain period of time.
 Be aware though that this is a resource intensive wait based on a waiting thread.
 The result can be of different types.
-Success result: <returned-state>
-Unhandled result: `:unhandled`
+Normal result: the last expression of `handle-call` (or `receive` in `act:actor`) implementation. 
 Error result: `(cons :handler-error <condition>)'
 In case of time-out the error condition is a bt:timeout."
   (when message
@@ -207,21 +206,10 @@ In case no messge-box is configured this function respnds with `:no-message-hand
            withreply-p
            time-out)
           (with-sender sender
-            (process-response actor-cell
-                              (handle-message actor-cell message withreply-p))))
+            (handle-message actor-cell message withreply-p)))
     (utils:ask-timeout (c)
       (log:warn "~a: ask-s timeout: ~a" (name actor-cell) c)
-      (process-response actor-cell
-                        (cons :handler-error c)))))
-
-(defun process-response (actor-cell handle-result)
-  "This function is called on the queue thread, so it's thread safe!"
-  (log:debug "~a: processing handle-result: ~a" (name actor-cell) handle-result)
-  (case handle-result
-    (:stopping (progn
-                 (stop actor-cell)
-                 :stopped))
-    (t handle-result)))
+      (cons :handler-error c))))
 
 ;; ------------------------------------------------
 ;; message handling ---------------------
@@ -266,7 +254,9 @@ and if it got cancelled, in which case we respond just with `:cancelled`."
 Otherwise the result is `:resume` to resume user message handling."
   (log:debug "~a: internal handle-message: ~a" (name actor-cell) msg)
   (case msg
-    (:stop :stopping)
+    (:stop (progn
+             (stop actor-cell)
+             :stopped))
     (t :resume)))
 
 ;;

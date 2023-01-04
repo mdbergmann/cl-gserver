@@ -208,28 +208,20 @@ In case no messge-box is configured this function respnds with `:no-message-hand
            time-out)
           (with-sender sender
             (process-response actor-cell
-                              (handle-message actor-cell message withreply-p)
-                              sender)))
+                              (handle-message actor-cell message withreply-p))))
     (utils:ask-timeout (c)
       (log:warn "~a: ask-s timeout: ~a" (name actor-cell) c)
       (process-response actor-cell
-                        (cons :handler-error c)
-                        sender))))
+                        (cons :handler-error c)))))
 
-(defun process-response (actor-cell handle-result sender)
+(defun process-response (actor-cell handle-result)
   "This function is called on the queue thread, so it's thread safe!"
   (log:debug "~a: processing handle-result: ~a" (name actor-cell) handle-result)
   (case handle-result
     (:stopping (progn
                  (stop actor-cell)
                  :stopped))
-    (t (progn
-         (when (and
-                sender
-                (not (eq :no-reply handle-result)))
-           (log:debug "~a: we have a sender. Send the response back to: ~a" (name actor-cell) sender)
-           (cast sender handle-result))
-         handle-result))))
+    (t handle-result)))
 
 ;; ------------------------------------------------
 ;; message handling ---------------------

@@ -125,13 +125,13 @@
     (is (= 200 (call cut '(:explicit-return 200))))
     (is (eq nil (call cut "unhandled")))))
 
-(test cast-sends-result-back-to-sender
-  "Test that a cast, that specifies a 'sender' sends the result back to the 'sender'."
+(test cast--send-result-back-to-sender
+  "Test that a cast, if implemented, can use `*sender*' to send result to 'sender'."
   (with-fixture cell-fixture (nil
                               (lambda (self msg state)
                                 (declare (ignore self))
                                 (case msg
-                                  (:ping (cons :pong state))))
+                                  (:ping (cast *sender* :pong))))
                               nil
                               nil
                               0)
@@ -139,11 +139,10 @@
            (fake-sender (act:make-actor (lambda (self msg state)
                                           (declare (ignore self))
                                          (case msg
-                                           (:pong (setf response-received t)))
-                                         (cons msg state)))))
+                                           (:pong (setf response-received t)))))))
       (setf (msgbox fake-sender) (make-instance 'mesgb:message-box/bt))
       (cast cut :ping fake-sender)
-      (is (utils:assert-cond (lambda () response-received) 1))
+      (is-true (await-cond 0.5 response-received))
       (call fake-sender :stop))))
 
 (test error-in-handler
@@ -169,57 +168,37 @@
   "a actor-cell as stack."
   (with-fixture cell-fixture ((lambda (cell message current-state)
                                 (declare (ignore cell))
-                                (format t "current-state: ~a~%" current-state)
+                                ;;(format t "current-state: ~a~%" current-state)
                                 (cond
-                                 ((eq :pop message)
-                                  (cons
-                                   (car current-state)
-                                   (cdr current-state)))
-                                 ((eq :get message)
-                                  (cons current-state current-state))))
+                                  ((eq :pop message)
+                                   (let ((head (car *state*))
+                                         (tail (cdr *state*)))
+                                     (setf *state* tail)
+                                     head))
+                                  ((eq :get message)
+                                   current-state)))
                               (lambda (cell message current-state)
                                 (declare (ignore cell))
-                                (format t "current-state: ~a~%" current-state)
+                                ;;(format t "current-state: ~a~%" current-state)
                                 (cond
                                  ((eq :push (car message))
                                   (let ((new-state (append current-state (list (cdr message)))))
-                                    (cons new-state new-state)))))
+                                    (setf *state* new-state)))))
                               nil
                               nil
                               '(5))
     (is (equalp '(5) (call cut :get)))
     (cast cut (cons :push 4))
-    (sleep 0.01)
     (cast cut (cons :push 3))
-    (sleep 0.01)
     (cast cut (cons :push 2))
-    (sleep 0.01)
     (cast cut (cons :push 1))
-    (sleep 0.3)
-    (is (equalp '(5 4 3 2 1) (call cut :get)))
+    (is-true (await-cond 0.5 (equalp '(5 4 3 2 1) (call cut :get))))
     (is (= 5 (call cut :pop)))
     (is (= 4 (call cut :pop)))
     (is (= 3 (call cut :pop)))
     (is (= 2 (call cut :pop)))
     (is (= 1 (call cut :pop)))
     (is (null (call cut :pop)))))
-
-(test cast--store-sender
-  "Test that the 'sender' is stored and deleted in `*sender*' for each use of `cast'."
-  (with-fixture cell-fixture (nil
-                              (lambda (self msg state)
-                                (assert (not (null act-cell:*sender*)))
-                                (assert (not (eq self act-cell:*sender*)))
-                                (case msg
-                                  (:ping (cons :pong state))))
-                              nil
-                              nil
-                              0)
-    (let ((fake-sender (act:make-actor (lambda (self msg state)
-                                         (declare (ignore self))
-                                         (cons msg state)))))
-      (cast cut :ping fake-sender)
-      (is-true t))))
 
 (defclass stopping-cell (actor-cell) ())
 (defmethod handle-call ((cell stopping-cell) message current-state)

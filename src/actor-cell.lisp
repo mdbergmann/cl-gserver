@@ -2,7 +2,6 @@
   (:use :cl :sento.utils)
   (:nicknames :act-cell)
   (:import-from #:mesgb
-                #:delayed-cancellable-message
                 #:inner-msg
                 #:cancelled-p
                 #:with-submit-handler)
@@ -215,20 +214,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
 ;; message handling ---------------------
 ;; ------------------------------------------------
 
-(defgeneric handle-message (actor-cell message withreply-p)
-  (:documentation
-   "The message handler which is usually called after the message was popped from a queue."))
-
-(defmethod handle-message (actor-cell (message delayed-cancellable-message) withreply-p)
-  "We check here if the message is of type `delayed-cancellable-message`,
-and if it got cancelled, in which case we respond just with `:cancelled`."
-  (log:debug "~a: handling message: ~a" (name actor-cell) message)
-  (when (cancelled-p message)
-    (log:info "~a: message got cancelled" (name actor-cell))
-    (return-from handle-message :cancelled))
-  (handle-message actor-cell (inner-msg message) withreply-p))
-
-(defmethod handle-message (actor-cell message withreply-p)
+(defun handle-message (actor-cell message withreply-p)
   "This function is submitted as `handler-fun` to message-box."
   (log:debug "~a: handling message: ~a" (name actor-cell) message)
   (handler-case
@@ -249,31 +235,20 @@ and if it got cancelled, in which case we respond just with `:cancelled`."
                  c)
       (cons :handler-error c))))
 
-(defun handle-message-internal (actor-cell msg)
+(defun handle-message-internal (actor-cell message)
   "A `:stop` message will response with `:stopping` and the user handlers are not called.
 Otherwise the result is `:resume` to resume user message handling."
-  (log:debug "~a: internal handle-message: ~a" (name actor-cell) msg)
-  (case msg
+  (log:debug "~a: internal handle-message: ~a" (name actor-cell) message)
+  (case message
     (:stop (progn
              (stop actor-cell)
              :stopped))
     (t :resume)))
 
-;;
-;; playing a bit with CLOS multi-methods
-;;
-
-(defgeneric handle-message-user (actor-cell message withreply-p)
-  (:documentation
-   "The user defined message handler.
-Effectively this calls the `handle-call` or `handle-cast` functions."))
-
-(defmethod handle-message-user :before (actor-cell message withreply-p)
-  (declare (ignore withreply-p))
-  (log:debug "~a: user handle message: ~a" (name actor-cell) message))
-
-(defmethod handle-message-user (actor-cell message (withreply-p (eql t)))
-  (handle-call actor-cell message (state actor-cell)))
-
-(defmethod handle-message-user (actor-cell message (withreply-p (eql nil)))
-  (handle-cast actor-cell message (state actor-cell)))
+(defun handle-message-user (actor-cell message withreply-p)
+  "The user defined message handler.
+Effectively this calls the `handle-call` or `handle-cast` functions."
+  (log:debug "~a: user handle message: ~a" (name actor-cell) message)
+  (if withreply-p
+      (handle-call actor-cell message (state actor-cell))
+      (handle-cast actor-cell message (state actor-cell))))

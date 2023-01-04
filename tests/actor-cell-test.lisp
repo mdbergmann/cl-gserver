@@ -2,7 +2,9 @@
   (:use :cl :fiveam :sento.actor-cell)
   (:export #:run!
            #:all-tests
-           #:nil))
+           #:nil)
+  (:import-from #:utils
+                #:await-cond))
 
 (in-package :sento.actor-cell-test)
 
@@ -48,7 +50,7 @@
   "Tests the execution of `pre-start'"
   (with-fixture cell-fixture ((lambda (self message current-state)
                                 (declare (ignore self message))
-                                (cons current-state current-state))
+                                current-state)
                               nil
                               (lambda (self state)
                                 (declare (ignore state))
@@ -106,17 +108,22 @@
                                 (cond
                                  ((and (listp message) (eq :add (car message)))
                                   (let ((new-state (+ current-state (cadr message))))
-                                    (cons new-state new-state)))
+                                    (setf *state* new-state)
+                                    new-state))
                                  ((and (listp message) (eq :sub (car message)))
                                   (let ((new-state (- current-state (cadr message))))
-                                    (cons new-state new-state)))))
+                                    (setf *state* new-state)
+                                    new-state))
+                                 ((and (listp message) (eq :explicit-return (car message)))
+                                  (cadr message))))
                               nil
                               nil
                               nil
                               0)
     (is (= 1000 (call cut '(:add 1000))))
     (is (= 500 (call cut '(:sub 500))))
-    (is (eq :unhandled (call cut "Foo")))))
+    (is (= 200 (call cut '(:explicit-return 200))))
+    (is (eq nil (call cut "unhandled")))))
 
 (test cast-sends-result-back-to-sender
   "Test that a cast, that specifies a 'sender' sends the result back to the 'sender'."

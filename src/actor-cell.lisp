@@ -13,6 +13,7 @@
            #:state
            #:*sender*
            #:*self*
+           #:*state*
            ;; API
            #:handle-call
            #:handle-cast
@@ -26,7 +27,9 @@
 (in-package :sento.actor-cell)
 
 (defvar *self* nil
-  "The 'own' actor instance. Dynamically bound and available upon calling 'receive' function.")
+  "The 'own' actor instance. Dynamically bound and available upon calling `receive` function.")
+(defvar *state* nil
+  "The 'state' of the actor. Dynamically bound and available in `receive` function.")
 (defvar *sender* nil
   "The `*sender*` is dynamically bound and available in `receive` function, when it is known.")
 
@@ -252,8 +255,13 @@ and if it got cancelled, in which case we respond just with `:cancelled`."
       (let ((internal-handle-result (handle-message-internal actor-cell message)))
         (case internal-handle-result
           (:resume
-           (let ((*self* actor-cell))
-             (handle-message-user actor-cell message withreply-p)))
+           (with-slots (state) actor-cell
+             (let ((*self* actor-cell)
+                   (*state* state))
+               (let ((handle-result
+                       (handle-message-user actor-cell message withreply-p)))
+                 (setf state *state*)
+                 handle-result))))
           (t internal-handle-result)))
     (t (c)
       (log:error "~a: error condition was raised: ~%~a~%"
@@ -283,38 +291,7 @@ Effectively this calls the `handle-call` or `handle-cast` functions."))
   (log:debug "~a: user handle message: ~a" (name actor-cell) message))
 
 (defmethod handle-message-user (actor-cell message (withreply-p (eql t)))
-  (process-handler-result
-   (handle-call actor-cell message (state actor-cell))
-   actor-cell))
+  (handle-call actor-cell message (state actor-cell)))
 
 (defmethod handle-message-user (actor-cell message (withreply-p (eql nil)))
-  (process-handler-result
-   (handle-cast actor-cell message (state actor-cell))
-   actor-cell))
-
-(defun process-handler-result (handle-result actor-cell)
-  (log:debug "~a: message handled, result: ~a" (name actor-cell) handle-result)
-  (unless handle-result
-    (return-from process-handler-result
-      (process-not-handled actor-cell)))
-  (cond
-    ((consp handle-result)
-     (progn
-       (update-state actor-cell handle-result)
-       (reply-value handle-result)))
-    (t
-     (progn
-       (log:warn "~a: handle-call result is no cons." (name actor-cell))
-       (cons :handler-error "handle-call result is no cons!")))))
-
-(defun process-not-handled (actor-cell)
-  (log:debug "~a: message not handled" (name actor-cell))
-  :unhandled)
-
-(defun update-state (actor-cell cons-result)
-  (let ((new-state (cdr cons-result)))
-    (setf (slot-value actor-cell 'state) new-state)
-    (slot-value actor-cell 'state)))
-
-(defun reply-value (cons-result)
-  (car cons-result))
+  (handle-cast actor-cell message (state actor-cell)))

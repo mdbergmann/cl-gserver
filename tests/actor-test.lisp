@@ -306,49 +306,48 @@
       (await-cond 1.0 (complete-p fut))
       (is (eq :manual-reply (fresult fut))))))
 
-;; (test become-and-unbecome-a-different-behavior
-;;   "Test switching behaviors"
-;;   (let* ((beh2 (lambda (self msg state)
-;;                  (declare (ignore self msg))
-;;                  (case msg
-;;                    (:unbecome
-;;                     (unbecome)))
-;;                  (cons :behavior2 state)))
-;;          (beh1 (lambda (self msg state)
-;;                  (declare (ignore self msg))
-;;                  (case msg
-;;                    (:behavior2
-;;                     (become beh2)))
-;;                  (cons :behavior1 state)))
-;;          (receive (lambda (self msg state)
-;;                     (declare (ignore self msg))
-;;                     (case msg
-;;                       (:behavior1
-;;                        (become beh1)))
-;;                     (cons :receive state))))
-;;     (with-fixture actor-fixture (receive 0 t)
-;;       (is (eq :receive (ask-s cut :some)))
-;;       (ask-s cut :behavior1)
-;;       (is (eq :behavior1 (ask-s cut :some)))
-;;       (ask-s cut :behavior2)
-;;       (is (eq :behavior2 (ask-s cut :some)))
-;;       (ask-s cut :unbecome)
-;;       (is (eq :receive (ask-s cut :some))))))
+(test become-and-unbecome-a-different-behavior
+  "Test switching behaviors"
+  (let* ((beh2 (lambda (msg)
+                 (declare (ignore msg))
+                 (case msg
+                   (:unbecome
+                    (unbecome)))
+                 :behavior2))
+         (beh1 (lambda (msg)
+                 (declare (ignore msg))
+                 (case msg
+                   (:behavior2
+                    (become beh2)))
+                 :behavior1))
+         (receive (lambda (msg)
+                    (declare (ignore msg))
+                    (case msg
+                      (:behavior1
+                       (become beh1)))
+                    :receive)))
+    (with-fixture actor-fixture (receive 0 t)
+      (is (eq :receive (ask-s cut :some)))
+      (ask-s cut :behavior1)
+      (is (eq :behavior1 (ask-s cut :some)))
+      (ask-s cut :behavior2)
+      (is (eq :behavior2 (ask-s cut :some)))
+      (ask-s cut :unbecome)
+      (is (eq :receive (ask-s cut :some))))))
 
-;; (test actor-of
-;;   "Tests the convenience actor-of macro"
-;;   (let ((sys (asys:make-actor-system)))
-;;     (unwind-protect
-;;          (let* ((receive-fun (lambda (self msg state)
-;;                                (declare (ignore self))
-;;                                (when (string= "Foo" msg)
-;;                                  (cons "Bar" state))))
-;;                 (actor (actor-of sys :receive receive-fun))
-;;                 (custom-actor (actor-of sys :receive receive-fun :type 'custom-actor)))
-;;            (is (string= "Bar" (ask-s actor "Foo")))
-;;            (is (string= "Bar" (ask-s custom-actor "Foo")))
-;;            (is (typep custom-actor 'custom-actor)))
-;;       (ac:shutdown sys))))
+(test actor-of
+  "Tests the convenience actor-of macro"
+  (let ((sys (asys:make-actor-system)))
+    (unwind-protect
+         (let* ((receive-fun (lambda (msg)
+                               (when (string= "Foo" msg)
+                                 "Bar")))
+                (actor (actor-of sys :receive receive-fun))
+                (custom-actor (actor-of sys :receive receive-fun :type 'custom-actor)))
+           (is (string= "Bar" (ask-s actor "Foo")))
+           (is (string= "Bar" (ask-s custom-actor "Foo")))
+           (is (typep custom-actor 'custom-actor)))
+      (ac:shutdown sys))))
 
 ;; (test actor-of--create-in-right-context
 ;;   "Tests to conveniently specify three types as context: asys, ac and actor"

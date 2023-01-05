@@ -115,6 +115,8 @@ TODOs:
 
 - *self*, *state*, *sender* should be in act package 
 - maybe add 'reply' for 'ask'
+- add 'name' getter to 'actor'
+- shutdown sys should be in actor-system to be symetric.
 
 Sento 3 changes:
 

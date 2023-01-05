@@ -21,9 +21,9 @@
 (def-fixture cell-fixture (call-fun cast-fun pre-start-fun after-stop-fun state)
   (defclass test-cell (actor-cell) ())
   (defmethod handle-call ((cell test-cell) message)
-    (funcall call-fun cell message))
+    (funcall call-fun message))
   (defmethod handle-cast ((cell test-cell) message)
-    (funcall cast-fun cell message))
+    (funcall cast-fun message))
   (defmethod pre-start ((cell test-cell) state)
     (when pre-start-fun
       (funcall pre-start-fun cell state)))
@@ -48,8 +48,8 @@
 
 (test run-pre-start-fun
   "Tests the execution of `pre-start'"
-  (with-fixture cell-fixture ((lambda (self message)
-                                (declare (ignore self message))
+  (with-fixture cell-fixture ((lambda (message)
+                                (declare (ignore message))
                                 *state*)
                               nil
                               (lambda (self state)
@@ -62,9 +62,9 @@
 
 (test run-after-stop-fun
   "Tests the execution of `after-stop'"
-  (with-fixture cell-fixture ((lambda (self message)
-                                (declare (ignore self message))
-                                (cons *state* *state*))
+  (with-fixture cell-fixture ((lambda (message)
+                                (declare (ignore message))
+                                nil)
                               nil
                               nil
                               (lambda (self)
@@ -77,8 +77,8 @@
 (test run-after-stop-fun--with-wait-for-stop
   "Tests the execution of `after-stop' but using the `stop` function of the cell."
   (with-fixture cell-fixture (nil
-                              (lambda (self message)
-                                (declare (ignore self message))
+                              (lambda (message)
+                                (declare (ignore message))
                                 (sleep 0.3))
                               nil
                               (lambda (self)
@@ -101,8 +101,7 @@
 
 (test handle-call
   "Simple cell handle-call test."
-  (with-fixture cell-fixture ((lambda (cell message)
-                                (declare (ignore cell))
+  (with-fixture cell-fixture ((lambda (message)
                                 (cond
                                  ((and (listp message) (eq :add (car message)))
                                   (let ((new-state (+ *state* (cadr message))))
@@ -132,8 +131,7 @@
     (when (eq message :pong)
       (setf *pong-received* t)))
   (with-fixture cell-fixture (nil
-                              (lambda (self msg)
-                                (declare (ignore self))
+                              (lambda (msg)
                                 (case msg
                                   (:ping (cast *sender* :pong))))
                               nil
@@ -147,7 +145,7 @@
 
 (test error-in-handler
   "testing error handling"
-  (with-fixture cell-fixture ((lambda (cell message)
+  (with-fixture cell-fixture ((lambda (message)
                                 (log:info "Raising error condition...")
                                 (cond
                                  ((eq :err (car message))
@@ -165,9 +163,7 @@
 
 (test stack-cell
   "a actor-cell as stack."
-  (with-fixture cell-fixture ((lambda (cell message)
-                                (declare (ignore cell))
-                                ;;(format t "current-state: ~a~%" *state*)
+  (with-fixture cell-fixture ((lambda (message)
                                 (cond
                                   ((eq :pop message)
                                    (let ((head (car *state*))
@@ -176,9 +172,7 @@
                                      head))
                                   ((eq :get message)
                                    *state*)))
-                              (lambda (cell message)
-                                (declare (ignore cell))
-                                ;;(format t "current-state: ~a~%" *state*)
+                              (lambda (message)
                                 (cond
                                  ((eq :push (car message))
                                   (let ((new-state (append *state* (list (cdr message)))))

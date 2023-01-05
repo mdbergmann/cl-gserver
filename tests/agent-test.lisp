@@ -1,7 +1,7 @@
 (defpackage :sento.agent-test
   (:use :cl :fiveam :sento.agent)
   (:import-from #:utils
-                #:assert-cond)
+                #:await-cond)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -39,7 +39,6 @@
     (is (not (null agent)))
     (is (typep (act-cell:msgbox agent) 'mesgb:message-box/dp))))
 
-
 (test get-agent-state
   "Gets agent state"
   (with-fixture agent-fixture ((lambda () '(5 4 3)))
@@ -55,9 +54,8 @@
   (with-fixture agent-fixture ((lambda () '(5 4 3)))
     (is (equalp '(5 4 3) (agent-get agent #'identity)))
     (is (agent-update agent (lambda (state) (mapcar #'1+ state))))
-    (is (assert-cond (lambda ()
-                       (equalp '(6 5 4) (agent-get agent #'identity)))
-                     1))))
+    (is-true (await-cond 1.0
+               (equalp '(6 5 4) (agent-get agent #'identity))))))
 
 (test update-and-get
   "Tests update and get function"
@@ -71,22 +69,19 @@
   (with-fixture agent-asys-fixture ((lambda () '(5 4 3)))
     (is (equalp '(5 4 3) (agent-get agent #'identity)))
     (is (agent-update agent (lambda (state) (mapcar #'1+ state))))
-    (is (assert-cond (lambda ()
-                       (equalp '(6 5 4) (agent-get agent #'identity)))
-                     1))))
+    (is-true (await-cond 1.0
+               (equalp '(6 5 4) (agent-get agent #'identity))))))
 
 (test stop-agent
   "Stop agent to cleanup resources."
   (let ((agent (make-agent (lambda () nil))))
     (agent-stop agent)
-    (is (assert-cond (lambda ()
-                       (eq :stopped (agent-get agent #'identity)))
-                     1))))
+    (is-true (await-cond 1.0
+               (eq :stopped (agent-get agent #'identity))))))
 
 (test stop-agent--on-system
   "Stop agent to cleanup resources - with agent on system."
   (with-fixture agent-asys-fixture ((lambda () '(5 4 3)))
     (agent-stop agent)
-    (is (assert-cond (lambda ()
-                       (eq :stopped (agent-get agent #'identity)))
-                     1))))
+    (is-true (await-cond 1.0
+                 (eq :stopped (agent-get agent #'identity))))))

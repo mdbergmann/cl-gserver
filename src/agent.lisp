@@ -24,22 +24,18 @@ It is meant primarily to encapsulate state.
 To access state it provides `agent-get` and `agent-update` to update state.
 Stop an agent with `agent-stop` to free resources (threads)."))
 
-(defun receive (self message current-state)
+(defun receive (message)
   "This is the agents actor receive function implementation.
 This rarely (if at all) needs to change because the agent is very specific."
-  (declare (ignore self))
   (cond
     ((consp message)
      (case (car message)
-       (:get (cons
-              (funcall (cdr message) current-state)
-              current-state))
-       (:update (cons
-                 current-state
-                 (funcall (cdr message) current-state)))
+       (:get (funcall (cdr message) *state*))
+       (:update (setf *state* (funcall (cdr message) *state*)))
        (:update-and-get
-        (let ((new-state (funcall (cdr message) current-state)))
-          (cons new-state new-state)))))))
+        (let ((new-state (funcall (cdr message) *state*)))
+          (setf *state* new-state)
+          new-state))))))
 
 (defun make-agent (state-fun &optional actor-context (dispatcher-id :shared))
   "Makes a new `agent` instance.

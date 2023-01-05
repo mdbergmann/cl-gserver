@@ -2,7 +2,9 @@
   (:use :cl :fiveam :sento.eventstream :sento.utils)
   (:export #:run!
            #:all-tests
-           #:nil))
+           #:nil)
+  (:import-from #:act
+                #:*state*))
 (in-package :sento.eventstream-test)
 
 (def-suite eventstream-tests
@@ -89,10 +91,8 @@
   (with-fixture test-ev ()
     (let* ((ev-received)
            (ev-listener (ac:actor-of system
-                          :receive (lambda (self msg state)
-                                     (declare (ignore self state))
-                                     (setf ev-received msg)
-                                     (cons nil nil)))))
+                          :receive (lambda (msg)
+                                     (setf ev-received msg)))))
       ;; all
       (subscribe cut ev-listener)
       (publish cut "Foo")
@@ -216,20 +216,18 @@
 (test integration-like-test
   "Integration - and a better overall example. Eating our own dogfood."
   (with-fixture test-system ()
-    (let* ((receive-fun (lambda (self msg state)
-                          (declare (ignore self))
+    (let* ((receive-fun (lambda (msg)
                           (cond
                             ((stringp msg)
                              (progn
-                               (incf (counters-stringp state))
+                               (incf (counters-stringp *state*))
                                (when (string= "Awaited message1" msg)
-                                 (incf (counters-string state)))))
+                                 (incf (counters-string *state*)))))
                             ((listp msg)
                              (progn
-                               (incf (counters-listp state))
+                               (incf (counters-listp *state*))
                                (when (equalp '("foo" "bar" "buzz") msg)
-                                 (incf (counters-list state))))))
-                          (cons t state)))
+                                 (incf (counters-list *state*))))))))
            (actor1 (ac:actor-of system :name "actor 1"
                      :state (make-counters)
                      :init (lambda (self)

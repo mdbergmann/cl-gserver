@@ -32,22 +32,20 @@ But in theory it can be created individually by just passing an `ac:actor-contex
       (setf ev-actor (ac:actor-of actor-context
                        :name (gensym "eventstream-actor-")
                        :dispatcher (getf config :dispatcher-id :shared)
-                       :receive (lambda (ev-stream msg state)
+                       :receive (lambda (msg)
                                   (handler-case
-                                      (ev-receive ev ev-stream msg state)
+                                      (ev-receive ev act:*self* msg)
                                     (t (c)
-                                      (log:warn "Condition: ~a" c)
-                                      (cons t state)))))))
+                                      (log:warn "Condition: ~a" c)))))))
     ev))
 
-(defun ev-receive (ev listener msg state)
+(defun ev-receive (ev listener msg)
   (declare (ignore listener))
   (with-slots (subscribers) ev
     (let* ((msg-type (type-of msg))
            (subs (subscribers-for subscribers msg-type msg)))
       (dolist (sub subs)
-        (tell sub msg))))
-  (cons t state))
+        (tell sub msg)))))
 
 (defun subscribers-for (subscribers msg-type msg)
   (flet ((no-type-registered-p (elem) (null elem))

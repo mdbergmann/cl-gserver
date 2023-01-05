@@ -201,20 +201,20 @@
       (is-true (await-cond 1.0 (complete-p future)))
       (is (= 5 (fresult future))))))
 
-;; (test ask-s--shared--timeout
-;;   "Tests for ask-s timeout."
-;;   (with-fixture actor-fixture ((lambda ())
-;;                                0
-;;                                t)
-;;     (let* ((actor (actor-of cut
-;;                     :receive (lambda (self msg state)
-;;                                (declare (ignore self msg))
-;;                                (sleep 2)
-;;                                (cons :my-result state))))
-;;            (result (ask-s actor "foo" :time-out 0.5)))
-;;       (is (eq :handler-error (car result)))
-;;       (is (typep (cdr result) 'utils:ask-timeout))
-;;       (is (eq :stopped (ask-s actor :stop))))))
+(test ask-s--shared--timeout
+  "Tests for ask-s timeout."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (let* ((actor (actor-of cut
+                            :receive (lambda (msg)
+                                       (declare (ignore msg))
+                                       (sleep 2)
+                                       :my-result)))
+           (result (ask-s actor "foo" :time-out 0.5)))
+      (is (eq :handler-error (car result)))
+      (is (typep (cdr result) 'utils:ask-timeout))
+      (is (eq :stopped (ask-s actor :stop))))))
 
 ;; (test ask-s--shared--timeout-in-dispatcher
 ;;   "Tests for ask-s timeout."

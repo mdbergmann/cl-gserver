@@ -89,13 +89,15 @@ Note: the `actor-cell` uses `call` and `cast` functions which translate to `ask-
     (unless name
       (setf name (string (gensym "actor-"))))
     (log:debug "~a initialized: ~a" name obj)
-    (pre-start obj state)))
+    (let ((*state* state))
+      (pre-start obj)
+      (setf state *state*))))
 
 ;; -----------------------------------------------
 ;; public functions / API
 ;; -----------------------------------------------
 
-(defgeneric pre-start (actor-cell state)
+(defgeneric pre-start (actor-cell)
   (:documentation
    "Generic function definition that called from `initialize-instance`."))
 
@@ -131,7 +133,7 @@ The `:stop` message (symbol) is normally processed by the actors message process
 ;; Impl
 ;; ---------------------------------
 
-(defmethod pre-start ((self actor-cell) state)
+(defmethod pre-start ((self actor-cell))
   "Empty implementation so that we can call it anyway even if there are no other implementations."
   (declare (ignore state))
   nil)

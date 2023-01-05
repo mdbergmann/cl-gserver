@@ -24,9 +24,9 @@
     (funcall call-fun message))
   (defmethod handle-cast ((cell test-cell) message)
     (funcall cast-fun message))
-  (defmethod pre-start ((cell test-cell) state)
+  (defmethod pre-start ((cell test-cell))
     (when pre-start-fun
-      (funcall pre-start-fun cell state)))
+      (funcall pre-start-fun cell)))
   (defmethod after-stop ((cell test-cell))
     (when after-stop-fun
       (funcall after-stop-fun cell)))
@@ -52,10 +52,8 @@
                                 (declare (ignore message))
                                 *state*)
                               nil
-                              (lambda (self state)
-                                (declare (ignore state))
-                                (with-slots (act-cell:state) self
-                                  (setf act-cell:state "pre-start-fun-executed")))
+                              (lambda (self)
+                                (setf *state* "pre-start-fun-executed"))
                               nil
                               0)
     (is (string= "pre-start-fun-executed" (call cut :foo)))))

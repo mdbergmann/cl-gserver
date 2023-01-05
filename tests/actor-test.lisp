@@ -233,21 +233,21 @@
         (is (eq :handler-error (car result)))
         (is (typep (cdr result) 'utils:ask-timeout))))))
 
-;; (test ask--shared--timeout
-;;   "Tests for ask timeout."
-;;   (with-fixture actor-fixture ((lambda ())
-;;                                0
-;;                                t)
-;;     (let* ((actor (actor-of cut
-;;                     :receive (lambda (self msg state)
-;;                                (declare (ignore self msg))
-;;                                (sleep 2)
-;;                                (cons :my-result state))))
-;;            (future (ask actor "foo" :time-out 0.5)))
-;;       (utils:await-cond 1.0 (complete-p future))
-;;       (is (eq :handler-error (car (fresult future))))
-;;       (format t "error: ~a~%" (cdr (fresult future)))
-;;       (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
+(test ask--shared--timeout
+  "Tests for ask timeout."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (let* ((actor (actor-of cut
+                            :receive (lambda (msg)
+                                       (declare (ignore msg))
+                                       (sleep 2)
+                                       (tell act-cell:*sender* :my-result))))
+           (future (ask actor "foo" :time-out 0.5)))
+      (await-cond 1.0 (complete-p future))
+      (is (eq :handler-error (car (fresult future))))
+      (format t "error: ~a~%" (cdr (fresult future)))
+      (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
 
 ;; (test ask--shared--timeout--many
 ;;   "Tests creation of many actors and ask messages with timeouts."

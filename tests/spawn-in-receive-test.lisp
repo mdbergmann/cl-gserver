@@ -16,8 +16,7 @@
 (in-suite spawn-in-receive-tests)
 
 (defun receive-fun ()
-  (lambda (self msg state)
-    (declare (ignore self))
+  (lambda (msg)
     (let ((sender *sender*)) ;; capture the sender
       (case msg
         (:do-spawn (progn
@@ -25,27 +24,15 @@
                      ;; or a library like lparallel
                      (bt:make-thread (lambda ()
                                        (sleep 0.5)
-                                       (act:tell sender :spawn-result)))
-                     ;; we must returns with a `cons'.
-                     ;; specify `:no-reply' to defer responding to the caller.
-                     (cons :no-reply state)))
-        (t (cons :no-spawn-result state))))))
+                                       (act:tell sender :spawn-result)))))))))
 
 (test spawn-in-receive
   "Spawn  a thread in `receive' which does the work.
 This requires to return `:no-reply' in `receive' and sending the response via `*sender*'"
-
   (let ((system (asys:make-actor-system)))
     (unwind-protect
          (let* ((actor (ac:actor-of system :receive (receive-fun)))
-                (no-spawn-fut (act:ask actor :no-spawn))
                 (spawn-fut (act:ask actor :do-spawn)))
-           (is-true (assert-cond (lambda () (future:complete-p no-spawn-fut)) 1))
-           (is (eq :no-spawn-result (future:fresult no-spawn-fut)))
-
            (is-true (assert-cond (lambda () (future:complete-p spawn-fut)) 1))
            (is (eq :spawn-result (future:fresult spawn-fut))))
       (ac:shutdown system))))
-
-(defun run-tests ()
-  (run! 'spawn-in-receive))

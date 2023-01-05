@@ -136,20 +136,20 @@
       (act-cell:stop cut)
       (is-true (await-cond 0.5 stopped-msg-received)))))
 
-;; (test stop-actor--stopping-parent-stops-also-child
-;;   "Tests that stopping a parent actor also the children are stopped."
-;;   (with-fixture actor-fixture ((lambda (self msg state)
-;;                                  (declare (ignore self msg state)))
-;;                                0
-;;                                t)
-;;     (let ((child-actor (actor-of cut
-;;                          :receive (lambda (self msg state)
-;;                                     (declare (ignore self msg state))))))
-;;       (act-cell:stop cut)
-;;       (is (assert-cond (lambda ()
-;;                          (notany
-;;                           #'act-cell:running-p
-;;                           (list cut child-actor))) 1)))))
+(test stop-actor--stopping-parent-stops-also-child
+  "Tests that stopping a parent actor also the children are stopped."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg)))
+                               0
+                               t)
+    (let ((child-actor (actor-of
+                        cut
+                        :receive (lambda (msg) (declare (ignore msg))))))
+      (act-cell:stop cut)
+      (is-true (await-cond 0.5
+                 (notany
+                  #'act-cell:running-p
+                  (list cut child-actor)))))))
 
 ;; (test stop-actor--notifies-actor-context-as-watcher
 ;;   "Tests that when actor stops and an actor-context is a watcher, that it is notified about the stop."

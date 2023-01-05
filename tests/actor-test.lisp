@@ -151,23 +151,23 @@
                   #'act-cell:running-p
                   (list cut child-actor)))))))
 
-;; (test stop-actor--notifies-actor-context-as-watcher
-;;   "Tests that when actor stops and an actor-context is a watcher, that it is notified about the stop."
-;;   (with-fixture actor-fixture ((lambda (self msg state)
-;;                                  (declare (ignore self msg state)))
-;;                                0
-;;                                t)
-;;     (let ((child-actor (actor-of cut
-;;                          :receive (lambda (self msg state)
-;;                                     (declare (ignore self msg state))))))
-;;       (with-mocks ()
-;;         (answer (ac:notify context actor event)
-;;           (progn
-;;             (assert (eq context (act:context cut)))
-;;             (assert (eq actor child-actor))
-;;             (assert (eq :stopped event))))
-;;         (act-cell:stop cut)
-;;         (is (= 1 (length (invocations 'ac:notify))))))))
+(test stop-actor--notifies-actor-context-as-watcher
+  "Tests that when actor stops and an actor-context is a watcher, that it is notified about the stop."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg)))
+                               0
+                               t)
+    (let ((child-actor (actor-of cut
+                                 :receive (lambda (msg)
+                                            (declare (ignore msg))))))
+      (with-mocks ()
+        (answer (ac:notify context actor event)
+          (progn
+            (assert (eq context (act:context cut)))
+            (assert (eq actor child-actor))
+            (assert (eq :stopped event))))
+        (act-cell:stop cut)
+        (is (= 1 (length (invocations 'ac:notify))))))))
 
 ;; (test single-actor--handle-ask
 ;;   "Tests the async ask-s function."

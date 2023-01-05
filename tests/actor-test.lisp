@@ -169,22 +169,20 @@
         (act-cell:stop cut)
         (is (= 1 (length (invocations 'ac:notify))))))))
 
-;; (test single-actor--handle-ask
-;;   "Tests the async ask-s function."
-
-;;   (with-fixture actor-fixture ((lambda (self msg state)
-;;                                  (declare (ignore self))
-;;                                  (sleep 0.2)
-;;                                  (cond
-;;                                    ((eq :add (car msg))
-;;                                     (cons (+ (second msg) (third msg)) state))))
-;;                                0
-;;                                nil)
-;;     (let ((future (ask cut '(:add 0 5))))
-;;       (is (eq :not-ready (fresult future)))
-;;       (is (eq t (assert-cond (lambda () (complete-p future)) 1)))
-;;       (is (= 5 (fresult future))))))
-
+(test single-actor--handle-ask
+  "Tests the async ask-s function."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (sleep 0.2)
+                                 (cond
+                                   ((eq :add (car msg))
+                                    (tell act-cell:*sender*
+                                          (+ (second msg) (third msg))))))
+                               0
+                               nil)
+    (let ((future (ask cut '(:add 0 5))))
+      (is (eq :not-ready (fresult future)))
+      (is-true (await-cond 1.0 (complete-p future)))
+      (is (= 5 (fresult future))))))
 
 ;; (test single-actor--handle-ask-2
 ;;   "Test handle a composable asynchronous call. fcompleted before completion."

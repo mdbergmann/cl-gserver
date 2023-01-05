@@ -10,7 +10,6 @@
            #:unbecome
            #:context
            #:path
-           #:name
            #:watch
            #:unwatch
            #:watchers
@@ -127,10 +126,6 @@ When created through the `actor-context`s, or system's `actor-of` function an `a
   (:documentation
    "The path of the actor, including the actor itself.
 The path denotes a tree which starts at the system context."))
-
-(defgeneric name (actor)
-  (:documentation
-   "The actor name."))
 
 (defgeneric watch (actor watcher)
   (:documentation

@@ -97,7 +97,6 @@
   (act:unbecome generic-function)
   (act:context generic-function)
   (act:path generic-function)
-  (act:name generic-function)
   (act:watch generic-function)
   (act:unwatch generic-function)
   (act:watchers generic-function)

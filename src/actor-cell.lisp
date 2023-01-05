@@ -222,12 +222,12 @@ In case no messge-box is configured this function respnds with `:no-message-hand
         (case internal-handle-result
           (:resume
            (with-slots (state) actor-cell
-             (let ((*self* actor-cell)
-                   (*state* state))
-               (let ((handle-result
-                       (handle-message-user actor-cell message withreply-p)))
-                 (setf state *state*)
-                 handle-result))))
+             (let* ((*self* actor-cell)
+                    (*state* state)
+                    (handle-result
+                      (handle-message-user actor-cell message withreply-p)))
+               (setf state *state*)
+               handle-result)))
           (t internal-handle-result)))
     (t (c)
       (log:error "~a: error condition was raised: ~%~a~%"

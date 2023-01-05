@@ -19,9 +19,7 @@
 
 (defun make-actor (context)
   (ac:actor-of context
-    :receive (lambda (self msg state)
-               (declare (ignore self))
-               (cons msg state))))
+    :receive (lambda (msg) msg))) ; just returns msg
 
 (test router--create
   "Creates a plain router"
@@ -86,9 +84,8 @@
 (test router--ask
   "Tests 'ask' on the router which forwards to an actor chosen by the strategy."
   (with-fixture system-fixture ()
-    (let* ((receive-fun (lambda (self msg state)
-                          (declare (ignore self msg state))
-                          (cons :foo 1)))
+    (let* ((receive-fun (lambda (msg)
+                          (declare (ignore msg))))
            (cut (make-router :routees (list
                                        (ac:actor-of system :receive receive-fun)
                                        (ac:actor-of system :receive receive-fun)))))

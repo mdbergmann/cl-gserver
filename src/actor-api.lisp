@@ -10,6 +10,7 @@
            #:unbecome
            #:context
            #:path
+           #:name
            #:watch
            #:unwatch
            #:watchers
@@ -26,11 +27,9 @@
             :initform (error "'receive' must be specified!")
             :reader receive
             :documentation
-            "`receive` is a function that has to take 3 parameters:
-- `self`: the actor instance
+            "`receive` is a function that has to take 1 parameter:
 - `msg`: the received message
-- `state`: the current state of the actor
-The `sender` of the message, if available, is accessible with `*sender*` from within the receive function or a behavior.")
+The `sender` of the message (if available) accessible with `act:*sender*` from within the receive function or a behavior.")
    (behavior :initform nil
              :documentation
              "Behavior function applied via `act:become` and reverted via `act:unbecome`
@@ -57,17 +56,9 @@ Parameter of the lambda is the actor itself.")
 
 The `actor` does its message handling using the `receive` function.
 
-The `receive` function has to return a `cons` constructed of a message to be sent back to caller (`car`), if applicable, and the new state of the actor (as `cdr`).
-I.e.: `(cons <my-response> <my-new-state>)`
+The `receive` function takes one argument (the message). For backwards compatibility and for convenience it can still be used to provide an immediate return for `act:ask-s`. `act:tell` and `act:ask` ignore a return value.
 
-There is asynchronous `tell` (no response), a synchronous `ask-s` and asynchronous `ask` which all can be used to send messages to the actor. The 'ask' variants provide a response from the actor where 'tell' is only fire-and-forget.
-
-If the 'send' operation was `ask-s` or `ask` then the `car` part of the `cons` result will be sent back to the caller.
-In case of a `tell` operation there will be no response and the `car` of the `cons` is ignored, if there is no sender (see `sender` argument to `tell`). If there is a sender defined (which must be an actor), then the `car` of the `cons` result is sent (using `tell`) to the sender.  
-It is possible to specify `:no-reply` as `car` of `cons` in this case (`tell` with sender), which has the effect that the result is _not_ sent to the sender even if one exists. This is for the case that the user wants to handle the state and the notifications to a sender himself. It is useful when the message handling code for a particular message (in `receive`) should be executed in a special thread-pool, because long running operations within `receive` will block the message handling of the actor.
-
-The `:no-reply` result works for `ask` and `tell`, because also `ask` is based on `tell`.
-`ask-s` is really only useful if a synchronous result is required and should be avoided otherwise.
+There is asynchronous `tell`, a synchronous `ask-s` and asynchronous `ask` which all can be used to send messages to the actor. `ask-s` provides a synchronous return taken from the `receive` functions return value. 'ask' provides a return wrapped in a future. But the actor has to explicitly use `*sender*` to formulate a response. `tell` is just fire and forget.
 
 To stop an actors message processing in order to cleanup resouces you should `tell` (or `ask-s`) the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
 
@@ -77,11 +68,7 @@ To stop an actors message processing in order to cleanup resouces you should `te
 
 Arguments:
 
-- `receive`: this is a function that must accept 3 parameters. That is:
-
-1. the actor `instance` itself, 
-2. the `message` and 
-3. the `current-state` of the actor.
+- `receive`: message handling function taking one argument, the message.
 
 - `name`: give the actor a name. Must be unique within an `ac:actor-context`.
 
@@ -97,25 +84,8 @@ Those hooks are called on (after) initialization and (after) stop respectively."
 
 (defgeneric tell (actor message &optional sender)
   (:documentation
-   "Sends a message to the `actor`. `tell` is asynchronous. There is no result.
-If a `sender` is specified a message result of the target actor of the `tell` will be sent back to the `sender`
-
-Generally `tell` does not expect a response. But a `sender` can be specified as optionl parameter to `tell`.
-If a `sender` is specified, then the message handling behavior will send the `car` of the `cons` result to the specified `sender`.
-
-A `sender` can also be part of the message contract.
-
-`tell` can be used in two environments:
-
-1. outside an actor
-
-By default this sends a message as fire & forget. Since this is not inside an actor, no actor can be inferred as `sender`. A `sender` can be defined as optional parameter as part of `tell`.
-
-2. inside an actors as part of the `receive` function
-
-As `sender` can be specified when `tell` is used inside of an actor. Currently the framework doesn't automatically infer the `sender` when no `sender` is explicitly specified.
-
-=> This is a future enhancement."))
+   "Sends a message to the `actor`. `tell` is asynchronous.
+`tell` does not expect a result. If a `sender` is specified the receiver will be able to send a response."))
 
 (defgeneric ask-s (actor message &key time-out)
   (:documentation
@@ -123,21 +93,18 @@ As `sender` can be specified when `tell` is used inside of an actor. Currently t
 Specify `timeout` if a message is to be expected after a certain time.
 An `:handler-error` with `timeout` condition will be returned if the call timed out.
 
-`ask-s` assumes, no matter if `ask-s` is issued from outside or inside an actor, that the response is delivered back to the caller. That's why `ask-s` does block the execution until the result is available. The `receive` function handler must specify the result as the `car` of the cons result."))
+`ask-s` assumes, no matter if `ask-s` is issued from outside or inside an actor, that the response is delivered back to the caller. That's why `ask-s` does block the execution until the result is available. The `receive` function return value will be used as the result of `receive`."))
 
 (defgeneric ask (actor message &key time-out)
   (:documentation
-   "This returns a `future`.
+   "Sends a message to the `actor`. A `future` is returned.
 Specify `timeout` if a message is to be expected after a certain time.
 An `:handler-error` with `timeout` condition will be returned is the call timed out.
 
 An `ask` is similar to a `ask-s` in that the caller gets back a result 
 but it doesn't have to actively wait for it. Instead a `future` wraps the result.
 However, the internal message handling is based on `tell`.
-How this works is that the message to the target `actor` is not 'sent' using the callers thread
-but instead an anonymous `actor` is started behind the scenes and this in fact makes tells
-the message to the target `actor`. It does sent itself along as 'sender'.
-The target `actor` tells a response back to the initial `sender`. When that happens and the anonymous `actor` received the response the `future` will be fulfilled with the `promise`."))
+How this works is that the message to the target `actor` is not 'sent' using the callers thread but instead an anonymous `actor` is started behind the scenes. This anonymous actor can weit for a response from the target actor. The response then fulfills the future."))
 
 (defgeneric become (new-behavior)
   (:documentation
@@ -160,6 +127,10 @@ When created through the `actor-context`s, or system's `actor-of` function an `a
   (:documentation
    "The path of the actor, including the actor itself.
 The path denotes a tree which starts at the system context."))
+
+(defgeneric name (actor)
+  (:documentation
+   "The actor name."))
 
 (defgeneric watch (actor watcher)
   (:documentation

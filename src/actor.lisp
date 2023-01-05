@@ -27,7 +27,7 @@
                  :init init
                  :destroy destroy))
 
-(defun initialize-with (actor message-box actor-context)
+(defun finalize-initialization (actor message-box actor-context)
   "Private API: finalize initialization of the actor with a `mesgb:message-box` and an `ac:actor-context`."
   (setf (act-cell:msgbox actor) message-box)
   (setf (act:context actor) actor-context)
@@ -101,6 +101,9 @@
 (defmethod path ((self actor))
   (when (context self)
     (ac:id (context self))))
+
+(defmethod name ((self actor))
+  (act-cell:name self))
 
 (defmethod watch ((self actor) watcher)
   (with-slots (watchers) self

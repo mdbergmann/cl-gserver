@@ -96,7 +96,6 @@
   (defclass no-msg-server (actor-cell) ())
   (defmethod handle-call ((cell no-msg-server) message)
     nil)
-
   (let ((cut (make-instance 'no-msg-server)))
     (is (eq :no-message-handling (call cut :foo)))))
 
@@ -200,12 +199,11 @@
     (is (= 1 (call cut :pop)))
     (is (null (call cut :pop)))))
 
-(defclass stopping-cell (actor-cell) ())
-(defmethod handle-call ((cell stopping-cell) message)
-  nil)
-
 (test stopping-cell--using-message
   "Stopping a cell stops the message handling and frees resources."
+  (defclass stopping-cell (actor-cell) ())
+  (defmethod handle-call ((cell stopping-cell) message)
+    nil)
   (let ((cut (make-instance 'stopping-cell)))
     (setf (msgbox cut) (make-instance 'mesgb:message-box/bt))
     (is (eq :stopped (call cut :stop)))))

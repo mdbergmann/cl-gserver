@@ -90,52 +90,51 @@
     (is (= 5 (ask-s cut "get")))
     (ask-s cut :stop)))
 
-;; (test actor-of--from-existing-actor-context
-;;   "Tests that a new 'child' actor can be created from an actor context."
-;;   (with-fixture actor-fixture ((lambda (self msg state)
-;;                                  (declare (ignore self msg state)))
-;;                                0
-;;                                t)
-;;     (let ((child-actor (actor-of cut
-;;                          :receive (lambda (self msg state)
-;;                                     (declare (ignore self msg state))))))
-;;       (is (not (null child-actor)))
-;;       (is (not (eq (act:context child-actor) (act:context cut))))
-;;       (is (eq (ac:system (act:context child-actor)) (ac:system (act:context cut))))
-;;       (is (eq child-actor (first (ac:all-actors (act:context cut))))))))
+(test actor-of--from-existing-actor-context
+  "Tests that a new 'child' actor can be created from an actor context."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg)))
+                               0
+                               t)
+    (let ((child-actor (actor-of cut
+                         :receive (lambda (msg)
+                                    (declare (ignore msg))))))
+      (is-false (null child-actor))
+      (is-false (eq (act:context child-actor) (act:context cut)))
+      (is (eq (ac:system (act:context child-actor)) (ac:system (act:context cut))))
+      (is (eq child-actor (first (ac:all-actors (act:context cut))))))))
 
-;; (test watch-and-unwatch--new-actor
-;;   "Tests the 'watching' and 'unwatching' of a new actor which adds to 'watchers' on the target actor."
-;;   (with-fixture actor-fixture ((lambda (self msg state)
-;;                                  (declare (ignore self msg state)))
-;;                                0
-;;                                t)
-;;     (let ((watcher (actor-of cut :receive (lambda ()))))
-;;       (watch cut watcher)
-;;       (is (= 1 (length (watchers cut))))
-;;       (unwatch cut watcher)
-;;       (is (= 0 (length (watchers cut)))))))
+(test watch-and-unwatch--new-actor
+  "Tests the 'watching' and 'unwatching' of a new actor which adds to 'watchers' on the target actor."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg)))
+                               0
+                               t)
+    (let ((watcher (actor-of cut :receive (lambda (msg) (declare (ignore msg))))))
+      (watch cut watcher)
+      (is (= 1 (length (watchers cut))))
+      (unwatch cut watcher)
+      (is (= 0 (length (watchers cut)))))))
 
-;; (test watch--notify-about-stopped
-;;   "Tests the notification of the `:stopped' lifecycle event of the actor."
-;;   (with-fixture actor-fixture ((lambda (self msg state)
-;;                                  (declare (ignore self msg state)))
-;;                                0
-;;                                t)
-;;     ;; we need an actor as watcher that is not the 'child' of the to be watched actor.
-;;     (let* ((stopped-msg-received nil)
-;;            (watcher (actor-of (ac:system (act:context cut))
-;;                       :receive (lambda (self msg state)
-;;                                  (declare (ignore self))
-;;                                  (case (car msg)
-;;                                    (:stopped (progn
-;;                                                (assert (eq cut (cdr msg)))
-;;                                                (setf stopped-msg-received t)
-;;                                                (cons msg state))))))))
-;;       (watch cut watcher)
-;;       (is (= 1 (length (watchers cut))))
-;;       (ac:stop (act:context cut) cut)
-;;       (is-true (assert-cond (lambda () stopped-msg-received) 1)))))
+(test watch--notify-about-stopped
+  "Tests the notification of the `:stopped' lifecycle event of the actor."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg)))
+                               0
+                               t)
+    ;; we need an actor as watcher that is not the 'child' of the to be watched actor.
+    (let* ((stopped-msg-received nil)
+           (watcher (actor-of (ac:system (act:context cut))
+                              :receive (lambda (msg)
+                                         (case (car msg)
+                                           (:stopped
+                                            (progn
+                                              (assert (eq cut (cdr msg)))
+                                              (setf stopped-msg-received t))))))))
+      (watch cut watcher)
+      (is (= 1 (length (watchers cut))))
+      (act-cell:stop cut)
+      (is-true (await-cond 0.5 stopped-msg-received)))))
 
 ;; (test stop-actor--stopping-parent-stops-also-child
 ;;   "Tests that stopping a parent actor also the children are stopped."

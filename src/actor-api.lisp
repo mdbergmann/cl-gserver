@@ -36,7 +36,7 @@ The `sender` of the message, if available, is accessible with `*sender*` from wi
              :initform nil
              :documentation "Init hook.
 Function is called when actor was initialized.
-`act:context` is all setup at that time.
+`act:context` is ready setup at that time.
 Parameter of the lambda is the actor itself.")
    (destroy-fun :initarg :destroy
                 :initform nil

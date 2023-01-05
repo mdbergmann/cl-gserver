@@ -7,6 +7,8 @@
                     act-cell:handle-cast
                     act-cell:stop
                     act-cell:*self*
+                    act-cell:*state*
+                    act-cell:*sender*
                     future:make-future
                     ev:subscribe
                     ev:unsubscribe
@@ -43,18 +45,17 @@
 ;; actor-cell impls
 ;; -------------------------------
 
-(defmethod handle-call ((self actor) message state)
+(defmethod handle-call ((self actor) message)
   (with-slots (receive behavior) self
     (let ((effective-behavior (if behavior behavior receive)))
-      (funcall effective-behavior self message state))))
+      (funcall effective-behavior message))))
 
-(defmethod handle-cast ((self actor) message state)
+(defmethod handle-cast ((self actor) message)
   (with-slots (receive behavior) self
     (let ((effective-behavior (if behavior behavior receive)))
-      (funcall effective-behavior self message state))))
+      (funcall effective-behavior message))))
 
-(defmethod pre-start ((self actor) state)
-  (declare (ignore state))
+(defmethod pre-start ((self actor))
   (call-next-method))
 
 (defmethod after-stop ((self actor))
@@ -121,7 +122,7 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
 (defclass async-waitor-actor (actor) ())
 
 (defmacro with-waiting-actor (actor message system time-out &rest body)
-  (alexandria:with-gensyms (self msg state msgbox waiting-actor)
+  (alexandria:with-gensyms (msg msgbox waiting-actor)
     `(let ((,msgbox (if ,system
                         (make-instance 'mesgb:message-box/dp
                                        :name (string (gensym "waiter-mb/dp-"))
@@ -131,13 +132,12 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
                                        :name (string (gensym "waiter-mb/bt-")))))
            (,waiting-actor (make-instance
                             'async-waitor-actor
-                            :receive (lambda (,self ,msg ,state)
+                            :receive (lambda (,msg)
                                         (unwind-protect
                                              (progn
                                                (funcall ,@body ,msg)
-                                               (act-cell:stop ,self)
-                                               (cons ,msg ,state))
-                                          (act-cell:stop ,self)))
+                                               (act-cell:stop *self*))
+                                          (act-cell:stop *self*)))
                             :name (string (gensym "Ask-Waiter-")))))
        (setf (act-cell:msgbox ,waiting-actor) ,msgbox)
        (act-cell::submit-message ,actor ,message nil ,waiting-actor ,time-out)

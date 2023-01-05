@@ -113,6 +113,8 @@
 
 TODOs:
 
+- maybe add 'reply' for 'ask'
+
 Sento 3 changes:
 
 - no implicit sending to *sender* on 'ask'. Must be done explicitly using 'tell'.

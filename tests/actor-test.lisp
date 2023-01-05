@@ -216,22 +216,22 @@
       (is (typep (cdr result) 'utils:ask-timeout))
       (is (eq :stopped (ask-s actor :stop))))))
 
-;; (test ask-s--shared--timeout-in-dispatcher
-;;   "Tests for ask-s timeout."
-;;   (with-fixture actor-fixture ((lambda ())
-;;                                0
-;;                                t)
-;;     (with-mocks ()
-;;       (answer (disp:dispatch-async _ _)
-;;         (progn
-;;           (format t "Dispatch called...~%")
-;;           (sleep 2)))
-;;       (let* ((actor (actor-of cut
-;;                       :receive (lambda (self msg state)
-;;                                  (declare (ignore self msg state)))))
-;;              (result (ask-s actor "foo" :time-out 0.5)))
-;;         (is (eq :handler-error (car result)))
-;;         (is (typep (cdr result) 'utils:ask-timeout))))))
+(test ask-s--shared--timeout-in-dispatcher
+  "Tests for ask-s timeout."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (with-mocks ()
+      (answer (disp:dispatch-async _ _)
+        (progn
+          (format t "Dispatch called...~%")
+          (sleep 2)))
+      (let* ((actor (actor-of cut
+                              :receive (lambda (msg)
+                                         (declare (ignore msg)))))
+             (result (ask-s actor "foo" :time-out 0.5)))
+        (is (eq :handler-error (car result)))
+        (is (typep (cdr result) 'utils:ask-timeout))))))
 
 ;; (test ask--shared--timeout
 ;;   "Tests for ask timeout."

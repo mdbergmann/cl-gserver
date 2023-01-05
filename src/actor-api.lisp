@@ -12,7 +12,10 @@
            #:path
            #:watch
            #:unwatch
-           #:watchers)
+           #:watchers
+           #:*self*
+           #:*state*
+           #:*sender*)
   (:import-from #:act-cell
                 #:actor-cell))
 

@@ -3,7 +3,7 @@
 
 (shadowing-import '(mesgb:message-box/bt
                     act:actor
-                    act-cell:*self*))
+                    act:*self*))
 
 (defclass dispatcher-base ()
   ((context :initform nil

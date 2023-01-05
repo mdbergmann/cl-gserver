@@ -62,7 +62,7 @@
                                         (cons :unstashed state)))
                                      (:to-be-stashed-msg
                                       (progn
-                                        (act:tell act-cell:*sender* :stashed-msg-reply)
+                                        (act:tell act:*sender* :stashed-msg-reply)
                                         (cons :no-reply state)))))))))
       (act:tell cut :to-be-stashed-msg sender)
       (utils:await-cond 0.5 (has-stashed-messages-p cut))

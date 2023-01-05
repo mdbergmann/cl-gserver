@@ -113,6 +113,7 @@
 
 TODOs:
 
+- *self*, *state*, *sender* should be in act package 
 - maybe add 'reply' for 'ask'
 
 Sento 3 changes:

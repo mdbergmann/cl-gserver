@@ -175,7 +175,7 @@
                                  (sleep 0.2)
                                  (cond
                                    ((eq :add (car msg))
-                                    (tell act-cell:*sender*
+                                    (tell *sender*
                                           (+ (second msg) (third msg))))))
                                0
                                nil)
@@ -190,7 +190,7 @@
                                  (sleep 0.5)
                                  (cond
                                    ((eq :add (car msg))
-                                    (tell act-cell:*sender* (+ (second msg) (third msg))))))
+                                    (tell *sender* (+ (second msg) (third msg))))))
                                0
                                nil)
     (let ((future (ask cut '(:add 0 5)))
@@ -267,38 +267,36 @@
                               (typep (cdr n) 'utils:ask-timeout)))
                   (mapcar #'fresult futures)))))))
 
-;; (test ask-s--pinned--timeout
-;;   "Tests for ask-s timeout."
-;;   (with-fixture actor-fixture ((lambda (self msg state)
-;;                                  (declare (ignore self msg))
-;;                                  (sleep 2)
-;;                                  (cons :my-result state))
-;;                                0
-;;                                nil)
-;;     (let ((result (ask-s cut "foo" :time-out 0.5)))
-;;       (is (eq :handler-error (car result)))
-;;       (is (typep (cdr result) 'utils:ask-timeout))
-;;       (is (eq :stopped (ask-s cut :stop))))))
+(test ask-s--pinned--timeout
+  "Tests for ask-s timeout."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg))
+                                 (sleep 2))
+                               0
+                               nil)
+    (let ((result (ask-s cut "foo" :time-out 0.5)))
+      (is (eq :handler-error (car result)))
+      (is (typep (cdr result) 'utils:ask-timeout))
+      (is (eq :stopped (ask-s cut :stop))))))
 
-;; (test ask--pinned--timeout
-;;   "Tests for ask timeout."
-;;   (with-fixture actor-fixture ((lambda (self msg state)
-;;                                  (declare (ignore self msg))
-;;                                  (sleep 2)
-;;                                  (cons :my-result state))
-;;                                0
-;;                                nil)
-;;     (let ((future (ask cut "foo" :time-out 0.5)))
-;;       (utils:await-cond 1.0 (complete-p future))
-;;       (is (eq :handler-error (car (fresult future))))
-;;       (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
+(test ask--pinned--timeout
+  "Tests for ask timeout."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg))
+                                 (sleep 2))
+                               0
+                               nil)
+    (let ((future (ask cut "foo" :time-out 0.5)))
+      (await-cond 1.0 (complete-p future))
+      (is (eq :handler-error (car (fresult future))))
+      (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
 
 ;; (test allow--no-reply--response
 ;;   "Tests to allow `:no-reply' for `tell', `ask-s' and `ask'"
 ;;   (with-fixture actor-fixture ((lambda (self msg state)
 ;;                                  (declare (ignore self msg))
-;;                                  (if act-cell:*sender*
-;;                                      (tell act-cell:*sender* :manual-reply))
+;;                                  (if *sender*
+;;                                      (tell *sender* :manual-reply))
 ;;                                  (cons :no-reply state))
 ;;                                0
 ;;                                t)

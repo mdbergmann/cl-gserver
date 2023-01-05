@@ -367,26 +367,25 @@
            (is (string= "/user/foo1/foo2/foo3" (path actor-actor))))
       (ac:shutdown sys))))
 
-;; (test actor-of-macro--with-init-destroy-and-receive
-;;   "Tests the macro by specifying the receive function and init function as plist parameters."
-;;   (let ((sys (asys:make-actor-system)))
-;;     (unwind-protect
-;;          (let* ((init-called nil)
-;;                 (destroy-called nil)
-;;                 (actor (actor-of sys :name "foo"
-;;                          :init (lambda (self)
-;;                                  (declare (ignore self))
-;;                                  (setf init-called t))
-;;                          :receive (lambda (self msg state)
-;;                                     (declare (ignore self))
-;;                                     (when (string= "Foo" msg)
-;;                                       (cons "Bar" state)))
-;;                          :destroy (lambda (self)
-;;                                     (declare (ignore self))
-;;                                     (setf destroy-called t)))))
-;;            (is (string= "Bar" (ask-s actor "Foo")))
-;;            (is-true init-called)
-;;            (is-false destroy-called)
-;;            (ask-s actor :stop)
-;;            (is-true destroy-called))
-;;       (ac:shutdown sys))))
+(test actor-of-macro--with-init-destroy-and-receive
+  "Tests the macro by specifying the receive function and init function as plist parameters."
+  (let ((sys (asys:make-actor-system)))
+    (unwind-protect
+         (let* ((init-called nil)
+                (destroy-called nil)
+                (actor (actor-of sys :name "foo"
+                                     :init (lambda (self)
+                                             (declare (ignore self))
+                                             (setf init-called t))
+                                     :receive (lambda (msg)
+                                                (when (string= "Foo" msg)
+                                                  "Bar"))
+                                     :destroy (lambda (self)
+                                                (declare (ignore self))
+                                                (setf destroy-called t)))))
+           (is (string= "Bar" (ask-s actor "Foo")))
+           (is-true init-called)
+           (is-false destroy-called)
+           (ask-s actor :stop)
+           (is-true destroy-called))
+      (ac:shutdown sys))))

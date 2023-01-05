@@ -20,10 +20,10 @@
 
 (def-fixture cell-fixture (call-fun cast-fun pre-start-fun after-stop-fun state)
   (defclass test-cell (actor-cell) ())
-  (defmethod handle-call ((cell test-cell) message current-state)
-    (funcall call-fun cell message current-state))
-  (defmethod handle-cast ((cell test-cell) message current-state)
-    (funcall cast-fun cell message current-state))
+  (defmethod handle-call ((cell test-cell) message)
+    (funcall call-fun cell message))
+  (defmethod handle-cast ((cell test-cell) message)
+    (funcall cast-fun cell message))
   (defmethod pre-start ((cell test-cell) state)
     (when pre-start-fun
       (funcall pre-start-fun cell state)))
@@ -48,9 +48,9 @@
 
 (test run-pre-start-fun
   "Tests the execution of `pre-start'"
-  (with-fixture cell-fixture ((lambda (self message current-state)
+  (with-fixture cell-fixture ((lambda (self message)
                                 (declare (ignore self message))
-                                current-state)
+                                *state*)
                               nil
                               (lambda (self state)
                                 (declare (ignore state))
@@ -62,9 +62,9 @@
 
 (test run-after-stop-fun
   "Tests the execution of `after-stop'"
-  (with-fixture cell-fixture ((lambda (self message current-state)
+  (with-fixture cell-fixture ((lambda (self message)
                                 (declare (ignore self message))
-                                (cons current-state current-state))
+                                (cons *state* *state*))
                               nil
                               nil
                               (lambda (self)
@@ -77,10 +77,9 @@
 (test run-after-stop-fun--with-wait-for-stop
   "Tests the execution of `after-stop' but using the `stop` function of the cell."
   (with-fixture cell-fixture (nil
-                              (lambda (self message current-state)
+                              (lambda (self message)
                                 (declare (ignore self message))
-                                (sleep 0.3)
-                                (cons current-state current-state))
+                                (sleep 0.3))
                               nil
                               (lambda (self)
                                 (declare (ignore self))
@@ -92,26 +91,26 @@
       (is (> (- (get-internal-real-time) now) 300))
       (is (string= "after-stop-fun-executed" *after-stop-val*)))))
 
-(Test no-message-box
+(test no-message-box
   "Test responds with :no-message-handling when no msgbox is configured."
   (defclass no-msg-server (actor-cell) ())
-  (defmethod handle-call ((cell no-msg-server) message current-state)
-    (cons message current-state))
+  (defmethod handle-call ((cell no-msg-server) message)
+    nil)
 
-  (let ((cut (make-instance 'stopping-cell)))
+  (let ((cut (make-instance 'no-msg-server)))
     (is (eq :no-message-handling (call cut :foo)))))
 
 (test handle-call
   "Simple cell handle-call test."
-  (with-fixture cell-fixture ((lambda (cell message current-state)
+  (with-fixture cell-fixture ((lambda (cell message)
                                 (declare (ignore cell))
                                 (cond
                                  ((and (listp message) (eq :add (car message)))
-                                  (let ((new-state (+ current-state (cadr message))))
+                                  (let ((new-state (+ *state* (cadr message))))
                                     (setf *state* new-state)
                                     new-state))
                                  ((and (listp message) (eq :sub (car message)))
-                                  (let ((new-state (- current-state (cadr message))))
+                                  (let ((new-state (- *state* (cadr message))))
                                     (setf *state* new-state)
                                     new-state))
                                  ((and (listp message) (eq :explicit-return (car message)))
@@ -125,30 +124,31 @@
     (is (= 200 (call cut '(:explicit-return 200))))
     (is (eq nil (call cut "unhandled")))))
 
+
 (test cast--send-result-back-to-sender
   "Test that a cast, if implemented, can use `*sender*' to send result to 'sender'."
+  (defparameter *pong-received* nil)
+  (defclass pong-cell (actor-cell) ())
+  (defmethod handle-cast ((cell pong-cell) message)
+    (when (eq message :pong)
+      (setf *pong-received* t)))
   (with-fixture cell-fixture (nil
-                              (lambda (self msg state)
+                              (lambda (self msg)
                                 (declare (ignore self))
                                 (case msg
                                   (:ping (cast *sender* :pong))))
                               nil
                               nil
                               0)
-    (let* ((response-received nil)
-           (fake-sender (act:make-actor (lambda (self msg state)
-                                          (declare (ignore self))
-                                         (case msg
-                                           (:pong (setf response-received t)))))))
+    (let ((fake-sender (make-instance 'pong-cell)))
       (setf (msgbox fake-sender) (make-instance 'mesgb:message-box/bt))
       (cast cut :ping fake-sender)
-      (is-true (await-cond 0.5 response-received))
-      (call fake-sender :stop))))
+      (is-true (await-cond 0.5 *pong-received*))
+      (stop fake-sender))))
 
 (test error-in-handler
   "testing error handling"
-  (with-fixture cell-fixture ((lambda (cell message current-state)
-                                (declare (ignore cell current-state))
+  (with-fixture cell-fixture ((lambda (cell message)
                                 (log:info "Raising error condition...")
                                 (cond
                                  ((eq :err (car message))
@@ -166,9 +166,9 @@
 
 (test stack-cell
   "a actor-cell as stack."
-  (with-fixture cell-fixture ((lambda (cell message current-state)
+  (with-fixture cell-fixture ((lambda (cell message)
                                 (declare (ignore cell))
-                                ;;(format t "current-state: ~a~%" current-state)
+                                ;;(format t "current-state: ~a~%" *state*)
                                 (cond
                                   ((eq :pop message)
                                    (let ((head (car *state*))
@@ -176,13 +176,13 @@
                                      (setf *state* tail)
                                      head))
                                   ((eq :get message)
-                                   current-state)))
-                              (lambda (cell message current-state)
+                                   *state*)))
+                              (lambda (cell message)
                                 (declare (ignore cell))
-                                ;;(format t "current-state: ~a~%" current-state)
+                                ;;(format t "current-state: ~a~%" *state*)
                                 (cond
                                  ((eq :push (car message))
-                                  (let ((new-state (append current-state (list (cdr message)))))
+                                  (let ((new-state (append *state* (list (cdr message)))))
                                     (setf *state* new-state)))))
                               nil
                               nil
@@ -201,8 +201,8 @@
     (is (null (call cut :pop)))))
 
 (defclass stopping-cell (actor-cell) ())
-(defmethod handle-call ((cell stopping-cell) message current-state)
-  (cons message current-state))
+(defmethod handle-call ((cell stopping-cell) message)
+  nil)
 
 (test stopping-cell--using-message
   "Stopping a cell stops the message handling and frees resources."

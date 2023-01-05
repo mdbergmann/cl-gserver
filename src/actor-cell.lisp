@@ -103,13 +103,13 @@ Note: the `actor-cell` uses `call` and `cast` functions which translate to `ask-
   (:documentation
    "Generic function definition that is called after the actor cell has stopped."))
 
-(defgeneric handle-call (actor-cell message current-state)
+(defgeneric handle-call (actor-cell message)
   (:documentation
    "Handles calls to the server. Must be implemented by subclasses.
 The result of the last expression of this function is returned back to the 'caller'.
 State of the cell can be changed via `setf`ing `*state*` variable."))
 
-(defgeneric handle-cast (actor-cell message current-state)
+(defgeneric handle-cast (actor-cell message)
   (:documentation
    "Handles casts to the server. Must be implemented by subclasses.
 State of the cell can be changed via `setf`ing `*state*` variable."))
@@ -250,5 +250,5 @@ Otherwise the result is `:resume` to resume user message handling."
 Effectively this calls the `handle-call` or `handle-cast` functions."
   (log:debug "~a: user handle message: ~a" (name actor-cell) message)
   (if withreply-p
-      (handle-call actor-cell message (state actor-cell))
-      (handle-cast actor-cell message (state actor-cell))))
+      (handle-call actor-cell message)
+      (handle-cast actor-cell message)))

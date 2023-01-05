@@ -349,24 +349,23 @@
            (is (typep custom-actor 'custom-actor)))
       (ac:shutdown sys))))
 
-;; (test actor-of--create-in-right-context
-;;   "Tests to conveniently specify three types as context: asys, ac and actor"
-;;   (let ((sys (asys:make-actor-system)))
-;;     (unwind-protect
-;;          (let* ((receive-fun (lambda (self msg state)
-;;                                (declare (ignore self))
-;;                                (when (string= "Foo" msg)
-;;                                  (cons "Bar" state))))
-;;                 (system-actor (actor-of sys :name "foo1" :receive receive-fun))
-;;                 (ac-actor (actor-of (act:context system-actor) :name "foo2" :receive receive-fun))
-;;                 (actor-actor (actor-of ac-actor :name "foo3" :receive receive-fun)))
-;;            (is (string= "Bar" (ask-s system-actor "Foo")))
-;;            (is (string= "/user/foo1" (path system-actor)))
-;;            (is (string= "Bar" (ask-s ac-actor "Foo")))
-;;            (is (string= "/user/foo1/foo2" (path ac-actor)))
-;;            (is (string= "Bar" (ask-s actor-actor "Foo")))
-;;            (is (string= "/user/foo1/foo2/foo3" (path actor-actor))))
-;;       (ac:shutdown sys))))
+(test actor-of--create-in-right-context
+  "Tests to conveniently specify three types as context: asys, ac and actor"
+  (let ((sys (asys:make-actor-system)))
+    (unwind-protect
+         (let* ((receive-fun (lambda (msg)
+                               (when (string= "Foo" msg)
+                                 "Bar")))
+                (system-actor (actor-of sys :name "foo1" :receive receive-fun))
+                (ac-actor (actor-of (act:context system-actor) :name "foo2" :receive receive-fun))
+                (actor-actor (actor-of ac-actor :name "foo3" :receive receive-fun)))
+           (is (string= "Bar" (ask-s system-actor "Foo")))
+           (is (string= "/user/foo1" (path system-actor)))
+           (is (string= "Bar" (ask-s ac-actor "Foo")))
+           (is (string= "/user/foo1/foo2" (path ac-actor)))
+           (is (string= "Bar" (ask-s actor-actor "Foo")))
+           (is (string= "/user/foo1/foo2/foo3" (path actor-actor))))
+      (ac:shutdown sys))))
 
 ;; (test actor-of-macro--with-init-destroy-and-receive
 ;;   "Tests the macro by specifying the receive function and init function as plist parameters."

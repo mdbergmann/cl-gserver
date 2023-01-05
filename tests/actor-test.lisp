@@ -291,21 +291,20 @@
       (is (eq :handler-error (car (fresult future))))
       (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
 
-;; (test allow--no-reply--response
-;;   "Tests to allow `:no-reply' for `tell', `ask-s' and `ask'"
-;;   (with-fixture actor-fixture ((lambda (self msg state)
-;;                                  (declare (ignore self msg))
-;;                                  (if *sender*
-;;                                      (tell *sender* :manual-reply))
-;;                                  (cons :no-reply state))
-;;                                0
-;;                                t)
-;;     (is-true (tell cut :foo))
-;;     (is (eq :no-reply (ask-s cut :foo)))
-;;     (let ((fut (ask cut :foo)))
-;;       (assert-cond (lambda () (complete-p fut)) 1.0)
-;;       (is (eq :manual-reply (fresult fut))))
-;;   ))
+(test allow--no-reply-for-ask-s--response
+  "Tests to allow `:no-reply' `ask-s'. `ask' and `tell' need explicit 'reply'."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg))
+                                 (if *sender*
+                                     (tell *sender* :manual-reply))
+                                 :no-reply)
+                               0
+                               t)
+    (is-true (tell cut :foo))
+    (is (eq :no-reply (ask-s cut :foo)))
+    (let ((fut (ask cut :foo)))
+      (await-cond 1.0 (complete-p fut))
+      (is (eq :manual-reply (fresult fut))))))
 
 ;; (test become-and-unbecome-a-different-behavior
 ;;   "Test switching behaviors"

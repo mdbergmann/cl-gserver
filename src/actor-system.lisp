@@ -48,9 +48,8 @@ Or even simpler via `act:actor-of` which is a convenience macro:
 
 ```elisp
 (act:actor-of (*system*)
-                (lambda (self msg state)
-                  ;; do stuff
-                  (cons \"done\" state)))
+                (lambda (msg)
+                  ;; do stuff))
 ```
 "))
 

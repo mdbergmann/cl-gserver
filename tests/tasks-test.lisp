@@ -67,8 +67,9 @@
              (completion-handler (lambda (result) (setf completion-result result)))
              (task (task-async (lambda () (+ 1 2))
                                :on-complete-fun completion-handler)))
-        (is (assert-cond (lambda () (and (not (null completion-result))
-                                    (= completion-result 3))) .5))
+        (is-true (await-cond 0.5
+                   (and (not (null completion-result))
+                        (= completion-result 3))))
         (is (= 3 (task-await task)))))))
 
 (test task-async--completion-handler--err-cond
@@ -79,8 +80,9 @@
              (completion-handler (lambda (result) (setf completion-result result))))
         (task-async (lambda () (error "Foo"))
                     :on-complete-fun completion-handler)
-        (is (assert-cond (lambda () (and (not (null completion-result))
-                                    (eq :handler-error (car completion-result)))) .5))))))
+        (is-true (await-cond 0.5
+                   (and (not (null completion-result))
+                        (eq :handler-error (car completion-result)))))))))
 
 (test task-async--in-custom-dispatcher
   "Test for task-async in custom dispatcher."

@@ -3,6 +3,9 @@
   (:nicknames :tasks)
   (:import-from #:binding-arrows
                 #:->>)
+  (:import-from #:act
+                #:*state*
+                #:*sender*)
   (:export #:with-context
            #:task
            #:task-yield
@@ -63,19 +66,24 @@ dispatchers. This additional dispatcher can be utilized for `tasks`. Be aware th
   (ac:actor-of context
     :dispatcher dispatcher
     :type 'task
-    :receive (lambda (self msg state)
-               (declare (ignore self))
+    :receive (lambda (msg)
                (cond
                  ((eq :get msg)
-                  (cons state state))
+                  *state*)
                  ((eq :exec (car msg))
                   (handler-case
                       (let ((fun-result (funcall (cdr msg))))
-                        (cons fun-result fun-result))
+                        (setf *state* fun-result)
+                        (when *sender*
+                          (act:tell *sender* fun-result))
+                        fun-result)
                     (error (c)
                       (let ((err-result (cons :handler-error c)))
-                        (cons err-result err-result)))))
-                 (t (cons :unrecognized-command state))))))
+                        (setf *state* err-result)
+                        (when *sender*
+                          (act:tell *sender* err-result))
+                        err-result))))
+                 (t :unrecognized-command)))))
 
 (defun task-yield (fun &optional time-out)
   "`task-yield` runs the given function `fun` by blocking and waiting for a response from the `task`, or until the given timeout was elapsed.

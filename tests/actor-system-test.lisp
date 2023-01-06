@@ -4,7 +4,7 @@
                 #:actor
                 #:make-actor)
   (:import-from #:utils
-                #:assert-cond)
+                #:await-cond)
   (:import-from #:disp
                 #:workers
                 #:shared-dispatcher)
@@ -93,18 +93,18 @@ We use internal API here only for this test, do not use this otherwise."
     (asys::%actor-of system :receive (lambda ()) :dispatcher :shared :context-key :internal)
 
     (ac:shutdown system)
-    (is-true (assert-cond (lambda ()
-                            (= 0 (length (ac:all-actors system)))) 2))))
+    (is-true (await-cond 2.0
+               (= 0 (length (ac:all-actors system)))))))
 
 (test shutdown-system--with-wait
   "Test shutting down the system by waiting for all actor to stop."
   (let* ((system (make-actor-system))
-         (act1 (ac:actor-of system :receive (lambda (a b c)
-                                              (declare (ignore a b c))
+         (act1 (ac:actor-of system :receive (lambda (m)
+                                              (declare (ignore m))
                                               (sleep 0.3))
                                    :dispatcher :shared))
-         (act2 (ac:actor-of system :receive (lambda (a b c)
-                                              (declare (ignore a b c))
+         (act2 (ac:actor-of system :receive (lambda (m)
+                                              (declare (ignore m))
                                               (sleep 0.3))
                                    :dispatcher :shared))
          (start-time (get-internal-real-time)))
@@ -225,9 +225,8 @@ We use internal API here only for this test, do not use this otherwise."
   (with-fixture test-system ()
     (let ((actors (loop :repeat 100
                         collect (ac:actor-of cut
-                                  :receive (lambda (self msg state)
-                                             (declare (ignore self))
-                                             (cons (format nil "reply: ~a" msg) state)))))
+                                  :receive (lambda (msg)
+                                             (format nil "reply: ~a" msg)))))
           (ask-result nil))
       (time (setf ask-result
                   (every (lambda (x) (string= "reply: test" x))
@@ -241,11 +240,9 @@ We use internal API here only for this test, do not use this otherwise."
   (with-fixture test-system ()
     (let* ((ev-received)
            (ev-listener (ac:actor-of cut
-                          :receive (lambda (self msg state)
-                                     (declare (ignore self state))
-                                     (setf ev-received msg)
-                                     (cons nil nil)))))
+                                     :receive (lambda (msg)
+                                                (setf ev-received msg)))))
       (ev:subscribe (evstream cut) ev-listener)
       (ev:publish (evstream cut) "Foo")
-      (is (assert-cond (lambda () (equal ev-received "Foo")) 1))
+      (is-true (await-cond 0.5 (equal ev-received "Foo")))
       (ev:unsubscribe (evstream cut) ev-listener))))

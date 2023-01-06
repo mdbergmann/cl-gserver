@@ -10,6 +10,9 @@
            #:name
            #:msgbox
            #:state
+           #:*state*
+           #:*self*
+           #:*sender*
            ;; API
            #:handle-call
            #:handle-cast

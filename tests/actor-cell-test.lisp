@@ -38,7 +38,7 @@
     (setf (msgbox cut) (make-instance 'mesgb:message-box/bt))
     (unwind-protect
          (&body)
-      (call cut :stop))))
+      (stop cut))))
 
 (test get-cell-name-and-state
   "Just retrieves the name of the cell"
@@ -61,8 +61,7 @@
 (test run-after-stop-fun
   "Tests the execution of `after-stop'"
   (with-fixture cell-fixture ((lambda (message)
-                                (declare (ignore message))
-                                nil)
+                                (declare (ignore message)))
                               nil
                               nil
                               (lambda (self)
@@ -157,7 +156,6 @@
       (is (not (null (cdr msg))))
       (is (eq (car msg) :handler-error))
       (is (string= "Foo Error" (format nil "~a" (cdr msg)))))))
-
 
 (test stack-cell
   "a actor-cell as stack."

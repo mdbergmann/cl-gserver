@@ -15,9 +15,9 @@
                     ac:actor-of))
 
 ;; we want to use symbols in this package rather than 'cell'.
-(define-symbol-macro *self* act-cell::*self*)
-(define-symbol-macro *state* act-cell::*state*)
-(define-symbol-macro *sender* act-cell::*sender*)
+(define-symbol-macro *self* act-cell:*self*)
+(define-symbol-macro *state* act-cell:*state*)
+(define-symbol-macro *sender* act-cell:*sender*)
 
 (defmethod make-actor (receive &key name state (type 'actor) (init nil) (destroy nil))
   (make-instance type

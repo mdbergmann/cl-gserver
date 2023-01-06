@@ -115,6 +115,7 @@ TODOs:
 
 OK - *self*, *state*, *sender* should be in act package 
 - maybe add 'reply' for 'ask'
+- add !, ? as functions.
 - shutdown sys should be in actor-system to be symetric.
 - rename all-actors to all-actors-in
 - move cons-list from lparallel

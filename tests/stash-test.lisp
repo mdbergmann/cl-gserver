@@ -82,8 +82,7 @@
                                         (stash:unstash-all)
                                         :unstashed))
                                      (otherwise
-                                      (progn
-                                        (setf unstashed-recv (cons msg unstashed-recv)))))))))
+                                      (setf unstashed-recv (cons msg unstashed-recv))))))))
            (msgs '(msg-1 msg-2 msg-3 msg-4 msg-5)))
       (loop :for msg in msgs
             :do (act:tell cut msg))

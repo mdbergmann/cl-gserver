@@ -23,17 +23,15 @@
   (with-fixture test-context ()
     (is (not (null (ac:actor-of system
                                 :type 'stash-actor
-                                :receive (lambda (self msg state)
-                                           (declare (ignore self msg state)))))))))
+                                :receive (lambda (msg)
+                                           (declare (ignore msg)))))))))
 
 (test stash-actor-can-stash-messages
   (with-fixture test-context ()
     (let ((cut (ac:actor-of system
                             :type 'stash-actor
-                            :receive (lambda (self msg state)
-                                       (declare (ignore state))
-                                       (stash:stash msg)
-                                       (cons :no-reply state)))))
+                            :receive (lambda (msg)
+                                       (stash:stash msg)))))
       (act:tell cut :to-be-stashed-msg)
       (is-true (utils:await-cond 0.5
                  (has-stashed-messages-p cut))))))
@@ -44,26 +42,22 @@
            (received-msg nil)
            (sender (ac:actor-of system
                                 :receive
-                                (lambda (self msg state)
-                                  (setf received-msg msg)
-                                  (cons nil state))))
+                                (lambda (msg)
+                                  (setf received-msg msg))))
            (cut (ac:actor-of system
                              :type 'stash-actor
                              :receive
-                             (lambda (self msg state)
+                             (lambda (msg)
                                (if do-stash-message
-                                   (progn 
-                                     (stash:stash msg)
-                                     (cons :no-reply state))
+                                   (stash:stash msg)
                                    (case msg
                                      (:unstash
                                       (progn
                                         (stash:unstash-all)
-                                        (cons :unstashed state)))
+                                        :unstashed))
                                      (:to-be-stashed-msg
                                       (progn
-                                        (act:tell act:*sender* :stashed-msg-reply)
-                                        (cons :no-reply state)))))))))
+                                        (act:tell act:*sender* :stashed-msg-reply)))))))))
       (act:tell cut :to-be-stashed-msg sender)
       (utils:await-cond 0.5 (has-stashed-messages-p cut))
       (setf do-stash-message nil)
@@ -79,20 +73,17 @@
            (cut (ac:actor-of system
                              :type 'stash-actor
                              :receive
-                             (lambda (self msg state)
+                             (lambda (msg)
                                (if do-stash-message
-                                   (progn 
-                                     (stash:stash msg)
-                                     (cons :no-reply state))
+                                   (stash:stash msg)
                                    (case msg
                                      (:unstash
                                       (progn
                                         (stash:unstash-all)
-                                        (cons :unstashed state)))
+                                        :unstashed))
                                      (otherwise
                                       (progn
-                                        (setf unstashed-recv (cons msg unstashed-recv))
-                                        (cons :no-reply state))))))))
+                                        (setf unstashed-recv (cons msg unstashed-recv)))))))))
            (msgs '(msg-1 msg-2 msg-3 msg-4 msg-5)))
       (loop :for msg in msgs
             :do (act:tell cut msg))

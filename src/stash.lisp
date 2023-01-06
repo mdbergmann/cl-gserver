@@ -30,7 +30,7 @@ Then create an actor by specifying this type:
 ```
 (actor-of system
           :type 'stash-actor
-          :receive (lambda (self msg state)
+          :receive (lambda (msg)
                      ...))
 ```
 

@@ -4,8 +4,10 @@
   (:export #:make-actor
            #:actor
            #:tell
-           #:ask-s
+           #:!
            #:ask
+           #:?
+           #:ask-s
            #:become
            #:unbecome
            #:context
@@ -27,7 +29,7 @@
             :reader receive
             :documentation
             "`receive` is a function that has to take 1 parameter:
-- `msg`: the received message
+- `msg`: the received message  
 The `sender` of the message (if available) accessible with `act:*sender*` from within the receive function or a behavior.")
    (behavior :initform nil
              :documentation
@@ -84,7 +86,9 @@ Those hooks are called on (after) initialization and (after) stop respectively."
 (defgeneric tell (actor message &optional sender)
   (:documentation
    "Sends a message to the `actor`. `tell` is asynchronous.
-`tell` does not expect a result. If a `sender` is specified the receiver will be able to send a response."))
+`tell` does not expect a result. If a `sender` is specified the receiver will be able to send a response.
+
+Alternatively to the `tell` function one can equally use the `!` function designator."))
 
 (defgeneric ask-s (actor message &key time-out)
   (:documentation
@@ -103,7 +107,9 @@ An `:handler-error` with `timeout` condition will be returned is the call timed 
 An `ask` is similar to a `ask-s` in that the caller gets back a result 
 but it doesn't have to actively wait for it. Instead a `future` wraps the result.
 However, the internal message handling is based on `tell`.
-How this works is that the message to the target `actor` is not 'sent' using the callers thread but instead an anonymous `actor` is started behind the scenes. This anonymous actor can weit for a response from the target actor. The response then fulfills the future."))
+How this works is that the message to the target `actor` is not 'sent' using the callers thread but instead an anonymous `actor` is started behind the scenes. This anonymous actor can weit for a response from the target actor. The response then fulfills the future.
+
+Alternatively to the `ask` function one can equally use the `?` function designator."))
 
 (defgeneric become (new-behavior)
   (:documentation

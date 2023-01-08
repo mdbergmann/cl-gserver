@@ -1,15 +1,21 @@
 (defpackage :sento.actor-test
   (:use :cl :fiveam :cl-mock :sento.actor :sento.future)
+  (:shadow #:! #:?)
   (:import-from #:utils
                 #:assert-cond
                 #:await-cond)
   (:import-from #:ac
-                #:actor-of)
-  (:export #:run!
-           #:all-tests
-           #:nil))
+                #:actor-of))
+
+;;(shadowing-import '())
 
 (in-package :sento.actor-test)
+
+;; (do-external-symbols (s :fiveam)
+;;   (let ((sym-str (format nil "~a" s)))
+;;     (unless (or (equalp sym-str "!")
+;;                 (equalp sym-str "?"))
+;;       (intern (format nil "FIVEAM:~a" sym-str)))))
 
 (def-suite actor-tests
   :description "actor tests"
@@ -61,8 +67,7 @@
                                        (setf destroy-called t)))))
     (is-false init-called)
     (act-cell:stop actor)
-    (is-true destroy-called)
-  ))
+    (is-true destroy-called)))
 
 (test make-actor--has-no-msgbox-and-actor-context
   "Test constructor. actor should not have msgbox and attached actor-context."
@@ -170,16 +175,16 @@
         (is (= 1 (length (invocations 'ac:notify))))))))
 
 (test single-actor--handle-ask
-  "Tests the async ask-s function."
+  "Tests the async ask-s function. Using ! and ? here."
   (with-fixture actor-fixture ((lambda (msg)
                                  (sleep 0.2)
                                  (cond
                                    ((eq :add (car msg))
-                                    (tell *sender*
-                                          (+ (second msg) (third msg))))))
+                                    (act:! *sender*
+                                       (+ (second msg) (third msg))))))
                                0
                                nil)
-    (let ((future (ask cut '(:add 0 5))))
+    (let ((future (act:? cut '(:add 0 5))))
       (is (eq :not-ready (fresult future)))
       (is-true (await-cond 1.0 (complete-p future)))
       (is (= 5 (fresult future))))))

@@ -113,12 +113,14 @@
 
 TODOs:
 
-OK - *self*, *state*, *sender* should be in act package 
+OK - *self*, *state*, *sender* should be in act package
+=> - add !, ? as functions.
 - maybe add 'reply' for 'ask'
-- add !, ? as functions.
 - shutdown sys should be in actor-system to be symetric.
 - rename all-actors to all-actors-in
+- rename utils package
 - move cons-list from lparallel
+- investigate:  <WARN> [17:29:22] sento.actor-cell actor-cell.lisp () - actor-26696: ask-s timeout: A timeout set to 0.5 seconds occurred. Cause: NIL 
 
 Sento 3 changes:
 

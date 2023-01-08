@@ -1,11 +1,9 @@
 (defpackage :sento.dispatcher-test
-  (:use :cl :fiveam :sento.dispatcher
-        :sento.actor)
+  (:use :cl :fiveam :sento.dispatcher :sento.actor)
+  (:shadow #:! #:?)
   (:import-from #:utils
-                #:assert-cond)
-  (:export #:run!
-           #:all-tests
-           #:nil))
+                #:assert-cond))
+
 (in-package :sento.dispatcher-test)
 
 (def-suite dispatcher-tests

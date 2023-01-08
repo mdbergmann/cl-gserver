@@ -19,6 +19,10 @@
 (define-symbol-macro *state* act-cell:*state*)
 (define-symbol-macro *sender* act-cell:*sender*)
 
+;; add symbol-functions for ! and ?
+(setf (symbol-function '!) #'act:tell)
+(setf (symbol-function '?) #'act:ask)
+
 (defmethod make-actor (receive &key name state (type 'actor) (init nil) (destroy nil))
   (make-instance type
                  :name name

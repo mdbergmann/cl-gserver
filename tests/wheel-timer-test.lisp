@@ -26,5 +26,5 @@
     (unwind-protect
          (progn
            (schedule cut 0.2 (lambda () (setf callback t)))
-           (is-true (utils:assert-cond (lambda () (eq t callback)) 0.25)))
+           (is-true (miscutils:assert-cond (lambda () (eq t callback)) 0.25)))
       (shutdown-wheel-timer cut))))

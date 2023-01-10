@@ -1,8 +1,10 @@
 (defpackage :sento.eventstream-test
-  (:use :cl :fiveam :sento.eventstream :sento.utils)
+  (:use :cl :fiveam :sento.eventstream)
   (:export #:run!
            #:all-tests
            #:nil)
+  (:import-from #:miscutils
+                #:await-cond)
   (:import-from #:act
                 #:*state*))
 (in-package :sento.eventstream-test)
@@ -96,24 +98,24 @@
       ;; all
       (subscribe cut ev-listener)
       (publish cut "Foo")
-      (is (assert-cond
-           (lambda () (string= "Foo" ev-received)) 0.5))
+      (is-true (await-cond 0.5
+                 (string= "Foo" ev-received)))
       (unsubscribe cut ev-listener)
       (setf ev-received nil)
 
       ;; subscribe for string
       (subscribe cut ev-listener 'string)
       (publish cut "Foo")
-      (is (assert-cond
-           (lambda () (string= "Foo" ev-received)) 0.5))
+      (is-true (await-cond 0.5
+                   (string= "Foo" ev-received)))
       (unsubscribe cut ev-listener)      
       (setf ev-received nil)
 
       ;; subscribe for string - concrete
       (subscribe cut ev-listener "Foo")
       (publish cut "Foo")
-      (is (assert-cond
-           (lambda () (string= "Foo" ev-received)) 0.5))
+      (is-true (await-cond 0.5
+                 (string= "Foo" ev-received)))
       (unsubscribe cut ev-listener)      
       (setf ev-received nil)
 
@@ -128,16 +130,16 @@
       ;; subscribe for symbol
       (subscribe cut ev-listener 'foo)
       (publish cut 'foo)
-      (is (assert-cond
-           (lambda () (eq 'foo ev-received)) 0.5))
+      (is-true (await-cond 0.5
+                   (eq 'foo ev-received)))
       (unsubscribe cut ev-listener)      
       (setf ev-received nil)
 
       ;; subscribe for global symbol
       (subscribe cut ev-listener :foo)
       (publish cut :foo)
-      (is (assert-cond
-           (lambda () (eq :foo ev-received)) 0.5))
+      (is-true (await-cond 0.5
+                 (eq :foo ev-received)))
       (unsubscribe cut ev-listener)      
       (setf ev-received nil)
 
@@ -153,8 +155,8 @@
       (subscribe cut ev-listener 'my-class)
       (let ((obj (make-instance 'my-class)))
         (publish cut obj)
-        (is (assert-cond
-             (lambda () (eq obj ev-received)) 0.5)))
+        (is-true (await-cond 0.5
+                   (eq obj ev-received))))
       (unsubscribe cut ev-listener)
       (setf ev-received nil)
 
@@ -171,24 +173,24 @@
       (subscribe cut ev-listener 'my-class)
       (let ((obj (make-instance 'my-sub-class)))
         (publish cut obj)
-        (is (assert-cond
-             (lambda () (eq obj ev-received)) 0.5)))
+        (is-true (await-cond 0.5
+                   (eq obj ev-received))))
       (unsubscribe cut ev-listener)
       (setf ev-received nil)
 
       ;; subscribe for list
       (subscribe cut ev-listener 'cons)
       (publish cut '(1 2 3))
-      (is (assert-cond
-           (lambda () (equalp '(1 2 3) ev-received)) 0.5))
+      (is-true (await-cond 0.5
+                 (equalp '(1 2 3) ev-received)))
       (unsubscribe cut ev-listener)
       (setf ev-received nil)
       
       ;; subscribe for list - structure compare
       (subscribe cut ev-listener '(1 2 3))
       (publish cut '(1 2 3))
-      (is (assert-cond
-           (lambda () (equalp '(1 2 3) ev-received)) 0.5))
+      (is-true (await-cond 0.5
+                 (equalp '(1 2 3) ev-received)))
       (unsubscribe cut ev-listener)
       (setf ev-received nil)
 
@@ -249,15 +251,16 @@
                     (publish system '("foo" "bar" "buzz"))
                     (publish system '(1 2 3))))
 
-      (is (assert-cond (lambda () (and
-                              (= (+ (counters-string (act-cell:state actor1))
-                                    (counters-string (act-cell:state actor2))) 1000)
-                              (= (+ (counters-stringp (act-cell:state actor1))
-                                    (counters-stringp (act-cell:state actor2))) 1500)
-                              (= (+ (counters-list (act-cell:state actor1))
-                                    (counters-list (act-cell:state actor2))) 1000)
-                              (= (+ (counters-listp (act-cell:state actor1))
-                                    (counters-listp (act-cell:state actor2))) 1500))) 2))
+      (is-true (await-cond 0.5
+                 (and
+                  (= (+ (counters-string (act-cell:state actor1))
+                        (counters-string (act-cell:state actor2))) 1000)
+                  (= (+ (counters-stringp (act-cell:state actor1))
+                        (counters-stringp (act-cell:state actor2))) 1500)
+                  (= (+ (counters-list (act-cell:state actor1))
+                        (counters-list (act-cell:state actor2))) 1000)
+                  (= (+ (counters-listp (act-cell:state actor1))
+                        (counters-listp (act-cell:state actor2))) 1500))))
       (format t "~%counter string1: ~a~%" (counters-string (act-cell:state actor1)))
       (format t "~%counter string2: ~a~%" (counters-string (act-cell:state actor2)))
       (format t "counter list1: ~a~%" (counters-list (act-cell:state actor1)))

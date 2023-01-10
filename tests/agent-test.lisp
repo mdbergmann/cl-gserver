@@ -1,6 +1,6 @@
 (defpackage :sento.agent-test
   (:use :cl :fiveam :sento.agent)
-  (:import-from #:utils
+  (:import-from #:miscutils
                 #:await-cond)
   (:export #:run!
            #:all-tests

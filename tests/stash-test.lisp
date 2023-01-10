@@ -33,7 +33,7 @@
                             :receive (lambda (msg)
                                        (stash:stash msg)))))
       (act:tell cut :to-be-stashed-msg)
-      (is-true (utils:await-cond 0.5
+      (is-true (miscutils:await-cond 0.5
                  (has-stashed-messages-p cut))))))
 
 (test stash-actor-can-unstash-messages-with-preserving-sender
@@ -59,10 +59,10 @@
                                       (progn
                                         (act:tell act:*sender* :stashed-msg-reply)))))))))
       (act:tell cut :to-be-stashed-msg sender)
-      (utils:await-cond 0.5 (has-stashed-messages-p cut))
+      (miscutils:await-cond 0.5 (has-stashed-messages-p cut))
       (setf do-stash-message nil)
       (is (eq :unstashed (act:ask-s cut :unstash)))
-      (is-true (utils:await-cond 0.5
+      (is-true (miscutils:await-cond 0.5
                  (eq received-msg :stashed-msg-reply))))))
 
 (test unstash-order-is-as-stash-order
@@ -86,8 +86,8 @@
            (msgs '(msg-1 msg-2 msg-3 msg-4 msg-5)))
       (loop :for msg in msgs
             :do (act:tell cut msg))
-      (utils:await-cond 0.5 (= (length (stash::stashed-messages cut)) 5))
+      (miscutils:await-cond 0.5 (= (length (stash::stashed-messages cut)) 5))
       (setf do-stash-message nil)
       (act:ask-s cut :unstash)
-      (is-true (utils:await-cond 0.5 (= (length unstashed-recv) 5)))
+      (is-true (miscutils:await-cond 0.5 (= (length unstashed-recv) 5)))
       (is (equalp msgs (reverse unstashed-recv))))))

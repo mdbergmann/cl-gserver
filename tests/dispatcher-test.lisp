@@ -1,7 +1,7 @@
 (defpackage :sento.dispatcher-test
   (:use :cl :fiveam :sento.dispatcher :sento.actor)
   (:shadow #:! #:?)
-  (:import-from #:utils
+  (:import-from #:miscutils
                 #:assert-cond))
 
 (in-package :sento.dispatcher-test)

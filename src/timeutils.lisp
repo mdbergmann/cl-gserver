@@ -1,46 +1,19 @@
-(defpackage :sento.utils
-  (:nicknames :utils)
+(defpackage :sento.timeutils
+  (:nicknames :timeutils)
   (:use :cl)
   (:import-from #:alexandria
                 #:with-gensyms)
-  (:export #:mkstr
-           #:assert-cond
-           #:await-cond
-           #:filter
-           #:wait-cond
+  (:export #:wait-cond
            #:ask-timeout
            #:with-waitfor
            #:cause
-           #:make-timer
-           #:collect-backtrace))
+           #:make-timer))
 
-(in-package :sento.utils)
-
-(defun mkstr (&rest args)
-  "Converts all parameters to string and concatenates them."
-  (with-output-to-string (stream)
-    (dolist (a args) (princ a stream))))
-
-(defun assert-cond (assert-fun max-time &optional (sleep-time 0.05))
-  "Obsolete, use `await-cond' instead."
-  (do ((wait-time sleep-time (+ wait-time sleep-time))
-       (fun-result nil (funcall assert-fun)))
-      ((not (null fun-result)) (return t))
-    (if (> wait-time max-time) (return)
-        (sleep sleep-time))))
-
-(defmacro await-cond (max-time &body body)
-  "Awaits condition. Probes repeatedly.
-If after `max-time' condition is not `t' it is considered failed."
-  `(assert-cond (lambda ()
-                  ,@body)
-                ,max-time))
-
-(defun filter (fun lst)
-  (mapcan (lambda (x) (if (funcall fun x) (list x))) lst))
+(in-package :sento.timeutils)
 
 (defun wait-cond (cond-fun &optional (sleep-time 0.05) (max-time 12))
-  "Waits until `cond-fun' is not `nil' or `max-time' elapsed."
+  "Waits until `cond-fun' is not `nil' or `max-time' elapsed.
+This blocks the calling thread."
   (loop
     :with wait-acc = 0
     :unless (or (funcall cond-fun) (> wait-acc max-time))
@@ -79,8 +52,3 @@ If after `max-time' condition is not `t' it is considered failed."
                     (sleep delay)
                     (funcall run-fun))
                   :name (string (gensym "timer-"))))
-
-(defun collect-backtrace (condition)
-  (let ((backtrace (make-string-output-stream)))
-    (uiop:print-condition-backtrace condition :stream backtrace)
-    (get-output-stream-string backtrace)))

@@ -62,7 +62,7 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
 
 (defun %find-actors (context path &key test key)
   (let ((actors-to-search (all-actors context)))
-    (utils:filter (lambda (x)
+    (miscutils:filter (lambda (x)
                     (funcall test path (funcall key x)))
                   actors-to-search)))
 
@@ -81,7 +81,7 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
       (act::finalize-initialization actor
        (%message-box-for-dispatcher-id context dispatcher-id queue-size)
        (make-actor-context (system context)
-                           (utils:mkstr (id context) "/" (act-cell:name actor)))))
+                           (miscutils:mkstr (id context) "/" (act-cell:name actor)))))
     actor))
 
 (defun %actor-of (context create-fun &key (dispatcher :shared) (queue-size 0))

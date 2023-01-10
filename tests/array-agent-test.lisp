@@ -54,7 +54,7 @@ While the test succeeds, error-fun is called."
                     (setf err-cond err))))
    (with-fixture agt (#() err-fun)
      (is (= 11 (setf (agent-elt 0 cut) 11)))
-     (is (utils:assert-cond (lambda ()
+     (is (miscutils:assert-cond (lambda ()
                               (not (null err-cond))) 0.5)))))
 
 (test agent-push
@@ -73,7 +73,7 @@ While the test succeeds, error-fun is called."
     ;; no fill-pointer
     (with-fixture agt ((make-array 0 :adjustable t) err-fun)
       (agent-push 1 cut)
-      (is (utils:assert-cond (lambda () (not (null err-cond))) 0.5)))))
+      (is (miscutils:assert-cond (lambda () (not (null err-cond))) 0.5)))))
 
 (test agent-push-and-getidx
   "Tests pushing with returning the new index."
@@ -116,7 +116,7 @@ So this test just does nothing really."
                     (setf err-cond err))))
     (with-fixture agt (#() err-fun)
       (is-true (agent-delete "foo" cut :test #'string=))
-      (is (utils:assert-cond (lambda () (null err-cond)) 0.5)))))
+      (is (miscutils:assert-cond (lambda () (null err-cond)) 0.5)))))
 
 (test agent-doarray
   "Tests running arbitrary array operations on the agent."

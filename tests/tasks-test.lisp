@@ -1,5 +1,10 @@
 (defpackage :sento.tasks-test
-  (:use :cl :fiveam :sento.utils :sento.tasks)
+  (:use :cl :fiveam :sento.tasks)
+  (:import-from #:timeutils
+                #:ask-timeout)
+  (:import-from #:miscutils
+                #:await-cond
+                #:filter)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -11,10 +16,9 @@
     (unwind-protect
          (let ((initial-system-actors (ac:all-actors system)))
            (&body)
-           (assert-cond (lambda ()
-                          (= (length (ac:all-actors system))
-                             (length initial-system-actors)))
-                        0.5))
+           (await-cond 0.5
+             (= (length (ac:all-actors system))
+                (length initial-system-actors))))
       (ac:shutdown system))))
 
 (def-suite tasks-tests
@@ -48,7 +52,7 @@
             (task-start (lambda () (setf my-var 10)))
           (is (eq :ok result))
           (is-true (typep task 'tasks:task))
-          (is-true (assert-cond (lambda () (= 10 my-var)) 0.2))
+          (is-true (await-cond 0.2 (= 10 my-var)))
           (is (eq :stopped (act:ask-s task :foo))))))))
 
 (test task-async
@@ -100,7 +104,7 @@
       (let ((task (task-async (lambda () (+ 1 2)))))
         (is (= 3 (task-await task)))))))
 
-(test task-async--with-await--err-cond
+(test task-async--with-await-err-cond
   "Test for task-async followed by task-await with error condition."
   (with-fixture system-fixture ()
     (with-context (system)
@@ -139,6 +143,6 @@
   (with-fixture system-fixture ()
     (with-context (system)
       (is (= 24 (reduce #'+
-                        (utils:filter (lambda (x) (not (consp x)))
-                                      (task-async-stream (lambda (x) (* x 2))
-                                                         '(1 2 "f" 4 5)))))))))
+                        (filter (lambda (x) (not (consp x)))
+                                (task-async-stream (lambda (x) (* x 2))
+                                                   '(1 2 "f" 4 5)))))))))

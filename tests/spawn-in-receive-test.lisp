@@ -1,6 +1,6 @@
 (defpackage :sento.spawn-in-receive-test
   (:use :cl :fiveam)
-  (:import-from #:utils
+  (:import-from #:miscutils
                 #:assert-cond)
   (:import-from #:act-cell
                 #:*sender*)

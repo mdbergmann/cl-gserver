@@ -1,6 +1,6 @@
 (defpackage :sento.future-test
   (:use :cl :fiveam :binding-arrows :sento.future)
-  (:import-from #:utils
+  (:import-from #:miscutils
                 #:assert-cond)
   (:export #:run!
            #:all-tests

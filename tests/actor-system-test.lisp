@@ -3,7 +3,7 @@
   (:import-from #:act
                 #:actor
                 #:make-actor)
-  (:import-from #:utils
+  (:import-from #:miscutils
                 #:await-cond)
   (:import-from #:disp
                 #:workers

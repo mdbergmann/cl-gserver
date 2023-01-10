@@ -3,7 +3,7 @@
   (:export #:run!
            #:all-tests
            #:nil)
-  (:import-from #:utils
+  (:import-from #:miscutils
                 #:await-cond))
 
 (in-package :sento.actor-cell-test)

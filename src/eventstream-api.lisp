@@ -1,7 +1,7 @@
 (defpackage :sento.eventstream
   (:use :cl)
   (:nicknames :ev)
-  (:import-from #:utils
+  (:import-from #:miscutils
                 #:filter)
   (:import-from #:act
                 #:tell)

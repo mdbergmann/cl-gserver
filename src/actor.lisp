@@ -115,7 +115,7 @@
 
 (defmethod unwatch ((self actor) watcher)
   (with-slots (watchers) self
-    (setf watchers (utils:filter (lambda (w) (not (eq watcher w))) watchers))))
+    (setf watchers (miscutils:filter (lambda (w) (not (eq watcher w))) watchers))))
 
 (defmethod stop ((self actor) &optional (wait nil))
   "If this actor has an `actor-context`, also stop all children.
@@ -166,7 +166,7 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
                 (setf timed-out-p t)
                 (funcall promise-fun
                          (cons :handler-error
-                               (make-condition 'utils:ask-timeout
+                               (make-condition 'timeutils:ask-timeout
                                                :wait-time time-out
                                                :cause cause)))
                 (tell waiting-actor :stop))
@@ -194,8 +194,8 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
                  (handle-error c))))
            (unless system
              (handler-case
-                 (utils:with-waitfor (time-out)
-                   (utils:wait-cond (lambda () result-received-p) 0.1))
+                 (timeutils:with-waitfor (time-out)
+                   (timeutils:wait-cond (lambda () result-received-p) 0.1))
                (bt:timeout (c)
                  (handle-timeout c))))))))))
 

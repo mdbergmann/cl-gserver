@@ -116,7 +116,7 @@
                        :else
                          :do (ask-s cut :sub)))))
             (loop :repeat 8 :collect "n"))
-    (is (utils:assert-cond (lambda () (= 8 (ask-s cut :get))) 3 0.2))))
+    (is (miscutils:assert-cond (lambda () (= 8 (ask-s cut :get))) 3 0.2))))
 
 (test counter-mp-bounded
   "Counter server - multi processors - bounded queue"

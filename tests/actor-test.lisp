@@ -1,9 +1,11 @@
 (defpackage :sento.actor-test
   (:use :cl :fiveam :cl-mock :sento.actor :sento.future)
   (:shadow #:! #:?)
-  (:import-from #:utils
+  (:import-from #:miscutils
                 #:assert-cond
                 #:await-cond)
+  (:import-from #:timeutils
+                #:ask-timeout)
   (:import-from #:ac
                 #:actor-of))
 
@@ -218,7 +220,7 @@
                                        :my-result)))
            (result (ask-s actor "foo" :time-out 0.5)))
       (is (eq :handler-error (car result)))
-      (is (typep (cdr result) 'utils:ask-timeout))
+      (is (typep (cdr result) 'ask-timeout))
       (is (eq :stopped (ask-s actor :stop))))))
 
 (test ask-s--shared--timeout-in-dispatcher
@@ -236,7 +238,7 @@
                                          (declare (ignore msg)))))
              (result (ask-s actor "foo" :time-out 0.5)))
         (is (eq :handler-error (car result)))
-        (is (typep (cdr result) 'utils:ask-timeout))))))
+        (is (typep (cdr result) 'ask-timeout))))))
 
 (test ask--shared--timeout
   "Tests for ask timeout."
@@ -251,7 +253,7 @@
       (await-cond 1.0 (complete-p future))
       (is (eq :handler-error (car (fresult future))))
       (format t "error: ~a~%" (cdr (fresult future)))
-      (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
+      (is (typep (cdr (fresult future)) 'ask-timeout)))))
 
 (test ask--shared--timeout--many
   "Tests creation of many actors and ask messages with timeouts."
@@ -269,7 +271,7 @@
       (is-true (await-cond 0.7
                  (every
                   (lambda (n) (and (consp n)
-                              (typep (cdr n) 'utils:ask-timeout)))
+                              (typep (cdr n) 'ask-timeout)))
                   (mapcar #'fresult futures)))))))
 
 (test ask-s--pinned--timeout
@@ -281,7 +283,7 @@
                                nil)
     (let ((result (ask-s cut "foo" :time-out 0.5)))
       (is (eq :handler-error (car result)))
-      (is (typep (cdr result) 'utils:ask-timeout))
+      (is (typep (cdr result) 'ask-timeout))
       (is (eq :stopped (ask-s cut :stop))))))
 
 (test ask--pinned--timeout
@@ -294,7 +296,7 @@
     (let ((future (ask cut "foo" :time-out 0.5)))
       (await-cond 1.0 (complete-p future))
       (is (eq :handler-error (car (fresult future))))
-      (is (typep (cdr (fresult future)) 'utils:ask-timeout)))))
+      (is (typep (cdr (fresult future)) 'ask-timeout)))))
 
 (test allow--no-reply-for-ask-s--response
   "Tests to allow `:no-reply' `ask-s'. `ask' and `tell' need explicit 'reply'."

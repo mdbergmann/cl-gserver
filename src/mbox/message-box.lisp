@@ -1,5 +1,10 @@
 (defpackage :sento.messageb
-  (:use :cl :sento.utils :sento.queue)
+  (:use :cl :sento.queue)
+  (:import-from #:sento.miscutils
+                #:mkstr
+                #:assert-cond)
+  (:import-from #:timeutils
+                #:ask-timeout)
   (:import-from #:disp
                 #:dispatch
                 #:dispatch-async)
@@ -80,10 +85,10 @@ Use this instead of `submit`."
 (defun wait-and-probe-for-result (msgbox push-item)
   (with-slots (time-out handler-result cancelled-p) push-item
     (unless
-        (utils:assert-cond (lambda () (not (eq 'no-result handler-result))) time-out 0.1)
+        (assert-cond (lambda () (not (eq 'no-result handler-result))) time-out 0.1)
       (log:warn "~a: time-out elapsed but result not available yet!" (name msgbox))
       (setf cancelled-p t)
-      (error 'utils:ask-timeout :wait-time time-out))))
+      (error 'ask-timeout :wait-time time-out))))
 
 ;; ----------------------------------------
 ;; Cancellable message

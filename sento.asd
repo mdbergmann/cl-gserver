@@ -24,7 +24,8 @@
                    #+abcl (:file "atomic-abcl")))
                  (:file "config")
                  (:file "wheel-timer")
-                 (:file "utils")
+                 (:file "timeutils")
+                 (:file "miscutils")
                  (:file "dispatcher-api")
                  (:module "queue"
                   :components
@@ -63,10 +64,11 @@
   :components ((:module "tests"
                 :components
                 ((:file "all-test")
+                 (:file "miscutils-test")
                  (:file "atomic-test")
                  (:file "config-test")
                  (:file "wheel-timer-test")
-                 (:file "utils-test")
+                 (:file "timeutils-test")
                  (:file "actor-cell-test")
                  (:file "actor-mp-test")
                  (:file "agent-test")
@@ -114,11 +116,12 @@
 TODOs:
 
 OK - *self*, *state*, *sender* should be in act package
-=> - add !, ? as functions.
+OK - add !, ? as functions.
 - maybe add 'reply' for 'ask'
-- shutdown sys should be in actor-system to be symetric.
-- rename all-actors to all-actors-in
-- rename utils package
+OK - shutdown sys should be in actor-system to be symetric.
+  ==> stays as is. shutdown method is in asys but is ac protocol.
+OK - rename utils package
+- compose actor of actor-cell
 - move cons-list from lparallel
 - investigate:  <WARN> [17:29:22] sento.actor-cell actor-cell.lisp () - actor-26696: ask-s timeout: A timeout set to 0.5 seconds occurred. Cause: NIL 
 

@@ -1,5 +1,5 @@
 (defpackage :sento.actor-cell
-  (:use :cl :sento.utils)
+  (:use :cl)
   (:nicknames :act-cell)
   (:import-from #:mesgb
                 #:inner-msg
@@ -208,7 +208,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
            time-out)
           (with-sender sender
             (handle-message actor-cell message withreply-p)))
-    (utils:ask-timeout (c)
+    (timeutils:ask-timeout (c)
       (log:warn "~a: ask-s timeout: ~a" (name actor-cell) c)
       (cons :handler-error c))))
 

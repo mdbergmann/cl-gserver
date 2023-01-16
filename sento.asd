@@ -1,5 +1,5 @@
 (defsystem "sento"
-  :version "2.2.0"
+  :version "3.0.0"
   :author "Manfred Bergmann"
   :license "Apache-2"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -117,10 +117,10 @@ TODOs:
 
 OK - *self*, *state*, *sender* should be in act package
 OK - add !, ? as functions.
-- maybe add 'reply' for 'ask'
 OK - shutdown sys should be in actor-system to be symetric.
   ==> stays as is. shutdown method is in asys but is ac protocol.
 OK - rename utils package
+- add 'reply' macro for responding in side receive, with sender
 - compose actor of actor-cell
 - move cons-list from lparallel
 - investigate:  <WARN> [17:29:22] sento.actor-cell actor-cell.lisp () - actor-26696: ask-s timeout: A timeout set to 0.5 seconds occurred. Cause: NIL 

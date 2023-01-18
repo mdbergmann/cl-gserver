@@ -88,7 +88,9 @@
 ;; actor protocol impl
 ;; -------------------------------
 
-(defmethod tell ((self actor) message &optional sender)
+(defmethod tell ((self actor) message &optional (sender nil sender-provided-p))
+  (when (and sender-provided-p (not (typep sender 'actor)))
+    (error "Sender provided but is not an actor!"))
   (act-cell:cast self message sender))
 
 (defmethod ask-s ((self actor) message &key (time-out nil))
@@ -205,7 +207,9 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
 
 (defun reply (msg)
   "Replies to a sender. Sender must exist."
-  (act:! *sender* msg *self*))
+  (if *sender*
+      (act:! *sender* msg *self*)
+      (log:warn "Reply used without sender!")))
 
 ;; -------------------------------
 ;; eventstream protocol impl

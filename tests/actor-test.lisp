@@ -183,19 +183,6 @@
       (is-true (await-cond 1.0 (complete-p future)))
       (is (= 5 (fresult future))))))
 
-(test reply-to-actor-from-ask
-  "Tests the ask function. Using reply macro."
-  (with-fixture actor-fixture ((lambda (msg)
-                                 (sleep 0.2)
-                                 (cond
-                                   ((eq :add (car msg))
-                                    (reply (+ (second msg) (third msg))))))
-                               0
-                               nil)
-    (let ((future (act:? cut '(:add 0 5))))
-      (is-true (await-cond 1.0 (complete-p future)))
-      (is (= 5 (fresult future))))))
-
 (test single-actor--handle-ask-2
   "Test handle a composable asynchronous call. fcompleted before completion."
   (with-fixture actor-fixture ((lambda (msg)
@@ -317,6 +304,47 @@
     (let ((fut (ask cut :foo)))
       (await-cond 1.0 (complete-p fut))
       (is (eq :manual-reply (fresult fut))))))
+
+(test reply-to-actor-from-ask
+  "Tests reply function with ask."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (sleep 0.1)
+                                 (cond
+                                   ((eq :add (car msg))
+                                    (reply (+ (second msg) (third msg))))))
+                               0
+                               nil)
+    (let ((future (act:? cut '(:add 0 5))))
+      (is-true (await-cond 1.0 (complete-p future)))
+      (is (= 5 (fresult future))))))
+
+(test reply-to-actor-from-tell-explicit--no-sender
+  "Tests reply function with tell and other actor."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (sleep 0.1)
+                                 (cond
+                                   ((eq :add (car msg))
+                                    (reply (+ (second msg) (third msg))))))
+                               0
+                               nil)
+    (is (act:! cut '(:add 0 5)))))
+
+(test reply-to-actor-from-tell-explicit--with-sender--but-is-no-actor
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (sleep 0.1)
+                                 (cond
+                                   ((eq :add (car msg))
+                                    (reply (+ (second msg) (third msg))))))
+                               0
+                               nil)
+    (handler-case
+        (progn
+          (act:! cut '(:add 0 5) "foo")
+          (error "Should not pass"))
+      (error (c)
+        (is (equalp
+             (format nil "~a" c)
+             "Sender provided but is not an actor!"))))))
 
 (test become-and-unbecome-a-different-behavior
   "Test switching behaviors"

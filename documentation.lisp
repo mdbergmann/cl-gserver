@@ -93,6 +93,7 @@
   (act:tell generic-function)
   (act:ask-s generic-function)
   (act:ask generic-function)
+  (act:reply function)
   (act:become generic-function)
   (act:unbecome generic-function)
   (act:context generic-function)

@@ -88,10 +88,14 @@
 ;; actor protocol impl
 ;; -------------------------------
 
-(defmethod tell ((self actor) message &optional (sender nil sender-provided-p))
-  (when (and sender-provided-p (not (typep sender 'actor)))
-    (error "Sender provided but is not an actor!"))
-  (act-cell:cast self message sender))
+(defmethod tell ((self actor) message &optional sender)
+  (let ((s (cond
+             ((and sender (typep sender 'actor))
+              sender)
+             ((and sender (not (typep sender 'actor)))
+              (error "Sender provided but is not an actor!"))
+             (t sender))))
+    (act-cell:cast self message s)))
 
 (defmethod ask-s ((self actor) message &key (time-out nil))
   (act-cell:call self message :time-out time-out))
@@ -202,11 +206,12 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
                  (handle-timeout c))))))))))
 
 ;; -------------------------------
-;; reply macro
+;; reply
 ;; -------------------------------
 
 (defun reply (msg)
-  "Replies to a sender. Sender must exist."
+  "Replies to a sender. Sender must exist.
+Use this from within receive function to reply to a sender."
   (if *sender*
       (act:! *sender* msg *self*)
       (log:warn "Reply used without sender!")))

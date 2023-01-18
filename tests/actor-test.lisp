@@ -346,6 +346,28 @@
              (format nil "~a" c)
              "Sender provided but is not an actor!"))))))
 
+(test reply-to-actor-from-tell-explicit--with-other-actor-as-sender
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (sleep 0.1)
+                                 (cond
+                                   ((eq :add (car msg))
+                                    (reply (cons :result (+ (second msg) (third msg)))))))
+                               0
+                               t)
+    (let* ((received 0)
+           (receiver-actor (actor-of
+                            (ac:system (act:context cut))
+                            :receive
+                            (lambda (msg)
+                              (assert (eq *sender* cut))
+                              (cond
+                                ((eq :result (car msg))
+                                 (setf received (cdr msg))))))))
+      (print receiver-actor)
+      (act:! cut (list :add 3 2) receiver-actor)
+      (is-true (await-cond 0.5
+                 (= received 5))))))
+
 (test become-and-unbecome-a-different-behavior
   "Test switching behaviors"
   (let* ((beh2 (lambda (msg)

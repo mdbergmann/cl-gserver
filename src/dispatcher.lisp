@@ -2,8 +2,7 @@
 (in-package :sento.dispatcher)
 
 (shadowing-import '(mesgb:message-box/bt
-                    act:actor
-                    act:*self*))
+                    act:actor))
 
 (defclass dispatcher-base ()
   ((context :initform nil
@@ -91,6 +90,7 @@ A `shared-dispatcher` is automatically setup by an `asys:actor-system`."))
 
 (defun receive (message)
   "The worker receive function."
-  (assert (consp message) nil (format t "~a: Message must be a `cons'!" (act-cell:name *self*)))
+  (assert (consp message) nil
+          (format t "~a: Message must be a `cons'!" (act-cell:name act:*self*)))
   (case (car message)
     (:execute (funcall (cdr message)))))

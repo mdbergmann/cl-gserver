@@ -122,8 +122,8 @@ OK - shutdown sys should be in actor-system to be symetric.
 OK - rename utils package
 NO - compose actor of actor-cell
   ==> core functionality that shouldn't be really used is prrovided by ACT-CELL, like (STOP, NAME, STATE, RUNNING-P). Instead the AC provided functionality should be used.
-=> - add 'reply' macro for responding in side receive, with sender
-- move cons-list from lparallel
+OK - add 'reply' macro for responding in side receive, with sender
+=> - move cons-list from lparallel
 - investigate:  <WARN> [17:29:22] sento.actor-cell actor-cell.lisp () - actor-26696: ask-s timeout: A timeout set to 0.5 seconds occurred. Cause: NIL 
 
 Sento 3 changes:
@@ -131,6 +131,7 @@ Sento 3 changes:
 - no implicit sending to *sender* on 'ask'. Must be done explicitly using 'tell'.
 - removed required 'cons' return on 'receive' function.
 - removed 'self' and 'state' in 'receive function. Now exists *self* and *state*.
+- added reply
 
 |#
 

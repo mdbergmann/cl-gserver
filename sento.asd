@@ -120,8 +120,9 @@ OK - add !, ? as functions.
 OK - shutdown sys should be in actor-system to be symetric.
   ==> stays as is. shutdown method is in asys but is ac protocol.
 OK - rename utils package
-- add 'reply' macro for responding in side receive, with sender
-- compose actor of actor-cell
+NO - compose actor of actor-cell
+  ==> core functionality that shouldn't be really used is prrovided by ACT-CELL, like (STOP, NAME, STATE, RUNNING-P). Instead the AC provided functionality should be used.
+=> - add 'reply' macro for responding in side receive, with sender
 - move cons-list from lparallel
 - investigate:  <WARN> [17:29:22] sento.actor-cell actor-cell.lisp () - actor-26696: ask-s timeout: A timeout set to 0.5 seconds occurred. Cause: NIL 
 

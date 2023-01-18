@@ -120,9 +120,9 @@
     (is (eq nil (call cut "unhandled")))))
 
 
+(defparameter *pong-received* nil)
 (test cast--send-result-back-to-sender
   "Test that a cast, if implemented, can use `*sender*' to send result to 'sender'."
-  (defparameter *pong-received* nil)
   (defclass pong-cell (actor-cell) ())
   (defmethod handle-cast ((cell pong-cell) message)
     (when (eq message :pong)

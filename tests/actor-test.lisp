@@ -169,7 +169,7 @@
         (is (= 1 (length (invocations 'ac:notify))))))))
 
 (test single-actor--handle-ask
-  "Tests the async ask-s function. Using ! and ? here."
+  "Tests the ask function. Using ! and ? here."
   (with-fixture actor-fixture ((lambda (msg)
                                  (sleep 0.2)
                                  (cond
@@ -180,6 +180,19 @@
                                nil)
     (let ((future (act:? cut '(:add 0 5))))
       (is (eq :not-ready (fresult future)))
+      (is-true (await-cond 1.0 (complete-p future)))
+      (is (= 5 (fresult future))))))
+
+(test reply-to-actor-from-ask
+  "Tests the ask function. Using reply macro."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (sleep 0.2)
+                                 (cond
+                                   ((eq :add (car msg))
+                                    (reply (+ (second msg) (third msg))))))
+                               0
+                               nil)
+    (let ((future (act:? cut '(:add 0 5))))
       (is-true (await-cond 1.0 (complete-p future)))
       (is (= 5 (fresult future))))))
 

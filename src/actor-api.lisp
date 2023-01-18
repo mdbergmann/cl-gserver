@@ -8,6 +8,7 @@
            #:ask
            #:?
            #:ask-s
+           #:reply
            #:become
            #:unbecome
            #:context

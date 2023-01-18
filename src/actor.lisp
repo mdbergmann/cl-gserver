@@ -200,6 +200,14 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
                  (handle-timeout c))))))))))
 
 ;; -------------------------------
+;; reply macro
+;; -------------------------------
+
+(defun reply (msg)
+  "Replies to a sender. Sender must exist."
+  (act:! *sender* msg *self*))
+
+;; -------------------------------
 ;; eventstream protocol impl
 ;; -------------------------------
 

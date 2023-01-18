@@ -9,15 +9,7 @@
   (:import-from #:ac
                 #:actor-of))
 
-;;(shadowing-import '())
-
 (in-package :sento.actor-test)
-
-;; (do-external-symbols (s :fiveam)
-;;   (let ((sym-str (format nil "~a" s)))
-;;     (unless (or (equalp sym-str "!")
-;;                 (equalp sym-str "?"))
-;;       (intern (format nil "FIVEAM:~a" sym-str)))))
 
 (def-suite actor-tests
   :description "actor tests"
@@ -316,19 +308,16 @@
 (test become-and-unbecome-a-different-behavior
   "Test switching behaviors"
   (let* ((beh2 (lambda (msg)
-                 (declare (ignore msg))
                  (case msg
                    (:unbecome
                     (unbecome)))
                  :behavior2))
          (beh1 (lambda (msg)
-                 (declare (ignore msg))
                  (case msg
                    (:behavior2
                     (become beh2)))
                  :behavior1))
          (receive (lambda (msg)
-                    (declare (ignore msg))
                     (case msg
                       (:behavior1
                        (become beh1)))

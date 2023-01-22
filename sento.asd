@@ -6,8 +6,7 @@
   :depends-on ("alexandria"
                "log4cl"
                "bordeaux-threads"
-               "lparallel"
-               "cl-speedy-queue"
+               "jpl-queues"
                "str"
                "blackbird"
                "binding-arrows"
@@ -60,6 +59,7 @@
   :author "Manfred Bergmann"
   :depends-on ("sento"
                "fiveam"
+               "lparallel"
                "cl-mock")
   :components ((:module "tests"
                 :components

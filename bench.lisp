@@ -17,6 +17,7 @@
 (defun max-loop () (* *per-thread* +threads+))
 
 (defun runner-bt (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
+  (declare (ignore queue-size))
   ;; dispatchers used for the async-ask
   #+(or sbcl abcl clasp lispworks8 allegro)
   (setf *per-thread* 125000)
@@ -25,6 +26,7 @@
   (setf *system* (asys:make-actor-system '(:dispatchers (:shared (:workers 8)))))
   (setf *actor* (ac:actor-of *system*
                              :receive (lambda (msg)
+                                        (declare (ignore msg))
                                         (incf *counter*))
                              :dispatcher :pinned))
   (setf *withreply-p* withreply-p)
@@ -35,14 +37,15 @@
    (progn
      (map nil #'bt:join-thread
           (mapcar (lambda (x)
-                    (bt:make-thread (lambda ()
-                                      (dotimes (n *per-thread*)
-                                        (if withreply-p
-                                            (if asyncask
-                                                (act:ask *actor* :foo)
-                                                (act:ask-s *actor* :foo))
-                                            (act:tell *actor* :foo))))
-                                    :name x))
+                    (bt:make-thread
+                     (lambda ()
+                       (dotimes (n *per-thread*)
+                         (if withreply-p
+                             (if asyncask
+                                 (act:ask *actor* :foo)
+                                 (act:ask-s *actor* :foo))
+                             (act:tell *actor* :foo))))
+                     :name x))
                   (mapcar (lambda (n) (format nil "thread-~a" n))
                           (loop for n from 1 to +threads+ collect n))))
      (miscutils:assert-cond (lambda () (= *counter* (max-loop))) 20)))
@@ -53,6 +56,7 @@
   (ac:shutdown *system*))
 
 (defun runner-dp (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
+  (declare (ignore queue-size))
   #+sbcl
   (setf *per-thread* (if (or withreply-p asyncask) 50000 125000))
   #+ccl
@@ -62,10 +66,10 @@
   (setf *system* (asys:make-actor-system '(:dispatchers (:shared (:workers 8)))))
   (setf *actor* (ac:actor-of *system*
                              :receive (lambda (msg)
+                                        (declare (ignore msg))
                                         (incf *counter*))
-                             :dispatcher :shared
-                             :queue-size queue-size))
-  (print *actor*)
+                             :dispatcher :shared))
+  ;;(print *actor*)
   (setf *withreply-p* withreply-p)
   (setf *counter* 0)
   (setf *starttime* (get-universal-time))
@@ -74,21 +78,22 @@
    (progn
      (map nil #'bt:join-thread
           (mapcar (lambda (x)
-                    (bt:make-thread (lambda ()
-                                      (dotimes (n *per-thread*)
-                                        (if withreply-p
-                                            (if asyncask
-                                                (act:ask *actor* :foo)
-                                                (act:ask-s *actor* :foo))
-                                            (act:tell *actor* :foo))))
-                                    :name x))
+                    (bt:make-thread
+                     (lambda ()
+                       (dotimes (n *per-thread*)
+                         (if withreply-p
+                             (if asyncask
+                                 (act:ask *actor* :foo)
+                                 (act:ask-s *actor* :foo))
+                             (act:tell *actor* :foo))))
+                     :name x))
                   (mapcar (lambda (n) (format nil "thread-~a" n))
                           (loop for n from 1 to +threads+ collect n))))
      (miscutils:assert-cond (lambda () (= *counter* (max-loop))) 120)))
   (setf *endtime* (get-universal-time))
   (format t "Counter: ~a~%" *counter*)
   (format t "Elapsed: ~a~%" (- *endtime* *starttime*))
-  (print *system*)
+  ;;(print *system*)
   (ac:shutdown *system*))
 
 

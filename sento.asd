@@ -91,8 +91,9 @@
                                         (uiop:find-symbol* '#:test-suite
                                                            '#:sento.tests))))
 
-
+;; --------------------------------
 ;; documentation
+;; --------------------------------
 
 (defsystem "sento/docs"
   :author "Manfred Bergmann"
@@ -101,6 +102,43 @@
                "mgl-pax/full")
   :components ((:file "documentation")))
 
+
+;; --------------------------------
+;; lparallels high speec cons-queue
+;; this is a separate system in order to reduce dependencies
+;; for 'normal' use the jpl-queues are fully sufficient
+;; --------------------------------
+
+(defsystem "sento-high-speed-queue"
+  :author "Manfred Bergmann"
+  :license "Apache-2"
+  :description "High speed unbounded queue based on lparallel's cons-queue."
+  :depends-on ("sento"
+               "lparallel"
+               )
+  :components ((:module "src"
+                :serial t
+                :components
+                ((:module "queue"
+                  :components
+                  ((:file "queue-hsq"))))))
+  :in-order-to ((test-op (test-op "sento-high-speed-queue/tests"))))
+
+(defsystem "sento-high-speed-queue/tests"
+  :author "Manfred Bergmann"
+  :depends-on ("sento-high-speed-queue"
+               "fiveam"
+               "cl-mock")
+  :components ((:module "tests"
+                :components
+                ((:file "all-test")
+                 (:file "actor-cell-test")
+                 (:file "actor-mp-test")
+                 )))
+  :description "Test system for sento"
+  :perform (test-op (op c) (symbol-call :fiveam :run!
+                                        (uiop:find-symbol* '#:test-suite
+                                                           '#:sento.tests))))
 
 ;; load system
 ;; (asdf:load-system "sento")
@@ -123,7 +161,8 @@ OK - rename utils package
 NO - compose actor of actor-cell
   ==> core functionality that shouldn't be really used is prrovided by ACT-CELL, like (STOP, NAME, STATE, RUNNING-P). Instead the AC provided functionality should be used.
 OK - add 'reply' macro for responding in side receive, with sender
-=> - move cons-list from lparallel
+OK - move cons-list from lparallel
+  ==> using jpl-queues and con-squeue as a separate system.
 - investigate:  <WARN> [17:29:22] sento.actor-cell actor-cell.lisp () - actor-26696: ask-s timeout: A timeout set to 0.5 seconds occurred. Cause: NIL 
 
 Sento 3 changes:
@@ -132,6 +171,7 @@ Sento 3 changes:
 - removed required 'cons' return on 'receive' function.
 - removed 'self' and 'state' in 'receive function. Now exists *self* and *state*.
 - added reply
+- cons-queue as separate 'high-speed' system
 
 |#
 

@@ -19,8 +19,10 @@
 (defun runner-bt (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
   (declare (ignore queue-size))
   ;; dispatchers used for the async-ask
-  #+(or sbcl abcl clasp lispworks8 allegro)
+  #+(or abcl clasp lispworks8 allegro)
   (setf *per-thread* 125000)
+  #+sbcl
+  (setf *per-thread* 75000)  
   #+ccl
   (setf *per-thread* (if asyncask 10000 125000))
   (setf *system* (asys:make-actor-system '(:dispatchers (:shared (:workers 8)))))

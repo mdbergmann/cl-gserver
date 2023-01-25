@@ -163,7 +163,9 @@ NO - compose actor of actor-cell
 OK - add 'reply' macro for responding in side receive, with sender
 OK - move cons-list from lparallel
   ==> using jpl-queues and con-squeue as a separate system.
-- investigate:  <WARN> [17:29:22] sento.actor-cell actor-cell.lisp () - actor-26696: ask-s timeout: A timeout set to 0.5 seconds occurred. Cause: NIL 
+=> - write new readme with new features
+- migration guide
+- 
 
 Sento 3 changes:
 

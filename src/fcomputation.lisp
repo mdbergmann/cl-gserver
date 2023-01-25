@@ -37,7 +37,7 @@ The `future` will be resolved with the result of the body form."
                     (funcall resolve-fun result)))))
 
 (defmacro with-fut-resolve (&body body)
-  "Convenience macro for creating a `future` that must be resolved manually via `resolve`.
+  "Convenience macro for creating a `future` that must be resolved manually via `fresolve`.
 
 This allows to spawn threads or other asynchronous operations as part of `body`.
 However, you have to `resolve` the future eventually by applying a result on `resolve`.

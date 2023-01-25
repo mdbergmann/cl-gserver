@@ -12,186 +12,159 @@ sento features:
 - EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages.
 - Tasks: a simple API for concurrency.
 
-### Version history
 
-**Version 2.2.0 (27.12.2022):** Added stashing and unstashing of messages.
-
-**Version 2.1.0 (17.11.2022):** Reworked the `future` package. Nicer syntax and futures can now be mapped.
-
-**Version 2.0.0 (16.8.2022):** Rename to "Sento". Incompatible change due to package names and system have changed.
-
-**Version 1.12.2 (29.5.2022):** Removed the logging abstraction again. Less code to maintain. log4cl is featureful enough for users to either use it, or use something else in the applications that are based on sento.
-
-**Version 1.12.1 (25.5.2022):** Shutdown and stop of actor, actor context and actor system can now wait for a full shutdown/stop of all actors to really have a clean system shutdown.
-
-**Version 1.12.0 (26.2.2022):** Refactored and cleaned up the available `actor-of` facilities. There is now only one. If you used the macro before, you may have to adapt slightly.
-
-**Version 1.11.1 (25.2.2022):** Minor additions to `actor-of` macro to allow specifying a `destroy` function.
-
-**Version 1.11.0 (16.1.2022):** Changes to `AC:FIND-ACTORS`. Breaking API change. See API documentation for details.
-
-**Version 1.10.0:** Logging abstraction. Use your own logging facility. sento doesn't lock you in but provides support for log4cl. Support for other logging facilities can be easily added so that the logging of sento  will use your chosen logging library. See below for more details.
-
-**Version 1.9.0:** Use wheel timer for `ask` timeouts.
-
-**Version 1.8.2:** atomic add/remove of actors in actor-context.
-
-**Version 1.8.0:** hash-agent interface changes. Added array-agent.
-
-**Version 1.7.6:** Added cl:hash-table based agent with similar API interface.
-
-**Version 1.7.5:** Allow agent to specify the dispatcher to be used.
-
-**Version 1.7.4:** more convenience additions for task-async (completion-handler)
-
-**Version 1.7.3:** cleaned up dependencies. Now sento works on SBCL, CCL, LispWorks, Allegro and ABCL
-
-**Version 1.7.2:** allowing to choose the dispatcher strategy via configuration
-
-**Version 1.7.1:** added possibility to create additional and custom dispatchers. I.e. to be used with `tasks`.
-
-**Version 1.7.0:** added tasks abstraction facility to more easily deal with asynchronous and concurrent operations.
-
-**Version 1.6.0:** added eventstream facility for building event based systems. Plus documentation improvements.
-
-**Version 1.5.0:** added configuration structure. actor-system can now be created with a configuration. More configuration options to come.
-
-**Version 1.4.1:** changed documentation to the excellent [mgl-pax](https://github.com/melisgl/mgl-pax)
-
-**Version 1.4:** convenience macro for creating actor. See below for more details
-
-**Version 1.3.1:** round-robin strategy for router
-
-**Version 1.3:** agents can be created in actor-system
-
-**Version 1.2:** introduces a breaking change
-
-`ask` has been renamed to `ask-s`.
-
-`async-ask` has been renamed to `ask`.
-
-The proposed default way to query for a result from another actor should
-be an asynchronous `ask`. `ask-s` (synchronous) is
-of course still possible.
-
-**Version 1.0** of `sento` library comes with quite a
-few new features (compared to the previous 0.x versions). 
-One of the major new features is that an actor is not
-bound to it's own message dispatcher thread. Instead, when an
-`actor-system` is set-up, actors can use a shared pool of
-message dispatchers which effectively allows to create millions of
-actors.
-
-It is now possible to create actor hierarchies. An actor can have child
-actors. An actor now can also 'watch' another actor to get notified
-about it's termination.
-
-It is also possible to specify timeouts for the `ask-s` and
-`ask` functionality.
-
-This new version is closer to Akka (the actor model framework on the
-JVM) than to GenServer on Erlang. This is because Common Lisp from a
-runtime perspective is closer to JVM than to Erlang/OTP. Threads in
-Common Lisp are heavy weight OS threads rather than user-space low
-weight 'Erlang' threads (I'd like to avoid 'green threads', because
-threads in Erlang are not really green threads). While on Erlang it is
-easily possible to spawn millions of processes/threads and so each actor
-(GenServer) has its own process, this model is not possible when the
-threads are OS threads, because of OS resource limits. This is the main
-reason for working with the message dispatcher pool instead.
-
-But let's jump right into it. I'll explain more later.
-
-### Getting hands-on
+### Intro
 
 #### Creating an actor-system
 
-To use the shared dispatcher pool we have to create an
-`actor-system` first.
+The first thing you wanna do is to create an actor system.
+In simple terms, an actor system is a container wherer all the actors live in. So at any point the actor system knows which actors exist.
+
+So, to create an actor system we can first change package to `:sento-user` because it includes already the majority of necessary namespaces. Then, do:
 
 ```elisp
-(defvar *system* (asys:make-actor-system))
+(defvar *system* (make-actor-system))
 ```
 
-When we eval `*system*` in the repl we see a bit of the structure:
+When we loop at `*system*` in the repl we see a bit of the structure:
 
 ```plain
-#<ACTOR-SYSTEM shared-workers: 4, user actors: 0, internal actors: 0>
+#<ACTOR-SYSTEM config: (DISPATCHERS
+                        (SHARED (WORKERS 4 STRATEGY RANDOM))
+                        TIMEOUT-TIMER
+                        (RESOLUTION 500 MAX-SIZE 1000)
+                        EVENTSTREAM
+                        (DISPATCHER-ID
+                         SHARED)), user actors: 0, internal actors: 5>
 ```
 
-So the `actor-system` has by default four shared message
-dispatcher workers. Depending on how busy the system tends to be this
-default can of course be increased.
+The `actor-system` has by default four shared message dispatcher workers. Depending on how busy the system tends to be this default can of course be increased. Those four are part of the 'internal actors'. The 5th actor drives the event-stream (later more on that, but in a nutshell it's something like an event bus).
 
-An optional configuration can be passed to the actor-system factory function. See API documentation.
+There are none 'user actors' yet, and the 'config' is the default config specifying the number of message dispatch workers (4) and the strategy they use to balance throughput, 'random' here.
 
-1.  Shutting down the system
+Using a custom config is it possible to change much of those defaults. For instance, create custom dispatchers, i.e. a dedicated dispatcher used for the 'Tasks' api (see later for more info). The event-stream by default uses the global 'shared' dispatcher. Changing the config it would be possible to have the event-stream actor use a `:pinned` dispatcher (more on dispatchers later). Etc.
 
-    Shutting down an actor system may be necessary depending on how
-    it's used. It can be done by:
 
-    ```elisp
-    (ac:shutdown *system*)
-    ```
+TODO: shutdown
 
-    This will stop all dispatcher workers and all other actors that have
-    been spawned in the system.
+#### Creating and using actors
 
-#### Creating actors
+Now we want to create actors.
 
-Actors kind of live within an `actor-context`. An
-`actor-context` contains a collection (of actors) and defines a Common
-Lisp protocol that defines a set of generic functions for creating, removing and finding actors in an `actor-context`.
-
-There are two 'things' that host an `actor-context`. This
-is:
-
-1.  the `actor-system`. Creating actors on the `actor-system` will create root actors.
-2.  the `actor`. Creating actors on the context of an actor will create a child actor.
+Actors live in the actor system, but more concrete in an `actor-context`. An `actor-context` contains a collection (of actors) and defines a Common Lisp protocol that defines a set of generic functions for creating, removing and finding actors in an `actor-context`. The actor system itself is also implementing the `actor-context` protocol, so it also acts as such.
 
 Let's create an actor.
 
 ```elisp
-(ac:actor-of *system* :name "answerer"
+(actor-of *system* :name "answerer"
   :receive
-  (lambda (self msg state)
+  (lambda (msg)
     (let ((output (format nil "Hello ~a" msg)))
-      (format t "~a~%" output)
-      (cons output state))))
+        (reply output))))
 ```
 
-This creates a root actor on the `*system*`. Notice that the actor is not assigned to a variable. It is now registered in the system. The `:receive` key argument to the `actor-of` macro is a function which does the main message processing of an actor. The parameters to the 'receive' function are the tuple:
+This creates an actor in `*system*`. Notice that the actor is not assigned to a variable (but you can). It is now registered in the system. Using function `ac:find-actors` you'll be able to find it again. Of course it makes sense to store important actors that are frequently used in a `defparameter` or so.
 
-1.  `self` - the instance of the actor
-2.  `msg` - the received message of when this 'receive' function is called
-3.  `state` - the current state of the actor
+The `:receive` key argument to `actor-of` is a function which does the message processing of an actor. The parameter to the 'receive' function is just the received message (msg).
 
-`actor-of` also allows to specify the initial state by using the `:state` key, a name, and a custom actor type. By default a standard actor of type `'actor` is created. But you can subclass `'actor` and specify your own. It is also possible to add 'after initialization' code using the `:init` key which takes a lambda with the actor instance as parameter.
+`actor-of` also allows to specify the initial state, a name, and a custom actor type via key parameters. By default a standard actor of type `'actor` is created. It is possible to subclass `'actor` and specify your own. It is further possible to specify an 'after initialization' function, using the `:init` key, and 'after destroy' function using `:destroy` keyword. `:init` can, for example, be used to subscribe to the event-stream for listening to important messages.
 
-The return value of the 'receive' function should also be familiar. It is the `cons` with `car` being sent back to sender (in case of ask/ask-s) and `cdr` set as the new state of the actor.
+The retun value of 'receive' function is only used when using the synchronous `ask-s` function to 'ask' the actor. Using `ask` (equivalent: `?`) the return value is ignored. If an answer should be provided then `reply` should be used.
 
-The `actor-of` macro still returns the actor as can be seen on the repl when this is executed. So it is of course possible to store the actor in a dynamic or lexical context. However, when the lexical context ends, the actor will still live as part of the actor context/system.
-
-Here we see a few details of the actor. Among which is the name and also the type of message-box it uses. By default it is a `message-box/dp` which is the type of a shared message dispatcher message-box.
+The above actor was stored to a variable `*answerer*`. We can evaluate this in repl and see:
 
 ```
-#<ACTOR answerer, running: T, state: NIL, message-box: #<MESSAGE-BOX/DP mesgb-9541, processed messages: 0, max-queue-size: 0, queue: #<QUEUE-UNBOUNDED #x3020029918FD>>>
+#<ACTOR path: /user/answerer, cell: #<ACTOR answerer, running: T, state: NIL, message-box: #<SENTO.MESSAGEB:MESSAGE-BOX/DP mesgb-1356, processed messages: 1, max-queue-size: 0, queue: #<SENTO.QUEUE:QUEUE-UNBOUNDED 82701A6D13>>>>
 ```
 
-Had we stored the actor to a variable, say `*answerer*` we
-can create a child actor of that by doing:
+We'll see the 'path' of the actor. The prefix '/user' means that the actor was created in a user actor context of the actor system. Further we see whether the actor is 'running', its 'state' and the used 'message-box' type, by default with an unbounded queue.
+
+Now, sending a message to the above actor like so:
 
 ```elisp
-(ac:actor-of *answerer* :name "child-answerer"
-    :receive 
-    (lambda (self msg state)
-        (let ((output (format nil "~a" "Hello-child ~a" msg)))
-            (format t "~a~%" output)
-            (cons output state))))
+(? *answerer* "FooBar")
 ```
 
-This will create a new actor on the context of the parent actor. The
-context can be specified with just the parent actor instance `*answerer*`.
+we'll get a 'future' as result, because `?`/`ask` is asynchronous.
+
+```plain
+#<FUTURE promise: #<BLACKBIRD-BASE:PROMISE
+finished: NIL
+errored: NIL
+forward: NIL 80100E8B7B>>
+```
+
+By now the answer from the `*answerer*` (via `reply`) should be available. So we can resolve the future:
+
+```plain
+USER> (fresult *)
+"Hello FooBar"
+```
+
+If the reply had not been received yet, `fresult` would return `:not-ready`. So it is necessary to repeatedly probe using `fresult`.
+
+A nicer way is to use `fcompleted`. Using `fcompleted` it is possible to have code executed asynchronously when the answer is received, like this:
+
+```elisp
+(fcompleted
+     (? *answerer* "Buzz")
+     (result)
+   (format t "The answer is: ~a~%" result))
+```
+
+Which will asynchronously print "The answer is: Hello Buzz" after a short while.
+This will also work when the `ask`/`?` was used with a timeout, in which case `result` will be a tuple of `(:handler-error . <ask-timeout condition>)`.
+
+
+#### Creating child actors
+
+To build actor hierarchies one has to create actors in actors. This is of course possible. There are two options for this.
+
+1. Actors are created as part of `actor-of`s `:init` function like so:
+
+```elisp
+(actor-of *system* 
+          :name "answerer-with-child"
+          :receive
+          (lambda (msg)
+            (let ((output (format nil "Hello ~a" msg)))
+              (reply output)))
+          :init
+          (lambda (self)
+            (actor-of self 
+                      :name "child-answerer"
+                      :receive 
+                      (lambda (msg)
+                        (let ((output (format nil "~a" "Hello-child ~a" msg)))
+                          (format nil "~a~%" output))))))
+```
+
+Notice the context of 'child-answerer' is `self`.
+
+Or it is possible externally like so:
+
+```elisp
+(actor-of *answerer* :name "child-answerer"
+    :receive 
+    (lambda (msg)
+        (let ((output (format nil "~a" "Hello-child ~a" msg)))
+            (format nil "~a~%" output))))
+```
+
+This uses `*answerer*` context. But has the same effect.
+
+Now we can check if there is an actor in context of 'answerer-with-child':
+
+```plain
+USER> (all-actors *actor-with-child*)
+(#<ACTOR path: /user/answerer-with-child/child-answerer, cell: #<ACTOR child-answerer, running: T, state: NIL, message-box: #<SENTO.MESSAGEB:MESSAGE-BOX/DP mesgb-1374, processed messages: 0, max-queue-size: 0, queue: #<SENTO.QUEUE:QUEUE-UNBOUNDED 8200A195FB>>>>)
+```
+
+The 'path' is what we expected: '/user/answerer-with-child/child-answerer'.
+
+
+TODO: ping pong using tell
+
 
 ##### Dispatchers `:pinned` vs. `:shared`
 
@@ -206,9 +179,7 @@ Please see below for more info on dispatchers.
 
 #### Finding actors in the context
 
-If actors are not directly stored in a dynamic or lexical context they
-can still be looked up and used. The `actor-context` protocol
-contains a function `find-actors` which works like this:
+If actors are not directly stored in a dynamic or lexical context they can still be looked up and used. The `actor-context` protocol contains a function `find-actors` which works like this:
 
 ```elisp
 (first (ac:find-actors *system* "answerer"))
@@ -777,3 +748,92 @@ The pleasant surprise was ABCL. While not being the fastest it is the
 most robust. Where SBCL and CCL were struggling you could throw anything
 at ABCL and it'll cope with it. I'm assuming that this is because of
 the massively battle proven Java Runtime.
+
+
+### Version history
+
+**Version 2.2.0 (27.12.2022):** Added stashing and unstashing of messages.
+
+**Version 2.1.0 (17.11.2022):** Reworked the `future` package. Nicer syntax and futures can now be mapped.
+
+**Version 2.0.0 (16.8.2022):** Rename to "Sento". Incompatible change due to package names and system have changed.
+
+**Version 1.12.2 (29.5.2022):** Removed the logging abstraction again. Less code to maintain. log4cl is featureful enough for users to either use it, or use something else in the applications that are based on sento.
+
+**Version 1.12.1 (25.5.2022):** Shutdown and stop of actor, actor context and actor system can now wait for a full shutdown/stop of all actors to really have a clean system shutdown.
+
+**Version 1.12.0 (26.2.2022):** Refactored and cleaned up the available `actor-of` facilities. There is now only one. If you used the macro before, you may have to adapt slightly.
+
+**Version 1.11.1 (25.2.2022):** Minor additions to `actor-of` macro to allow specifying a `destroy` function.
+
+**Version 1.11.0 (16.1.2022):** Changes to `AC:FIND-ACTORS`. Breaking API change. See API documentation for details.
+
+**Version 1.10.0:** Logging abstraction. Use your own logging facility. sento doesn't lock you in but provides support for log4cl. Support for other logging facilities can be easily added so that the logging of sento  will use your chosen logging library. See below for more details.
+
+**Version 1.9.0:** Use wheel timer for `ask` timeouts.
+
+**Version 1.8.2:** atomic add/remove of actors in actor-context.
+
+**Version 1.8.0:** hash-agent interface changes. Added array-agent.
+
+**Version 1.7.6:** Added cl:hash-table based agent with similar API interface.
+
+**Version 1.7.5:** Allow agent to specify the dispatcher to be used.
+
+**Version 1.7.4:** more convenience additions for task-async (completion-handler)
+
+**Version 1.7.3:** cleaned up dependencies. Now sento works on SBCL, CCL, LispWorks, Allegro and ABCL
+
+**Version 1.7.2:** allowing to choose the dispatcher strategy via configuration
+
+**Version 1.7.1:** added possibility to create additional and custom dispatchers. I.e. to be used with `tasks`.
+
+**Version 1.7.0:** added tasks abstraction facility to more easily deal with asynchronous and concurrent operations.
+
+**Version 1.6.0:** added eventstream facility for building event based systems. Plus documentation improvements.
+
+**Version 1.5.0:** added configuration structure. actor-system can now be created with a configuration. More configuration options to come.
+
+**Version 1.4.1:** changed documentation to the excellent [mgl-pax](https://github.com/melisgl/mgl-pax)
+
+**Version 1.4:** convenience macro for creating actor. See below for more details
+
+**Version 1.3.1:** round-robin strategy for router
+
+**Version 1.3:** agents can be created in actor-system
+
+**Version 1.2:** introduces a breaking change
+
+`ask` has been renamed to `ask-s`.
+
+`async-ask` has been renamed to `ask`.
+
+The proposed default way to query for a result from another actor should
+be an asynchronous `ask`. `ask-s` (synchronous) is
+of course still possible.
+
+**Version 1.0** of `sento` library comes with quite a
+few new features (compared to the previous 0.x versions). 
+One of the major new features is that an actor is not
+bound to it's own message dispatcher thread. Instead, when an
+`actor-system` is set-up, actors can use a shared pool of
+message dispatchers which effectively allows to create millions of
+actors.
+
+It is now possible to create actor hierarchies. An actor can have child
+actors. An actor now can also 'watch' another actor to get notified
+about it's termination.
+
+It is also possible to specify timeouts for the `ask-s` and
+`ask` functionality.
+
+This new version is closer to Akka (the actor model framework on the
+JVM) than to GenServer on Erlang. This is because Common Lisp from a
+runtime perspective is closer to JVM than to Erlang/OTP. Threads in
+Common Lisp are heavy weight OS threads rather than user-space low
+weight 'Erlang' threads (I'd like to avoid 'green threads', because
+threads in Erlang are not really green threads). While on Erlang it is
+easily possible to spawn millions of processes/threads and so each actor
+(GenServer) has its own process, this model is not possible when the
+threads are OS threads, because of OS resource limits. This is the main
+reason for working with the message dispatcher pool instead.

@@ -673,6 +673,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 
 - the lparallel dependency was removed to reduce dependencies. However, the cons-queue of lparallel is very fast (used for unbounded message queue) so an additional 'sento-high-speed-queue' asdf system has been added to bring back the lparallel cons-queue if performance is critical. It brings an additional 10%-30% boost.
 
+- 'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.
+
 ### Version history
 
 **Version 3.0.0 (1.2.2023):** New major version. See migration guide if you have are migrating from version 2.

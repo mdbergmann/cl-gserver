@@ -695,6 +695,7 @@ The concurrency here depends on the number of dispatcher workers.</p>
 Previous 'self' and 'state' parameters are now accessible via <code>*self*</code> and <code>*state*</code>. The same applies to <code>become</code> function.</p></li>
 <li><p>the return value of 'receive' function is ignored for <code>tell</code> and <code>ask</code>. In both cases a <code>reply</code> macro can be used to reply to a sender. <code>reply</code> implicitly uses <code>*sender*</code> but can be overriden (see 'long running and asynchronous operations in receive'). The 'receive' function return value is still relevant for <code>ask-s</code>.</p></li>
 <li><p>the lparallel dependency was removed to reduce dependencies. However, the cons-queue of lparallel is very fast (used for unbounded message queue) so an additional 'sento-high-speed-queue' asdf system has been added to bring back the lparallel cons-queue if performance is critical. It brings an additional 10%-30% boost.</p></li>
+<li><p>'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.</p></li>
 </ul>
 
 <h3>Version history</h3>

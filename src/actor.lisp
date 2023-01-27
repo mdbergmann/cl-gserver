@@ -209,11 +209,11 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
 ;; reply
 ;; -------------------------------
 
-(defun reply (msg)
+(defun reply (msg &optional (sender *sender*))
   "Replies to a sender. Sender must exist.
 Use this from within receive function to reply to a sender."
-  (if *sender*
-      (act:! *sender* msg *self*)
+  (if sender
+      (act:! sender msg *self*)
       (log:warn "Reply used without sender!")))
 
 ;; -------------------------------

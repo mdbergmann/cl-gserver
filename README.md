@@ -4,29 +4,31 @@
 
 __Sento__ is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.
 
-sento features:
+Sento features:
 
-- Actors with `ask` and `tell` operations. `ask` can be asynchronous or synchronous.
-- Agents: Agents are a specialization of Actors for wrapping state with a standardized interface of `init`, `get` and `set`. There are also specialized Agents for CLs array and hash-map.
-- Router: Router offers a similar interface as Actor with `ask` and `tell` but collects multiple Actors for load-balancing.
-- EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages.
+- Actors with `ask` (`?`) and `tell` (`!`) operations. `ask` can be asynchronous or synchronous.
+- Agents: Agents are a specialization of Actors for wrapping state with a standardized interface of `init`, `get` and `set`. There are also specialized Agents for Common Lisps array and hash-map data structures.
+- Router: Router offers a similar interface as Actor with `ask` and `tell` but can collects multiple Actors for load-balancing.
+- EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages. This is similar to an event-bus.
 - Tasks: a simple API for concurrency.
 
 
 ### Intro
 
+(Please also checkout the API [documentation](https://mdbergmann.github.io/cl-gserver/index.html) for further information)
+
 #### Creating an actor-system
 
 The first thing you wanna do is to create an actor system.
-In simple terms, an actor system is a container wherer all the actors live in. So at any point the actor system knows which actors exist.
+In simple terms, an actor system is a container where all actors live in. So at any time the actor system knows which actors exist.
 
-So, to create an actor system we can first change package to `:sento-user` because it includes already the majority of necessary namespaces. Then, do:
+To create an actor system we can first change package to `:sento-user` because it imports the majority of necessary namespaces fopr convenience. Then, do:
 
 ```elisp
 (defvar *system* (make-actor-system))
 ```
 
-When we loop at `*system*` in the repl we see a bit of the structure:
+When we look at `*system*` in the repl we see some information of the actor system:
 
 ```plain
 #<ACTOR-SYSTEM config: (DISPATCHERS
@@ -38,22 +40,20 @@ When we loop at `*system*` in the repl we see a bit of the structure:
                          SHARED)), user actors: 0, internal actors: 5>
 ```
 
-The `actor-system` has by default four shared message dispatcher workers. Depending on how busy the system tends to be this default can of course be increased. Those four are part of the 'internal actors'. The 5th actor drives the event-stream (later more on that, but in a nutshell it's something like an event bus).
+The `actor-system` has, by default, four shared message dispatcher workers. Depending on how busy the system tends to be this default can be increased. Those four workers are part of the 'internal actors'. The 5th actor drives the event-stream (later more on that, but in a nutshell it's something like an event bus).
 
 There are none 'user actors' yet, and the 'config' is the default config specifying the number of message dispatch workers (4) and the strategy they use to balance throughput, 'random' here.
 
-Using a custom config is it possible to change much of those defaults. For instance, create custom dispatchers, i.e. a dedicated dispatcher used for the 'Tasks' api (see later for more info). The event-stream by default uses the global 'shared' dispatcher. Changing the config it would be possible to have the event-stream actor use a `:pinned` dispatcher (more on dispatchers later). Etc.
+Using a custom config is it possible to change much of those defaults. For instance, create custom dispatchers, i.e. a dedicated dispatcher used for the 'Tasks' api (see later for more info). The event-stream by default uses the global 'shared' dispatcher. Changing the config it would be possible to have the event-stream actor use a `:pinned` dispatcher (more on dispatchers later) to optimize throughput. Etc.
 
+Actors live in the actor system, but more concrete in an `actor-context`. An `actor-context` contains a collection (of actors) and represents a Common Lisp protocol that defines a set of generic functions for creating, removing and finding actors in an `actor-context`. The actor system itself is also implementing the `actor-context` protocol, so it also acts as such and hence the protocol `ac` (`actor-context`) is used to operate on the actor system.
 
-TODO: shutdown
+I.e. to shutdown the actor system one has to execute: `(ac:shutdown *system*)`.
+
 
 #### Creating and using actors
 
 Now we want to create actors.
-
-Actors live in the actor system, but more concrete in an `actor-context`. An `actor-context` contains a collection (of actors) and defines a Common Lisp protocol that defines a set of generic functions for creating, removing and finding actors in an `actor-context`. The actor system itself is also implementing the `actor-context` protocol, so it also acts as such.
-
-Let's create an actor.
 
 ```elisp
 (actor-of *system* :name "answerer"
@@ -63,13 +63,13 @@ Let's create an actor.
         (reply output))))
 ```
 
-This creates an actor in `*system*`. Notice that the actor is not assigned to a variable (but you can). It is now registered in the system. Using function `ac:find-actors` you'll be able to find it again. Of course it makes sense to store important actors that are frequently used in a `defparameter` or so.
+This creates an actor in `*system*`. Notice that the actor is not assigned to a variable (but you can). It is now registered in the system. Using function `ac:find-actors` you'll be able to find it again. Of course it makes sense to store important actors that are frequently used in a `defparameter` variable.
 
-The `:receive` key argument to `actor-of` is a function which does the message processing of an actor. The parameter to the 'receive' function is just the received message (msg).
+The `:receive` key argument to `actor-of` is a function which implements the message processing behaviour of an actor. The parameter to the 'receive' function is just the received message (msg).
 
 `actor-of` also allows to specify the initial state, a name, and a custom actor type via key parameters. By default a standard actor of type `'actor` is created. It is possible to subclass `'actor` and specify your own. It is further possible to specify an 'after initialization' function, using the `:init` key, and 'after destroy' function using `:destroy` keyword. `:init` can, for example, be used to subscribe to the event-stream for listening to important messages.
 
-The retun value of 'receive' function is only used when using the synchronous `ask-s` function to 'ask' the actor. Using `ask` (equivalent: `?`) the return value is ignored. If an answer should be provided then `reply` should be used.
+The return value of 'receive' function is only used when using the synchronous `ask-s` function to 'ask' the actor. Using `ask` (equivalent: `?`) the return value is ignored. If an answer should be provided to an asking actor, or if replying is part of an interface contract, then `reply` should be used.
 
 The above actor was stored to a variable `*answerer*`. We can evaluate this in repl and see:
 
@@ -77,9 +77,9 @@ The above actor was stored to a variable `*answerer*`. We can evaluate this in r
 #<ACTOR path: /user/answerer, cell: #<ACTOR answerer, running: T, state: NIL, message-box: #<SENTO.MESSAGEB:MESSAGE-BOX/DP mesgb-1356, processed messages: 1, max-queue-size: 0, queue: #<SENTO.QUEUE:QUEUE-UNBOUNDED 82701A6D13>>>>
 ```
 
-We'll see the 'path' of the actor. The prefix '/user' means that the actor was created in a user actor context of the actor system. Further we see whether the actor is 'running', its 'state' and the used 'message-box' type, by default with an unbounded queue.
+We'll see the 'path' of the actor. The prefix '/user' means that the actor was created in a user actor context of the actor system. Further we see whether the actor is 'running', its 'state' and the used 'message-box' type, by default it uses an unbounded queue.
 
-Now, sending a message to the above actor like so:
+Now, when sending a message using 'ask' pattern to the above actor like so:
 
 ```elisp
 (? *answerer* "FooBar")
@@ -94,16 +94,16 @@ errored: NIL
 forward: NIL 80100E8B7B>>
 ```
 
-By now the answer from the `*answerer*` (via `reply`) should be available. So we can resolve the future:
+We can check for a 'future' result. By now the answer from the `*answerer*` (via `reply`) should be available:
 
 ```plain
 USER> (fresult *)
 "Hello FooBar"
 ```
 
-If the reply had not been received yet, `fresult` would return `:not-ready`. So it is necessary to repeatedly probe using `fresult`.
+If the reply had not been received yet, `fresult` would return `:not-ready`. So, `fresult` doesn't block, it is necessary to repeatedly probe using `fresult` until result is other than `:not-ready`.
 
-A nicer way is to use `fcompleted`. Using `fcompleted` it is possible to have code executed asynchronously when the answer is received, like this:
+A nicer and asynchronous way without querying is to use `fcompleted`. Using `fcompleted` you setup a callback function that is called with the result when it is available. Like this:
 
 ```elisp
 (fcompleted
@@ -112,8 +112,8 @@ A nicer way is to use `fcompleted`. Using `fcompleted` it is possible to have co
    (format t "The answer is: ~a~%" result))
 ```
 
-Which will asynchronously print "The answer is: Hello Buzz" after a short while.
-This will also work when the `ask`/`?` was used with a timeout, in which case `result` will be a tuple of `(:handler-error . <ask-timeout condition>)`.
+Which will asynchronously print _"The answer is: Hello Buzz"_ after a short while.
+This will also work when the `ask`/`?` was used with a timeout, in which case `result` will be a tuple of `(:handler-error . <ask-timeout condition>)` if the operation timed out.
 
 
 #### Creating child actors
@@ -139,9 +139,9 @@ To build actor hierarchies one has to create actors in actors. This is of course
                           (format nil "~a~%" output))))))
 ```
 
-Notice the context of 'child-answerer' is `self`.
+Notice the context for creating 'child-answerer', it is `self`, which is 'answerer-with-child'.
 
-Or it is possible externally like so:
+2. Or it is possible externally like so:
 
 ```elisp
 (actor-of *answerer* :name "child-answerer"
@@ -151,7 +151,7 @@ Or it is possible externally like so:
             (format nil "~a~%" output))))
 ```
 
-This uses `*answerer*` context. But has the same effect.
+This uses `*answerer*` context as parameter of `actor-of`. But has the same effect as above.
 
 Now we can check if there is an actor in context of 'answerer-with-child':
 
@@ -162,157 +162,126 @@ USER> (all-actors *actor-with-child*)
 
 The 'path' is what we expected: '/user/answerer-with-child/child-answerer'.
 
+#### Ping Pong
 
-TODO: ping pong using tell
+Another example that only works with `tell`/`!` (fire and forget).
 
+We have those two actors.
 
-##### Dispatchers `:pinned` vs. `:shared`
+The 'ping' actor:
+
+```elisp
+(defparameter *ping*
+  (actor-of *system*
+            :receive
+            (lambda (msg)
+              (cond
+                ((consp msg)
+                 (case (car msg)
+                   (:start-ping
+                    (progn
+                      (format t "Starting ping...~%")
+                      (! (cdr msg) :ping *self*)))))
+                ((eq msg :pong)
+                 (progn
+                   (format t "pong~%")
+                   (sleep 2)
+                   (reply :ping)))))))
+```
+
+And the 'pong' actor:
+
+```elisp
+(defparameter *pong*
+  (actor-of *system*
+            :receive
+            (lambda (msg)
+              (case msg
+                (:ping
+                 (progn
+                   (format t "ping~%")
+                   (sleep 2)
+                   (reply :pong)))))))
+```
+
+The 'ping' actor understands a `:start-ping` message which is a `cons` and has as `cdr` the 'pong' actor instance.
+It also understands a `:pong` message as received from 'pong' actor.
+
+The 'pong' actor only understands a `:ping` message. Each of the actors respond with either `:ping` or `:pong` respectively after waiting 2 seconds.
+
+We trigger the ping-pong by doing:
+
+```elisp
+(! *ping* `(:start-ping . ,*pong*))
+```
+
+And then see in the console like:
+
+```plain
+Starting ping...
+ping
+pong
+ping
+...
+```
+
+To stop the ping-pong one just has to send `(! *ping* :stop)` to one of them.
+
+`:stop` will completely stop the actors message processing, and the actor will not be useable anymore.
+
+##### Synchronous ask
+
+At last an example for the synchronous `ask`. `ask-s` is insofar similar top ask that it provides a result to the caller. However, it is not bound to `reply` as with `ask`. Here, the return value of the 'receive' function is returned to the caller, and `ask-s` will block until 'receive' function returns.
+Let's make an example:
+
+```elisp
+(defparameter *s-asker*
+  (actor-of *sys*
+            :receive
+            (lambda (msg)
+              (cond
+                ((stringp msg)
+                 (format nil "Hello ~a" msg))
+                (t (format nil "Unknown message!"))))))
+```
+
+So we can do:
+
+```plain
+USER> (ask-s *s-asker* "Foo")
+"Hello Foo"
+USER> (ask-s *s-asker* 'foo)
+"Unknown message!"
+```
+
+#### Dispatchers `:pinned` vs. `:shared`
 
 Dispatchers are somewhat alike thread pools. Dispatchers of the `:shared` type are a pool of workers. Workers are actors using a `:pinned` dispatcher. `:pinned` just means that an actor spawns its own mailbox thread.
 
 So `:pinned` and `:shared` are types of dispatchers. `:pinned` spawns its own mailbox thread, `:shared` uses a worker pool to handle the mailbox messages.
 
-By default an actor created using `actor-of` uses a `:shared` dispatcher type which uses the shared message dispatcher that is automatically setup in the system.  
+By default an actor created using `actor-of` uses a `:shared` dispatcher type which uses the shared message dispatcher that is automatically setup in the system.
+
 When creating an actor it is possible to specify the `dispatcher-id`. This parameter specifies which 'dispatcher' should handle the mailbox queue/messages.
 
 Please see below for more info on dispatchers.
 
 #### Finding actors in the context
 
-If actors are not directly stored in a dynamic or lexical context they can still be looked up and used. The `actor-context` protocol contains a function `find-actors` which works like this:
+If actors are not directly stored in a dynamic or lexical context they can still be looked up and used. The `actor-context` protocol contains a function `find-actors` which can lookup actors in various ways. Checkout the API documentation.
 
-```elisp
-(first (ac:find-actors *system* "answerer"))
-```
+TODO: add link
 
-See additional parameters and options here: [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29)
 
-```
-#<ACTOR answerer, running: T, state: NIL, message-box: #<MESSAGE-BOX/DP mesgb-9687, processed messages: 0, max-queue-size: 0, queue: #<QUEUE-UNBOUNDED #x30200263C95D>>>
-```
-
-This function only does a simple flat search. The functionality of
-looking up an actor in the system generally will be expanded upon.
-
-#### tell, ask-s and ask
-
-Let's send some messages.
-
-##### tell
-
-`tell` is a fire-and-forget kind of send type. It
-doesn't expect a result in return.
-
-And because of that, and in order to demonstrate it does something,
-it has to have a side-effect. So it dumps some string to the console
-using `format`, because we couldn't otherwise `tell` if
-the message was received and processed (see the
-`*answerer*` actor definitions above).
-
-```elisp
-CL-USER> (act:tell *answerer* "Foo")
-T
-CL-USER> 
-Hello Foo
-```
-
-So we see that `tell` returns immediately with `T`. But
-to see the 'Hello Foo' it takes another hit on the return key,
-because the REPL is not asynchronous.
-
-##### tell with sender
-
-`tell` accepts a 'sender', which has to be an actor. So
-we can do like this:
-
-```elisp
-CL-USER> (act:tell *child-answerer* "Foo" *answerer*)
-T
-CL-USER> 
-Hello-child Foo
-Hello Hello-child Foo
-```
-
-This sends \"Foo\" to `*child-answerer*`, but `*child-answerer*`
-sends the response to `*answerer*`. So we see outputs of both
-actors.
-
-##### ask-s
-
-`ask-s` blocks until the message was processed by the
-actor. This call returns the `car` part of the `cons` return of the
-behavior function. Insofar an `ask-s` call is more
-resource intensive than just a `tell`.
-
-```elisp
-(act:ask-s *answerer* "Bar")
-```
-
-Will respond with: 'Hello Bar'
-
-##### ask
-
-`ask` combines both `ask-s` and
-`tell`. From `ask-s` it 'inherits' returning
-a result, even though it's a future result. Internally it is
-implemented using `tell`. In order to wait for a result a
-temporary actor is spawned that waits until it receives the result
-from the actor where the message was sent to. With this received
-result the future is fulfilled. So `ask` is async, it
-returns immediately with a `future`. That
-`future` can be queried until it is fulfilled. Better is
-though to setup an `fcompleted` handler function on it.
-
-So we can do:
-
-```elisp
-(future:fcompleted
-          (act:ask *answerer* "Buzz")
-          (result)
-            (format t "Received result: ~a~%" result))
-```
-
-Well, one step at a time:
-
-```elisp
-(act:ask *answerer* "Buzz")
-```
-
-Returns with:
-
-```
-#<FUTURE promise: #<PROMISE finished: NIL errored: NIL forward: NIL #x302002EAD6FD>>
-```
-
-Then we can setup a completion handler on the future:
-
-```elisp
-(future:fcompleted 
-          *
-          (result)
-            (format t "Received result: ~a~%" result)))
-```
-
-Remember '\*' is the last result in the REPL which is the future
-here.
-
-This will print after a bit:
-
-```
-Hello Buzz
-Received result: Hello Buzz
-```
-
-**Mapping futures with fmap**
+#### Mapping futures with fmap
 
 Let's asume we have such a simple actor that just increments the value passed to it.
 
 ```
 (defparameter *incer*
   (actor-of *sys*
-            :receive (lambda (self value state)
-                       (declare (ignore self state))
-                       (cons (1+ value) state))))
+            :receive (lambda (value)
+                       (reply (1+ value)))))
 ```
 
 Since `ask` returns a future it is possible to map multiple `ask` operations like this:
@@ -339,7 +308,7 @@ To demonstrate this we could setup an example 'sleeper' actor:
 ```elisp
 (ac:actor-of *system* 
     :receive 
-    (lambda (self msg state)
+    (lambda (msg)
         (sleep 5)))
 ```
 
@@ -369,61 +338,50 @@ A timeout set to 2 seconds occurred. Cause:
 Note that `ask-s` uses the calling thread for the timeout checks.  
 `ask` uses a wheel timer to handle timeouts. The default resolution for `ask` timeouts is 500ms with a maximum size of wheel slots (registered timeouts) of 1000. What this means is that you can have timeouts of a multiple of 500ms and 1000 `ask` operations with timeouts. This default can be tweaked when creating an actor-system, see [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29) for more details.
 
-#### Long running operations in `receive`
+#### Long running and asynchronous operations in `receive`
 
-Be careful with doing long running computations in the
-`receive` function message handler, because it will block
-message processing. It is advised to use a third-party thread-pool or a
-library like *lparallel* to do the computations with and return early
-from the `receive` message handler.
+Be careful with doing long running computations in the `receive` function message handler, because it will block message processing. It is advised to use a third-party thread-pool or a library like *lparallel* to do the computations with, and return early from the `receive` message handler.
 
-Considering the required `cons` return result of the
-`receive` function, in case a result computation is delegated
-to a thread-pool the `receive` function should return with
-`(cons :no-reply <state>)`. The `:no-reply` will instruct the actor to
-*not* send a result to a sender automatically should a sender be
-available (for the cases of `tell` or `ask`). The
-computation result can be 'awaited' for in an asynchronous manner and
-a response to `*sender*` can be sent manually by just doing a
-`(tell *sender* <my-computation-result>)`. The sender of the original
-message is set to the dynamic variable `*sender*`.
+The computation result can be 'awaited' for in an asynchronous manner and a response to `*sender*` can be sent manually (via `reply`). The sender of the original message is set to the dynamic variable `*sender*`.
 
-Due to an asynchronous callback of a computation running is a separate
-thread, the `*sender*` must be copied into a lexical environment because
-at the time of when the callback is executed the `*sender*` can have a
-different value.
+Due to an asynchronous callback of a computation running is a separate thread, the `*sender*` must be copied into a lexical environment because at the time of when the callback is executed the `*sender*` can have a different value.
 
-This behavior must be part of the messaging protocol that is being
-defined for the actors at play.
+For instance, if there is a potentially long running and asynchronous operation happening in 'receive', the _original_ sender must be captured and the async operation executed in a lexical context, like so (receice function):
+
+```elisp
+(lambda (msg)
+  (case msg
+    (:do-lengthy-op
+     (let ((sender *sender*))
+       ;; do lengthy computation
+       (reply :my-later-reply sender)))
+    (otherwise
+      ;; do other non async stuff
+      (reply :my-reply))))
+```
+
+Notice that for the lengthy operation the sender must be captured because if the lengthy operation is asynchronous 'receive' function is perhaps called for another message where `*sender*` is different. In that case `sender` must be supplied explicitly for `reply`.
+
 
 #### Changing behavior
 
-An actor can change behavior. The behavior is just a lambda that has to
-take three parameters:
-
-1.  the actor's instance - `self`
-2.  the received message - `msg`
-3.  the current state of the actor
-
-The behavior then can pattern match (or do some matching by other means)
-on the received message alone, or in combination with the current state.
+An actor can change its behavior. The behavior is just a lambda similar as the 'receive' function taking the message as parameter.
 
 The default behavior of the actor is given on actor construction using `:receive` key.
 
-During the lifetime of an actor the behavior can be changed using `become`.
-`unbecome` will restore the default behavior.
+During the lifetime of an actor the behavior can be changed using `become`. `unbecome` will restore the default behavior.
 
 Here is an example:
 
 ```elisp
 (ac:actor-of *system*
              :receive
-             (lambda (self msg state)
+             (lambda (msg)
                (case msg
                  (:open
                   (progn
                     (unstash-all)
-                    (become (lambda (self msg state)
+                    (become (lambda (msg)
                               (case msg
                                 (:write
                                  ;; do something
@@ -431,16 +389,15 @@ Here is an example:
                                 (:close
                                  (unbecome))
                                 (otherwise
-                                 (stash msg)))
-                              (cons :no-reply state)))))
-                 (otherwise (stash msg)))
-               (cons :no-reply state)))
+                                 (stash msg)))))))
+                 (otherwise (stash msg)))))
 ```
 
 #### Stashing messages
 
 Stashing allows the actor to `stash` away messages for when the actor is in a state that doesn't allow it to handle certain messages. `unstash-all` can unstash all stashed messages.
 
+TODO
 See: [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.STASH:@STASHING%20MGL-PAX:SECTION) for more info.
 
 #### Creating actors without a system
@@ -450,8 +407,8 @@ do it:
 
 ```elisp
 ;; make an actor
-(defvar *my-actor* (act:make-actor (lambda (self msg state)
-                                     (cons "Foo" state))
+(defvar *my-actor* (act:make-actor (lambda (msg)
+                                     (format t "FooBar"))
                                    :name "Lone-actor"))
 ;; setup a thread based message box
 (setf (act-cell:msgbox *my-actor*) 
@@ -468,21 +425,16 @@ state and comes with some conveniences to do that.
 
 To use an Agent import `sento.agent` package.
 
-There is no need to subclass an Agent. Rather create a facade to
-customize an agent. See below.
+There is no need to subclass an Agent. Rather create a facade to customize an agent. See below.
 
 An Agent provides three functions to use it.
 
 - `make-agent` creates a new agent. Optionally specify an `actor-context` or define the kind of dispatcher the agent should use.
-- `agent-get` retrieves the current state of the agent. This directly
-    delivers the state of the agent for performance reasons. There is no
-    message handling involved.
+- `agent-get` retrieves the current state of the agent. This directly delivers the state of the agent for performance reasons. There is no message handling involved.
 - `agent-update` updates the state of the agent
 - `agent-update-and-get` updates the agent state and returns the new state.
 
-All four take a lambda. The lambda for `make-agent` does not take a
-parameter. It should return the initial state of the agent. `agent-get`
-and `agent-update` both take a lambda that must support one parameter.
+All four take a lambda. The lambda for `make-agent` does not take a parameter. It should return the initial state of the agent. `agent-get` and `agent-update` both take a lambda that must support one parameter.
 This parameter represents the current state of the agent.
 
 Let's make a simple example:
@@ -493,8 +445,7 @@ First create an agent with an initial state of `0`.
 (defparameter *my-agent* (make-agent (lambda () 0)))
 ```
 
-Now update the state several times (`agent-update` is asynchronous and
-returns `t` immediately):
+Now update the state several times (`agent-update` is asynchronous and returns `t` immediately):
 
 ```elisp
 (agent-update *my-agent* (lambda (state) (1+ state)))
@@ -506,35 +457,23 @@ Finally get the state:
 (agent-get *my-agent* #'identity)
 ```
 
-This `agent-get` just uses the `identity` function to return the state
-as is.
+This `agent-get` just uses the `identity` function to return the state as is.
 
 So this simple agent represents a counter.
 
-It is important to note that the retrieves state, i.e. with `identity`
-should not be modified outside the agent.
+It is important to note that the retrieves state, i.e. with `identity` should not be modified outside the agent.
 
 #### Using an agent within an actor-system
 
-The `make-agent` constructor function allows to provides an optional
-`system` argument that, when given, makes the constructor create the
-agent within the given actor-system. This implies that the systems
-shared messages dispatcher is used for the agent and no separate thread
-is created for the agents message box.
+The `make-agent` constructor function allows to provide an optional `actor-context` argument that, when given, makes the constructor create the agent within the given actor-context. Another parameter `dispatcher-id` allows to specify the dispatcher where `:shared` is the default, `:pinned` will create the agent with a separate mailbox thread.
 
-It also implies that the agent is destroyed then the actor-system is
-destroyed.
+It also implies that the agent is destroyed then the actor-system is destroyed.
 
-However, while actors can create hierarchies, agents can not. Also the
-API for creating agents in systems is different to actors. This is to
-make explicit that agents are treated slightly differently than actors
-even though under the hood agents are actors.
+However, while actors can create hierarchies, agents can not. Also the API for creating agents in systems is different to actors. This is to make explicit that agents are treated slightly differently than actors even though under the hood agents are actors.
 
 #### Wrapping an agent
 
-While you can use the agent as in the example above it is usually
-advised to wrap an agent behind a more simple facade that doesn't work
-with lambdas.
+While you can use the agent as in the example above it is usually advised to wrap an agent behind a more simple facade that doesn't work with lambdas and allows a more domain specific naming.
 
 For example could a facade for the counter above look like this:
 
@@ -549,29 +488,17 @@ For example could a facade for the counter above look like this:
 (defun counter-value () (agent-get *counter-agent* #'identity))
 ```
 
-Alternatively, one can wrap an agent inside a class and provide methods
-for simplified access to it.
+Alternatively, one can wrap an agent inside a class and provide methods for simplified access to it.
 
 ### Router
 
-A `Router` is a facade over a set of actors. Routers are
-either created with a set of actors using the default constructor
-`router:make-router` or actors can be added later.
+A `Router` is a facade over a set of actors. Routers are either created with a set of actors using the default constructor `router:make-router` or actors can be added later.
 
-Routers implement part of the actor protocol, so it allows to use
-`tell`, `ask-s` or `ask` which it
-forwards to a 'routee' (one of the actors of a router) by passing all
-of the given parameters. The routee is chosen by applying a
-`strategy`. The built-in default strategy a routee is chosen
-randomly.
+Routers implement part of the actor protocol, so it allows to use `tell`, `ask-s` or `ask` which it forwards to a 'routee' (one of the actors of a router) by passing all of the given parameters. The routee is chosen by applying a `strategy`. The built-in default strategy a routee is chosen randomly.
 
-The `strategy` can be configured when creating a router using
-the constructors `&key` parameter `:strategy`. The
-`strategy` is just a function that takes the number of
-routees and returns a routee index to be chosen for the next operation.
+The `strategy` can be configured when creating a router using the constructors `&key` parameter `:strategy`. The `strategy` is just a function that takes the number of routees and returns a routee index to be chosen for the next operation.
 
-Currently available strategies: `:random` and
-`:round-robin`.
+Currently available strategies: `:random` and`:round-robin`.
 
 Custom strategies can be implemented.
 
@@ -579,7 +506,7 @@ Custom strategies can be implemented.
 
 #### :shared
 
-A `:shared` dispatcher is a separate facility that is set up in the `actor-system`. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that ever only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).
+A `:shared` dispatcher is a facility that is set up in the `actor-system`. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that ever only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).
 
 Using this dispatcher allows to create a large number of actors. The actors as such are generally very cheap.
 
@@ -588,7 +515,7 @@ Using this dispatcher allows to create a large number of actors. The actors as s
 
 #### :pinned
 
-The `:pinned` dispatcher is represented by a thread that operates on the actors message queue. It handles one message after the other with the actors message handling code. This also ensures protection from data race conditions of the state of the actor.
+The `:pinned` dispatcher is represented by just a thread that operates on the actors message queue. It handles one message after another with the actors message handling code. This also ensures protection from data race conditions of the state of the actor.
 
 This variant is slightly faster (see below) but requires one thread per actor.
 
@@ -598,15 +525,15 @@ This variant is slightly faster (see below) but requires one thread per actor.
 
 #### custom dispatcher
 
-It is also possible to create additional dispatcher of type `:shared`. A name can be freely chosen, but by convention it should be a global symbol, i.e. `:my-dispatcher`.
+It is possible to create additional dispatcher of type `:shared`. A name can be freely chosen, but by convention it should be a global symbol, i.e. `:my-dispatcher`.
 
-When creating actors using `act:actor-of`, or when using the `tasks` api it is possible to specify the dispatcher (via the 'dispatcher-id' i.e. `:my-dispatcher`) that should handle the actor, agent, or task messages.
+When creating actors using `act:actor-of`, or when using the `tasks` API it is possible to specify the dispatcher (via the 'dispatcher-id' i.e. `:my-dispatcher`) that should handle the actor, agent, or task messages.
 
-A custom dispatcher is in particular useful when using `tasks` for longer running operations. Longer running operations should not be used for the `:shared` dispatcher because it (by default) is responsible for the message handling of most actors.
+A custom dispatcher is in particular useful when using `tasks` for longer running operations. Longer running operations should not be used for the `:shared` dispatcher because it is, by default, responsible for the message handling of most actors.
 
 ### Eventstream
 
-The eventstream allows messages (or events) to be posted on the eventstream in a fire-and-forget kind of way. Actors can subscribe to the eventstream if they want to get notified for particular messages or generally on all messages posted.  
+The eventstream allows messages (or events) to be posted on the eventstream in a fire-and-forget kind of way. Actors can subscribe to the eventstream if they want to get notified for particular messages or any message posted to the event stream.  
 This allows to create event-based systems.
 
 Here is a simple example:
@@ -617,22 +544,22 @@ Here is a simple example:
 (ac:actor-of *sys* :name "listener"
   :init (lambda (self)
           (ev:subscribe self self 'string))
-  :receive (lambda (self msg state)
+  :receive (lambda (msg)
              (cond
                ((string= "my-message" msg)
-                (format t "received event: ~a~%" msg)))
-             (cons :no-reply state)))
+                (format t "received event: ~a~%" msg)))))
 
 (ev:publish *sys* "my-message")
 ```
 
 This subscribes to all `'string` based events and just prints the message when received.  
-The subscription here is done using the `:init` hook of the actor. The `ev:subscribe` function requires to specify the eventstream as first argument. But there are different variants of the generic function defined which allows to specofy an actor directly. The eventstream is retrieve from the actor through its actor-context.
+The subscription here is done using the `:init` hook of the actor. The `ev:subscribe` function requires to specify the eventstream as first argument. But there are different variants of the generic function defined which allows to specify an actor directly. The eventstream is retrieve from the actor through its actor-context.
 
 ```
 received event: my-message
 ```
 
+TODO
 See the [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#toc-2-7-eventstream) for more details.
 
 ### Tasks
@@ -673,25 +600,25 @@ Here is a simple example:
 
 All functions available in 'tasks' package require to be wrapped in a `with-context` macro. This macro removes the necessity of an additional argument to each of the functions which is instead supplied by the macro.
 
-What happens in this example is that the list `'(1 2 3 4 5)` is passed to `task-async-stream`.
-`task-async-stream` then spawns a 'task' for each element of the list and applies the given function (here `1+`) on each list element. The function though is executed by a worker of the actor-systems `:shared` dispatcher. `task-async-stream` then also collects the result of all workers. In the last step (`reduce`) the sum of the elements of the result list are calculated.
+What happens in the example above is that the list `'(1 2 3 4 5)` is passed to `task-async-stream`. `task-async-stream` then spawns a 'task' for each element of the list and applies the given function (here `1+`) on each list element. The function though is executed by a worker of the actor-systems `:shared` dispatcher. `task-async-stream` then also collects the result of all workers. In the last step (`reduce`) the sum of the elements of the result list are calculated.
 
 It is possible to specify a second argument to the `with-context` macro to specify the dispatcher that should be used for the tasks.  
 The concurrency here depends on the number of dispatcher workers.
 
-As alternative, or in special circumstances, it is also possible to setf `*task-context*` and `*task-dispatcher*` special variables which allows to use **tasks** without `with-context` macro.
+As alternative, or in special circumstances, it is possible to setf `*task-context*` and/or `*task-dispatcher*` special variables which allows to use **tasks** without `with-context` macro.
 
 Be also aware that the `:shared` dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for `tasks` when you plan to operate longer running operations.
 
+TODO
 See the [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#toc-2-8-tasks) for more details.
 
 ### Immutability
 
-Some words on immutability. sento does _not_ make deep copies of the actor states. So whatever is returned from `receive` function as part of the `(cons back-msg state)` is just `setf`ed to the actor state. The user is responsible to make deep copies if necessary in an immutable environment. The user is responsible to _not_ implictly modify the actor state outside of the actor.
+Some words on immutability. Actor states don't need to be immutable data structures. Sento does _not_ make copies of the actor states. The user is responsible for the actor state and to motate the actor state only within 'receive' function.
 
 ### Logging
 
-sento does its own logging using different log levels from 'trace' to 'error'. It uses log4cl. If you wish to also use log4cl in your application but find that sento is too noisy in debug and trace logging you can change the log level for the 'sento package only by:
+Sento does its own logging using different log levels from 'trace' to 'error' using log4cl. If you wish to also use log4cl in your application but find that Sento is too noisy in debug and trace logging you can change the log level for the 'sento package only by:
 
 ```
 (log:config '(sento) :warn)
@@ -701,56 +628,53 @@ This will tell log4cl to do any logging for sento in warn level.
 
 ### Benchmarks
 
-![](./docs/perf.png)
-![](perf.png)
+Hardware specs:
+
+-   Mac M1 Ultra, 32 GB RAM
+
+![](./docs/perf-M1Ultra.png)
+![](perf-M1Ultra.png)
+
 
 Hardware specs:
 
--   iMac Pro (2017) with 8 Core Xeon, 32 GB RAM
+-   iMac Pro (2017), 8 Core Xeon, 32 GB RAM
+
+![](./docs/perf-x86_64.png)
+![](perf-x86_64.png)
+
 
 **All**
 
-The benchmark was created by having 8 threads throwing each 125k (1m
-alltogether) messages at 1 actor. The timing was taken for when the
-actor did finish processing those 1m messages. The messages were sent by
-either all `tell`, `ask-s`, or `ask` to
-an actor whose message-box worked using a single thread
-(`:pinned`) or a dispatched message queue
-(`:shared` / `dispatched`) with 8 workers.
+Version 3 of Sento uses the jpl-queues package which is slightly slower than the lparallel cons-queue. The lparallel cons-queue package is available as separate asdf system if needed and if the additional dependency is acceptable.
 
-Of course a `tell` is in most cases the fastest one, because
-it's the least resource intensive and there is no place that is
-blocking in this workflow.
+The benchmark was created by having 8 threads throwing each 125k (1m altogether) messages at 1 actor. The timing was taken for when the actor did finish processing those 1m messages. The messages were sent by either all `tell`, `ask-s`, or `ask` to an actor whose message-box worked using a single thread (`:pinned`) or a dispatched message queue (`:shared` / `dispatched`) with 8 workers.
 
-**SBCL (v2.0.10)**
+Of course a `tell` is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow.
 
-Even though SBCL is by far the fastest one with `tell` on
-both `:pinned` and `dispatched`, it had massive
-problems on `dispatched - ask-s` where I had to lower the
-number of messages to 200k alltogether. Beyond that value SBCL didn't
-get it worked out.
+**SBCL (v2.3.0)**
 
-**LispWorks (8.0)**
+Even though SBCL is by far the fastest one with `tell` on both `:pinned` and `dispatched`, it had massive problems on `dispatched - ask-s` where I had to lower the number of messages to 200k alltogether. Beyond that value SBCL didn't get it worked out.
+
+**LispWorks (8.0.1)**
 
 LispWorks is fast overall. Not as fast as SBCL. But it seems the GC is more robust, in particular on the `dispatched - ask`.
 
 **CCL (v1.12)**
 
-CCL is on acceptable average speed. The problems CCL had was heap
-exhaustion for both the `ask` tasks where the number of
-messages had to be reduced to 80k. Which is not a lot. Beyond this value
-the runtime would crash. However, CCL for some reason had no problems
-where SBCL was struggling with the `dispatched - ask-s`.
+Unfortunately CCL doesn't work natively on M1 Apple CPU.
 
-**ABCL (1.8)**
+**ABCL (1.9)**
 
-The pleasant surprise was ABCL. While not being the fastest it is the
-most robust. Where SBCL and CCL were struggling you could throw anything
-at ABCL and it'll cope with it. I'm assuming that this is because of
-the massively battle proven Java Runtime.
+The pleasant surprise was ABCL. While not being the fastest it is the most robust. Where SBCL and CCL were struggling you could throw anything at ABCL and it'll cope with it. I'm assuming that this is because of the massively battle proven Java Runtime.
 
+### Migration guide for moving from Sento 2 to Sento 3
+
+TODO
 
 ### Version history
+
+**Version 3.0.0 (1.2.2023):** New major version. See migration guide if you have are migrating from version 2.
 
 **Version 2.2.0 (27.12.2022):** Added stashing and unstashing of messages.
 

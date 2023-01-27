@@ -163,9 +163,9 @@ NO - compose actor of actor-cell
 OK - add 'reply' macro for responding in side receive, with sender
 OK - move cons-list from lparallel
   ==> using jpl-queues and con-squeue as a separate system.
-=> - write new readme with new features
-- migration guide
-- 
+OK - write new readme with new features
+=> - migration guide
+OK - potential problem with reply after async operation.
 
 Sento 3 changes:
 

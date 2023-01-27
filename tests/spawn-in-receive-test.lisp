@@ -2,8 +2,9 @@
   (:use :cl :fiveam)
   (:import-from #:miscutils
                 #:assert-cond)
-  (:import-from #:act-cell
-                #:*sender*)
+  (:import-from #:act
+                #:*sender*
+                #:reply)
   (:export #:run!
            #:all-tests
            #:nil))
@@ -19,20 +20,22 @@
   (lambda (msg)
     (let ((sender *sender*)) ;; capture the sender
       (case msg
-        (:do-spawn (progn
-                     ;; Delegating the work could also be done via a third-party thread-pool
-                     ;; or a library like lparallel
-                     (bt:make-thread (lambda ()
-                                       (sleep 0.5)
-                                       (act:tell sender :spawn-result)))))))))
+        (:do-spawn
+            (progn
+              ;; Delegating the work could also be done via a third-party thread-pool
+              ;; or a library like lparallel
+              (bt:make-thread (lambda ()
+                                (sleep 1.0)
+                                (reply :spawn-result sender)))))))))
 
 (test spawn-in-receive
   "Spawn  a thread in `receive' which does the work.
-This requires to return `:no-reply' in `receive' and sending the response via `*sender*'"
+This requires sending the response via `*sender*'"
   (let ((system (asys:make-actor-system)))
     (unwind-protect
          (let* ((actor (ac:actor-of system :receive (receive-fun)))
                 (spawn-fut (act:ask actor :do-spawn)))
-           (is-true (assert-cond (lambda () (future:complete-p spawn-fut)) 1))
+           (setf *sender* :foo)  ;; set something weird to *sender* to see if the capturing worked
+           (is-true (assert-cond (lambda () (future:complete-p spawn-fut)) 1.5))
            (is (eq :spawn-result (future:fresult spawn-fut))))
       (ac:shutdown system))))

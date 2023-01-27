@@ -169,11 +169,11 @@ OK - potential problem with reply after async operation.
 
 Sento 3 changes:
 
-- no implicit sending to *sender* on 'ask'. Must be done explicitly using 'tell'.
-- removed required 'cons' return on 'receive' function.
-- removed 'self' and 'state' in 'receive function. Now exists *self* and *state*.
-- added reply
-- cons-queue as separate 'high-speed' system
+OK - no implicit sending to *sender* on 'ask'. Must be done explicitly using 'tell'.
+OK - removed required 'cons' return on 'receive' function.
+OK - removed 'self' and 'state' in 'receive function. Now exists *self* and *state*.
+OK - added reply
+OK - cons-queue as separate 'high-speed' system
 
 |#
 

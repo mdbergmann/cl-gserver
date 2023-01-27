@@ -16,6 +16,7 @@ Sento features:
 ### Intro
 
 (Please also checkout the API [documentation](https://mdbergmann.github.io/cl-gserver/index.html) for further information)
+(for migrations from Sento v2, please check below migration guide)
 
 #### Creating an actor-system
 
@@ -36,7 +37,7 @@ When we look at `*system*` in the repl we see some information of the actor syst
                         TIMEOUT-TIMER
                         (RESOLUTION 500 MAX-SIZE 1000)
                         EVENTSTREAM
-                        (DISPATCHER-ID
+                       (DISPATCHER-ID
                          SHARED)), user actors: 0, internal actors: 5>
 ```
 
@@ -268,10 +269,7 @@ Please see below for more info on dispatchers.
 
 #### Finding actors in the context
 
-If actors are not directly stored in a dynamic or lexical context they can still be looked up and used. The `actor-context` protocol contains a function `find-actors` which can lookup actors in various ways. Checkout the API documentation.
-
-TODO: add link
-
+If actors are not directly stored in a dynamic or lexical context they can still be looked up and used. The `actor-context` protocol contains a function `find-actors` which can lookup actors in various ways. Checkout the API [documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.ACTOR-CONTEXT:FIND-ACTORS%20GENERIC-FUNCTION).
 
 #### Mapping futures with fmap
 
@@ -336,7 +334,7 @@ A timeout set to 2 seconds occurred. Cause:
 ```
 
 Note that `ask-s` uses the calling thread for the timeout checks.  
-`ask` uses a wheel timer to handle timeouts. The default resolution for `ask` timeouts is 500ms with a maximum size of wheel slots (registered timeouts) of 1000. What this means is that you can have timeouts of a multiple of 500ms and 1000 `ask` operations with timeouts. This default can be tweaked when creating an actor-system, see [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29) for more details.
+`ask` uses a wheel timer to handle timeouts. The default resolution for `ask` timeouts is 500ms with a maximum size of wheel slots (registered timeouts) of 1000. What this means is that you can have timeouts of a multiple of 500ms and 1000 `ask` operations with timeouts. This default can be tweaked when creating an actor-system, see API [documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.ACTOR-SYSTEM:*DEFAULT-CONFIG*%20VARIABLE) for more details.
 
 #### Long running and asynchronous operations in `receive`
 
@@ -362,6 +360,7 @@ For instance, if there is a potentially long running and asynchronous operation 
 
 Notice that for the lengthy operation the sender must be captured because if the lengthy operation is asynchronous 'receive' function is perhaps called for another message where `*sender*` is different. In that case `sender` must be supplied explicitly for `reply`.
 
+See [this test](../tests/spawn-in-receive-test.lisp) for more info.
 
 #### Changing behavior
 
@@ -397,8 +396,7 @@ Here is an example:
 
 Stashing allows the actor to `stash` away messages for when the actor is in a state that doesn't allow it to handle certain messages. `unstash-all` can unstash all stashed messages.
 
-TODO
-See: [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.STASH:@STASHING%20MGL-PAX:SECTION) for more info.
+See: API [documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.STASH:STASHING%20CLASS) for more info.
 
 #### Creating actors without a system
 
@@ -559,8 +557,7 @@ The subscription here is done using the `:init` hook of the actor. The `ev:subsc
 received event: my-message
 ```
 
-TODO
-See the [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#toc-2-7-eventstream) for more details.
+See the API [documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.EVENTSTREAM:EVENTSTREAM%20CLASS) for more details.
 
 ### Tasks
 
@@ -609,8 +606,7 @@ As alternative, or in special circumstances, it is possible to setf `*task-conte
 
 Be also aware that the `:shared` dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for `tasks` when you plan to operate longer running operations.
 
-TODO
-See the [API documentation](https://mdbergmann.github.io/cl-gserver/index.html#toc-2-8-tasks) for more details.
+See the API [documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.TASKS:WITH-CONTEXT%20MGL-PAX:MACRO) for more details.
 
 ### Immutability
 
@@ -628,7 +624,7 @@ This will tell log4cl to do any logging for sento in warn level.
 
 ### Benchmarks
 
-Hardware specs:
+Hardware specs (M1)):
 
 -   Mac M1 Ultra, 32 GB RAM
 
@@ -636,7 +632,7 @@ Hardware specs:
 ![](perf-M1Ultra.png)
 
 
-Hardware specs:
+Hardware specs (x86-64):
 
 -   iMac Pro (2017), 8 Core Xeon, 32 GB RAM
 
@@ -670,7 +666,12 @@ The pleasant surprise was ABCL. While not being the fastest it is the most robus
 
 ### Migration guide for moving from Sento 2 to Sento 3
 
-TODO
+- the receive function is now 1-arity. It only takes the a message parameter.
+Previous 'self' and 'state' parameters are now accessible via `*self*` and `*state*`. The same applies to `become` function.
+
+- the return value of 'receive' function is ignored for `tell` and `ask`. In both cases a `reply` macro can be used to reply to a sender. `reply` implicitly uses `*sender*` but can be overriden (see 'long running and asynchronous operations in receive'). The 'receive' function return value is still relevant for `ask-s`.
+
+- the lparallel dependency was removed to reduce dependencies. However, the cons-queue of lparallel is very fast (used for unbounded message queue) so an additional 'sento-high-speed-queue' asdf system has been added to bring back the lparallel cons-queue if performance is critical. It brings an additional 10%-30% boost.
 
 ### Version history
 

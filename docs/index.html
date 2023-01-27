@@ -91,21 +91,619 @@
 
 <p><strong>Sento</strong> is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.</p>
 
-<p>sento features:</p>
+<p>Sento features:</p>
 
 <ul>
-<li>Actors with <code>ask</code> and <code>tell</code> operations. <code>ask</code> can be asynchronous or synchronous.</li>
-<li>Agents: Agents are a specialization of Actors for wrapping state with a standardized interface of <code>init</code>, <code>get</code> and <code>set</code>. There are also specialized Agents for CLs array and hash-map.</li>
-<li>Router: Router offers a similar interface as Actor with <code>ask</code> and <code>tell</code> but collects multiple Actors for load-balancing.</li>
-<li>EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages.</li>
+<li>Actors with <code>ask</code> (<code>?</code>) and <code>tell</code> (<code>!</code>) operations. <code>ask</code> can be asynchronous or synchronous.</li>
+<li>Agents: Agents are a specialization of Actors for wrapping state with a standardized interface of <code>init</code>, <code>get</code> and <code>set</code>. There are also specialized Agents for Common Lisps array and hash-map data structures.</li>
+<li>Router: Router offers a similar interface as Actor with <code>ask</code> and <code>tell</code> but can collects multiple Actors for load-balancing.</li>
+<li>EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages. This is similar to an event-bus.</li>
 <li>Tasks: a simple API for concurrency.</li>
+</ul>
+
+<h3>Intro</h3>
+
+<p>(Please also checkout the API <a href="https://mdbergmann.github.io/cl-gserver/index.html" >documentation</a> for further information)
+(for migrations from Sento v2, please check below migration guide)</p>
+
+<h4>Creating an actor-system</h4>
+
+<p>The first thing you wanna do is to create an actor system.
+In simple terms, an actor system is a container where all actors live in. So at any time the actor system knows which actors exist.</p>
+
+<p>To create an actor system we can first change package to <code>:sento-user</code> because it imports the majority of necessary namespaces fopr convenience. Then, do:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_143.html#IDX430" class="symbol"><i><span class="symbol">defvar</span></i></a> <span class="special">*system*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span></span></code></pre>
+
+<p>When we look at <code>*system*</code> in the repl we see some information of the actor system:</p>
+
+<pre><code>#&lt;ACTOR-SYSTEM config: (DISPATCHERS
+                        (SHARED (WORKERS 4 STRATEGY RANDOM))
+                        TIMEOUT-TIMER
+                        (RESOLUTION 500 MAX-SIZE 1000)
+                        EVENTSTREAM
+                       (DISPATCHER-ID
+                         SHARED)), user actors: 0, internal actors: 5&gt;</code></pre>
+
+<p>The <code>actor-system</code> has, by default, four shared message dispatcher workers. Depending on how busy the system tends to be this default can be increased. Those four workers are part of the 'internal actors'. The 5th actor drives the event-stream (later more on that, but in a nutshell it's something like an event bus).</p>
+
+<p>There are none 'user actors' yet, and the 'config' is the default config specifying the number of message dispatch workers (4) and the strategy they use to balance throughput, 'random' here.</p>
+
+<p>Using a custom config is it possible to change much of those defaults. For instance, create custom dispatchers, i.e. a dedicated dispatcher used for the 'Tasks' api (see later for more info). The event-stream by default uses the global 'shared' dispatcher. Changing the config it would be possible to have the event-stream actor use a <code>:pinned</code> dispatcher (more on dispatchers later) to optimize throughput. Etc.</p>
+
+<p>Actors live in the actor system, but more concrete in an <code>actor-context</code>. An <code>actor-context</code> contains a collection (of actors) and represents a Common Lisp protocol that defines a set of generic functions for creating, removing and finding actors in an <code>actor-context</code>. The actor system itself is also implementing the <code>actor-context</code> protocol, so it also acts as such and hence the protocol <code>ac</code> (<code>actor-context</code>) is used to operate on the actor system.</p>
+
+<p>I.e. to shutdown the actor system one has to execute: <code>(ac:shutdown *system*)</code>.</p>
+
+<h4>Creating and using actors</h4>
+
+<p>Now we want to create actors.</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">actor-of <span class="special">*system*</span> <span class="keyword">:name</span> <span class="string">"answerer"</span>
+  <span class="keyword">:receive</span>
+  <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">msg</span>)</span>
+    <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">output <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"Hello ~a"</span> msg</span>)</span></span>)</span></span>)</span>
+        <span class="paren4">(<span class="code">reply output</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>This creates an actor in <code>*system*</code>. Notice that the actor is not assigned to a variable (but you can). It is now registered in the system. Using function <code>ac:find-actors</code> you'll be able to find it again. Of course it makes sense to store important actors that are frequently used in a <code>defparameter</code> variable.</p>
+
+<p>The <code>:receive</code> key argument to <code>actor-of</code> is a function which implements the message processing behaviour of an actor. The parameter to the 'receive' function is just the received message (msg).</p>
+
+<p><code>actor-of</code> also allows to specify the initial state, a name, and a custom actor type via key parameters. By default a standard actor of type <code>'actor</code> is created. It is possible to subclass <code>'actor</code> and specify your own. It is further possible to specify an 'after initialization' function, using the <code>:init</code> key, and 'after destroy' function using <code>:destroy</code> keyword. <code>:init</code> can, for example, be used to subscribe to the event-stream for listening to important messages.</p>
+
+<p>The return value of 'receive' function is only used when using the synchronous <code>ask-s</code> function to 'ask' the actor. Using <code>ask</code> (equivalent: <code>?</code>) the return value is ignored. If an answer should be provided to an asking actor, or if replying is part of an interface contract, then <code>reply</code> should be used.</p>
+
+<p>The above actor was stored to a variable <code>*answerer*</code>. We can evaluate this in repl and see:</p>
+
+<pre><code><span class="code">#&lt;ACTOR path: /user/answerer, cell: #&lt;ACTOR answerer, running: T, state: NIL, message-box: #&lt;SENTO.MESSAGEB:MESSAGE-BOX/DP mesgb-1356, processed messages: 1, max-queue-size: 0, queue: #&lt;SENTO.QUEUE:QUEUE-UNBOUNDED 82701A6D13&gt;&gt;&gt;&gt;</span></code></pre>
+
+<p>We'll see the 'path' of the actor. The prefix '/user' means that the actor was created in a user actor context of the actor system. Further we see whether the actor is 'running', its 'state' and the used 'message-box' type, by default it uses an unbounded queue.</p>
+
+<p>Now, when sending a message using 'ask' pattern to the above actor like so:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">? <span class="special">*answerer*</span> <span class="string">"FooBar"</span></span>)</span></span></code></pre>
+
+<p>we'll get a 'future' as result, because <code>?</code>/<code>ask</code> is asynchronous.</p>
+
+<pre><code>#&lt;FUTURE promise: #&lt;BLACKBIRD-BASE:PROMISE
+finished: NIL
+errored: NIL
+forward: NIL 80100E8B7B&gt;&gt;</code></pre>
+
+<p>We can check for a 'future' result. By now the answer from the <code>*answerer*</code> (via <code>reply</code>) should be available:</p>
+
+<pre><code>USER&gt; (fresult *)
+"Hello FooBar"</code></pre>
+
+<p>If the reply had not been received yet, <code>fresult</code> would return <code>:not-ready</code>. So, <code>fresult</code> doesn't block, it is necessary to repeatedly probe using <code>fresult</code> until result is other than <code>:not-ready</code>.</p>
+
+<p>A nicer and asynchronous way without querying is to use <code>fcompleted</code>. Using <code>fcompleted</code> you setup a callback function that is called with the result when it is available. Like this:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">fcompleted
+     <span class="paren2">(<span class="code">? <span class="special">*answerer*</span> <span class="string">"Buzz"</span></span>)</span>
+     <span class="paren2">(<span class="code">result</span>)</span>
+   <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"The answer is: ~a~%"</span> result</span>)</span></span>)</span></span></code></pre>
+
+<p>Which will asynchronously print <em>&quot;The answer is: Hello Buzz&quot;</em> after a short while.
+This will also work when the <code>ask</code>/<code>?</code> was used with a timeout, in which case <code>result</code> will be a tuple of <code>(:handler-error . &lt;ask-timeout condition&gt;)</code> if the operation timed out.</p>
+
+<h4>Creating child actors</h4>
+
+<p>To build actor hierarchies one has to create actors in actors. This is of course possible. There are two options for this.</p>
+
+<ol>
+<li>Actors are created as part of <code>actor-of</code>s <code>:init</code> function like so:</li>
+</ol>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">actor-of <span class="special">*system*</span> 
+          <span class="keyword">:name</span> <span class="string">"answerer-with-child"</span>
+          <span class="keyword">:receive</span>
+          <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">msg</span>)</span>
+            <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">output <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"Hello ~a"</span> msg</span>)</span></span>)</span></span>)</span>
+              <span class="paren4">(<span class="code">reply output</span>)</span></span>)</span></span>)</span>
+          <span class="keyword">:init</span>
+          <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self</span>)</span>
+            <span class="paren3">(<span class="code">actor-of self 
+                      <span class="keyword">:name</span> <span class="string">"child-answerer"</span>
+                      <span class="keyword">:receive</span> 
+                      <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code">msg</span>)</span>
+                        <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren6">(<span class="code"><span class="paren1">(<span class="code">output <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"~a"</span> <span class="string">"Hello-child ~a"</span> msg</span>)</span></span>)</span></span>)</span>
+                          <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"~a~%"</span> output</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>Notice the context for creating 'child-answerer', it is <code>self</code>, which is 'answerer-with-child'.</p>
+
+<ol>
+<li>Or it is possible externally like so:</li>
+</ol>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">actor-of <span class="special">*answerer*</span> <span class="keyword">:name</span> <span class="string">"child-answerer"</span>
+    <span class="keyword">:receive</span> 
+    <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">msg</span>)</span>
+        <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">output <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"~a"</span> <span class="string">"Hello-child ~a"</span> msg</span>)</span></span>)</span></span>)</span>
+            <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"~a~%"</span> output</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>This uses <code>*answerer*</code> context as parameter of <code>actor-of</code>. But has the same effect as above.</p>
+
+<p>Now we can check if there is an actor in context of 'answerer-with-child':</p>
+
+<pre><code>USER&gt; (all-actors *actor-with-child*)
+(#&lt;ACTOR path: /user/answerer-with-child/child-answerer, cell: #&lt;ACTOR child-answerer, running: T, state: NIL, message-box: #&lt;SENTO.MESSAGEB:MESSAGE-BOX/DP mesgb-1374, processed messages: 0, max-queue-size: 0, queue: #&lt;SENTO.QUEUE:QUEUE-UNBOUNDED 8200A195FB&gt;&gt;&gt;&gt;)</code></pre>
+
+<p>The 'path' is what we expected: '/user/answerer-with-child/child-answerer'.</p>
+
+<h4>Ping Pong</h4>
+
+<p>Another example that only works with <code>tell</code>/<code>!</code> (fire and forget).</p>
+
+<p>We have those two actors.</p>
+
+<p>The 'ping' actor:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*ping*</span>
+  <span class="paren2">(<span class="code">actor-of <span class="special">*system*</span>
+            <span class="keyword">:receive</span>
+            <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code">msg</span>)</span>
+              <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_126.html#IDX389" class="symbol"><i><span class="symbol">cond</span></i></a>
+                <span class="paren5">(<span class="code"><span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_81.html#IDX199" class="symbol">consp</a> msg</span>)</span>
+                 <span class="paren6">(<span class="code">case <span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_82.html#IDX205" class="symbol">car</a> msg</span>)</span>
+                   <span class="paren1">(<span class="code"><span class="keyword">:start-ping</span>
+                    <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_125.html#IDX383" class="symbol"><i><span class="symbol">progn</span></i></a>
+                      <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"Starting ping...~%"</span></span>)</span>
+                      <span class="paren3">(<span class="code">! <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_82.html#IDX206" class="symbol">cdr</a> msg</span>)</span> <span class="keyword">:ping</span> <span class="special">*self*</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span>
+                <span class="paren5">(<span class="code"><span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_56.html#IDX68" class="symbol">eq</a> msg <span class="keyword">:pong</span></span>)</span>
+                 <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_125.html#IDX383" class="symbol"><i><span class="symbol">progn</span></i></a>
+                   <span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"pong~%"</span></span>)</span>
+                   <span class="paren1">(<span class="code">sleep 2</span>)</span>
+                   <span class="paren1">(<span class="code">reply <span class="keyword">:ping</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>And the 'pong' actor:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*pong*</span>
+  <span class="paren2">(<span class="code">actor-of <span class="special">*system*</span>
+            <span class="keyword">:receive</span>
+            <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code">msg</span>)</span>
+              <span class="paren4">(<span class="code">case msg
+                <span class="paren5">(<span class="code"><span class="keyword">:ping</span>
+                 <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_125.html#IDX383" class="symbol"><i><span class="symbol">progn</span></i></a>
+                   <span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"ping~%"</span></span>)</span>
+                   <span class="paren1">(<span class="code">sleep 2</span>)</span>
+                   <span class="paren1">(<span class="code">reply <span class="keyword">:pong</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>The 'ping' actor understands a <code>:start-ping</code> message which is a <code>cons</code> and has as <code>cdr</code> the 'pong' actor instance.
+It also understands a <code>:pong</code> message as received from 'pong' actor.</p>
+
+<p>The 'pong' actor only understands a <code>:ping</code> message. Each of the actors respond with either <code>:ping</code> or <code>:pong</code> respectively after waiting 2 seconds.</p>
+
+<p>We trigger the ping-pong by doing:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">! <span class="special">*ping*</span> `<span class="paren2">(<span class="code"><span class="keyword">:start-ping</span> . ,<span class="special">*pong*</span></span>)</span></span>)</span></span></code></pre>
+
+<p>And then see in the console like:</p>
+
+<pre><code>Starting ping...
+ping
+pong
+ping
+...</code></pre>
+
+<p>To stop the ping-pong one just has to send <code>(! *ping* :stop)</code> to one of them.</p>
+
+<p><code>:stop</code> will completely stop the actors message processing, and the actor will not be useable anymore.</p>
+
+<h5>Synchronous ask</h5>
+
+<p>At last an example for the synchronous <code>ask</code>. <code>ask-s</code> is insofar similar top ask that it provides a result to the caller. However, it is not bound to <code>reply</code> as with <code>ask</code>. Here, the return value of the 'receive' function is returned to the caller, and <code>ask-s</code> will block until 'receive' function returns.
+Let's make an example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*s-asker*</span>
+  <span class="paren2">(<span class="code">actor-of <span class="special">*sys*</span>
+            <span class="keyword">:receive</span>
+            <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code">msg</span>)</span>
+              <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_126.html#IDX389" class="symbol"><i><span class="symbol">cond</span></i></a>
+                <span class="paren5">(<span class="code"><span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_70.html#IDX146" class="symbol">stringp</a> msg</span>)</span>
+                 <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"Hello ~a"</span> msg</span>)</span></span>)</span>
+                <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"Unknown message!"</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>So we can do:</p>
+
+<pre><code>USER&gt; (ask-s *s-asker* "Foo")
+"Hello Foo"
+USER&gt; (ask-s *s-asker* 'foo)
+"Unknown message!"</code></pre>
+
+<h4>Dispatchers <code>:pinned</code> vs. <code>:shared</code></h4>
+
+<p>Dispatchers are somewhat alike thread pools. Dispatchers of the <code>:shared</code> type are a pool of workers. Workers are actors using a <code>:pinned</code> dispatcher. <code>:pinned</code> just means that an actor spawns its own mailbox thread.</p>
+
+<p>So <code>:pinned</code> and <code>:shared</code> are types of dispatchers. <code>:pinned</code> spawns its own mailbox thread, <code>:shared</code> uses a worker pool to handle the mailbox messages.</p>
+
+<p>By default an actor created using <code>actor-of</code> uses a <code>:shared</code> dispatcher type which uses the shared message dispatcher that is automatically setup in the system.</p>
+
+<p>When creating an actor it is possible to specify the <code>dispatcher-id</code>. This parameter specifies which 'dispatcher' should handle the mailbox queue/messages.</p>
+
+<p>Please see below for more info on dispatchers.</p>
+
+<h4>Finding actors in the context</h4>
+
+<p>If actors are not directly stored in a dynamic or lexical context they can still be looked up and used. The <code>actor-context</code> protocol contains a function <code>find-actors</code> which can lookup actors in various ways. Checkout the API <a href="https://mdbergmann.github.io/cl-gserver/index.html#SENTO.ACTOR-CONTEXT:FIND-ACTORS%20GENERIC-FUNCTION" >documentation</a>.</p>
+
+<h4>Mapping futures with fmap</h4>
+
+<p>Let's asume we have such a simple actor that just increments the value passed to it.</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*incer*</span>
+  <span class="paren2">(<span class="code">actor-of <span class="special">*sys*</span>
+            <span class="keyword">:receive</span> <span class="paren3">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren4">(<span class="code">value</span>)</span>
+                       <span class="paren4">(<span class="code">reply <span class="paren5">(<span class="code">1+ value</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>Since <code>ask</code> returns a future it is possible to map multiple <code>ask</code> operations like this:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">-&gt; <span class="paren2">(<span class="code">ask <span class="special">*incer*</span> 0</span>)</span>
+  <span class="paren2">(<span class="code">fmap <span class="paren3">(<span class="code">result</span>)</span>
+      <span class="paren3">(<span class="code">ask <span class="special">*incer*</span> result</span>)</span></span>)</span>
+  <span class="paren2">(<span class="code">fmap <span class="paren3">(<span class="code">result</span>)</span>
+      <span class="paren3">(<span class="code">ask <span class="special">*incer*</span> result</span>)</span></span>)</span>
+  <span class="paren2">(<span class="code">fcompleted <span class="paren3">(<span class="code">result</span>)</span>
+      <span class="paren3">(<span class="code">format t <span class="string">"result: ~a~%"</span> result</span>)</span>
+    <span class="paren3">(<span class="code">assert <span class="paren4">(<span class="code">= result 3</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<h4>ask-s and ask with timeout</h4>
+
+<p>A timeout (in seconds) can be specified for both <code>ask-s</code> and
+<code>ask</code> and is done like so:</p>
+
+<p>To demonstrate this we could setup an example 'sleeper' actor:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">ac:actor-of <span class="special">*system*</span> 
+    <span class="keyword">:receive</span> 
+    <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">msg</span>)</span>
+        <span class="paren3">(<span class="code">sleep 5</span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>If we store this to <code>*sleeper*</code> and do the following, the
+<code>ask-s</code> will return a <code>handler-error</code> with an
+<code>ask-timeout</code> condition.</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">act:ask-s <span class="special">*sleeper*</span> <span class="string">"Foo"</span> <span class="keyword">:time-out</span> 2</span>)</span></span></code></pre>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><span class="keyword">:HANDLER-ERROR</span> . #&lt;CL-GSERVER.UTILS:ASK-TIMEOUT #x30200319F97D&gt;</span>)</span></span></code></pre>
+
+<p>This works similar with the <code>ask</code> only that the future will
+be fulfilled with the <code>handler-error</code> <code>cons</code>.</p>
+
+<p>To get a readable error message of the condition we can do:</p>
+
+<pre><code><span class="code">CL-USER&gt; <span class="paren1">(<span class="code">format t <span class="string">"~a"</span> <span class="paren2">(<span class="code">cdr *</span>)</span></span>)</span>
+A timeout set to 2 seconds occurred. Cause: 
+#&lt;BORDEAUX-THREADS:TIMEOUT #x302002FAB73D&gt; </span></code></pre>
+
+<p>Note that <code>ask-s</code> uses the calling thread for the timeout checks.<br/>
+<code>ask</code> uses a wheel timer to handle timeouts. The default resolution for <code>ask</code> timeouts is 500ms with a maximum size of wheel slots (registered timeouts) of 1000. What this means is that you can have timeouts of a multiple of 500ms and 1000 <code>ask</code> operations with timeouts. This default can be tweaked when creating an actor-system, see API <a href="https://mdbergmann.github.io/cl-gserver/index.html#SENTO.ACTOR-SYSTEM:*DEFAULT-CONFIG*%20VARIABLE" >documentation</a> for more details.</p>
+
+<h4>Long running and asynchronous operations in <code>receive</code></h4>
+
+<p>Be careful with doing long running computations in the <code>receive</code> function message handler, because it will block message processing. It is advised to use a third-party thread-pool or a library like <em>lparallel</em> to do the computations with, and return early from the <code>receive</code> message handler.</p>
+
+<p>The computation result can be 'awaited' for in an asynchronous manner and a response to <code>*sender*</code> can be sent manually (via <code>reply</code>). The sender of the original message is set to the dynamic variable <code>*sender*</code>.</p>
+
+<p>Due to an asynchronous callback of a computation running is a separate thread, the <code>*sender*</code> must be copied into a lexical environment because at the time of when the callback is executed the <code>*sender*</code> can have a different value.</p>
+
+<p>For instance, if there is a potentially long running and asynchronous operation happening in 'receive', the <em>original</em> sender must be captured and the async operation executed in a lexical context, like so (receice function):</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren2">(<span class="code">msg</span>)</span>
+  <span class="paren2">(<span class="code">case msg
+    <span class="paren3">(<span class="code"><span class="keyword">:do-lengthy-op</span>
+     <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren5">(<span class="code"><span class="paren6">(<span class="code">sender <span class="special">*sender*</span></span>)</span></span>)</span>
+       <span class="comment">;; do lengthy computation
+</span>       <span class="paren5">(<span class="code">reply <span class="keyword">:my-later-reply</span> sender</span>)</span></span>)</span></span>)</span>
+    <span class="paren3">(<span class="code">otherwise
+      <span class="comment">;; do other non async stuff
+</span>      <span class="paren4">(<span class="code">reply <span class="keyword">:my-reply</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>Notice that for the lengthy operation the sender must be captured because if the lengthy operation is asynchronous 'receive' function is perhaps called for another message where <code>*sender*</code> is different. In that case <code>sender</code> must be supplied explicitly for <code>reply</code>.</p>
+
+<p>See <a href="../tests/spawn-in-receive-test.lisp" >this test</a> for more info.</p>
+
+<h4>Changing behavior</h4>
+
+<p>An actor can change its behavior. The behavior is just a lambda similar as the 'receive' function taking the message as parameter.</p>
+
+<p>The default behavior of the actor is given on actor construction using <code>:receive</code> key.</p>
+
+<p>During the lifetime of an actor the behavior can be changed using <code>become</code>. <code>unbecome</code> will restore the default behavior.</p>
+
+<p>Here is an example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">ac:actor-of <span class="special">*system*</span>
+             <span class="keyword">:receive</span>
+             <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">msg</span>)</span>
+               <span class="paren3">(<span class="code">case msg
+                 <span class="paren4">(<span class="code"><span class="keyword">:open</span>
+                  <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_125.html#IDX383" class="symbol"><i><span class="symbol">progn</span></i></a>
+                    <span class="paren6">(<span class="code">unstash-all</span>)</span>
+                    <span class="paren6">(<span class="code">become <span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren2">(<span class="code">msg</span>)</span>
+                              <span class="paren2">(<span class="code">case msg
+                                <span class="paren3">(<span class="code"><span class="keyword">:write</span>
+                                 <span class="comment">;; do something
+</span>                                 </span>)</span>
+                                <span class="paren3">(<span class="code"><span class="keyword">:close</span>
+                                 <span class="paren4">(<span class="code">unbecome</span>)</span></span>)</span>
+                                <span class="paren3">(<span class="code">otherwise
+                                 <span class="paren4">(<span class="code">stash msg</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span>
+                 <span class="paren4">(<span class="code">otherwise <span class="paren5">(<span class="code">stash msg</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<h4>Stashing messages</h4>
+
+<p>Stashing allows the actor to <code>stash</code> away messages for when the actor is in a state that doesn't allow it to handle certain messages. <code>unstash-all</code> can unstash all stashed messages.</p>
+
+<p>See: API <a href="https://mdbergmann.github.io/cl-gserver/index.html#SENTO.STASH:STASHING%20CLASS" >documentation</a> for more info.</p>
+
+<h4>Creating actors without a system</h4>
+
+<p>It is still possible to create actors without a system. This is how you
+do it:</p>
+
+<pre><code><span class="code"><span class="comment">;; make an actor
+</span><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_143.html#IDX430" class="symbol"><i><span class="symbol">defvar</span></i></a> <span class="special">*my-actor*</span> <span class="paren2">(<span class="code">act:make-actor <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code">msg</span>)</span>
+                                     <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"FooBar"</span></span>)</span></span>)</span>
+                                   <span class="keyword">:name</span> <span class="string">"Lone-actor"</span></span>)</span></span>)</span>
+<span class="comment">;; setup a thread based message box
+</span><span class="paren1">(<span class="code">setf <span class="paren2">(<span class="code">act-cell:msgbox <span class="special">*my-actor*</span></span>)</span> 
+      <span class="paren2">(<span class="code">make-instance 'mesgb:message-box/bt</span>)</span></span>)</span></span></code></pre>
+
+<p>You have to take care yourself about stopping the actor and freeing
+resources.</p>
+
+<h3>Agents</h3>
+
+<p>An Agent is a specialized Actor. It is meant primarily for maintaining
+state and comes with some conveniences to do that.</p>
+
+<p>To use an Agent import <code>sento.agent</code> package.</p>
+
+<p>There is no need to subclass an Agent. Rather create a facade to customize an agent. See below.</p>
+
+<p>An Agent provides three functions to use it.</p>
+
+<ul>
+<li><code>make-agent</code> creates a new agent. Optionally specify an <code>actor-context</code> or define the kind of dispatcher the agent should use.</li>
+<li><code>agent-get</code> retrieves the current state of the agent. This directly delivers the state of the agent for performance reasons. There is no message handling involved.</li>
+<li><code>agent-update</code> updates the state of the agent</li>
+<li><code>agent-update-and-get</code> updates the agent state and returns the new state.</li>
+</ul>
+
+<p>All four take a lambda. The lambda for <code>make-agent</code> does not take a parameter. It should return the initial state of the agent. <code>agent-get</code> and <code>agent-update</code> both take a lambda that must support one parameter.
+This parameter represents the current state of the agent.</p>
+
+<p>Let's make a simple example:</p>
+
+<p>First create an agent with an initial state of <code>0</code>.</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*my-agent*</span> <span class="paren2">(<span class="code">make-agent <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> 0</span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>Now update the state several times (<code>agent-update</code> is asynchronous and returns <code>t</code> immediately):</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">agent-update <span class="special">*my-agent*</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">state</span>)</span> <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a> state</span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>Finally get the state:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">agent-get <span class="special">*my-agent*</span> #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_168.html#IDX488" class="symbol">identity</a></span>)</span></span></code></pre>
+
+<p>This <code>agent-get</code> just uses the <code>identity</code> function to return the state as is.</p>
+
+<p>So this simple agent represents a counter.</p>
+
+<p>It is important to note that the retrieves state, i.e. with <code>identity</code> should not be modified outside the agent.</p>
+
+<h4>Using an agent within an actor-system</h4>
+
+<p>The <code>make-agent</code> constructor function allows to provide an optional <code>actor-context</code> argument that, when given, makes the constructor create the agent within the given actor-context. Another parameter <code>dispatcher-id</code> allows to specify the dispatcher where <code>:shared</code> is the default, <code>:pinned</code> will create the agent with a separate mailbox thread.</p>
+
+<p>It also implies that the agent is destroyed then the actor-system is destroyed.</p>
+
+<p>However, while actors can create hierarchies, agents can not. Also the API for creating agents in systems is different to actors. This is to make explicit that agents are treated slightly differently than actors even though under the hood agents are actors.</p>
+
+<h4>Wrapping an agent</h4>
+
+<p>While you can use the agent as in the example above it is usually advised to wrap an agent behind a more simple facade that doesn't work with lambdas and allows a more domain specific naming.</p>
+
+<p>For example could a facade for the counter above look like this:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_143.html#IDX430" class="symbol"><i><span class="symbol">defvar</span></i></a> <span class="special">*counter-agent*</span> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a></span>)</span>
+
+<span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> init-agent <span class="paren2">(<span class="code">initial-value</span>)</span>
+  <span class="paren2">(<span class="code">setf <span class="special">*counter-agent*</span> <span class="paren3">(<span class="code">make-agent <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code"></span>)</span> initial-value</span>)</span></span>)</span></span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> increment <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">agent-update <span class="special">*counter-agent*</span> #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a></span>)</span></span>)</span>
+<span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> decrement <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">agent-update <span class="special">*counter-agent*</span> #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX104" class="symbol">1-</a></span>)</span></span>)</span>
+<span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> counter-value <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">agent-get <span class="special">*counter-agent*</span> #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_168.html#IDX488" class="symbol">identity</a></span>)</span></span>)</span></span></code></pre>
+
+<p>Alternatively, one can wrap an agent inside a class and provide methods for simplified access to it.</p>
+
+<h3>Router</h3>
+
+<p>A <code>Router</code> is a facade over a set of actors. Routers are either created with a set of actors using the default constructor <code>router:make-router</code> or actors can be added later.</p>
+
+<p>Routers implement part of the actor protocol, so it allows to use <code>tell</code>, <code>ask-s</code> or <code>ask</code> which it forwards to a 'routee' (one of the actors of a router) by passing all of the given parameters. The routee is chosen by applying a <code>strategy</code>. The built-in default strategy a routee is chosen randomly.</p>
+
+<p>The <code>strategy</code> can be configured when creating a router using the constructors <code>&amp;key</code> parameter <code>:strategy</code>. The <code>strategy</code> is just a function that takes the number of routees and returns a routee index to be chosen for the next operation.</p>
+
+<p>Currently available strategies: <code>:random</code> and<code>:round-robin</code>.</p>
+
+<p>Custom strategies can be implemented.</p>
+
+<h3>Dispatchers</h3>
+
+<h4>:shared</h4>
+
+<p>A <code>:shared</code> dispatcher is a facility that is set up in the <code>actor-system</code>. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that ever only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).</p>
+
+<p>Using this dispatcher allows to create a large number of actors. The actors as such are generally very cheap.</p>
+
+<p><img alt="" src="./docs/disp_shared.png" width="700"/>
+<img alt="" src="disp_shared.png" width="700"/></p>
+
+<h4>:pinned</h4>
+
+<p>The <code>:pinned</code> dispatcher is represented by just a thread that operates on the actors message queue. It handles one message after another with the actors message handling code. This also ensures protection from data race conditions of the state of the actor.</p>
+
+<p>This variant is slightly faster (see below) but requires one thread per actor.</p>
+
+<p><img alt="" src="./docs/disp_pinned.png" width="700"/>
+<img alt="" src="disp_pinned.png" width="700"/></p>
+
+<h4>custom dispatcher</h4>
+
+<p>It is possible to create additional dispatcher of type <code>:shared</code>. A name can be freely chosen, but by convention it should be a global symbol, i.e. <code>:my-dispatcher</code>.</p>
+
+<p>When creating actors using <code>act:actor-of</code>, or when using the <code>tasks</code> API it is possible to specify the dispatcher (via the 'dispatcher-id' i.e. <code>:my-dispatcher</code>) that should handle the actor, agent, or task messages.</p>
+
+<p>A custom dispatcher is in particular useful when using <code>tasks</code> for longer running operations. Longer running operations should not be used for the <code>:shared</code> dispatcher because it is, by default, responsible for the message handling of most actors.</p>
+
+<h3>Eventstream</h3>
+
+<p>The eventstream allows messages (or events) to be posted on the eventstream in a fire-and-forget kind of way. Actors can subscribe to the eventstream if they want to get notified for particular messages or any message posted to the event stream.<br/>
+This allows to create event-based systems.</p>
+
+<p>Here is a simple example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">asys:make-actor-system</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code">ac:actor-of <span class="special">*sys*</span> <span class="keyword">:name</span> <span class="string">"listener"</span>
+  <span class="keyword">:init</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self</span>)</span>
+          <span class="paren3">(<span class="code">ev:subscribe self self '<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_71.html#IDX149" class="symbol">string</a></span>)</span></span>)</span>
+  <span class="keyword">:receive</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">msg</span>)</span>
+             <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_126.html#IDX389" class="symbol"><i><span class="symbol">cond</span></i></a>
+               <span class="paren4">(<span class="code"><span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_73.html#IDX157" class="symbol">string=</a> <span class="string">"my-message"</span> msg</span>)</span>
+                <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"received event: ~a~%"</span> msg</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code">ev:publish <span class="special">*sys*</span> <span class="string">"my-message"</span></span>)</span></span></code></pre>
+
+<p>This subscribes to all <code>'string</code> based events and just prints the message when received.<br/>
+The subscription here is done using the <code>:init</code> hook of the actor. The <code>ev:subscribe</code> function requires to specify the eventstream as first argument. But there are different variants of the generic function defined which allows to specify an actor directly. The eventstream is retrieve from the actor through its actor-context.</p>
+
+<pre><code><span class="code">received event: my-message</span></code></pre>
+
+<p>See the API <a href="https://mdbergmann.github.io/cl-gserver/index.html#SENTO.EVENTSTREAM:EVENTSTREAM%20CLASS" >documentation</a> for more details.</p>
+
+<h3>Tasks</h3>
+
+<p>'tasks' is a convenience package that makes dealing with asynchronous and concurrent operations very easy.</p>
+
+<p>Here is a simple example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span></span>)</span>
+  
+  // run something without requiring a feedback
+  <span class="paren2">(<span class="code">task-start <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code">do-lengthy-IO</span>)</span></span>)</span>
+  
+  // run asynchronous <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX106" class="symbol">-</a> with await
+  <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">task <span class="paren6">(<span class="code">task-async <span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">do-a-task</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span>
+    // do some other stuff
+    // eventually we need <i><span class="symbol">the</span></i> task result
+    <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> <span class="paren5">(<span class="code">task-await task</span>)</span> 5</span>)</span></span>)</span>
+    
+  // run asynchronous with completion-handler <span class="paren3">(<span class="code">continuation</span>)</span>
+  <span class="paren3">(<span class="code">task-async <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code"></span>)</span> <span class="paren5">(<span class="code">some-bigger-computation</span>)</span></span>)</span>
+              <span class="keyword">:on-complete-fun</span>
+              <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code">result</span>)</span>
+                <span class="paren5">(<span class="code">do-something-with result</span>)</span></span>)</span></span>)</span>
+
+  // concurrently map over <i><span class="symbol">the</span></i> given <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX225" class="symbol">list</a>
+  <span class="paren3">(<span class="code">-&gt;&gt; 
+    '<span class="paren4">(<span class="code">1 2 3 4 5</span>)</span>
+    <span class="paren4">(<span class="code">task-async-stream #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a></span>)</span>
+    <span class="paren4">(<span class="code">reduce #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a></span>)</span></span>)</span></span>)</span>
+
+=&gt; 20 <span class="paren2">(<span class="code">5 bits, #x14, #o24, #b10100</span>)</span>
+</span></span></span></code></pre>
+
+<p>All functions available in 'tasks' package require to be wrapped in a <code>with-context</code> macro. This macro removes the necessity of an additional argument to each of the functions which is instead supplied by the macro.</p>
+
+<p>What happens in the example above is that the list <code>'(1 2 3 4 5)</code> is passed to <code>task-async-stream</code>. <code>task-async-stream</code> then spawns a 'task' for each element of the list and applies the given function (here <code>1+</code>) on each list element. The function though is executed by a worker of the actor-systems <code>:shared</code> dispatcher. <code>task-async-stream</code> then also collects the result of all workers. In the last step (<code>reduce</code>) the sum of the elements of the result list are calculated.</p>
+
+<p>It is possible to specify a second argument to the <code>with-context</code> macro to specify the dispatcher that should be used for the tasks.<br/>
+The concurrency here depends on the number of dispatcher workers.</p>
+
+<p>As alternative, or in special circumstances, it is possible to setf <code>*task-context*</code> and/or <code>*task-dispatcher*</code> special variables which allows to use <strong>tasks</strong> without <code>with-context</code> macro.</p>
+
+<p>Be also aware that the <code>:shared</code> dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for <code>tasks</code> when you plan to operate longer running operations.</p>
+
+<p>See the API <a href="https://mdbergmann.github.io/cl-gserver/index.html#SENTO.TASKS:WITH-CONTEXT%20MGL-PAX:MACRO" >documentation</a> for more details.</p>
+
+<h3>Immutability</h3>
+
+<p>Some words on immutability. Actor states don't need to be immutable data structures. Sento does <em>not</em> make copies of the actor states. The user is responsible for the actor state and to motate the actor state only within 'receive' function.</p>
+
+<h3>Logging</h3>
+
+<p>Sento does its own logging using different log levels from 'trace' to 'error' using log4cl. If you wish to also use log4cl in your application but find that Sento is too noisy in debug and trace logging you can change the log level for the 'sento package only by:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">log:config '<span class="paren2">(<span class="code">sento</span>)</span> <span class="keyword">:warn</span></span>)</span></span></code></pre>
+
+<p>This will tell log4cl to do any logging for sento in warn level.</p>
+
+<h3>Benchmarks</h3>
+
+<p>Hardware specs (M1)):</p>
+
+<ul>
+<li>Mac M1 Ultra, 32 GB RAM</li>
+</ul>
+
+<p><img src="./docs/perf-M1Ultra.png" alt="" />
+<img src="perf-M1Ultra.png" alt="" /></p>
+
+<p>Hardware specs (x86-64):</p>
+
+<ul>
+<li>iMac Pro (2017), 8 Core Xeon, 32 GB RAM</li>
+</ul>
+
+<p><img src="./docs/perf-x86_64.png" alt="" />
+<img src="perf-x86_64.png" alt="" /></p>
+
+<p><strong>All</strong></p>
+
+<p>Version 3 of Sento uses the jpl-queues package which is slightly slower than the lparallel cons-queue. The lparallel cons-queue package is available as separate asdf system if needed and if the additional dependency is acceptable.</p>
+
+<p>The benchmark was created by having 8 threads throwing each 125k (1m altogether) messages at 1 actor. The timing was taken for when the actor did finish processing those 1m messages. The messages were sent by either all <code>tell</code>, <code>ask-s</code>, or <code>ask</code> to an actor whose message-box worked using a single thread (<code>:pinned</code>) or a dispatched message queue (<code>:shared</code> / <code>dispatched</code>) with 8 workers.</p>
+
+<p>Of course a <code>tell</code> is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow.</p>
+
+<p><strong>SBCL (v2.3.0)</strong></p>
+
+<p>Even though SBCL is by far the fastest one with <code>tell</code> on both <code>:pinned</code> and <code>dispatched</code>, it had massive problems on <code>dispatched - ask-s</code> where I had to lower the number of messages to 200k alltogether. Beyond that value SBCL didn't get it worked out.</p>
+
+<p><strong>LispWorks (8.0.1)</strong></p>
+
+<p>LispWorks is fast overall. Not as fast as SBCL. But it seems the GC is more robust, in particular on the <code>dispatched - ask</code>.</p>
+
+<p><strong>CCL (v1.12)</strong></p>
+
+<p>Unfortunately CCL doesn't work natively on M1 Apple CPU.</p>
+
+<p><strong>ABCL (1.9)</strong></p>
+
+<p>The pleasant surprise was ABCL. While not being the fastest it is the most robust. Where SBCL and CCL were struggling you could throw anything at ABCL and it'll cope with it. I'm assuming that this is because of the massively battle proven Java Runtime.</p>
+
+<h3>Migration guide for moving from Sento 2 to Sento 3</h3>
+
+<ul>
+<li><p>the receive function is now 1-arity. It only takes the a message parameter.
+Previous 'self' and 'state' parameters are now accessible via <code>*self*</code> and <code>*state*</code>. The same applies to <code>become</code> function.</p></li>
+<li><p>the return value of 'receive' function is ignored for <code>tell</code> and <code>ask</code>. In both cases a <code>reply</code> macro can be used to reply to a sender. <code>reply</code> implicitly uses <code>*sender*</code> but can be overriden (see 'long running and asynchronous operations in receive'). The 'receive' function return value is still relevant for <code>ask-s</code>.</p></li>
+<li><p>the lparallel dependency was removed to reduce dependencies. However, the cons-queue of lparallel is very fast (used for unbounded message queue) so an additional 'sento-high-speed-queue' asdf system has been added to bring back the lparallel cons-queue if performance is critical. It brings an additional 10%-30% boost.</p></li>
 </ul>
 
 <h3>Version history</h3>
 
+<p><strong>Version 3.0.0 (1.2.2023):</strong> New major version. See migration guide if you have are migrating from version 2.</p>
+
 <p><strong>Version 2.2.0 (27.12.2022):</strong> Added stashing and unstashing of messages.</p>
 
-<p><strong>Version 2.1.0 (17.11.2022):</strong> Reworked the <code>future</code> package. Nicer symtax and futures can now be mapped.</p>
+<p><strong>Version 2.1.0 (17.11.2022):</strong> Reworked the <code>future</code> package. Nicer syntax and futures can now be mapped.</p>
 
 <p><strong>Version 2.0.0 (16.8.2022):</strong> Rename to &quot;Sento&quot;. Incompatible change due to package names and system have changed.</p>
 
@@ -189,626 +787,6 @@ easily possible to spawn millions of processes/threads and so each actor
 threads are OS threads, because of OS resource limits. This is the main
 reason for working with the message dispatcher pool instead.</p>
 
-<p>But let's jump right into it. I'll explain more later.</p>
-
-<h3>Getting hands-on</h3>
-
-<h4>Creating an actor-system</h4>
-
-<p>To use the shared dispatcher pool we have to create an
-<code>actor-system</code> first.</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_143.html#IDX430" class="symbol"><i><span class="symbol">defvar</span></i></a> <span class="special">*system*</span> <span class="paren2">(<span class="code">asys:make-actor-system</span>)</span></span>)</span></span></code></pre>
-
-<p>When we eval <code>*system*</code> in the repl we see a bit of the structure:</p>
-
-<pre><code>#&lt;ACTOR-SYSTEM shared-workers: 4, user actors: 0, internal actors: 0&gt;</code></pre>
-
-<p>So the <code>actor-system</code> has by default four shared message
-dispatcher workers. Depending on how busy the system tends to be this
-default can of course be increased.</p>
-
-<p>An optional configuration can be passed to the actor-system factory function. See API documentation.</p>
-
-<ol>
-<li><p>Shutting down the system</p>
-
-<p>Shutting down an actor system may be necessary depending on how
-it's used. It can be done by:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">ac:shutdown <span class="special">*system*</span></span>)</span></span></code></pre>
-
-<p>This will stop all dispatcher workers and all other actors that have
-been spawned in the system.</p></li>
-</ol>
-
-<h4>Creating actors</h4>
-
-<p>Actors kind of live within an <code>actor-context</code>. An
-<code>actor-context</code> contains a collection (of actors) and defines a Common
-Lisp protocol that defines a set of generic functions for creating, removing and finding actors in an <code>actor-context</code>.</p>
-
-<p>There are two 'things' that host an <code>actor-context</code>. This
-is:</p>
-
-<ol>
-<li>the <code>actor-system</code>. Creating actors on the <code>actor-system</code> will create root actors.</li>
-<li>the <code>actor</code>. Creating actors on the context of an actor will create a child actor.</li>
-</ol>
-
-<p>Let's create an actor.</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">ac:actor-of <span class="special">*system*</span> <span class="keyword">:name</span> <span class="string">"answerer"</span>
-  <span class="keyword">:receive</span>
-  <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
-    <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">output <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"Hello ~a"</span> msg</span>)</span></span>)</span></span>)</span>
-      <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"~a~%"</span> output</span>)</span>
-      <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> output state</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<p>This creates a root actor on the <code>*system*</code>. Notice that the actor is not assigned to a variable. It is now registered in the system. The <code>:receive</code> key argument to the <code>actor-of</code> macro is a function which does the main message processing of an actor. The parameters to the 'receive' function are the tuple:</p>
-
-<ol>
-<li><code>self</code> - the instance of the actor</li>
-<li><code>msg</code> - the received message of when this 'receive' function is called</li>
-<li><code>state</code> - the current state of the actor</li>
-</ol>
-
-<p><code>actor-of</code> also allows to specify the initial state by using the <code>:state</code> key, a name, and a custom actor type. By default a standard actor of type <code>'actor</code> is created. But you can subclass <code>'actor</code> and specify your own. It is also possible to add 'after initialization' code using the <code>:init</code> key which takes a lambda with the actor instance as parameter.</p>
-
-<p>The return value of the 'receive' function should also be familiar. It is the <code>cons</code> with <code>car</code> being sent back to sender (in case of ask/ask-s) and <code>cdr</code> set as the new state of the actor.</p>
-
-<p>The <code>actor-of</code> macro still returns the actor as can be seen on the repl when this is executed. So it is of course possible to store the actor in a dynamic or lexical context. However, when the lexical context ends, the actor will still live as part of the actor context/system.</p>
-
-<p>Here we see a few details of the actor. Among which is the name and also the type of message-box it uses. By default it is a <code>message-box/dp</code> which is the type of a shared message dispatcher message-box.</p>
-
-<pre><code><span class="code">#&lt;ACTOR answerer, running: T, state: NIL, message-box: #&lt;MESSAGE-BOX/DP mesgb-9541, processed messages: 0, max-queue-size: 0, queue: #&lt;QUEUE-UNBOUNDED #x3020029918FD&gt;&gt;&gt;</span></code></pre>
-
-<p>Had we stored the actor to a variable, say <code>*answerer*</code> we
-can create a child actor of that by doing:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">ac:actor-of <span class="special">*answerer*</span> <span class="keyword">:name</span> <span class="string">"child-answerer"</span>
-    <span class="keyword">:receive</span> 
-    <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
-        <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">output <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"~a"</span> <span class="string">"Hello-child ~a"</span> msg</span>)</span></span>)</span></span>)</span>
-            <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"~a~%"</span> output</span>)</span>
-            <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> output state</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<p>This will create a new actor on the context of the parent actor. The
-context can be specified with just the parent actor instance <code>*answerer*</code>.</p>
-
-<h5>Dispatchers <code>:pinned</code> vs. <code>:shared</code></h5>
-
-<p>Dispatchers are somewhat alike thread pools. Dispatchers of the <code>:shared</code> type are a pool of workers. Workers are actors using a <code>:pinned</code> dispatcher. <code>:pinned</code> just means that an actor spawns its own mailbox thread.</p>
-
-<p>So <code>:pinned</code> and <code>:shared</code> are types of dispatchers. <code>:pinned</code> spawns its own mailbox thread, <code>:shared</code> uses a worker pool to handle the mailbox messages.</p>
-
-<p>By default an actor created using <code>actor-of</code> uses a <code>:shared</code> dispatcher type which uses the shared message dispatcher that is automatically setup in the system.<br/>
-When creating an actor it is possible to specify the <code>dispatcher-id</code>. This parameter specifies which 'dispatcher' should handle the mailbox queue/messages.</p>
-
-<p>Please see below for more info on dispatchers.</p>
-
-<h4>Finding actors in the context</h4>
-
-<p>If actors are not directly stored in a dynamic or lexical context they
-can still be looked up and used. The <code>actor-context</code> protocol
-contains a function <code>find-actors</code> which works like this:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">first <span class="paren2">(<span class="code">ac:find-actors <span class="special">*system*</span> <span class="string">"answerer"</span></span>)</span></span>)</span></span></code></pre>
-
-<p>See additional parameters and options here: <a href="https://mdbergmann.github.io/cl-gserver/index.html#x-28CL-GSERVER-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29" >API documentation</a></p>
-
-<pre><code><span class="code">#&lt;ACTOR answerer, running: T, state: NIL, message-box: #&lt;MESSAGE-BOX/DP mesgb-9687, processed messages: 0, max-queue-size: 0, queue: #&lt;QUEUE-UNBOUNDED #x30200263C95D&gt;&gt;&gt;</span></code></pre>
-
-<p>This function only does a simple flat search. The functionality of
-looking up an actor in the system generally will be expanded upon.</p>
-
-<h4>tell, ask-s and ask</h4>
-
-<p>Let's send some messages.</p>
-
-<h5>tell</h5>
-
-<p><code>tell</code> is a fire-and-forget kind of send type. It
-doesn't expect a result in return.</p>
-
-<p>And because of that, and in order to demonstrate it does something,
-it has to have a side-effect. So it dumps some string to the console
-using <code>format</code>, because we couldn't otherwise <code>tell</code> if
-the message was received and processed (see the
-<code>*answerer*</code> actor definitions above).</p>
-
-<pre><code><span class="code">CL-USER&gt; <span class="paren1">(<span class="code">act:tell <span class="special">*answerer*</span> <span class="string">"Foo"</span></span>)</span>
-T
-CL-USER&gt; 
-Hello Foo</span></code></pre>
-
-<p>So we see that <code>tell</code> returns immediately with <code>T</code>. But
-to see the 'Hello Foo' it takes another hit on the return key,
-because the REPL is not asynchronous.</p>
-
-<h5>tell with sender</h5>
-
-<p><code>tell</code> accepts a 'sender', which has to be an actor. So
-we can do like this:</p>
-
-<pre><code><span class="code">CL-USER&gt; <span class="paren1">(<span class="code">act:tell <span class="special">*child-answerer*</span> <span class="string">"Foo"</span> <span class="special">*answerer*</span></span>)</span>
-T
-CL-USER&gt; 
-Hello-child Foo
-Hello Hello-child Foo</span></code></pre>
-
-<p>This sends \&quot;Foo\&quot; to <code>*child-answerer*</code>, but <code>*child-answerer*</code>
-sends the response to <code>*answerer*</code>. So we see outputs of both
-actors.</p>
-
-<h5>ask-s</h5>
-
-<p><code>ask-s</code> blocks until the message was processed by the
-actor. This call returns the <code>car</code> part of the <code>cons</code> return of the
-behavior function. Insofar an <code>ask-s</code> call is more
-resource intensive than just a <code>tell</code>.</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">act:ask-s <span class="special">*answerer*</span> <span class="string">"Bar"</span></span>)</span></span></code></pre>
-
-<p>Will respond with: 'Hello Bar'</p>
-
-<h5>ask</h5>
-
-<p><code>ask</code> combines both <code>ask-s</code> and
-<code>tell</code>. From <code>ask-s</code> it 'inherits' returning
-a result, even though it's a future result. Internally it is
-implemented using <code>tell</code>. In order to wait for a result a
-temporary actor is spawned that waits until it receives the result
-from the actor where the message was sent to. With this received
-result the future is fulfilled. So <code>ask</code> is async, it
-returns immediately with a <code>future</code>. That
-<code>future</code> can be queried until it is fulfilled. Better is
-though to setup an <code>fcompleted</code> handler function on it.</p>
-
-<p>So we can do:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">future:fcompleted
-          <span class="paren2">(<span class="code">act:ask <span class="special">*answerer*</span> <span class="string">"Buzz"</span></span>)</span>
-          <span class="paren2">(<span class="code">result</span>)</span>
-            <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"Received result: ~a~%"</span> result</span>)</span></span>)</span></span></code></pre>
-
-<p>Well, one step at a time:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">act:ask <span class="special">*answerer*</span> <span class="string">"Buzz"</span></span>)</span></span></code></pre>
-
-<p>Returns with:</p>
-
-<pre><code><span class="code">#&lt;FUTURE promise: #&lt;PROMISE finished: NIL errored: NIL forward: NIL #x302002EAD6FD&gt;&gt;</span></code></pre>
-
-<p>Then we can setup a completion handler on the future:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">future:fcompleted 
-          <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX107" class="symbol">*</a>
-          <span class="paren2">(<span class="code">result</span>)</span>
-            <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"Received result: ~a~%"</span> result</span>)</span></span>)</span>)</span></code></pre>
-
-<p>Remember '*' is the last result in the REPL which is the future
-here.</p>
-
-<p>This will print after a bit:</p>
-
-<pre><code><span class="code">Hello Buzz
-Received result: Hello Buzz</span></code></pre>
-
-<p><strong>Mapping futures with fmap</strong></p>
-
-<p>Let's asume we have such a simple actor that just increments the value passed to it.</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*incer*</span>
-  <span class="paren2">(<span class="code">actor-of <span class="special">*sys*</span>
-            <span class="keyword">:receive</span> <span class="paren3">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren4">(<span class="code">self value state</span>)</span>
-                       <span class="paren4">(<span class="code">declare <span class="paren5">(<span class="code">ignore self state</span>)</span></span>)</span>
-                       <span class="paren4">(<span class="code">cons <span class="paren5">(<span class="code">1+ value</span>)</span> state</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<p>Since <code>ask</code> returns a future it is possible to map multiple <code>ask</code> operations like this:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">-&gt; <span class="paren2">(<span class="code">ask <span class="special">*incer*</span> 0</span>)</span>
-  <span class="paren2">(<span class="code">fmap <span class="paren3">(<span class="code">result</span>)</span>
-      <span class="paren3">(<span class="code">ask <span class="special">*incer*</span> result</span>)</span></span>)</span>
-  <span class="paren2">(<span class="code">fmap <span class="paren3">(<span class="code">result</span>)</span>
-      <span class="paren3">(<span class="code">ask <span class="special">*incer*</span> result</span>)</span></span>)</span>
-  <span class="paren2">(<span class="code">fcompleted <span class="paren3">(<span class="code">result</span>)</span>
-      <span class="paren3">(<span class="code">format t <span class="string">"result: ~a~%"</span> result</span>)</span>
-    <span class="paren3">(<span class="code">assert <span class="paren4">(<span class="code">= result 3</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<h4>ask-s and ask with timeout</h4>
-
-<p>A timeout (in seconds) can be specified for both <code>ask-s</code> and
-<code>ask</code> and is done like so:</p>
-
-<p>To demonstrate this we could setup an example 'sleeper' actor:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">ac:actor-of <span class="special">*system*</span> 
-    <span class="keyword">:receive</span> 
-    <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
-        <span class="paren3">(<span class="code">sleep 5</span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<p>If we store this to <code>*sleeper*</code> and do the following, the
-<code>ask-s</code> will return a <code>handler-error</code> with an
-<code>ask-timeout</code> condition.</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">act:ask-s <span class="special">*sleeper*</span> <span class="string">"Foo"</span> <span class="keyword">:time-out</span> 2</span>)</span></span></code></pre>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code"><span class="keyword">:HANDLER-ERROR</span> . #&lt;CL-GSERVER.UTILS:ASK-TIMEOUT #x30200319F97D&gt;</span>)</span></span></code></pre>
-
-<p>This works similar with the <code>ask</code> only that the future will
-be fulfilled with the <code>handler-error</code> <code>cons</code>.</p>
-
-<p>To get a readable error message of the condition we can do:</p>
-
-<pre><code><span class="code">CL-USER&gt; <span class="paren1">(<span class="code">format t <span class="string">"~a"</span> <span class="paren2">(<span class="code">cdr *</span>)</span></span>)</span>
-A timeout set to 2 seconds occurred. Cause: 
-#&lt;BORDEAUX-THREADS:TIMEOUT #x302002FAB73D&gt; </span></code></pre>
-
-<p>Note that <code>ask-s</code> uses the calling thread for the timeout checks.<br/>
-<code>ask</code> uses a wheel timer to handle timeouts. The default resolution for <code>ask</code> timeouts is 500ms with a maximum size of wheel slots (registered timeouts) of 1000. What this means is that you can have timeouts of a multiple of 500ms and 1000 <code>ask</code> operations with timeouts. This default can be tweaked when creating an actor-system, see <a href="https://mdbergmann.github.io/cl-gserver/index.html#x-28CL-GSERVER-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20-28VARIABLE-29-29" >API documentation</a> for more details.</p>
-
-<h4>Long running operations in <code>receive</code></h4>
-
-<p>Be careful with doing long running computations in the
-<code>receive</code> function message handler, because it will block
-message processing. It is advised to use a third-party thread-pool or a
-library like <em>lparallel</em> to do the computations with and return early
-from the <code>receive</code> message handler.</p>
-
-<p>Considering the required <code>cons</code> return result of the
-<code>receive</code> function, in case a result computation is delegated
-to a thread-pool the <code>receive</code> function should return with
-<code>(cons :no-reply &lt;state&gt;)</code>. The <code>:no-reply</code> will instruct the actor to
-<em>not</em> send a result to a sender automatically should a sender be
-available (for the cases of <code>tell</code> or <code>ask</code>). The
-computation result can be 'awaited' for in an asynchronous manner and
-a response to <code>*sender*</code> can be sent manually by just doing a
-<code>(tell *sender* &lt;my-computation-result&gt;)</code>. The sender of the original
-message is set to the dynamic variable <code>*sender*</code>.</p>
-
-<p>Due to an asynchronous callback of a computation running is a separate
-thread, the <code>*sender*</code> must be copied into a lexical environment because
-at the time of when the callback is executed the <code>*sender*</code> can have a
-different value.</p>
-
-<p>This behavior must be part of the messaging protocol that is being
-defined for the actors at play.</p>
-
-<h4>Changing behavior</h4>
-
-<p>An actor can change behavior. The behavior is just a lambda that has to
-take three parameters:</p>
-
-<ol>
-<li>the actor's instance - usually called <code>self</code></li>
-<li>the received message - maybe call <code>msg</code>?</li>
-<li>the current state of the actor</li>
-</ol>
-
-<p>The behavior then can pattern match (or do some matching by other means)
-on the received message alone, or in combination with the current state.</p>
-
-<p>The default behavior of the actor is given on actor construction using
-the default constructor <code>make-actor</code>.</p>
-
-<p>During the lifetime of an actor the behavior can be changed using
-<code>become</code>.</p>
-
-<p>So we remember the <code>*answerer*</code> which responds with 'Hello Foo' when
-we send <code>(act:ask-s *answerer* &quot;Foo&quot;)</code>. We can now change the behavior
-with:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">act:become <span class="special">*answerer*</span> 
-            <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
-              <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"my new behavior for: ~a"</span> msg</span>)</span> state</span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<p>When we now send <code>(act:ask-s *answerer* &quot;Foo&quot;)</code> we will get the
-response: 'my new behavior for: Foo'.</p>
-
-<p><strong>Reverting <code>become</code> / <code>unbecome</code></strong></p>
-
-<p>To revert back to the default behavior as defined by the
-<code>receive</code> function of the constructor you may call
-<code>unbecome</code>.</p>
-
-<h4>Stashing messages</h4>
-
-<p>Stashing allows the actor to <code>stash</code> away messages for when the actor is in a state that doesn't allow it to handle certain messages. <code>unstash-all</code> can unstash all stashed messages.</p>
-
-<p>See: <a href="https://mdbergmann.github.io/cl-gserver/index.html#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" >API documentation</a> for more info.</p>
-
-<h4>Creating actors without a system</h4>
-
-<p>It is still possible to create actors without a system. This is how you
-do it:</p>
-
-<pre><code><span class="code"><span class="comment">;; make an actor
-</span><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_143.html#IDX430" class="symbol"><i><span class="symbol">defvar</span></i></a> <span class="special">*my-actor*</span> <span class="paren2">(<span class="code">act:make-actor <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code">self msg state</span>)</span>
-                                     <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> <span class="string">"Foo"</span> state</span>)</span></span>)</span>
-                                   <span class="keyword">:name</span> <span class="string">"Lone-actor"</span></span>)</span></span>)</span>
-<span class="comment">;; setup a thread based message box
-</span><span class="paren1">(<span class="code">setf <span class="paren2">(<span class="code">act-cell:msgbox <span class="special">*my-actor*</span></span>)</span> 
-      <span class="paren2">(<span class="code">make-instance 'mesgb:message-box/bt</span>)</span></span>)</span></span></code></pre>
-
-<p>You have to take care yourself about stopping the actor and freeing
-resources.</p>
-
-<h3>Agents</h3>
-
-<p>An Agent is a specialized Actor. It is meant primarily for maintaining
-state and comes with some conveniences to do that.</p>
-
-<p>To use an Agent import <code>sento.agent</code> package.</p>
-
-<p>There is no need to subclass an Agent. Rather create a facade to
-customize an agent. See below.</p>
-
-<p>An Agent provides three functions to use it.</p>
-
-<ul>
-<li><code>make-agent</code> creates a new agent. Optionally specify an <code>actor-context</code> or define the kind of dispatcher the agent should use.</li>
-<li><code>agent-get</code> retrieves the current state of the agent. This directly
-delivers the state of the agent for performance reasons. There is no
-message handling involved.</li>
-<li><code>agent-update</code> updates the state of the agent</li>
-<li><code>agent-update-and-get</code> updates the agent state and returns the new state.</li>
-</ul>
-
-<p>All four take a lambda. The lambda for <code>make-agent</code> does not take a
-parameter. It should return the initial state of the agent. <code>agent-get</code>
-and <code>agent-update</code> both take a lambda that must support one parameter.
-This parameter represents the current state of the agent.</p>
-
-<p>Let's make a simple example:</p>
-
-<p>First create an agent with an initial state of <code>0</code>.</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*my-agent*</span> <span class="paren2">(<span class="code">make-agent <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> 0</span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<p>Now update the state several times (<code>agent-update</code> is asynchronous and
-returns <code>t</code> immediately):</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">agent-update <span class="special">*my-agent*</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">state</span>)</span> <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a> state</span>)</span></span>)</span></span>)</span></span></code></pre>
-
-<p>Finally get the state:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">agent-get <span class="special">*my-agent*</span> #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_168.html#IDX488" class="symbol">identity</a></span>)</span></span></code></pre>
-
-<p>This <code>agent-get</code> just uses the <code>identity</code> function to return the state
-as is.</p>
-
-<p>So this simple agent represents a counter.</p>
-
-<p>It is important to note that the retrieves state, i.e. with <code>identity</code>
-should not be modified outside the agent.</p>
-
-<h4>Using an agent within an actor-system</h4>
-
-<p>The <code>make-agent</code> constructor function allows to provides an optional
-<code>system</code> argument that, when given, makes the constructor create the
-agent within the given actor-system. This implies that the systems
-shared messages dispatcher is used for the agent and no separate thread
-is created for the agents message box.</p>
-
-<p>It also implies that the agent is destroyed then the actor-system is
-destroyed.</p>
-
-<p>However, while actors can create hierarchies, agents can not. Also the
-API for creating agents in systems is different to actors. This is to
-make explicit that agents are treated slightly differently than actors
-even though under the hood agents are actors.</p>
-
-<h4>Wrapping an agent</h4>
-
-<p>While you can use the agent as in the example above it is usually
-advised to wrap an agent behind a more simple facade that doesn't work
-with lambdas.</p>
-
-<p>For example could a facade for the counter above look like this:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_143.html#IDX430" class="symbol"><i><span class="symbol">defvar</span></i></a> <span class="special">*counter-agent*</span> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a></span>)</span>
-
-<span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> init-agent <span class="paren2">(<span class="code">initial-value</span>)</span>
-  <span class="paren2">(<span class="code">setf <span class="special">*counter-agent*</span> <span class="paren3">(<span class="code">make-agent <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code"></span>)</span> initial-value</span>)</span></span>)</span></span>)</span></span>)</span>
-
-<span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> increment <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">agent-update <span class="special">*counter-agent*</span> #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a></span>)</span></span>)</span>
-<span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> decrement <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">agent-update <span class="special">*counter-agent*</span> #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX104" class="symbol">1-</a></span>)</span></span>)</span>
-<span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> counter-value <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">agent-get <span class="special">*counter-agent*</span> #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_168.html#IDX488" class="symbol">identity</a></span>)</span></span>)</span></span></code></pre>
-
-<p>Alternatively, one can wrap an agent inside a class and provide methods
-for simplified access to it.</p>
-
-<h3>Router</h3>
-
-<p>A <code>Router</code> is a facade over a set of actors. Routers are
-either created with a set of actors using the default constructor
-<code>router:make-router</code> or actors can be added later.</p>
-
-<p>Routers implement part of the actor protocol, so it allows to use
-<code>tell</code>, <code>ask-s</code> or <code>ask</code> which it
-forwards to a 'routee' (one of the actors of a router) by passing all
-of the given parameters. The routee is chosen by applying a
-<code>strategy</code>. The built-in default strategy a routee is chosen
-randomly.</p>
-
-<p>The <code>strategy</code> can be configured when creating a router using
-the constructors <code>&amp;key</code> parameter <code>:strategy</code>. The
-<code>strategy</code> is just a function that takes the number of
-routees and returns a routee index to be chosen for the next operation.</p>
-
-<p>Currently available strategies: <code>:random</code> and
-<code>:round-robin</code>.</p>
-
-<p>Custom strategies can be implemented.</p>
-
-<h3>Dispatchers</h3>
-
-<h4>:shared</h4>
-
-<p>A <code>:shared</code> dispatcher is a separate facility that is set up in the <code>actor-system</code>. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that ever only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).</p>
-
-<p>Using this dispatcher allows to create a large number of actors. The actors as such are generally very cheap.</p>
-
-<p><img alt="" src="./docs/disp_shared.png" width="700"/>
-<img alt="" src="disp_shared.png" width="700"/></p>
-
-<h4>:pinned</h4>
-
-<p>The <code>:pinned</code> dispatcher is represented by a thread that operates on the actors message queue. It handles one message after the other with the actors message handling code. This also ensures protection from data race conditions of the state of the actor.</p>
-
-<p>This variant is slightly faster (see below) but requires one thread per actor.</p>
-
-<p><img alt="" src="./docs/disp_pinned.png" width="700"/>
-<img alt="" src="disp_pinned.png" width="700"/></p>
-
-<h4>custom dispatcher</h4>
-
-<p>It is also possible to create additional dispatcher of type <code>:shared</code>. A name can be freely chosen, but by convention it should be a global symbol, i.e. <code>:my-dispatcher</code>.</p>
-
-<p>When creating actors using <code>act:actor-of</code>, or when using the <code>tasks</code> api it is possible to specify the dispatcher (via the 'dispatcher-id' i.e. <code>:my-dispatcher</code>) that should handle the actor, agent, or task messages.</p>
-
-<p>A custom dispatcher is in particular useful when using <code>tasks</code> for longer running operations. Longer running operations should not be used for the <code>:shared</code> dispatcher because it (by default) is responsible for the message handling of most actors.</p>
-
-<h3>Eventstream</h3>
-
-<p>The eventstream allows messages (or events) to be posted on the eventstream in a fire-and-forget kind of way. Actors can subscribe to the eventstream if they want to get notified for particular messages or generally on all messages posted.<br/>
-This allows to create event-based systems.</p>
-
-<p>Here is a simple example:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">asys:make-actor-system</span>)</span></span>)</span>
-
-<span class="paren1">(<span class="code">ac:actor-of <span class="special">*sys*</span> <span class="keyword">:name</span> <span class="string">"listener"</span>
-  <span class="keyword">:init</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self</span>)</span>
-          <span class="paren3">(<span class="code">ev:subscribe self self '<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_71.html#IDX149" class="symbol">string</a></span>)</span></span>)</span>
-  <span class="keyword">:receive</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
-             <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_126.html#IDX389" class="symbol"><i><span class="symbol">cond</span></i></a>
-               <span class="paren4">(<span class="code"><span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_73.html#IDX157" class="symbol">string=</a> <span class="string">"my-message"</span> msg</span>)</span>
-                <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="string">"received event: ~a~%"</span> msg</span>)</span></span>)</span></span>)</span>
-             <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> <span class="keyword">:no-reply</span> state</span>)</span></span>)</span></span>)</span>
-
-<span class="paren1">(<span class="code">ev:publish <span class="special">*sys*</span> <span class="string">"my-message"</span></span>)</span></span></code></pre>
-
-<p>This subscribes to all <code>'string</code> based events and just prints the message when received.<br/>
-The subscription here is done using the <code>:init</code> hook of the actor. The <code>ev:subscribe</code> function requires to specify the eventstream as first argument. But there are different variants of the generic function defined which allows to specofy an actor directly. The eventstream is retrieve from the actor through its actor-context.</p>
-
-<pre><code><span class="code">received event: my-message</span></code></pre>
-
-<p>See the <a href="https://mdbergmann.github.io/cl-gserver/index.html#toc-2-7-eventstream" >API documentation</a> for more details.</p>
-
-<h3>Tasks</h3>
-
-<p>'tasks' is a convenience package that makes dealing with asynchronous and concurrent operations very easy.</p>
-
-<p>Here is a simple example:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">defparameter</span></i> <span class="special">*sys*</span> <span class="paren2">(<span class="code">make-actor-system</span>)</span></span>)</span>
-
-<span class="paren1">(<span class="code"><i><span class="symbol">with-context</span></i> <span class="paren2">(<span class="code"><span class="special">*sys*</span></span>)</span>
-  
-  // run something without requiring a feedback
-  <span class="paren2">(<span class="code">task-start <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span> <span class="paren4">(<span class="code">do-lengthy-IO</span>)</span></span>)</span>
-  
-  // run asynchronous <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX106" class="symbol">-</a> with await
-  <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">task <span class="paren6">(<span class="code">task-async <span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">do-a-task</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span>
-    // do some other stuff
-    // eventually we need <i><span class="symbol">the</span></i> task result
-    <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a> <span class="paren5">(<span class="code">task-await task</span>)</span> 5</span>)</span></span>)</span>
-    
-  // run asynchronous with completion-handler <span class="paren3">(<span class="code">continuation</span>)</span>
-  <span class="paren3">(<span class="code">task-async <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code"></span>)</span> <span class="paren5">(<span class="code">some-bigger-computation</span>)</span></span>)</span>
-              <span class="keyword">:on-complete-fun</span>
-              <span class="paren4">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren5">(<span class="code">result</span>)</span>
-                <span class="paren5">(<span class="code">do-something-with result</span>)</span></span>)</span></span>)</span>
-
-  // concurrently map over <i><span class="symbol">the</span></i> given <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX225" class="symbol">list</a>
-  <span class="paren3">(<span class="code">-&gt;&gt; 
-    '<span class="paren4">(<span class="code">1 2 3 4 5</span>)</span>
-    <span class="paren4">(<span class="code">task-async-stream #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX103" class="symbol">1+</a></span>)</span>
-    <span class="paren4">(<span class="code">reduce #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX105" class="symbol">+</a></span>)</span></span>)</span></span>)</span>
-
-=&gt; 20 <span class="paren2">(<span class="code">5 bits, #x14, #o24, #b10100</span>)</span>
-</span></span></span></code></pre>
-
-<p>All functions available in 'tasks' package require to be wrapped in a <code>with-context</code> macro. This macro removes the necessity of an additional argument to each of the functions which is instead supplied by the macro.</p>
-
-<p>What happens in this example is that the list <code>'(1 2 3 4 5)</code> is passed to <code>task-async-stream</code>.
-<code>task-async-stream</code> then spawns a 'task' for each element of the list and applies the given function (here <code>1+</code>) on each list element. The function though is executed by a worker of the actor-systems <code>:shared</code> dispatcher. <code>task-async-stream</code> then also collects the result of all workers. In the last step (<code>reduce</code>) the sum of the elements of the result list are calculated.</p>
-
-<p>It is possible to specify a second argument to the <code>with-context</code> macro to specify the dispatcher that should be used for the tasks.<br/>
-The concurrency here depends on the number of dispatcher workers.</p>
-
-<p>As alternative, or in special circumstances, it is also possible to setf <code>*task-context*</code> and <code>*task-dispatcher*</code> special variables which allows to use <strong>tasks</strong> without <code>with-context</code> macro.</p>
-
-<p>Be also aware that the <code>:shared</code> dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for <code>tasks</code> when you plan to operate longer running operations.</p>
-
-<p>See the <a href="https://mdbergmann.github.io/cl-gserver/index.html#toc-2-8-tasks" >API documentation</a> for more details.</p>
-
-<h3>Immutability</h3>
-
-<p>Some words on immutability. sento does <em>not</em> make deep copies of the actor states. So whatever is returned from <code>receive</code> function as part of the <code>(cons back-msg state)</code> is just <code>setf</code>ed to the actor state. The user is responsible to make deep copies if necessary in an immutable environment. The user is responsible to <em>not</em> implictly modify the actor state outside of the actor.</p>
-
-<h3>Logging</h3>
-
-<p>sento does its own logging using different log levels from 'trace' to 'error'. It uses log4cl. If you wish to also use log4cl in your application but find that sento is too noisy in debug and trace logging you can change the log level for the 'sento package only by:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">log:config '<span class="paren2">(<span class="code">sento</span>)</span> <span class="keyword">:warn</span></span>)</span></span></code></pre>
-
-<p>This will tell log4cl to do any logging for sento in warn level.</p>
-
-<h3>Benchmarks</h3>
-
-<p><img src="./docs/perf.png" alt="" />
-<img src="perf.png" alt="" /></p>
-
-<p>Hardware specs:</p>
-
-<ul>
-<li>iMac Pro (2017) with 8 Core Xeon, 32 GB RAM</li>
-</ul>
-
-<p><strong>All</strong></p>
-
-<p>The benchmark was created by having 8 threads throwing each 125k (1m
-alltogether) messages at 1 actor. The timing was taken for when the
-actor did finish processing those 1m messages. The messages were sent by
-either all <code>tell</code>, <code>ask-s</code>, or <code>ask</code> to
-an actor whose message-box worked using a single thread
-(<code>:pinned</code>) or a dispatched message queue
-(<code>:shared</code> / <code>dispatched</code>) with 8 workers.</p>
-
-<p>Of course a <code>tell</code> is in most cases the fastest one, because
-it's the least resource intensive and there is no place that is
-blocking in this workflow.</p>
-
-<p><strong>SBCL (v2.0.10)</strong></p>
-
-<p>Even though SBCL is by far the fastest one with <code>tell</code> on
-both <code>:pinned</code> and <code>dispatched</code>, it had massive
-problems on <code>dispatched - ask-s</code> where I had to lower the
-number of messages to 200k alltogether. Beyond that value SBCL didn't
-get it worked out.</p>
-
-<p><strong>LispWorks (8.0)</strong></p>
-
-<p>LispWorks is fast overall. Not as fast as SBCL. But it seems the GC is more robust, in particular on the <code>dispatched - ask</code>.</p>
-
-<p><strong>CCL (v1.12)</strong></p>
-
-<p>CCL is on acceptable average speed. The problems CCL had was heap
-exhaustion for both the <code>ask</code> tasks where the number of
-messages had to be reduced to 80k. Which is not a lot. Beyond this value
-the runtime would crash. However, CCL for some reason had no problems
-where SBCL was struggling with the <code>dispatched - ask-s</code>.</p>
-
-<p><strong>ABCL (1.8)</strong></p>
-
-<p>The pleasant surprise was ABCL. While not being the fastest it is the
-most robust. Where SBCL and CCL were struggling you could throw anything
-at ABCL and it'll cope with it. I'm assuming that this is because of
-the massively battle proven Java Runtime.</p>
-
 <p><a id="x-28SENTO-2EDOCS-3A-40API-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.DOCS:@API%20MGL-PAX:SECTION"></a></p>
 
@@ -837,9 +815,8 @@ With the <code>actor-system</code> you can create actors via the <a href="#SENTO
 <p>Or even simpler via <code>act:actor-of</code> which is a convenience macro:</p>
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">act:actor-of <span class="paren2">(<span class="code"><span class="special">*system*</span></span>)</span>
-                <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">self msg state</span>)</span>
-                  <span class="comment">;; do stuff
-</span>                  <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_83.html#IDX221" class="symbol">cons</a> <span class="string">"done"</span> state</span>)</span></span>)</span></span>)</span></span></code></pre></li>
+                <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">msg</span>)</span>
+                  <span class="comment">;; do stuff))</span></span></span></span></span></span></code></pre></li>
 </ul>
 
 <p><a id="x-28SENTO-2EACTOR-SYSTEM-3AMAKE-ACTOR-SYSTEM-20FUNCTION-29"></a>
@@ -1114,9 +1091,9 @@ This function allows to unsubsribe from event-stream or such.</p></li>
 
 <ul>
 <li><p><code>context</code>: an <a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>AC:ACTOR-CONTEXT</code></a>, or an <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACT:ACTOR</code></a> or an <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ASYS:ACTOR-SYSTEM</code></a> as all three implement <code>find-actors</code>.</p></li>
-<li><p><code>path</code>: a path designator to be found. This can be just an actor name, like 'foo', then <code>find-actors</code> will only look in the given context for the actor. It can also be: 'foo/bar', a relative path, in whcih case <code>find-actors</code> will traverse the path (here 'bar' is a child of 'foo') to the last context and will try to find the actor by name there, 'bar' in this case. Also possible is a root path like '/user/foo/bar' which will start traversing contexts started from the root context, which is the actor-system.</p></li>
+<li><p><code>path</code>: a path designator to be found. This can be just an actor name, like 'foo', then <code>find-actors</code> will only look in the given context for the actor. It can also be: 'foo/bar', a relative path, in which case <code>find-actors</code> will traverse the path (here 'bar' is a child of 'foo') to the last context and will try to find the actor by name there, 'bar' in this case. Also possible is a root path like '/user/foo/bar' which will start traversing contexts started from the root context, which is the actor-system.</p></li>
 <li><p><code>test</code>: a 2-arity test function where the 1st argument is the <code>path</code>, the 2nd is the a result of the <code>key</code> function (which defaults to <a href="#SENTO.ACTOR-CELL:NAME%20%28MGL-PAX:READER%20SENTO.ACTOR-CELL:ACTOR-CELL%29" title="SENTO.ACTOR-CELL:NAME (MGL-PAX:READER SENTO.ACTOR-CELL:ACTOR-CELL)"><code>ACT-CELL:NAME</code></a>, so the name of the actor). The default function for <code>test</code> is <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_stgeq_.htm" title="STRING= FUNCTION"><code>STRING=</code></a>. However, in case of a multi-subpath <code>path</code> both <code>test</code> and <code>key</code> only apply to the last path component, which designates the actor name to be found.</p></li>
-<li><p><code>key</code>: a 1-arie function applied on an actor instance. Defaults to <code>ACT-CELL:NAME</code>.</p></li>
+<li><p><code>key</code>: a 1-arity function applied on an actor instance. Defaults to <code>ACT-CELL:NAME</code>.</p></li>
 </ul>
 
 <p>Depending on <code>test</code> function the last path component can be used as a wildcard when using a <code>test</code> function like <code>STR:STARTS-WITH-P</code> or <code>STR:CONTAINSP</code> for example.</p></li>
@@ -1174,17 +1151,9 @@ Specify <code>wait</code> as <code>T</code> to block until all actors of the con
 
 <p>The <code>actor</code> does its message handling using the <code>receive</code> function.</p>
 
-<p>The <code>receive</code> function has to return a <code>cons</code>(<a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_cons.htm" title="CONS FUNCTION"><code>0</code></a> <a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_cons.htm" title="CONS TYPE"><code>1</code></a>) constructed of a message to be sent back to caller (<a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_car_c.htm" title="CAR FUNCTION"><code>car</code></a>), if applicable, and the new state of the actor (as <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_car_c.htm" title="CDR FUNCTION"><code>cdr</code></a>).
-I.e.: <code>(cons &lt;my-response&gt; &lt;my-new-state&gt;)</code></p>
+<p>The <code>receive</code> function takes one argument (the message). For backwards compatibility and for convenience it can still be used to provide an immediate return for <a href="#SENTO.ACTOR:ASK-S%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK-S GENERIC-FUNCTION"><code>act:ask-s</code></a>. <a href="#SENTO.ACTOR:TELL%20GENERIC-FUNCTION" title="SENTO.ACTOR:TELL GENERIC-FUNCTION"><code>act:tell</code></a> and <a href="#SENTO.ACTOR:ASK%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK GENERIC-FUNCTION"><code>act:ask</code></a> ignore a return value.</p>
 
-<p>There is asynchronous <a href="#SENTO.ACTOR:TELL%20GENERIC-FUNCTION" title="SENTO.ACTOR:TELL GENERIC-FUNCTION"><code>tell</code></a> (no response), a synchronous <a href="#SENTO.ACTOR:ASK-S%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK-S GENERIC-FUNCTION"><code>ask-s</code></a> and asynchronous <a href="#SENTO.ACTOR:ASK%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK GENERIC-FUNCTION"><code>ask</code></a> which all can be used to send messages to the actor. The 'ask' variants provide a response from the actor where 'tell' is only fire-and-forget.</p>
-
-<p>If the 'send' operation was <code>ask-s</code> or <code>ask</code> then the <code>car</code> part of the <code>cons</code> result will be sent back to the caller.
-In case of a <code>tell</code> operation there will be no response and the <code>car</code> of the <code>cons</code> is ignored, if there is no sender (see <code>sender</code> argument to <code>tell</code>). If there is a sender defined (which must be an actor), then the <code>car</code> of the <code>cons</code> result is sent (using <code>tell</code>) to the sender.<br/>
-It is possible to specify <code>:no-reply</code> as <code>car</code> of <code>cons</code> in this case (<code>tell</code> with sender), which has the effect that the result is <em>not</em> sent to the sender even if one exists. This is for the case that the user wants to handle the state and the notifications to a sender himself. It is useful when the message handling code for a particular message (in <code>receive</code>) should be executed in a special thread-pool, because long running operations within <code>receive</code> will block the message handling of the actor.</p>
-
-<p>The <code>:no-reply</code> result works for <code>ask</code> and <code>tell</code>, because also <code>ask</code> is based on <code>tell</code>.
-<code>ask-s</code> is really only useful if a synchronous result is required and should be avoided otherwise.</p>
+<p>There is asynchronous <code>tell</code>, a synchronous <code>ask-s</code> and asynchronous <code>ask</code> which all can be used to send messages to the actor. <code>ask-s</code> provides a synchronous return taken from the <code>receive</code> functions return value. 'ask' provides a return wrapped in a future. But the actor has to explicitly use <code>*sender*</code> to formulate a response. <code>tell</code> is just fire and forget.</p>
 
 <p>To stop an actors message processing in order to cleanup resouces you should <code>tell</code> (or <code>ask-s</code>) the <code>:stop</code> message. It will respond with <code>:stopped</code> (in case of <code>ask(-s)</code>).</p></li>
 </ul>
@@ -1200,10 +1169,7 @@ It is possible to specify <code>:no-reply</code> as <code>car</code> of <code>co
 <p>Arguments:</p>
 
 <ul>
-<li><p><code>receive</code>: this is a function that must accept 3 parameters. That is:</p></li>
-<li><p>the actor <code>instance</code> itself, </p></li>
-<li><p>the <code>message</code> and </p></li>
-<li><p>the <code>current-state</code> of the actor.</p></li>
+<li><p><code>receive</code>: message handling function taking one argument, the message.</p></li>
 <li><p><code>name</code>: give the actor a name. Must be unique within an <a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a>.</p></li>
 <li><p><code>type</code>: Specify a custom actor class as the <code>:type</code> key. Defaults to 'actor.
 Say you have a custom actor <code>custom-actor</code> and want <code>make-actor</code> create an instance of it.
@@ -1221,29 +1187,10 @@ Those hooks are called on (after) initialization and (after) stop respectively.<
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:TELL%20GENERIC-FUNCTION" >TELL</a></span></span> <span class="locative-args">ACTOR MESSAGE &amp;OPTIONAL SENDER</span></span></p>
 
-<p>Sends a message to the <code>actor</code>. <code>tell</code> is asynchronous. There is no result.
-If a <code>sender</code> is specified a message result of the target actor of the <code>tell</code> will be sent back to the <code>sender</code></p>
+<p>Sends a message to the <code>actor</code>. <code>tell</code> is asynchronous.
+<code>tell</code> does not expect a result. If a <code>sender</code> is specified the receiver will be able to send a response.</p>
 
-<p>Generally <code>tell</code> does not expect a response. But a <code>sender</code> can be specified as optionl parameter to <code>tell</code>.
-If a <code>sender</code> is specified, then the message handling behavior will send the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_car_c.htm" title="CAR FUNCTION"><code>car</code></a> of the <code>cons</code>(<a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_cons.htm" title="CONS FUNCTION"><code>0</code></a> <a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_cons.htm" title="CONS TYPE"><code>1</code></a>) result to the specified <code>sender</code>.</p>
-
-<p>A <code>sender</code> can also be part of the message contract.</p>
-
-<p><code>tell</code> can be used in two environments:</p>
-
-<ol>
-<li>outside an actor</li>
-</ol>
-
-<p>By default this sends a message as fire &amp; forget. Since this is not inside an actor, no actor can be inferred as <code>sender</code>. A <code>sender</code> can be defined as optional parameter as part of <code>tell</code>.</p>
-
-<ol>
-<li>inside an actors as part of the <code>receive</code> function</li>
-</ol>
-
-<p>As <code>sender</code> can be specified when <code>tell</code> is used inside of an actor. Currently the framework doesn't automatically infer the <code>sender</code> when no <code>sender</code> is explicitly specified.</p>
-
-<p>=&gt; This is a future enhancement.</p></li>
+<p>Alternatively to the <code>tell</code> function one can equally use the <code>!</code> function designator.</p></li>
 </ul>
 
 <p><a id="x-28SENTO-2EACTOR-3AASK-S-20GENERIC-FUNCTION-29"></a>
@@ -1256,7 +1203,7 @@ If a <code>sender</code> is specified, then the message handling behavior will s
 Specify <code>timeout</code> if a message is to be expected after a certain time.
 An <code>:handler-error</code> with <code>timeout</code> condition will be returned if the call timed out.</p>
 
-<p><code>ask-s</code> assumes, no matter if <code>ask-s</code> is issued from outside or inside an actor, that the response is delivered back to the caller. That's why <code>ask-s</code> does block the execution until the result is available. The <code>receive</code> function handler must specify the result as the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_car_c.htm" title="CAR FUNCTION"><code>car</code></a> of the cons result.</p></li>
+<p><code>ask-s</code> assumes, no matter if <code>ask-s</code> is issued from outside or inside an actor, that the response is delivered back to the caller. That's why <code>ask-s</code> does block the execution until the result is available. The <code>receive</code> function return value will be used as the result of <code>receive</code>.</p></li>
 </ul>
 
 <p><a id="x-28SENTO-2EACTOR-3AASK-20GENERIC-FUNCTION-29"></a>
@@ -1265,36 +1212,47 @@ An <code>:handler-error</code> with <code>timeout</code> condition will be retur
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:ASK%20GENERIC-FUNCTION" >ASK</a></span></span> <span class="locative-args">ACTOR MESSAGE &amp;KEY TIME-OUT</span></span></p>
 
-<p>This returns a <code>future</code>.
+<p>Sends a message to the <code>actor</code>. A <code>future</code> is returned.
 Specify <code>timeout</code> if a message is to be expected after a certain time.
 An <code>:handler-error</code> with <code>timeout</code> condition will be returned is the call timed out.</p>
 
 <p>An <code>ask</code> is similar to a <a href="#SENTO.ACTOR:ASK-S%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK-S GENERIC-FUNCTION"><code>ask-s</code></a> in that the caller gets back a result 
 but it doesn't have to actively wait for it. Instead a <code>future</code> wraps the result.
 However, the internal message handling is based on <a href="#SENTO.ACTOR:TELL%20GENERIC-FUNCTION" title="SENTO.ACTOR:TELL GENERIC-FUNCTION"><code>tell</code></a>.
-How this works is that the message to the target <code>actor</code> is not 'sent' using the callers thread
-but instead an anonymous <code>actor</code> is started behind the scenes and this in fact makes tells
-the message to the target <code>actor</code>. It does sent itself along as 'sender'.
-The target <code>actor</code> tells a response back to the initial <code>sender</code>. When that happens and the anonymous <code>actor</code> received the response the <code>future</code> will be fulfilled with the <code>promise</code>.</p></li>
+How this works is that the message to the target <code>actor</code> is not 'sent' using the callers thread but instead an anonymous <code>actor</code> is started behind the scenes. This anonymous actor can weit for a response from the target actor. The response then fulfills the future.</p>
+
+<p>Alternatively to the <code>ask</code> function one can equally use the <code>?</code> function designator.</p></li>
+</ul>
+
+<p><a id="x-28SENTO-2EACTOR-3AREPLY-20FUNCTION-29"></a>
+<a id="SENTO.ACTOR:REPLY%20FUNCTION"></a></p>
+
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:REPLY%20FUNCTION" >REPLY</a></span></span> <span class="locative-args">MSG &amp;OPTIONAL (SENDER <code>*SENDER*</code>)</span></span></p>
+
+<p>Replies to a sender. Sender must exist.
+Use this from within receive function to reply to a sender.</p></li>
 </ul>
 
 <p><a id="x-28SENTO-2EACTOR-3ABECOME-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.ACTOR:BECOME%20GENERIC-FUNCTION"></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:BECOME%20GENERIC-FUNCTION" >BECOME</a></span></span> <span class="locative-args">ACTOR NEW-BEHAVIOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:BECOME%20GENERIC-FUNCTION" >BECOME</a></span></span> <span class="locative-args">NEW-BEHAVIOR</span></span></p>
 
 <p>Changes the receive of the actor to the given <code>new-behavior</code> function.
-The <code>new-behavior</code> function must accept 3 parameters: the actor instance, the message and the current state.</p></li>
+The <code>new-behavior</code> function must accept 3 parameters: the actor instance, the message and the current state.
+This function should be called from within the behavior receive function.</p></li>
 </ul>
 
 <p><a id="x-28SENTO-2EACTOR-3AUNBECOME-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.ACTOR:UNBECOME%20GENERIC-FUNCTION"></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:UNBECOME%20GENERIC-FUNCTION" >UNBECOME</a></span></span> <span class="locative-args">ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:UNBECOME%20GENERIC-FUNCTION" >UNBECOME</a></span></span></span></p>
 
-<p>Reverts any behavior applied via <a href="#SENTO.ACTOR:BECOME%20GENERIC-FUNCTION" title="SENTO.ACTOR:BECOME GENERIC-FUNCTION"><code>become</code></a> back to the default <code>receive</code> function.</p></li>
+<p>Reverts any behavior applied via <a href="#SENTO.ACTOR:BECOME%20GENERIC-FUNCTION" title="SENTO.ACTOR:BECOME GENERIC-FUNCTION"><code>become</code></a> back to the default <code>receive</code> function.
+This function should be called from within the behavior receive function.</p></li>
 </ul>
 
 <p><a id="x-28SENTO-2EACTOR-3ACONTEXT-20GENERIC-FUNCTION-29"></a>
@@ -1417,8 +1375,8 @@ I.e.: when it stopped. The message being sent in this case is: <code>(cons :stop
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:ACTOR-CELL%20CLASS" >ACTOR-CELL</a></span></span></span></p>
 
 <p><code>actor-cell</code> is the base of the <code>actor</code>.
-It is meant to encapsulate state, but also to execute async operations.
-State can be changed by calling into the server via <a href="#SENTO.ACTOR-CELL:CALL%20FUNCTION" title="SENTO.ACTOR-CELL:CALL FUNCTION"><code>call</code></a> or <a href="#SENTO.ACTOR-CELL:CAST%20FUNCTION" title="SENTO.ACTOR-CELL:CAST FUNCTION"><code>cast</code></a>.
+It encapsulates state and can executes async operations.
+State can be changed by <a href="http://www.lispworks.com/documentation/HyperSpec/Body/m_setf.htm" title="SETF MGL-PAX:MACRO"><code>setf</code></a>ing <code>*state*</code> special variable from inside <code>receive</code> function, via calling <a href="#SENTO.ACTOR-CELL:CALL%20FUNCTION" title="SENTO.ACTOR-CELL:CALL FUNCTION"><code>call</code></a> or <a href="#SENTO.ACTOR-CELL:CAST%20FUNCTION" title="SENTO.ACTOR-CELL:CAST FUNCTION"><code>cast</code></a>.
 Where <code>call</code> is waiting for a result and <code>cast</code> does not.
 For each <code>call</code> and <code>cast</code> handlers must be implemented by subclasses.</p>
 
@@ -1466,41 +1424,32 @@ When the actor is created through the <code>actor-context</code> of an actor, or
 then it will be populated with a message-box.</p></li>
 </ul>
 
-<p><a id="x-28SENTO-2EACTOR-CELL-3A-2ASENDER-2A-20VARIABLE-29"></a>
-<a id="SENTO.ACTOR-CELL:*SENDER*%20VARIABLE"></a></p>
-
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:*SENDER*%20VARIABLE" >*SENDER*</a></span></span> <span class="locative-args">NIL</span></span></p>
-
-<p>The <code>*sender*</code> is dynamically bound and available in <code>receive</code> function, when it is known.</p></li>
-</ul>
-
 <p><a id="x-28SENTO-2EACTOR-CELL-3AHANDLE-CALL-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.ACTOR-CELL:HANDLE-CALL%20GENERIC-FUNCTION"></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:HANDLE-CALL%20GENERIC-FUNCTION" >HANDLE-CALL</a></span></span> <span class="locative-args">ACTOR-CELL MESSAGE CURRENT-STATE</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:HANDLE-CALL%20GENERIC-FUNCTION" >HANDLE-CALL</a></span></span> <span class="locative-args">ACTOR-CELL MESSAGE</span></span></p>
 
 <p>Handles calls to the server. Must be implemented by subclasses.
-The convention here is to return a <code>cons</code>(<a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_cons.htm" title="CONS FUNCTION"><code>0</code></a> <a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_cons.htm" title="CONS TYPE"><code>1</code></a>) with values to be returned to caller as <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_car_c.htm" title="CAR FUNCTION"><code>car</code></a>, and the new state as <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_car_c.htm" title="CDR FUNCTION"><code>cdr</code></a>.
-<code>handle-call</code> is executed in the default message dispatcher thread.</p></li>
+The result of the last expression of this function is returned back to the 'caller'.
+State of the cell can be changed via <a href="http://www.lispworks.com/documentation/HyperSpec/Body/m_setf.htm" title="SETF MGL-PAX:MACRO"><code>setf</code></a>ing <code>*state*</code> variable.</p></li>
 </ul>
 
 <p><a id="x-28SENTO-2EACTOR-CELL-3AHANDLE-CAST-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.ACTOR-CELL:HANDLE-CAST%20GENERIC-FUNCTION"></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:HANDLE-CAST%20GENERIC-FUNCTION" >HANDLE-CAST</a></span></span> <span class="locative-args">ACTOR-CELL MESSAGE CURRENT-STATE</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:HANDLE-CAST%20GENERIC-FUNCTION" >HANDLE-CAST</a></span></span> <span class="locative-args">ACTOR-CELL MESSAGE</span></span></p>
 
 <p>Handles casts to the server. Must be implemented by subclasses.
-Same convention as for 'handle-call' except that no return is sent to the caller. This function returns immediately.</p></li>
+State of the cell can be changed via <a href="http://www.lispworks.com/documentation/HyperSpec/Body/m_setf.htm" title="SETF MGL-PAX:MACRO"><code>setf</code></a>ing <code>*state*</code> variable.</p></li>
 </ul>
 
 <p><a id="x-28SENTO-2EACTOR-CELL-3APRE-START-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.ACTOR-CELL:PRE-START%20GENERIC-FUNCTION"></a></p>
 
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:PRE-START%20GENERIC-FUNCTION" >PRE-START</a></span></span> <span class="locative-args">ACTOR-CELL STATE</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:PRE-START%20GENERIC-FUNCTION" >PRE-START</a></span></span> <span class="locative-args">ACTOR-CELL</span></span></p>
 
 <p>Generic function definition that called from <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_init_i.htm" title="INITIALIZE-INSTANCE FUNCTION"><code>initialize-instance</code></a>.</p></li>
 </ul>
@@ -1544,8 +1493,7 @@ The <code>:stop</code> message (symbol) is normally processed by the actors mess
 Specify a timeout in seconds if you require a result within a certain period of time.
 Be aware though that this is a resource intensive wait based on a waiting thread.
 The result can be of different types.
-Success result: <returned-state>
-Unhandled result: <code>:unhandled</code>
+Normal result: the last expression of <a href="#SENTO.ACTOR-CELL:HANDLE-CALL%20GENERIC-FUNCTION" title="SENTO.ACTOR-CELL:HANDLE-CALL GENERIC-FUNCTION"><code>handle-call</code></a> (or <code>receive</code> in <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>act:actor</code></a>) implementation. 
 Error result: `(cons :handler-error <condition>)'
 In case of time-out the error condition is a bt:timeout.</p></li>
 </ul>
@@ -1749,7 +1697,7 @@ A <code>promise</code> is the fulfillment of the delayed computation.</p></li>
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:WITH-FUT-RESOLVE%20MGL-PAX:MACRO" >WITH-FUT-RESOLVE</a></span></span> <span class="locative-args">&amp;BODY BODY</span></span></p>
 
-<p>Convenience macro for creating a <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a> that must be resolved manually via <code>resolve</code>.</p>
+<p>Convenience macro for creating a <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a> that must be resolved manually via <code>fresolve</code>.</p>
 
 <p>This allows to spawn threads or other asynchronous operations as part of <code>body</code>.
 However, you have to <code>resolve</code> the future eventually by applying a result on <code>resolve</code>.</p>
@@ -2142,7 +2090,7 @@ It can 'stash' away arriving messages which should not be handled now, but later
 
 <pre><code><span class="code"><span class="paren1">(<span class="code">actor-of system
           <span class="keyword">:type</span> 'stash-actor
-          <span class="keyword">:receive</span> <span class="paren2">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren3">(<span class="code">self msg state</span>)</span>
+          <span class="keyword">:receive</span> <span class="paren2">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren3">(<span class="code">msg</span>)</span>
                      ...</span>)</span></span>)</span></span></code></pre>
 
 <p>For stash and unstash see function descriptions below.</p>
@@ -2626,7 +2574,7 @@ dispatchers. This additional dispatcher can be utilized for <code>tasks</code>. 
 <code>fun</code> must be a 0-arity function.</p>
 
 <p>A normal response from the actor is passed back as the response value.
-If the timeout elapsed the response is: <code>(values :handler-error timeutils:ask-timeout)</code>.</p>
+If the timeout elapsed the response is: <code>(values :handler-error miscutils:ask-timeout)</code>.</p>
 
 <p>Example:</p>
 

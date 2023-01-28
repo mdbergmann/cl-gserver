@@ -661,7 +661,7 @@ The pleasant surprise was ABCL. While not being the fastest it is the most robus
 - the receive function is now 1-arity. It only takes the a message parameter.
 Previous 'self' and 'state' parameters are now accessible via `*self*` and `*state*`. The same applies to `become` function.
 
-- the return value of 'receive' function is ignored for `tell` and `ask`. In both cases a `reply` macro can be used to reply to a sender. `reply` implicitly uses `*sender*` but can be overriden (see 'long running and asynchronous operations in receive'). The 'receive' function return value is still relevant for `ask-s`.
+- the return value of 'receive' function has always been a bit of an obstacle. So now it is ignored for `tell` and `ask`. In both cases a `reply` function can be used to reply to a sender. `reply` implicitly uses `*sender*` but can be overriden (see 'long running and asynchronous operations in receive'). The 'receive' function return value is still relevant for `ask-s`, but now it doesn't need to be a `cons`. Whatever is returned is received by `ask-s`.
 
 - the lparallel dependency was removed to reduce dependencies. However, the cons-queue of lparallel is very fast (used for unbounded message queue) so an additional 'sento-high-speed-queue' asdf system has been added to bring back the lparallel cons-queue if performance is critical. It brings an additional 10%-30% boost.
 

@@ -12,6 +12,11 @@ Sento features:
 - EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages. This is similar to an event-bus.
 - Tasks: a simple API for concurrency.
 
+### Changes from Sento 2
+
+No new features actually. But many cleanups, obstacles removed, and hopefully a more consistent way of doing things. There are many API changes so it varants a major version update.
+One of the big obstacles, the `cons` return was removed. This was still a relict from early versions where things were more leaned on the Erlang GenServer way of doing things. But Common Lisp is not Erlang VM.
+The changes should allow adding more features in the future, like remoting support. But this is not easy, in partucular to make it secure.
 
 ### Intro
 

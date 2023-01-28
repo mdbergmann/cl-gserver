@@ -632,14 +632,6 @@ Hardware specs (M1)):
 ![](perf-M1Ultra.png)
 
 
-Hardware specs (x86-64):
-
--   iMac Pro (2017), 8 Core Xeon, 32 GB RAM
-
-![](./docs/perf-x86_64.png)
-![](perf-x86_64.png)
-
-
 **All**
 
 Version 3 of Sento uses the jpl-queues package which is slightly slower than the lparallel cons-queue. The lparallel cons-queue package is available as separate asdf system if needed and if the additional dependency is acceptable.

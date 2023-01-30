@@ -109,7 +109,7 @@
 ;; for 'normal' use the jpl-queues are fully sufficient
 ;; --------------------------------
 
-(defsystem "sento-high-speed-queue"
+(defsystem "sento/high-speed-queue"
   :author "Manfred Bergmann"
   :license "Apache-2"
   :description "High speed unbounded queue based on lparallel's cons-queue."
@@ -124,9 +124,9 @@
                   ((:file "queue-hsq"))))))
   :in-order-to ((test-op (test-op "sento-high-speed-queue/tests"))))
 
-(defsystem "sento-high-speed-queue/tests"
+(defsystem "sento/high-speed-queue-tests"
   :author "Manfred Bergmann"
-  :depends-on ("sento-high-speed-queue"
+  :depends-on ("sento/high-speed-queue"
                "fiveam"
                "cl-mock")
   :components ((:module "tests"

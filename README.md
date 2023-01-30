@@ -636,6 +636,13 @@ Hardware specs (M1)):
 ![](./docs/perf-M1Ultra.png)
 ![](perf-M1Ultra.png)
 
+Hardware specs (x86-64), bench of previous version, Sento 2:
+
+-   iMac Pro (2017), 8 Core Xeon, 32 GB RAM
+
+![](./docs/perf-X86_64.png)
+![](perf-X86_64.png)
+
 
 **All**
 

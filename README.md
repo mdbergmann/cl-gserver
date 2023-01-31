@@ -8,7 +8,7 @@ Sento features:
 
 - Actors with `ask` (`?`) and `tell` (`!`) operations. `ask` can be asynchronous or synchronous.
 - Agents: Agents are a specialization of Actors for wrapping state with a standardized interface of `init`, `get` and `set`. There are also specialized Agents for Common Lisps array and hash-map data structures.
-- Router: Router offers a similar interface as Actor with `ask` and `tell` but can collects multiple Actors for load-balancing.
+- Router: Router offers a similar interface as Actor with `ask` and `tell` but collects multiple Actors for load-balancing.
 - EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages. This is similar to an event-bus.
 - Tasks: a simple API for concurrency.
 

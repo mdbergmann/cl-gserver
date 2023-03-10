@@ -3,8 +3,7 @@
   (:nicknames :act-cell)
   (:import-from #:mesgb
                 #:inner-msg
-                #:cancelled-p
-                #:with-submit-handler)
+                #:cancelled-p)
   (:export #:actor-cell
            #:cell
            #:name
@@ -135,7 +134,6 @@ The `:stop` message (symbol) is normally processed by the actors message process
 
 (defmethod pre-start ((self actor-cell))
   "Empty implementation so that we can call it anyway even if there are no other implementations."
-  (declare (ignore state))
   nil)
 
 (defmethod after-stop ((self actor-cell))
@@ -201,13 +199,12 @@ In case no messge-box is configured this function respnds with `:no-message-hand
       (return-from submit-message :no-message-handling)))
 
   (handler-case
-      (with-submit-handler
-          ((slot-value actor-cell 'msgbox)
-           message
-           withreply-p
-           time-out)
-          (with-sender sender
-            (handle-message actor-cell message withreply-p)))
+      (mesgb:submit
+       (slot-value actor-cell 'msgbox)
+       message
+       withreply-p
+       time-out
+       (list #'act-cell::handle-message actor-cell sender withreply-p))
     (timeutils:ask-timeout (c)
       (log:warn "~a: ask-s timeout: ~a" (name actor-cell) c)
       (cons :handler-error c))))
@@ -216,26 +213,27 @@ In case no messge-box is configured this function respnds with `:no-message-hand
 ;; message handling ---------------------
 ;; ------------------------------------------------
 
-(defun handle-message (actor-cell message withreply-p)
+(defun handle-message (message actor-cell sender withreply-p)
   "This function is submitted as `handler-fun` to message-box."
   (log:debug "~a: handling message: ~a" (name actor-cell) message)
-  (handler-case
-      (let ((internal-handle-result (handle-message-internal actor-cell message)))
-        (case internal-handle-result
-          (:resume
-           (with-slots (state) actor-cell
-             (let* ((*self* actor-cell)
-                    (*state* state)
-                    (handle-result
-                      (handle-message-user actor-cell message withreply-p)))
-               (setf state *state*)
-               handle-result)))
-          (t internal-handle-result)))
-    (t (c)
-      (log:error "~a: error condition was raised: ~%~a~%"
-                 (name actor-cell)
-                 c)
-      (cons :handler-error c))))
+  (with-sender sender
+    (handler-case
+        (let ((internal-handle-result (handle-message-internal actor-cell message)))
+          (case internal-handle-result
+            (:resume
+             (with-slots (state) actor-cell
+               (let* ((*self* actor-cell)
+                      (*state* state)
+                      (handle-result
+                        (handle-message-user actor-cell message withreply-p)))
+                 (setf state *state*)
+                 handle-result)))
+            (t internal-handle-result)))
+      (t (c)
+        (log:error "~a: error condition was raised: ~%~a~%"
+                   (name actor-cell)
+                   c)
+        (cons :handler-error c)))))
 
 (defun handle-message-internal (actor-cell message)
   "A `:stop` message will response with `:stopping` and the user handlers are not called.

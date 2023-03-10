@@ -16,7 +16,6 @@
            #:cancelled-p
            #:inner-msg
            #:submit
-           #:with-submit-handler
            #:stop))
 
 (in-package :sento.messageb)
@@ -56,8 +55,9 @@ Don't make it too small. A queue size of 1000 might be a good choice."))
               max-queue-size
               queue))))
 
-(defgeneric submit (message-box-base message withreply-p time-out handler-fun)
-  (:documentation "Submit a message to the mailbox to be queued and handled."))
+(defgeneric submit (message-box-base message withreply-p time-out handler-fun-args)
+  (:documentation "Submit a message to the mailbox to be queued and handled.
+`handler-fun-args`: list with first element the function designator and rest arguments."))
 
 (defgeneric stop (message-box-base &optional wait)
   (:documentation "Stops the message processing.
@@ -75,13 +75,6 @@ Provide `wait` EQ `T` to wait until the actor cell is stopped."))
 ;; ------------- Generic ------------------
 ;; ----------------------------------------
 
-(defmacro with-submit-handler ((msgbox message withreply-p time-out) &rest body)
-  "Macro to let the caller specify a message handler function.
-Use this instead of `submit`."
-  `(submit ,msgbox ,message ,withreply-p ,time-out (lambda (message)
-                                                     (declare (ignore message))
-                                                     ,@body)))
-
 (defun wait-and-probe-for-result (msgbox push-item)
   (with-slots (time-out handler-result cancelled-p) push-item
     (unless
@@ -89,6 +82,10 @@ Use this instead of `submit`."
       (log:warn "~a: time-out elapsed but result not available yet!" (name msgbox))
       (setf cancelled-p t)
       (error 'ask-timeout :wait-time time-out))))
+
+(defun call-handler-fun-args (handler-fun-args message)
+  (when handler-fun-args
+    (apply (car handler-fun-args) (cons message (cdr handler-fun-args)))))
 
 ;; ----------------------------------------
 ;; Cancellable message
@@ -196,35 +193,37 @@ This should happen in conjunction with the outer time-out in `submit/reply'."
               (bt:condition-notify withreply-cvar)))
           (funcall handler-fun message)))))
 
-(defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun)
+(defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun-args)
 "Alternatively use `with-submit-handler` from your code to handle the message after it was 'popped' from the queue.
-The `handler-fun` argument here will be `funcall`ed when the message was 'popped'."
+The `handler-fun-args` argument here will be `funcall`ed when the message was 'popped'."
   (log:trace "~a: submit message: ~a" (name self) message)
   (with-slots (queue) self
     (if withreply-p
-        (submit/reply self queue message time-out handler-fun)
-        (submit/no-reply self queue message handler-fun))))
+        (submit/reply self queue message time-out handler-fun-args)
+        (submit/no-reply self queue message handler-fun-args))))
 
-(defun submit/no-reply (msgbox queue message handler-fun)
+(defun submit/no-reply (msgbox queue message handler-fun-args)
   "This is quite efficient, no locking necessary.
 If the message was submitted with timeout then the timeout plays no role here, the message is handled anyhow.
 The submitting code has to await the side-effect and possibly handle a timeout."
   (let ((push-item (make-message-item/bt
                     :message message
-                    :handler-fun handler-fun)))
+                    :handler-fun (lambda (msg)
+                                   (call-handler-fun-args handler-fun-args msg)))))
     (log:debug "~a: pushing item to queue: ~a" (name msgbox) push-item)
     (queue:pushq queue push-item)
     t))
   
-(defun submit/reply (msgbox queue message time-out handler-fun)
+(defun submit/reply (msgbox queue message time-out handler-fun-args)
   "This requires some more action. This function has to provide a result and so it has to wait until
 The queue thread has processed the message."
   (let* ((my-handler-result 'no-result)
          (my-handler-fun (lambda (msg)
-                           ;; wrap the `handler-fun' so that we can get a function result.
+                           ;; wrap the `handler-fun-args' so that we can get a function result.
                            (log:trace "~a: withreply: handler-fun..." (name msgbox))
-                           (setf my-handler-result (funcall handler-fun msg))
-                           (log:trace "~a: withreply: handler-fun result: ~a" (name msgbox) my-handler-result)))
+                           (setf my-handler-result (call-handler-fun-args handler-fun-args msg))
+                           (log:trace "~a: withreply: handler-fun-args result: ~a"
+                                      (name msgbox) my-handler-result)))
          (withreply-lock (bt:make-lock))
          (withreply-cvar (bt:make-condition-variable))
          (push-item (make-message-item/bt
@@ -252,8 +251,7 @@ The queue thread has processed the message."
     (call-next-method))
   (with-slots (queue-thread should-run) self
     ;; the next just enforces a 'pop' on the queue to make the message processing stop
-    (submit self :trigger-ending-the-processing-loop wait nil
-            (lambda (msg) (declare (ignore msg))))
+    (submit self :trigger-ending-the-processing-loop wait nil nil)
     (setf should-run nil)))
 
 
@@ -265,7 +263,7 @@ The queue thread has processed the message."
   (message nil)
   (time-out nil)
   (cancelled-p nil :type boolean)
-  (handler-fun nil :type function)
+  (handler-fun-args nil :type list)
   (handler-result 'no-result))
 
 (defclass message-box/dp (message-box-base)
@@ -288,17 +286,17 @@ The `dispatcher` is kind of like a thread pool."))
 (defun dispatcher-exec-fun (msgbox)
   "This function is effectively executed on a dispatcher actor.
 It knows the message-box of the origin actor and acts on it.
-It pops the ,essage from the message-boxes queue and calls the `handler-fun` on it.
-The `handler-fun' is part of the message item."
+It pops the ,essage from the message-boxes queue and calls the `handler-fun-args` on it.
+The `handler-fun-args' is part of the message item."
   (with-slots (name queue) msgbox
     (log:trace "~a: popping message..." name)
     (let ((popped-item (popq queue)))
       (handle-popped-item popped-item msgbox))))
 
 (defun handle-popped-item (popped-item msgbox)
-  "Handles the popped message. Means: calls the `handler-fun` on the message."
+  "Handles the popped message. Means: calls the `handler-fun-args` on the message."
   (with-slots (name lock) msgbox
-    (with-slots (message cancelled-p handler-fun handler-result) popped-item
+    (with-slots (message cancelled-p handler-fun-args handler-result) popped-item
       (log:debug "~a: popped message: ~a" name popped-item)
       (when cancelled-p
         (log:warn "~a: item got cancelled: ~a" name popped-item))
@@ -307,12 +305,12 @@ The `handler-fun' is part of the message item."
         (bt:acquire-lock lock t)
         (unwind-protect
              (unless cancelled-p
-               (setf handler-result (funcall handler-fun message))
+               (setf handler-result (call-handler-fun-args handler-fun-args message))
                handler-result)
           (bt:release-lock lock))))))
 
-(defmethod submit ((self message-box/dp) message withreply-p time-out handler-fun)
-  "Submitting a message on a multi-threaded `dispatcher` is different as submitting on a single threaded message-box. On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads. On the `dispatcher` this is not the case. The order cannot be guaranteed when messages are processed by different `dispatcher` threads. However, we still guarantee a 'single-threadedness' regarding the state of the actor. This is achieved here by protecting the `handler-fun` execution with a lock.
+(defmethod submit ((self message-box/dp) message withreply-p time-out handler-fun-args)
+  "Submitting a message on a multi-threaded `dispatcher` is different as submitting on a single threaded message-box. On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads. On the `dispatcher` this is not the case. The order cannot be guaranteed when messages are processed by different `dispatcher` threads. However, we still guarantee a 'single-threadedness' regarding the state of the actor. This is achieved here by protecting the `handler-fun-args` execution with a lock.
 
 The `time-out` with the 'dispatcher mailbox' assumes that the message received the dispatcher queue
 and the handler in a reasonable amount of time, so that the effective time-out applies on the actual
@@ -324,7 +322,7 @@ handling of the message on the dispatcher queue thread."
     (incf processed-messages)
     (let ((push-item (make-message-item/dp
                       :message message
-                      :handler-fun handler-fun
+                      :handler-fun-args handler-fun-args
                       :time-out time-out))
           (dispatcher-fun (lambda () (funcall #'dispatcher-exec-fun self))))
 

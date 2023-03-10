@@ -448,8 +448,3 @@
            (ask-s actor :stop)
            (is-true destroy-called))
       (ac:shutdown sys))))
-
-(lambda (msg)
-  (let ((sender *sender*))
-    ;; do some lengthy async operation with callback
-    ))

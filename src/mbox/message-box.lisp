@@ -2,7 +2,8 @@
   (:use :cl :sento.queue)
   (:import-from #:sento.miscutils
                 #:mkstr
-                #:assert-cond)
+                #:assert-cond
+                #:await-cond)
   (:import-from #:timeutils
                 #:ask-timeout)
   (:import-from #:disp
@@ -73,7 +74,7 @@ Provide `wait` EQ `T` to wait until the actor cell is stopped."))
 ;; ------------- Generic ------------------
 ;; ----------------------------------------
 
-(defun wait-and-probe-for-result (msgbox push-item)
+(defun wait-and-probe-for-msg-handler-result (msgbox push-item)
   (with-slots (time-out handler-result cancelled-p) push-item
     (unless
         (assert-cond (lambda () (not (eq 'no-result handler-result))) time-out 0.1)
@@ -81,9 +82,13 @@ Provide `wait` EQ `T` to wait until the actor cell is stopped."))
       (setf cancelled-p t)
       (error 'ask-timeout :wait-time time-out))))
 
-(defun call-handler-fun-args (handler-fun-args message)
+(defun call-handler-fun (handler-fun-args message)
+  "`handler-fun-args' is a list with a function at `car' and args as `cdr'.
+`message' is prepended to args."
   (when handler-fun-args
-    (apply (car handler-fun-args) (cons message (cdr handler-fun-args)))))
+    (let ((fun (car handler-fun-args))
+          (args (cdr handler-fun-args)))
+      (apply fun (cons message args)))))
 
 ;; ----------------------------------------
 ;; ------------- Bordeaux ----------------
@@ -139,7 +144,13 @@ this kind of queue because each message-box (and with that each actor) requires 
   "The `time-out' handling in here is to make sure that handling of the
 message is 'interrupted' when the message was 'cancelled'.
 This should happen in conjunction with the outer time-out in `submit/reply'."
-  (with-slots (message handler-fun-args withreply-p withreply-lock withreply-cvar cancelled-p time-out) item
+  (with-slots (message
+               handler-fun-args
+               withreply-p
+               withreply-lock
+               withreply-cvar
+               cancelled-p
+               time-out) item
     (when cancelled-p
       (log:warn "~a: item got cancelled: ~a" (name msgbox) item)
       (when withreply-p
@@ -153,10 +164,10 @@ This should happen in conjunction with the outer time-out in `submit/reply'."
             (unwind-protect
                  (if time-out
                      (unless cancelled-p
-                       (call-handler-fun-args handler-fun-args message))
-                     (call-handler-fun-args handler-fun-args message))
+                       (call-handler-fun handler-fun-args message))
+                     (call-handler-fun handler-fun-args message))
               (bt:condition-notify withreply-cvar)))
-          (call-handler-fun-args handler-fun-args message)))))
+          (call-handler-fun handler-fun-args message)))))
 
 (defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun-args)
 "Alternatively use `with-submit-handler` from your code to handle the message after it was 'popped' from the queue.
@@ -182,7 +193,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
   (with-slots (handler-result) message-item
     (log:trace "~a: withreply: handler-fun-args..." msgbox-name)
     (setf handler-result
-          (call-handler-fun-args handler-fun-args msg))
+          (call-handler-fun handler-fun-args msg))
     (log:trace "~a: withreply: handler-fun-args result: ~a"
                msgbox-name handler-result)))
 
@@ -210,7 +221,7 @@ The queue thread has processed the message."
       (queue:pushq queue push-item)
 
       (if time-out
-          (wait-and-probe-for-result msgbox push-item)
+          (wait-and-probe-for-msg-handler-result msgbox push-item)
           (bt:condition-wait withreply-cvar withreply-lock)))
     
     (with-slots (handler-result) push-item
@@ -276,7 +287,7 @@ The `handler-fun-args' is part of the message item."
         (bt:acquire-lock lock t)
         (unwind-protect
              (unless cancelled-p
-               (setf handler-result (call-handler-fun-args handler-fun-args message))
+               (setf handler-result (call-handler-fun handler-fun-args message))
                handler-result)
           (bt:release-lock lock))))))
 
@@ -313,7 +324,7 @@ handling of the message on the dispatcher queue thread."
 
 (defun dispatch/reply/timeout (msgbox push-item dispatcher dispatcher-fun)
   (dispatch-async dispatcher dispatcher-fun)
-  (wait-and-probe-for-result msgbox push-item)
+  (wait-and-probe-for-msg-handler-result msgbox push-item)
   (slot-value push-item 'handler-result))
 
 (defun dispatch/reply/no-timeout (msgbox dispatcher dispatcher-fun)

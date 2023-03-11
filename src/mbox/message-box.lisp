@@ -11,8 +11,6 @@
   (:nicknames :mesgb)
   (:export #:message-box/dp
            #:message-box/bt
-           #:delayed-cancellable-message
-           #:make-delayed-cancellable-message
            #:cancelled-p
            #:inner-msg
            #:submit
@@ -88,40 +86,6 @@ Provide `wait` EQ `T` to wait until the actor cell is stopped."))
     (apply (car handler-fun-args) (cons message (cdr handler-fun-args)))))
 
 ;; ----------------------------------------
-;; Cancellable message
-;; ----------------------------------------
-
-(defclass delayed-cancellable-message ()
-  ((inner-msg :initarg :inner-msg
-              :initform nil
-              :reader inner-msg)
-   (cancelled-p :initarg :cancelled-p
-                :initform nil
-                :accessor cancelled-p
-                :type boolean)
-   (cancel-delay :initarg :cancel-delay
-                 :initform nil
-                 :reader cancel-delay
-                 :documentation
-                 "Delay after which the message gets cancelled and will not be processed.
-If it has not been processed yet.
-When `nil` no timer is created and this is treated as an ordinary wrapped message.")))
-
-(defmethod print-object ((obj delayed-cancellable-message) stream)
-  (print-unreadable-object (obj stream :type t)
-    (with-slots (inner-msg cancelled-p cancel-delay) obj
-      (format stream "~a, cancelled-p: ~a, cancel-delay: ~a"
-              inner-msg
-              cancelled-p
-              cancel-delay))))
-
-(defun make-delayed-cancellable-message (inner-msg delay &optional cancelled-p)
-  (make-instance 'delayed-cancellable-message
-                 :inner-msg inner-msg
-                 :cancel-delay delay
-                 :cancelled-p cancelled-p))
-
-;; ----------------------------------------
 ;; ------------- Bordeaux ----------------
 ;; ----------------------------------------
 
@@ -132,7 +96,7 @@ When `nil` no timer is created and this is treated as an ordinary wrapped messag
   (withreply-cvar nil)
   (time-out nil)
   (cancelled-p nil :type boolean)
-  (handler-fun nil :type function)
+  (handler-fun-args nil :type list)
   (handler-result 'no-result))
 
 (defclass message-box/bt (message-box-base)
@@ -175,23 +139,24 @@ this kind of queue because each message-box (and with that each actor) requires 
   "The `time-out' handling in here is to make sure that handling of the
 message is 'interrupted' when the message was 'cancelled'.
 This should happen in conjunction with the outer time-out in `submit/reply'."
-  (with-slots (message handler-fun withreply-p withreply-lock withreply-cvar cancelled-p time-out) item
+  (with-slots (message handler-fun-args withreply-p withreply-lock withreply-cvar cancelled-p time-out) item
     (when cancelled-p
       (log:warn "~a: item got cancelled: ~a" (name msgbox) item)
       (when withreply-p
         (bt:condition-notify withreply-cvar))
       (return-from process-queue-item :cancelled))
     
-    (when handler-fun
+    (when handler-fun-args
       (if withreply-p
           ;; protect this to make sure the lock is released.
           (bt:with-lock-held (withreply-lock)
             (unwind-protect
                  (if time-out
-                     (unless cancelled-p (funcall handler-fun message))
-                     (funcall handler-fun message))
+                     (unless cancelled-p
+                       (call-handler-fun-args handler-fun-args message))
+                     (call-handler-fun-args handler-fun-args message))
               (bt:condition-notify withreply-cvar)))
-          (funcall handler-fun message)))))
+          (call-handler-fun-args handler-fun-args message)))))
 
 (defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun-args)
 "Alternatively use `with-submit-handler` from your code to handle the message after it was 'popped' from the queue.
@@ -208,23 +173,23 @@ If the message was submitted with timeout then the timeout plays no role here, t
 The submitting code has to await the side-effect and possibly handle a timeout."
   (let ((push-item (make-message-item/bt
                     :message message
-                    :handler-fun (lambda (msg)
-                                   (call-handler-fun-args handler-fun-args msg)))))
+                    :handler-fun-args handler-fun-args)))
     (log:debug "~a: pushing item to queue: ~a" (name msgbox) push-item)
     (queue:pushq queue push-item)
     t))
-  
+
+(defun bt-handler-fun/reply (msg handler-fun-args msgbox-name message-item)
+  (with-slots (handler-result) message-item
+    (log:trace "~a: withreply: handler-fun-args..." msgbox-name)
+    (setf handler-result
+          (call-handler-fun-args handler-fun-args msg))
+    (log:trace "~a: withreply: handler-fun-args result: ~a"
+               msgbox-name handler-result)))
+
 (defun submit/reply (msgbox queue message time-out handler-fun-args)
   "This requires some more action. This function has to provide a result and so it has to wait until
 The queue thread has processed the message."
-  (let* ((my-handler-result 'no-result)
-         (my-handler-fun (lambda (msg)
-                           ;; wrap the `handler-fun-args' so that we can get a function result.
-                           (log:trace "~a: withreply: handler-fun..." (name msgbox))
-                           (setf my-handler-result (call-handler-fun-args handler-fun-args msg))
-                           (log:trace "~a: withreply: handler-fun-args result: ~a"
-                                      (name msgbox) my-handler-result)))
-         (withreply-lock (bt:make-lock))
+  (let* ((withreply-lock (bt:make-lock))
          (withreply-cvar (bt:make-condition-variable))
          (push-item (make-message-item/bt
                      :message message
@@ -232,8 +197,12 @@ The queue thread has processed the message."
                      :withreply-lock withreply-lock
                      :withreply-cvar withreply-cvar
                      :time-out time-out
-                     :handler-fun my-handler-fun
-                     :handler-result my-handler-result)))
+                     :handler-result 'no-result)))
+    (setf (message-item/bt-handler-fun-args push-item)
+          (list #'bt-handler-fun/reply
+                handler-fun-args
+                (name msgbox)
+                push-item))
 
     (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
     (bt:with-lock-held (withreply-lock)
@@ -243,8 +212,10 @@ The queue thread has processed the message."
       (if time-out
           (wait-and-probe-for-result msgbox push-item)
           (bt:condition-wait withreply-cvar withreply-lock)))
-    (log:trace "~a: withreply: result should be available: ~a" (name msgbox) my-handler-result)
-    my-handler-result))
+    
+    (with-slots (handler-result) push-item
+      (log:trace "~a: withreply: result should be available: ~a" (name msgbox) handler-result)
+      handler-result)))
 
 (defmethod stop ((self message-box/bt) &optional (wait nil))
   (when (next-method-p)

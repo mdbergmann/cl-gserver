@@ -175,7 +175,7 @@
                                  (cond
                                    ((eq :add (car msg))
                                     (act:! *sender*
-                                       (+ (second msg) (third msg))))))
+                                           (+ (second msg) (third msg))))))
                                0
                                nil)
     (let ((future (act:? cut '(:add 0 5))))

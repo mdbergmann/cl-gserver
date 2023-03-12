@@ -268,7 +268,7 @@ The `dispatcher` is kind of like a thread pool."))
 (defun dispatcher-exec-fun (msgbox)
   "This function is effectively executed on a dispatcher actor.
 It knows the message-box of the origin actor and acts on it.
-It pops the ,essage from the message-boxes queue and calls the `handler-fun-args` on it.
+It pops the message from the message-boxes queue and applies the function in `handler-fun-args` on it.
 The `handler-fun-args' is part of the message item."
   (with-slots (name queue) msgbox
     (log:trace "~a: popping message..." name)
@@ -306,35 +306,35 @@ handling of the message on the dispatcher queue thread."
                       :message message
                       :handler-fun-args handler-fun-args
                       :time-out time-out))
-          (dispatcher-fun (lambda () (funcall #'dispatcher-exec-fun self))))
+          (dispatcher-fun-args (list #'dispatcher-exec-fun self)))
 
       (log:info "~a: enqueuing... withreply-p: ~a, time-out: ~a, message: ~a"
                 (name self) withreply-p time-out message)
       (pushq queue push-item)
 
       (if withreply-p
-          (dispatch/reply self push-item dispatcher dispatcher-fun time-out)
-          (dispatch/noreply self dispatcher dispatcher-fun)))))
+          (dispatch/reply self push-item dispatcher dispatcher-fun-args time-out)
+          (dispatch/noreply self dispatcher dispatcher-fun-args)))))
 
-(defun dispatch/reply (msgbox push-item dispatcher dispatcher-fun time-out)
+(defun dispatch/reply (msgbox push-item dispatcher dispatcher-fun-args time-out)
   "Used by `ask-s'"
   (if time-out
-      (dispatch/reply/timeout msgbox push-item dispatcher dispatcher-fun)
-      (dispatch/reply/no-timeout msgbox dispatcher dispatcher-fun)))
+      (dispatch/reply/timeout msgbox push-item dispatcher dispatcher-fun-args)
+      (dispatch/reply/no-timeout msgbox dispatcher dispatcher-fun-args)))
 
-(defun dispatch/reply/timeout (msgbox push-item dispatcher dispatcher-fun)
-  (dispatch-async dispatcher dispatcher-fun)
+(defun dispatch/reply/timeout (msgbox push-item dispatcher dispatcher-fun-args)
+  (dispatch-async dispatcher dispatcher-fun-args)
   (wait-and-probe-for-msg-handler-result msgbox push-item)
   (slot-value push-item 'handler-result))
 
-(defun dispatch/reply/no-timeout (msgbox dispatcher dispatcher-fun)
+(defun dispatch/reply/no-timeout (msgbox dispatcher dispatcher-fun-args)
   (declare (ignore msgbox))
-  (dispatch dispatcher dispatcher-fun))
+  (dispatch dispatcher dispatcher-fun-args))
 
-(defun dispatch/noreply (msgbox dispatcher dispatcher-fun)
+(defun dispatch/noreply (msgbox dispatcher dispatcher-fun-args)
   "Used by `ask'."
   (declare (ignore msgbox))
-  (dispatch-async dispatcher dispatcher-fun))
+  (dispatch-async dispatcher dispatcher-fun-args))
 
 (defmethod stop ((self message-box/dp) &optional (wait nil))
   (declare (ignore wait))

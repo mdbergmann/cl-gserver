@@ -51,7 +51,10 @@
 
 (test dispatch-to-worker
   "Tests the dispatching to a worker"
+  (defun looper ()
+    (loop :for i :from 1 :to 5 :sum i))
+  
   (with-fixture test-context ()
     (let ((cut (make-test-dispatcher 1 context "foo")))
-      (is (= 15 (dispatch cut (lambda () (loop :for i :from 1 :to 5 :sum i)))))
+      (is (= 15 (dispatch cut (list #'looper))))
       (stop cut))))

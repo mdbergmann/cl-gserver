@@ -61,13 +61,13 @@ A `shared-dispatcher` is automatically setup by an `asys:actor-system`."))
   (with-slots (router) self
     (router:stop router)))
 
-(defmethod dispatch ((self shared-dispatcher) dispatch-exec-fun)
+(defmethod dispatch ((self shared-dispatcher) dispatch-exec-fun-args)
   (with-slots (router) self
-    (router:ask-s router (cons :execute dispatch-exec-fun))))
+    (router:ask-s router (cons :execute dispatch-exec-fun-args))))
 
-(defmethod dispatch-async ((self shared-dispatcher) dispatch-exec-fun)
+(defmethod dispatch-async ((self shared-dispatcher) dispatch-exec-fun-args)
   (with-slots (router) self
-    (router:tell router (cons :execute dispatch-exec-fun))))
+    (router:tell router (cons :execute dispatch-exec-fun-args))))
 
 
 ;; ---------------------------------
@@ -93,4 +93,4 @@ A `shared-dispatcher` is automatically setup by an `asys:actor-system`."))
   (assert (consp message) nil
           (format t "~a: Message must be a `cons'!" (act-cell:name act:*self*)))
   (case (car message)
-    (:execute (funcall (cdr message)))))
+    (:execute (apply (cadr message) (cddr message)))))

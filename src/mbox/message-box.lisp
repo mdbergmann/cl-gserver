@@ -146,6 +146,7 @@ message is 'interrupted' when the message was 'cancelled'.
 This should happen in conjunction with the outer time-out in `submit/reply'."
   (with-slots (message
                handler-fun-args
+               handler-result
                withreply-p
                withreply-lock
                withreply-cvar
@@ -158,20 +159,25 @@ This should happen in conjunction with the outer time-out in `submit/reply'."
       (return-from process-queue-item :cancelled))
     
     (when handler-fun-args
+      (flet ((handler-fun ()
+               (log:trace "~a: withreply: handler-fun-args..." (name msgbox))
+               (setf handler-result
+                     (call-handler-fun handler-fun-args message))
+               (log:trace "~a: withreply: handler-fun-args result: ~a"
+                          (name msgbox) handler-result)))
       (if withreply-p
           ;; protect this to make sure the lock is released.
           (bt:with-lock-held (withreply-lock)
             (unwind-protect
                  (if time-out
-                     (unless cancelled-p
-                       (call-handler-fun handler-fun-args message))
-                     (call-handler-fun handler-fun-args message))
+                     (unless cancelled-p (handler-fun))
+                     (handler-fun))
               (bt:condition-notify withreply-cvar)))
-          (call-handler-fun handler-fun-args message)))))
+          (handler-fun))))))
 
 (defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun-args)
-"Alternatively use `with-submit-handler` from your code to handle the message after it was 'popped' from the queue.
-The `handler-fun-args` argument here will be `funcall`ed when the message was 'popped'."
+  "The `handler-fun-args` argument must contain a handler function as first list item.
+It will be apply'ed with the rest of the args when the message was 'popped' from queue."
   (log:trace "~a: submit message: ~a" (name self) message)
   (with-slots (queue) self
     (if withreply-p
@@ -189,14 +195,6 @@ The submitting code has to await the side-effect and possibly handle a timeout."
     (queue:pushq queue push-item)
     t))
 
-(defun bt-handler-fun/reply (msg handler-fun-args msgbox-name message-item)
-  (with-slots (handler-result) message-item
-    (log:trace "~a: withreply: handler-fun-args..." msgbox-name)
-    (setf handler-result
-          (call-handler-fun handler-fun-args msg))
-    (log:trace "~a: withreply: handler-fun-args result: ~a"
-               msgbox-name handler-result)))
-
 (defun submit/reply (msgbox queue message time-out handler-fun-args)
   "This requires some more action. This function has to provide a result and so it has to wait until
 The queue thread has processed the message."
@@ -208,13 +206,8 @@ The queue thread has processed the message."
                      :withreply-lock withreply-lock
                      :withreply-cvar withreply-cvar
                      :time-out time-out
+                     :handler-fun-args handler-fun-args
                      :handler-result 'no-result)))
-    (setf (message-item/bt-handler-fun-args push-item)
-          (list #'bt-handler-fun/reply
-                handler-fun-args
-                (name msgbox)
-                push-item))
-
     (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
     (bt:with-lock-held (withreply-lock)
       (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
@@ -276,7 +269,7 @@ The `handler-fun-args' is part of the message item."
       (handle-popped-item popped-item msgbox))))
 
 (defun handle-popped-item (popped-item msgbox)
-  "Handles the popped message. Means: calls the `handler-fun-args` on the message."
+  "Handles the popped message. Means: applies the function in `handler-fun-args` on the message."
   (with-slots (name lock) msgbox
     (with-slots (message cancelled-p handler-fun-args handler-result) popped-item
       (log:debug "~a: popped message: ~a" name popped-item)

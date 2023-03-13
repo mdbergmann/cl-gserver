@@ -159,22 +159,21 @@ This function sets the result as `handler-result' in `item'. The return of this 
         (bt:condition-notify withreply-cvar))
       (return-from process-queue-item :cancelled))
     
-    (when handler-fun-args
-      (flet ((handler-fun ()
-               (log:trace "~a: withreply: handler-fun-args..." (name msgbox))
-               (setf handler-result
-                     (call-handler-fun handler-fun-args message))
-               (log:trace "~a: withreply: handler-fun-args result: ~a"
-                          (name msgbox) handler-result)))
-        (if withreply-p
-            (bt:with-lock-held (withreply-lock)
-              ;; make sure we release the lock also on error
-              (unwind-protect
-                   (if time-out
-                       (unless cancelled-p (handler-fun))
-                       (handler-fun))
-                (bt:condition-notify withreply-cvar)))
-            (handler-fun))))))
+    (flet ((handler-fun ()
+             (log:trace "~a: withreply: handler-fun-args..." (name msgbox))
+             (setf handler-result
+                   (call-handler-fun handler-fun-args message))
+             (log:trace "~a: withreply: handler-fun-args result: ~a"
+                        (name msgbox) handler-result)))
+      (if withreply-p
+          (bt:with-lock-held (withreply-lock)
+            ;; make sure we release the lock also on error
+            (unwind-protect
+                 (if time-out
+                     (unless cancelled-p (handler-fun))
+                     (handler-fun))
+              (bt:condition-notify withreply-cvar)))
+          (handler-fun)))))
 
 (defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun-args)
   "The `handler-fun-args` argument must contain a handler function as first list item.

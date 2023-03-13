@@ -77,7 +77,7 @@ Provide `wait` EQ `T` to wait until the actor cell is stopped."))
 (defun wait-and-probe-for-msg-handler-result (msgbox push-item)
   (with-slots (time-out handler-result cancelled-p) push-item
     (unless
-        (assert-cond (lambda () (not (eq 'no-result handler-result))) time-out 0.1)
+        (assert-cond (lambda () (not (eq 'no-result handler-result))) time-out 0.05)
       (log:warn "~a: time-out elapsed but result not available yet!" (name msgbox))
       (setf cancelled-p t)
       (error 'ask-timeout :wait-time time-out))))

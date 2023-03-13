@@ -143,7 +143,8 @@ this kind of queue because each message-box (and with that each actor) requires 
 (defun process-queue-item (msgbox item)
   "The `time-out' handling in here is to make sure that handling of the
 message is 'interrupted' when the message was 'cancelled'.
-This should happen in conjunction with the outer time-out in `submit/reply'."
+This should happen in conjunction with the outer time-out in `submit/reply'.
+This function sets the result as `handler-result' in `item'. The return of this function is not relevant."
   (with-slots (message
                handler-fun-args
                handler-result
@@ -165,15 +166,15 @@ This should happen in conjunction with the outer time-out in `submit/reply'."
                      (call-handler-fun handler-fun-args message))
                (log:trace "~a: withreply: handler-fun-args result: ~a"
                           (name msgbox) handler-result)))
-      (if withreply-p
-          ;; protect this to make sure the lock is released.
-          (bt:with-lock-held (withreply-lock)
-            (unwind-protect
-                 (if time-out
-                     (unless cancelled-p (handler-fun))
-                     (handler-fun))
-              (bt:condition-notify withreply-cvar)))
-          (handler-fun))))))
+        (if withreply-p
+            (bt:with-lock-held (withreply-lock)
+              ;; make sure we release the lock also on error
+              (unwind-protect
+                   (if time-out
+                       (unless cancelled-p (handler-fun))
+                       (handler-fun))
+                (bt:condition-notify withreply-cvar)))
+            (handler-fun))))))
 
 (defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun-args)
   "The `handler-fun-args` argument must contain a handler function as first list item.
@@ -196,8 +197,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
     t))
 
 (defun submit/reply (msgbox queue message time-out handler-fun-args)
-  "This requires some more action. This function has to provide a result and so it has to wait until
-The queue thread has processed the message."
+  "This function has to provide a result and so it has to wait until the queue thread has processed the message. Processing of the queue item is done in `process-queue-item'."
   (let* ((withreply-lock (bt:make-lock))
          (withreply-cvar (bt:make-condition-variable))
          (push-item (make-message-item/bt

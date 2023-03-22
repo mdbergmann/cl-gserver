@@ -288,7 +288,9 @@ The `handler-fun-args' is part of the message item."
 
 The `time-out` with the 'dispatcher mailbox' assumes that the message received the dispatcher queue
 and the handler in a reasonable amount of time, so that the effective time-out applies on the actual
-handling of the message on the dispatcher queue thread."
+handling of the message on the dispatcher queue thread.
+
+Returns the handler-result if `withreply-p' is eq to `T', otherwise the return is just `T' and is usually ignored."
   (with-slots (name
                queue
                processed-messages
@@ -309,22 +311,26 @@ handling of the message on the dispatcher queue thread."
           (dispatch/noreply self dispatcher dispatcher-fun-args)))))
 
 (defun dispatch/reply (msgbox push-item dispatcher dispatcher-fun-args time-out)
-  "Used by `ask-s'"
+  "Used by `ask-s'
+Returns `handler-result'."
   (if time-out
       (dispatch/reply/timeout msgbox push-item dispatcher dispatcher-fun-args)
       (dispatch/reply/no-timeout msgbox dispatcher dispatcher-fun-args)))
 
 (defun dispatch/reply/timeout (msgbox push-item dispatcher dispatcher-fun-args)
+  "Waits for `handler-result' or timeout and returns `handler-result'."
   (dispatch-async dispatcher dispatcher-fun-args)
   (wait-and-probe-for-msg-handler-result msgbox push-item)
   (slot-value push-item 'handler-result))
 
 (defun dispatch/reply/no-timeout (msgbox dispatcher dispatcher-fun-args)
+  "Returns dispatcher result."
   (declare (ignore msgbox))
   (dispatch dispatcher dispatcher-fun-args))
 
 (defun dispatch/noreply (msgbox dispatcher dispatcher-fun-args)
-  "Used by `ask'."
+  "Used by `ask'.
+Returns just `T'. Return is actually ignore."
   (declare (ignore msgbox))
   (dispatch-async dispatcher dispatcher-fun-args))
 

@@ -76,7 +76,8 @@
   (with-fixture cell-fixture (nil
                               (lambda (message)
                                 (declare (ignore message))
-                                (sleep 0.3))
+                                (sleep 0.3)
+                                "receive-return")
                               nil
                               (lambda (self)
                                 (declare (ignore self))
@@ -85,6 +86,7 @@
     (let ((now (get-internal-real-time)))
       (cast cut :wait)  ;; send message that waits a bit but is async
       (stop cut t)  ;; stop has to wait until stopped
+      (is-false (bt:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread)))
       (is (> (- (get-internal-real-time) now) 300))
       (is (string= "after-stop-fun-executed" *after-stop-val*)))))
 

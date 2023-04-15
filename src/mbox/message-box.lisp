@@ -220,14 +220,21 @@ The submitting code has to await the side-effect and possibly handle a timeout."
       (log:trace "~a: withreply: result should be available: ~a" (name msgbox) handler-result)
       handler-result)))
 
+(defun %triggered-stop-fun (msg self)
+  (when (eq :trigger-ending-the-processing-loop msg)
+    (log:debug "Trigger mesgb stop!")
+    (with-slots (should-run) self
+      (setf should-run nil))))
+
 (defmethod stop ((self message-box/bt) &optional (wait nil))
   (when (next-method-p)
     (call-next-method))
-  (with-slots (queue-thread should-run) self
+  (with-slots (should-run) self
     ;; the next just enforces a 'pop' on the queue to make the message processing stop
-    (submit self :trigger-ending-the-processing-loop wait nil nil)
+    ;; using `wait' here (which is `withreply-p') will cause a dead-lock.
+    ;; have to find another way to stop with waiting.
+    (submit self :trigger-ending-the-processing-loop wait nil (list #'%triggered-stop-fun self))
     (setf should-run nil)))
-
 
 ;; ----------------------------------------
 ;; ------------- dispatcher msgbox---------
@@ -302,8 +309,8 @@ Returns the handler-result if `withreply-p' is eq to `T', otherwise the return i
                       :time-out time-out))
           (dispatcher-fun-args (list #'dispatcher-exec-fun self)))
 
-      (log:info "~a: enqueuing... withreply-p: ~a, time-out: ~a, message: ~a"
-                (name self) withreply-p time-out message)
+      (log:debug "~a: enqueuing... withreply-p: ~a, time-out: ~a, message: ~a"
+                 (name self) withreply-p time-out message)
       (pushq queue push-item)
 
       (if withreply-p

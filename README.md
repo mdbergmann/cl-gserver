@@ -237,7 +237,8 @@ To stop the ping-pong one just has to send `(! *ping* :stop)` to one of them.
 
 ##### Synchronous ask
 
-At last an example for the synchronous `ask`. `ask-s` is insofar similar top ask that it provides a result to the caller. However, it is not bound to `reply` as with `ask`. Here, the return value of the 'receive' function is returned to the caller, and `ask-s` will block until 'receive' function returns.
+At last an example for the synchronous 'ask', `ask-s`. It is insofar similar to `ask` that it provides a result to the caller. However, it is not bound to `reply` as with `ask`. Here, the return value of the 'receive' function is returned to the caller, and `ask-s` will block until 'receive' function returns.  
+Beware that `ask-s` will dead-lock your actor when `ask-s` is used to call itself.  
 Let's make an example:
 
 ```elisp

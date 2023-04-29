@@ -16,6 +16,8 @@
            #:watch
            #:unwatch
            #:watchers
+           #:pre-start
+           #:after-stop
            #:*self*
            #:*state*
            #:*sender*)
@@ -83,6 +85,22 @@ If you have additional initializations to make you can do so in `initialize-inst
 
 - `init` and `destroy`: are functions that take one argument, the actor instance.
 Those hooks are called on (after) initialization and (after) stop respectively."))
+
+(defgeneric pre-start (actor)
+  (:documentation
+   "Generic function definition called after initialization but before messages are accepted.
+An `ac:actor-context` is available at this point as well as `act:*state*` variable definition.
+
+Under normal circumstances one would provide an `init` function at construction of the actor instead (see above).
+This generic function is more meant to create specialized actors by providing different implementations."))
+
+(defgeneric after-stop (actor)
+  (:documentation
+   "Generic function definition that is called after the actor has stopped, that is after the message box is stopped.
+No more messages are being processed.
+
+Under normal circumstances one would provide an `destroy` function at construction of the actor instead (see above).
+This generic function is more meant to create specialized actors by providing different implementations."))
 
 (defgeneric tell (actor message &optional sender)
   (:documentation

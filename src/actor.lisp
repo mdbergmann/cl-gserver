@@ -1,9 +1,7 @@
 
 (in-package :sento.actor)
 
-(shadowing-import '(act-cell:pre-start
-                    act-cell:after-stop
-                    act-cell:handle-call
+(shadowing-import '(act-cell:handle-call
                     act-cell:handle-cast
                     act-cell:stop
                     future:make-future
@@ -33,11 +31,10 @@
 
 (defun finalize-initialization (actor message-box actor-context)
   "Private API: finalize initialization of the actor with a `mesgb:message-box` and an `ac:actor-context`."
-  (setf (act-cell:msgbox actor) message-box)
   (setf (act:context actor) actor-context)
-  (with-slots (init-fun) actor
-    (when init-fun
-      (funcall init-fun actor))))
+  ;; not fully sure is we allow to have the msgbox being setup or not.
+  (pre-start actor)
+  (setf (act-cell:msgbox actor) message-box))
 
 (defmethod print-object ((obj actor) stream)
   (print-unreadable-object (obj stream :type t)
@@ -62,13 +59,18 @@
       (funcall effective-behavior message))))
 
 (defmethod pre-start ((self actor))
-  (call-next-method))
+  (with-slots (init-fun act-cell:state) self
+    (when init-fun
+      (let ((act-cell:*state* act-cell:state))
+        (funcall init-fun self)
+        (setf act-cell:state act-cell:*state*)))))
 
 (defmethod after-stop ((self actor))
-  (call-next-method)
-  (with-slots (destroy-fun) self
+  (with-slots (destroy-fun act-cell:state) self
     (when destroy-fun
-      (funcall destroy-fun self))))
+      (let ((act-cell:*state* act-cell:state))
+        (funcall destroy-fun self)
+        (setf act-cell:state act-cell:*state*)))))
 
 ;; -------- children handling ----------
 
@@ -128,6 +130,7 @@
 In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping."
   (stop-children self wait)
   (call-next-method self wait)
+  (after-stop self)
   (notify-watchers-about-stop self))
 
 ;; -------------------------------

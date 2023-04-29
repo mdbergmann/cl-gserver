@@ -49,8 +49,6 @@
   (act-cell:msgbox (pax:accessor actor-cell))
   (act-cell:handle-call generic-function)
   (act-cell:handle-cast generic-function)
-  (act-cell:pre-start generic-function)
-  (act-cell:after-stop generic-function)
   (act-cell:stop generic-function)
   (act-cell:call function)
   (act-cell:cast function)
@@ -101,6 +99,8 @@
   (act:watch generic-function)
   (act:unwatch generic-function)
   (act:watchers generic-function)
+  (act:pre-start generic-function)
+  (act:after-stop generic-function)
   ;; event stream protocol
   (ev:subscribe (pax:method () (act:actor act:actor)))
   (ev:unsubscribe (pax:method () (act:actor act:actor)))

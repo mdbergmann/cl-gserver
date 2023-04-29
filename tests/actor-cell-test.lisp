@@ -16,22 +16,12 @@
 
 (log:config :warn)
 
-(defparameter *after-stop-val* nil)
-
-(def-fixture cell-fixture (call-fun cast-fun pre-start-fun after-stop-fun state)
+(def-fixture cell-fixture (call-fun cast-fun state)
   (defclass test-cell (actor-cell) ())
   (defmethod handle-call ((cell test-cell) message)
     (funcall call-fun message))
   (defmethod handle-cast ((cell test-cell) message)
     (funcall cast-fun message))
-  (defmethod pre-start ((cell test-cell))
-    (when pre-start-fun
-      (funcall pre-start-fun cell)))
-  (defmethod after-stop ((cell test-cell))
-    (when after-stop-fun
-      (funcall after-stop-fun cell)))
-
-  (setf *after-stop-val* nil)
   
   (let ((cut (make-instance 'test-cell
                             :state state)))
@@ -42,53 +32,48 @@
 
 (test get-cell-name-and-state
   "Just retrieves the name of the cell"
-  (with-fixture cell-fixture (nil nil nil nil '(1))
+  (with-fixture cell-fixture (nil nil '(1))
     (is (= 0 (search "actor-" (name cut))))
     (is (equalp '(1) (state cut)))))
 
-(test run-pre-start-fun
-  "Tests the execution of `pre-start'"
-  (with-fixture cell-fixture ((lambda (message)
-                                (declare (ignore message))
-                                *state*)
-                              nil
-                              (lambda (self)
-                                (setf *state* "pre-start-fun-executed"))
-                              nil
-                              0)
-    (is (string= "pre-start-fun-executed" (call cut :foo)))))
+;; (test run-pre-start-fun
+;;   "Tests the execution of `pre-start'"
+;;   (with-fixture cell-fixture ((lambda (message)
+;;                                 (declare (ignore message))
+;;                                 *state*)
+;;                               nil
+;;                               (lambda (self)
+;;                                 (setf *state* "pre-start-fun-executed"))
+;;                               nil
+;;                               0)
+;;     (is (string= "pre-start-fun-executed" (call cut :foo)))))
 
-(test run-after-stop-fun
-  "Tests the execution of `after-stop'"
-  (with-fixture cell-fixture ((lambda (message)
-                                (declare (ignore message)))
-                              nil
-                              nil
-                              (lambda (self)
-                                (declare (ignore self))
-                                (setf *after-stop-val* "after-stop-fun-executed"))
-                              0)
-    (call cut :stop)
-    (is (string= "after-stop-fun-executed" *after-stop-val*))))
+;; (test run-after-stop-fun
+;;   "Tests the execution of `after-stop'"
+;;   (with-fixture cell-fixture ((lambda (message)
+;;                                 (declare (ignore message)))
+;;                               nil
+;;                               nil
+;;                               (lambda (self)
+;;                                 (declare (ignore self))
+;;                                 (setf *after-stop-val* "after-stop-fun-executed"))
+;;                               0)
+;;     (call cut :stop)
+;;     (is (string= "after-stop-fun-executed" *after-stop-val*))))
 
-(test run-after-stop-fun--with-wait-for-stop
-  "Tests the execution of `after-stop' but using the `stop` function of the cell."
+(test stop--with-wait
+  "Tests `stop` function of the cell."
   (with-fixture cell-fixture (nil
                               (lambda (message)
                                 (declare (ignore message))
                                 (sleep 0.3)
                                 "receive-return")
-                              nil
-                              (lambda (self)
-                                (declare (ignore self))
-                                (setf *after-stop-val* "after-stop-fun-executed"))
                               0)
     (let ((now (get-internal-real-time)))
       (cast cut :wait)  ;; send message that waits a bit but is async
       (stop cut t)  ;; stop has to wait until stopped
       (is-false (bt:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread)))
-      (is (> (- (get-internal-real-time) now) 300))
-      (is (string= "after-stop-fun-executed" *after-stop-val*)))))
+      (is (> (- (get-internal-real-time) now) 300)))))
 
 (test no-message-box
   "Test responds with :no-message-handling when no msgbox is configured."
@@ -113,8 +98,6 @@
                                  ((and (listp message) (eq :explicit-return (car message)))
                                   (cadr message))))
                               nil
-                              nil
-                              nil
                               0)
     (is (= 1000 (call cut '(:add 1000))))
     (is (= 500 (call cut '(:sub 500))))
@@ -133,8 +116,6 @@
                               (lambda (msg)
                                 (case msg
                                   (:ping (cast *sender* :pong))))
-                              nil
-                              nil
                               0)
     (let ((fake-sender (make-instance 'pong-cell)))
       (setf (msgbox fake-sender) (make-instance 'mesgb:message-box/bt))
@@ -149,8 +130,6 @@
                                 (cond
                                  ((eq :err (car message))
                                   (error "Foo Error"))))
-                              nil
-                              nil
                               nil
                               nil)
     (let ((msg (call cut '(:err))))
@@ -175,8 +154,6 @@
                                  ((eq :push (car message))
                                   (let ((new-state (append *state* (list (cdr message)))))
                                     (setf *state* new-state)))))
-                              nil
-                              nil
                               '(5))
     (is (equalp '(5) (call cut :get)))
     (cast cut (cons :push 4))

@@ -15,8 +15,6 @@
            ;; API
            #:handle-call
            #:handle-cast
-           #:pre-start
-           #:after-stop
            #:stop
            #:call
            #:cast
@@ -84,25 +82,14 @@ Note: the `actor-cell` uses `call` and `cast` functions which translate to `ask-
               msgbox))))
 
 (defmethod initialize-instance :after ((obj actor-cell) &key)
-  (with-slots (name state) obj
+  (with-slots (name) obj
     (unless name
       (setf name (string (gensym "actor-"))))
-    (log:debug "~a initialized: ~a" name obj)
-    (let ((*state* state))
-      (pre-start obj)
-      (setf state *state*))))
+    (log:debug "~a initialized: ~a" name obj)))
 
 ;; -----------------------------------------------
 ;; public functions / API
 ;; -----------------------------------------------
-
-(defgeneric pre-start (actor-cell)
-  (:documentation
-   "Generic function definition that called from `initialize-instance`."))
-
-(defgeneric after-stop (actor-cell)
-  (:documentation
-   "Generic function definition that is called after the actor cell has stopped."))
 
 (defgeneric handle-call (actor-cell message)
   (:documentation
@@ -131,14 +118,6 @@ The `:stop` message (symbol) is normally processed by the actors message process
 ;; ---------------------------------
 ;; Impl
 ;; ---------------------------------
-
-(defmethod pre-start ((self actor-cell))
-  "Empty implementation so that we can call it anyway even if there are no other implementations."
-  nil)
-
-(defmethod after-stop ((self actor-cell))
-  "Empty implementation so that we can call it anyway even if there are no other implementations."
-  nil)
 
 (defun call (actor-cell message &key (time-out nil))
   "Send a message to a actor-cell instance and wait for a result.
@@ -172,8 +151,7 @@ If a `sender' is specified the result will be sent to the sender."
     (when (slot-value internal-state 'running)
       (setf (slot-value internal-state 'running) nil)
       (when msgbox
-        (mesgb:stop msgbox wait))
-      (after-stop self))))
+        (mesgb:stop msgbox wait)))))
 
 ;; -----------------------------------------------    
 ;; internal functions

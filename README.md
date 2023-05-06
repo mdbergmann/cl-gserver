@@ -1,4 +1,4 @@
-![CI](https://github.com/mdbergmann/cl-gserver/workflows/CI/badge.svg?branch=master)
+<!--![CI](https://github.com/mdbergmann/cl-gserver/workflows/CI/badge.svg?branch=master)-->
 
 ### Introduction - Actor framework featuring actors and agents
 

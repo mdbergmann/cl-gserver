@@ -141,7 +141,7 @@ To build actor hierarchies one has to create actors in actors. This is of course
                       :name "child-answerer"
                       :receive 
                       (lambda (msg)
-                        (let ((output (format nil "~a" "Hello-child ~a" msg)))
+                        (let ((output (format nil "Hello-child ~a" msg)))
                           (format nil "~a~%" output))))))
 ```
 
@@ -243,7 +243,7 @@ Let's make an example:
 
 ```elisp
 (defparameter *s-asker*
-  (actor-of *sys*
+  (actor-of *system*
             :receive
             (lambda (msg)
               (cond
@@ -283,7 +283,7 @@ Let's asume we have such a simple actor that just increments the value passed to
 
 ```
 (defparameter *incer*
-  (actor-of *sys*
+  (actor-of *system*
             :receive (lambda (value)
                        (reply (1+ value)))))
 ```

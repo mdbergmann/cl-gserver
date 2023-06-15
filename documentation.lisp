@@ -61,8 +61,7 @@
   (mesgb::max-queue-size (pax:reader mesgb::message-box-base))
   (mesgb:submit generic-function)
   (mesgb:stop generic-function)
-  (mesgb:stop (pax:method () (mesgb::message-box-base)))
-  (mesgb:with-submit-handler pax:macro))
+  (mesgb:stop (pax:method () (mesgb::message-box-base))))
 
 (pax:defsection @message-box/bt (:title "Message-box threaded")
   (mesgb:message-box/bt class)

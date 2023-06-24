@@ -1,10 +1,6 @@
 
 (in-package :sento.eventstream)
 
-(shadowing-import '(ev:subscribe
-                    ev:unsubscribe
-                    ev:publish))
-
 (defclass eventstream ()
   ((subscribers :initform '()
                 :reader subscribers)

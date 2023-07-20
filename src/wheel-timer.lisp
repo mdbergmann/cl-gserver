@@ -4,6 +4,7 @@
   (:export #:wheel-timer
            #:make-wheel-timer
            #:schedule
+           #:cancel
            #:shutdown-wheel-timer))
 
 (in-package :sento.wheel-timer)
@@ -39,12 +40,22 @@
 
 `wheel-timer` is the `wt:wheel-timer` instance.
 `delay` is the number of seconds (float) delay when `timer-fun` should be executed.
-`timer-fun` is a 0-arity function that is executed after `delay`."
-  (tw:schedule-timer (wheel wheel-timer)
-                     (tw:make-timer (lambda (wheel timer)
-                                      (declare (ignore wheel timer))
-                                      (funcall timer-fun)))
-                     :milliseconds (round (* delay 1000))))
+`timer-fun` is a 0-arity function that is executed after `delay`.
+
+returns: a timer object that can be used to cancel the timer."
+  (let ((timer (tw:make-timer (lambda (wheel timer)
+                                (declare (ignore wheel timer))
+                                (funcall timer-fun)))))
+    (tw:schedule-timer (wheel wheel-timer)
+                       timer
+                       :milliseconds (round (* delay 1000)))
+    timer))
+
+(defun cancel (wheel-timer timer)
+  "Cancels a timer.
+`wheel-timer` is the `wt:wheel-timer` instance.
+`timer` is the timer object returned by `wt:schedule`."
+  (tw:uninstall-timer (wheel wheel-timer) timer))
 
 (defun shutdown-wheel-timer (wheel-timer)
   "Shuts down the wheel timer and frees resources."

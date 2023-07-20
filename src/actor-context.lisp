@@ -154,4 +154,7 @@ An `act:actor` contains an `actor-context`."
 
 (defmethod notify ((context actor-context) actor notification)
   (case notification
-    (:stopped (%remove-actor context actor))))
+    (:stopped
+     (progn
+       (%remove-actor context actor)
+       (log:debug "Actor removed: ~a" (act-cell:name actor))))))

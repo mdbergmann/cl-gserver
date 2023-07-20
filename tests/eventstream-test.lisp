@@ -93,8 +93,8 @@
   (with-fixture test-ev ()
     (let* ((ev-received)
            (ev-listener (ac:actor-of system
-                          :receive (lambda (msg)
-                                     (setf ev-received msg)))))
+                                     :receive (lambda (msg)
+                                                (setf ev-received msg)))))
       ;; all
       (subscribe cut ev-listener)
       (publish cut "Foo")

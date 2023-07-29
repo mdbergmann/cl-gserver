@@ -21,13 +21,14 @@
 (setf (symbol-function '!) #'act:tell)
 (setf (symbol-function '?) #'act:ask)
 
-(defmethod make-actor (receive &key name state (type 'actor) (init nil) (destroy nil))
+(defmethod make-actor (receive &key name state (type 'actor) (init nil) (destroy nil) (other-init-args nil))
   (make-instance type
                  :name name
                  :state state
                  :receive receive
                  :init init
-                 :destroy destroy))
+                 :destroy destroy
+                 :other-init-args other-init-args))
 
 (defun finalize-initialization (actor message-box actor-context)
   "Private API: finalize initialization of the actor with a `mesgb:message-box` and an `ac:actor-context`."
@@ -252,7 +253,8 @@ Use this from within receive function to reply to a sender."
                      &key receive
                        (init nil) (destroy nil)
                        (dispatcher :shared) (state nil)
-                       (type 'act:actor) (name nil))
+                       (type 'act:actor) (name nil)
+                       (other-args nil))
   "`ac:actor-context` protocol implementation"
   (ac:actor-of (context actor)
     :receive receive
@@ -261,4 +263,5 @@ Use this from within receive function to reply to a sender."
     :dispatcher dispatcher
     :state state
     :type type
-    :name name))
+    :name name
+    :other-args other-args))

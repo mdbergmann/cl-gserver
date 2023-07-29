@@ -110,7 +110,8 @@ An `act:actor` contains an `actor-context`."
                      &key receive
                        (init nil) (destroy nil)
                        (dispatcher :shared) (state nil)
-                       (type 'act:actor) (name nil))
+                       (type 'act:actor) (name nil)
+                       (other-args nil))
   "See `ac:actor-of`."
   (check-type receive function "a function!")
   (%actor-of context
@@ -119,7 +120,8 @@ An `act:actor` contains an `actor-context`."
                                    :name name
                                    :type type
                                    :init init
-                                   :destroy destroy))
+                                   :destroy destroy
+                                   :other-init-args other-args))
              :dispatcher dispatcher))
 
 ;; test 2-arity function with 'path' and 'act-cell-name' (default)

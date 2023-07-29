@@ -18,7 +18,7 @@
 (in-package :sento.actor-context)
 
 (defgeneric actor-of (context
-                      &key receive init destroy dispatcher state type name)
+                      &key receive init destroy dispatcher state type name other-args)
   (:documentation "Interface for creating an actor.
 
 **!!! Attention:** this factory function wraps the `act:make-actor` functionality to something more simple to use. 
@@ -37,7 +37,8 @@ This function allows to unsubsribe from event-stream or such.
 - `:dispatcher` key can be used to define the message dispatcher manually.
   Options are `:shared` (default) and `:pinned`.
 - `:type` can specify a custom actor class. See `act:make-actor` for more info.
-- `:name` to set a specific name to the actor, otherwise a random name will be used."))
+- `:name` to set a specific name to the actor, otherwise a random name will be used.
+- `:other-args` are in the actor instance as `other-init-args` and can be acted upon in i.e. `pre-start` for additional initialization."))
 
 (defgeneric find-actors (context path &key test key)
   (:documentation "Returns actors to be found by the criteria of:

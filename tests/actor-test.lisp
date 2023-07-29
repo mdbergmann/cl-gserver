@@ -453,7 +453,8 @@
   "Tests that state via `*state*' can be changed within `init' function."
   (let ((sys (asys:make-actor-system)))
     (unwind-protect
-         (let* ((actor (actor-of sys :name "foo"
+         (let* ((init-called nil)
+                (actor (actor-of sys :name "foo"
                                      :state '()
                                      :init (lambda (self)
                                              (declare (ignore self))

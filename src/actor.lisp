@@ -1,16 +1,17 @@
 
 (in-package :sento.actor)
 
-(shadowing-import '(act-cell:handle-call
-                    act-cell:handle-cast
-                    act-cell:stop
-                    future:make-future
-                    ev:subscribe
-                    ev:unsubscribe
-                    ev:publish
-                    ac:find-actors
-                    ac:all-actors
-                    ac:actor-of))
+(eval-when (:compile-toplevel)
+  (shadowing-import '(act-cell:handle-call
+                      act-cell:handle-cast
+                      act-cell:stop
+                      future:make-future
+                      ev:subscribe
+                      ev:unsubscribe
+                      ev:publish
+                      ac:find-actors
+                      ac:all-actors
+                      ac:actor-of)))
 
 ;; we want to use symbols in this package rather than 'cell'.
 (define-symbol-macro *self* act-cell:*self*)

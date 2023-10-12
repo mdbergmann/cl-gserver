@@ -1,8 +1,9 @@
 
 (in-package :sento.dispatcher)
 
-(shadowing-import '(mesgb:message-box/bt
-                    act:actor))
+(eval-when (:compile-toplevel)
+  (shadowing-import '(mesgb:message-box/bt
+                      act:actor)))
 
 (defclass dispatcher-base ()
   ((context :initform nil

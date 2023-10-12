@@ -1,19 +1,20 @@
 
 (in-package :sento.actor-system)
 
-(shadowing-import '(disp:make-dispatcher
-                    disp:make-dispatcher-worker
-                    ac:make-actor-context
-                    ac:actor-of
-                    ac:find-actors
-                    ac:all-actors
-                    ac:shutdown
-                    ac:stop
-                    ev:subscribe
-                    ev:unsubscribe
-                    ev:publish
-                    wt:wheel-timer
-                    wt:make-wheel-timer))
+(eval-when (:compile-toplevel)
+  (shadowing-import '(disp:make-dispatcher
+                      disp:make-dispatcher-worker
+                      ac:make-actor-context
+                      ac:actor-of
+                      ac:find-actors
+                      ac:all-actors
+                      ac:shutdown
+                      ac:stop
+                      ev:subscribe
+                      ev:unsubscribe
+                      ev:publish
+                      wt:wheel-timer
+                      wt:make-wheel-timer)))
 
 (defclass actor-system ()
   ((dispatchers :initform '()

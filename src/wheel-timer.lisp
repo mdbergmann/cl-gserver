@@ -41,39 +41,48 @@
     instance))
 
 (defun schedule (wheel-timer delay timer-fun)
-  "Schedule a function execution:
+  "Schedule a function execution once:
 
 `wheel-timer` is the `wt:wheel-timer` instance.
 `delay` is the number of seconds (float) delay when `timer-fun` should be executed.
 `timer-fun` is a 0-arity function that is executed after `delay`.
 
-returns: a timer object that can be used to cancel the timer."
+returns: a timer object that can be used to cancel the timer.
+
+It is up to the caller to keep a reference to the timer object in case it needs to be cancelled."
   (let ((timer (tw:make-timer (lambda (wheel timer)
                                 (declare (ignore wheel timer))
-                                (funcall timer-fun)))))
+                                (ignore-errors
+                                 (funcall timer-fun))))))
     (tw:schedule-timer (wheel wheel-timer)
                        timer
                        :milliseconds (round (* delay 1000)))
     timer))
 
-(defun schedule-recurring (wheel-timer delay sig timer-fun)
+(defun schedule-recurring (wheel-timer initial-delay delay timer-fun &optional (sig nil))
   "Schedule a recurring function execution:
 
 `wheel-timer` is the `wt:wheel-timer` instance.
+`initial-delay` is the number of seconds (float) delay when `timer-fun` is executed the first time.
 `delay` is the number of seconds (float) delay when `timer-fun` should be executed.
 `timer-fun` is a 0-arity function that is executed after `delay`.
-`sig` is a symbol or string that is used to identify the timer."
-  (let ((timer-hash (timer-hash wheel-timer))
+`sig` is an optional symbol or string that is used to identify the timer and is used for `cancel-for-sig`.
+
+returns the signature that was either passed in via `sig` or a generated one.
+The signature can be used to cancel the timer via `cancel-for-sig`."
+  (let ((signature (or sig (gensym "recurring-timer-")))
+        (timer-hash (timer-hash wheel-timer))
         (recurring-timer-fun))
     (setf recurring-timer-fun
           (lambda ()
             ;; only if signature still exists in hash-table
-            (when (gethash sig timer-hash)
+            (when (gethash signature timer-hash)
               (funcall timer-fun)
-              (setf (gethash sig timer-hash)
+              (setf (gethash signature timer-hash)
                     (schedule wheel-timer delay recurring-timer-fun)))))
-    (setf (gethash sig timer-hash)
-          (schedule wheel-timer delay recurring-timer-fun))))
+    (setf (gethash signature timer-hash)
+          (schedule wheel-timer initial-delay recurring-timer-fun))
+    signature))
 
 (defun cancel (wheel-timer timer)
   "Cancels a timer.

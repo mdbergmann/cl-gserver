@@ -35,8 +35,17 @@
         (callbacks 0))
     (unwind-protect
          (progn
-           (schedule-recurring cut 0.1 'foo (lambda () (incf callbacks)))
+           (schedule-recurring cut 0.1 0.1 (lambda () (incf callbacks)) 'foo)
            (is-true (miscutils:assert-cond (lambda () (>= callbacks 4)) 0.5 0.1)))
+      (shutdown-wheel-timer cut))))
+
+(test schedule-recurring--generated-sig
+  "Tests executing recurring timer functions with generated sig."
+  (let ((cut (make-wheel-timer)))
+    (unwind-protect
+         (let ((sig (schedule-recurring cut 0.1 0.1 (lambda ()))))
+           (is (symbolp sig))
+           (is (str:starts-with-p "recurring-timer-" (symbol-name sig))))
       (shutdown-wheel-timer cut))))
 
 (test cancel-recurring-timer
@@ -44,7 +53,7 @@
   (let ((cut (make-wheel-timer)))
     (unwind-protect
          (progn
-           (schedule-recurring cut 0.1 'foo (lambda ()))
+           (schedule-recurring cut 0.1 0.1 (lambda ()) 'foo)
            (is-true (gethash 'foo (wt::timer-hash cut)))
            (cancel-for-sig cut 'foo)
            (is-false (gethash 'foo (wt::timer-hash cut))))

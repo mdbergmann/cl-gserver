@@ -28,3 +28,24 @@
            (schedule cut 0.2 (lambda () (setf callback t)))
            (is-true (miscutils:assert-cond (lambda () (eq t callback)) 0.25)))
       (shutdown-wheel-timer cut))))
+
+(test schedule-recurring
+  "Tests executing recurring timer functions."
+  (let ((cut (make-wheel-timer))
+        (callbacks 0))
+    (unwind-protect
+         (progn
+           (schedule-recurring cut 0.1 'foo (lambda () (incf callbacks)))
+           (is-true (miscutils:assert-cond (lambda () (>= callbacks 4)) 0.5 0.1)))
+      (shutdown-wheel-timer cut))))
+
+(test cancel-recurring-timer
+  "Tests canceling a recurring timer function."
+  (let ((cut (make-wheel-timer)))
+    (unwind-protect
+         (progn
+           (schedule-recurring cut 0.1 'foo (lambda ()))
+           (is-true (gethash 'foo (wt::timer-hash cut)))
+           (cancel-for-sig cut 'foo)
+           (is-false (gethash 'foo (wt::timer-hash cut))))
+      (shutdown-wheel-timer cut))))

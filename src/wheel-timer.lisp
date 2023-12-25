@@ -4,7 +4,9 @@
   (:export #:wheel-timer
            #:make-wheel-timer
            #:schedule
+           #:schedule-recurring
            #:cancel
+           #:cancel-for-sig
            #:shutdown-wheel-timer))
 
 (in-package :sento.wheel-timer)
@@ -12,13 +14,16 @@
 (defclass wheel-timer ()
   ((wheel :initform nil
           :accessor wheel
-          :documentation "The wheel."))
+          :documentation "The wheel timer.")
+   (timer-hash :initform (make-hash-table :test 'equal)
+               :accessor timer-hash
+               :documentation "Hash table of timers. Used to cancel recurring timers."))
   (:documentation "Wheel timer class"))
 
 (defmethod print-object ((obj wheel-timer) stream)
   (print-unreadable-object (obj stream :type t)
     (with-slots (wheel) obj
-      (format stream "wheel resolution: ~a, size: ~a"
+      (format stream "wheel-timer resolution: ~a, size: ~a"
               (tw:wheel-resolution wheel)
               (length (tw::slots wheel))))))
 
@@ -30,8 +35,8 @@
   `:max-size`: the maximum size of timer functions this wheel can handle."
   (let ((instance (make-instance 'wheel-timer)))
     (setf (wheel instance)
-          (tw:make-wheel (getf config :max-size)
-                         (getf config :resolution)))
+          (tw:make-wheel (getf config :max-size 500)
+                         (getf config :resolution 100)))
     (tw:initialize-timer-wheel (wheel instance))
     instance))
 
@@ -51,11 +56,35 @@ returns: a timer object that can be used to cancel the timer."
                        :milliseconds (round (* delay 1000)))
     timer))
 
+(defun schedule-recurring (wheel-timer delay sig timer-fun)
+  "Schedule a recurring function execution:
+
+`wheel-timer` is the `wt:wheel-timer` instance.
+`delay` is the number of seconds (float) delay when `timer-fun` should be executed.
+`timer-fun` is a 0-arity function that is executed after `delay`.
+`sig` is a symbol or string that is used to identify the timer."
+  (let ((timer-hash (timer-hash wheel-timer))
+        (recurring-timer-fun))
+    (setf recurring-timer-fun
+          (lambda ()
+            ;; only if signature still exists in hash-table
+            (when (gethash sig timer-hash)
+              (funcall timer-fun)
+              (setf (gethash sig timer-hash)
+                    (schedule wheel-timer delay recurring-timer-fun)))))
+    (setf (gethash sig timer-hash)
+          (schedule wheel-timer delay recurring-timer-fun))))
+
 (defun cancel (wheel-timer timer)
   "Cancels a timer.
 `wheel-timer` is the `wt:wheel-timer` instance.
 `timer` is the timer object returned by `wt:schedule`."
   (tw:uninstall-timer (wheel wheel-timer) timer))
+
+(defun cancel-for-sig (wheel-timer sig)
+  "Cancels a recurring timer with the givenm signature `sig`."
+  (cancel wheel-timer (gethash sig (timer-hash wheel-timer)))
+  (remhash sig (timer-hash wheel-timer)))
 
 (defun shutdown-wheel-timer (wheel-timer)
   "Shuts down the wheel timer and frees resources."

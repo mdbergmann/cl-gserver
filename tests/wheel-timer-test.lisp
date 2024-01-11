@@ -19,13 +19,13 @@
            (is (not (null cut))))
       (shutdown-wheel-timer cut))))
 
-(test schedule
+(test schedule-once
   "Tests executing a scheduled timer function."
   (let ((cut (make-wheel-timer :resolution 100 :max-size 100))
         (callback))
     (unwind-protect
          (progn
-           (schedule cut 0.2 (lambda () (setf callback t)))
+           (schedule-once cut 0.2 (lambda () (setf callback t)))
            (is-true (miscutils:assert-cond (lambda () (eq t callback)) 0.25)))
       (shutdown-wheel-timer cut))))
 
@@ -55,6 +55,6 @@
          (progn
            (schedule-recurring cut 0.1 0.1 (lambda ()) 'foo)
            (is-true (gethash 'foo (wt::timer-hash cut)))
-           (cancel-for-sig cut 'foo)
+           (cancel-recurring cut 'foo)
            (is-false (gethash 'foo (wt::timer-hash cut))))
       (shutdown-wheel-timer cut))))

@@ -196,7 +196,7 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
          (when time-out
            (when system
              (handler-case
-                 (wt:schedule (asys:timeout-timer system)
+                 (wt:schedule-once (asys:timeout-timer system)
                               time-out
                               (lambda ()
                                 (unless result-received-p

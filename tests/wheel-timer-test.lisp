@@ -19,14 +19,16 @@
            (is (not (null cut))))
       (shutdown-wheel-timer cut))))
 
-(test schedule-once
-  "Tests executing a scheduled timer function."
+(test schedule-once--generated-sig
+  "Tests executing a scheduled timer function, it returns the signature of the timer."
   (let ((cut (make-wheel-timer :resolution 100 :max-size 100))
         (callback))
     (unwind-protect
          (progn
-           (schedule-once cut 0.2 (lambda () (setf callback t)))
-           (is-true (miscutils:assert-cond (lambda () (eq t callback)) 0.25)))
+           (is (symbolp (schedule-once cut 0.2 (lambda () (setf callback t)))))
+           (is-true (miscutils:assert-cond (lambda () (eq t callback)) 0.25))
+           ;; any timer sig is to be removed after execution
+           (is (= 0 (hash-table-count (wt::timer-hash cut)))))
       (shutdown-wheel-timer cut))))
 
 (test schedule-recurring
@@ -36,7 +38,8 @@
     (unwind-protect
          (progn
            (schedule-recurring cut 0.1 0.1 (lambda () (incf callbacks)) 'foo)
-           (is-true (miscutils:assert-cond (lambda () (>= callbacks 4)) 0.5 0.1)))
+           (is-true (miscutils:assert-cond (lambda () (>= callbacks 4)) 0.5 0.1))
+           (is (= 1 (hash-table-count (wt::timer-hash cut)))))
       (shutdown-wheel-timer cut))))
 
 (test schedule-recurring--generated-sig
@@ -55,6 +58,6 @@
          (progn
            (schedule-recurring cut 0.1 0.1 (lambda ()) 'foo)
            (is-true (gethash 'foo (wt::timer-hash cut)))
-           (cancel-recurring cut 'foo)
+           (cancel cut 'foo)
            (is-false (gethash 'foo (wt::timer-hash cut))))
       (shutdown-wheel-timer cut))))

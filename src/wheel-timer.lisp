@@ -6,7 +6,6 @@
            #:schedule-once
            #:schedule-recurring
            #:cancel
-           #:cancel-recurring
            #:shutdown-wheel-timer))
 
 (in-package :sento.wheel-timer)
@@ -40,24 +39,29 @@
     (tw:initialize-timer-wheel (wheel instance))
     instance))
 
-(defun schedule-once (wheel-timer delay timer-fun)
+(defun schedule-once (wheel-timer delay timer-fun &optional (sig nil) &key (reuse-sig nil))
   "Schedule a function execution once:
 
 `wheel-timer` is the `wt:wheel-timer` instance.
 `delay` is the number of seconds (float) delay when `timer-fun` should be executed.
 `timer-fun` is a 0-arity function that is executed after `delay`.
+`sig` is an optional symbol or string that is used to identify the timer and is used for `cancel`.
+`reuse-sig` is a boolean that indicates whether the signature should be cleaned up after the timer has been executed.
 
-returns: a timer object that can be used to cancel the timer.
-
-It is up to the caller to keep a reference to the timer object in case it needs to be cancelled."
-  (let ((timer (tw:make-timer (lambda (wheel timer)
-                                (declare (ignore wheel timer))
-                                (ignore-errors
-                                 (funcall timer-fun))))))
-    (tw:schedule-timer (wheel wheel-timer)
-                       timer
-                       :milliseconds (round (* delay 1000)))
-    timer))
+returns: signature (symbol) that represents the timer and can be used to cancel the timer."
+  (let ((signature (or sig (gensym "timer-")))
+        (timer-hash (timer-hash wheel-timer)))
+    (let ((timer (tw:make-timer (lambda (wheel timer)
+                                  (declare (ignore wheel timer))
+                                  (ignore-errors
+                                   (funcall timer-fun))
+                                  (unless reuse-sig
+                                    (remhash signature timer-hash))))))
+      (setf (gethash signature timer-hash) timer)
+      (tw:schedule-timer (wheel wheel-timer)
+                         timer
+                         :milliseconds (round (* delay 1000)))
+      signature)))
 
 (defun schedule-recurring (wheel-timer initial-delay delay timer-fun &optional (sig nil))
   "Schedule a recurring function execution:
@@ -75,26 +79,22 @@ The signature can be used to cancel the timer via `cancel-recurring`."
         (recurring-timer-fun))
     (setf recurring-timer-fun
           (lambda ()
-            ;; only if signature still exists in hash-table
+            ;; only if signature still exists in hash-table.
+            ;; the timer could have been cancelled.
             (when (gethash signature timer-hash)
               (funcall timer-fun)
-              (setf (gethash signature timer-hash)
-                    (schedule-once wheel-timer delay recurring-timer-fun)))))
-    (setf (gethash signature timer-hash)
-          (schedule-once wheel-timer initial-delay recurring-timer-fun))
+              (schedule-once wheel-timer delay recurring-timer-fun signature :reuse-sig t))))
+    (schedule-once wheel-timer initial-delay recurring-timer-fun signature :reuse-sig t)
     signature))
 
-(defun cancel (wheel-timer timer)
-  "Cancels a timer.
-`wheel-timer` is the `wt:wheel-timer` instance.
-`timer` is the timer object returned by `wt:schedule-once`."
-  (tw:uninstall-timer (wheel wheel-timer) timer))
-
-(defun cancel-recurring (wheel-timer sig)
-  "Cancels a recurring timer with the given signature `sig`."
-  (cancel wheel-timer (gethash sig (timer-hash wheel-timer)))
-  (remhash sig (timer-hash wheel-timer)))
+(defun cancel (wheel-timer sig)
+  "Cancels a timer with the given signature `sig`."
+  (let ((timer (gethash sig (timer-hash wheel-timer))))
+    (remhash sig (timer-hash wheel-timer)) ;; can be removed anyway
+    (when timer
+      (tw:uninstall-timer (wheel wheel-timer) timer))))
 
 (defun shutdown-wheel-timer (wheel-timer)
-  "Shuts down the wheel timer and frees resources."
+  "Shuts down the wheel timer and free resources."
+  (clrhash (timer-hash wheel-timer))
   (tw:shutdown-timer-wheel (wheel wheel-timer)))

@@ -30,18 +30,19 @@
   (let ((system (make-actor-system)))
     (unwind-protect
          (progn
-           (is (not (null system)))
-           (is (not (null (asys::internal-actor-context system))))
+           (is-true system)
+           (is-true (asys::internal-actor-context system))
            (is (string= "/internal" (ac:id (asys::internal-actor-context system))))
            (is (typep (asys::internal-actor-context system) 'ac:actor-context))
 
-           (is (not (null (asys::user-actor-context system))))
+           (is-true (asys::user-actor-context system))
            (is (string= "/user" (ac:id (asys::user-actor-context system))))
            (is (typep (asys::user-actor-context system) 'ac:actor-context))
            (is (= 4 (length (disp:workers (getf (asys::dispatchers system) :shared)))))
 
-           (is (not (null (asys::timeout-timer system))))
-           (is (not (null (asys:evstream system)))))
+           (is-true (asys::timeout-timer system))
+           (is-true (asys:evstream system))
+           (is-true (asys:scheduler system)))
       (ac:shutdown system))
       ))
 

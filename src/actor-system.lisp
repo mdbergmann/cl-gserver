@@ -41,19 +41,15 @@ This shouldn't be used freely. It is used internally by the system to support `a
    (eventstream :initform nil
                 :reader evstream
                 :documentation
-                "The system event stream. See `ev:eventstream` for more info."))
+                "The system event stream. See `ev:eventstream` for more info.")
+   (scheduler :initform nil
+              :reader scheduler
+              :documentation
+              "A general purpose scheduler that can be used by actors.
+See `wt:wheel-timer` for more info."))
   (:documentation
    "An `actor-system` is the opening facility. The first thing you do is to create an `actor-system` using the main constructor `make-actor-system`.
-With the `actor-system` you can create actors via the `ac:actor-context` protocol function: `ac:actor-of`.
-
-Or even simpler via `act:actor-of` which is a convenience macro:
-
-```elisp
-(act:actor-of (*system*)
-                (lambda (msg)
-                  ;; do stuff))
-```
-"))
+With the `actor-system` you can create actors via the `ac:actor-context` protocol function: `ac:actor-of`."))
 
 (defmethod print-object ((obj actor-system) stream)
   (print-unreadable-object (obj stream :type t)
@@ -82,9 +78,13 @@ See `config:config-from`."
       (%register-config system system-config)
       (%register-dispatchers system (%get-dispatcher-config system-config) internal-actor-context)
       (%register-eventstream system (%get-eventstream-config system-config) internal-actor-context)
-      (%register-timeout-timer system (%get-timeout-timer-config system-config)))
+      (%register-timeout-timer system (%get-timeout-timer-config system-config))
+      (%register-scheduler system (%get-scheduler-config system-config)))
     (log:info system)
     system))
+
+(defun %get-scheduler-config (config)
+  (config:retrieve-section config :scheduler))
 
 (defun %get-timeout-timer-config (config)
   (config:retrieve-section config :timeout-timer))
@@ -109,6 +109,11 @@ See `config:config-from`."
   (with-slots (timeout-timer) system
     (setf timeout-timer (apply #'wt:make-wheel-timer
                                timer-config))))
+
+(defun %register-scheduler (system scheduler-config)
+  (with-slots (scheduler) system
+    (setf scheduler (apply #'wt:make-wheel-timer
+                           scheduler-config))))
 
 (defun %register-dispatchers (system dispatcher-config actor-context)
   "Creates a plist of dispatchers for the `:dispatchers` configuration section."

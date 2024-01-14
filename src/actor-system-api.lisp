@@ -5,7 +5,6 @@
            #:actor-system
            #:dispatchers
            #:evstream
-           #:timeout-timer
            #:register-dispatcher
            #:register-new-dispatcher
            #:*default-config*))

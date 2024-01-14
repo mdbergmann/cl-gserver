@@ -33,14 +33,15 @@
                        :reader user-actor-context
                        :documentation
                        "Internal API: an actor context for agents/actors created by the user.")
-   (eventstream :initform nil
-                :reader evstream
-                :documentation
-                "The system event stream. See `ev:eventstream` for more info.")
    (timeout-timer :initform nil
                   :reader timeout-timer
                   :documentation
-                  "A wheel-timer used for timeouts to make timeouts less resource expensive."))
+                  "Internal API: A wheel-timer used for timeouts to make timeouts less resource expensive.
+This shouldn't be used freely. It is used internally by the system to support `act:ask` timeouts.")
+   (eventstream :initform nil
+                :reader evstream
+                :documentation
+                "The system event stream. See `ev:eventstream` for more info."))
   (:documentation
    "An `actor-system` is the opening facility. The first thing you do is to create an `actor-system` using the main constructor `make-actor-system`.
 With the `actor-system` you can create actors via the `ac:actor-context` protocol function: `ac:actor-of`.

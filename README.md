@@ -685,6 +685,12 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 
 **Version 3.1.0 (14.1.2024):** Added scheduler facility to actor-system that allows to schedule functions one or recurring. See API documentation for more info.
 
+**Version 3.0.4 (10.7.2023):** Allow additional initialization arguments be passed to actor. Wheel-time now knows CANCEL function. Partial fix for clasp (2.3.0).
+
+**Version 3.0.3 (1.4.2023):** Minor implementation changes regarding pre-start and after-stop.
+
+**Version 3.0.2 (6.4.2023):** Fix for actor stopping with 'wait'.
+
 **Version 3.0.0 (1.2.2023):** New major version. See migration guide if you have are migrating from version 2.
 
 **Version 2.2.0 (27.12.2022):** Added stashing and unstashing of messages.

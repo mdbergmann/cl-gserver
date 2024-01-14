@@ -46,7 +46,9 @@ This shouldn't be used freely. It is used internally by the system to support `a
               :reader scheduler
               :documentation
               "A general purpose scheduler that can be used by actors.
-See `wt:wheel-timer` for more info."))
+See `wt:wheel-timer` for more info.
+
+The scheduler defaults to a resolution of 100 milliseconds and a maximum of 500 entries."))
   (:documentation
    "An `actor-system` is the opening facility. The first thing you do is to create an `actor-system` using the main constructor `make-actor-system`.
 With the `actor-system` you can create actors via the `ac:actor-context` protocol function: `ac:actor-of`."))

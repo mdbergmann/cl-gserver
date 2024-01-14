@@ -7,6 +7,7 @@
   (asys:register-dispatcher function)
   (asys:register-new-dispatcher function)
   (asys:evstream (pax:reader actor-system))
+  (asys:scheduler (pax:reader actor-system))
   ;; ac protocol
   (ac:actor-of (pax:method () (asys:actor-system)))
   (ac:find-actors (pax:method () (asys:actor-system t)))
@@ -219,6 +220,15 @@
   (config:retrieve-keys function)
   (config:merge-config function))
 
+(in-package :wt)
+(pax:defsection @scheduler (:title "Scheduler")
+  (wt:wheel-timer class)
+  (wt:make-wheel-timer function)
+  (wt:shutdown-wheel-timer function)
+  (wt:schedule-once function)
+  (wt:schedule-recurring function)
+  (wt:cancel function))
+
 (defpackage :sento.docs)
 (in-package :sento.docs)
 
@@ -235,7 +245,8 @@
   (router:@router pax:section)
   (ev:@eventstream pax:section)
   (tasks:@tasks pax:section)
-  (config:@config pax:section))
+  (config:@config pax:section)
+  (wt:@scheduler pax:section))
 
 (pax:defsection @sento (:title "sento documentation")
   (@readme pax:section)

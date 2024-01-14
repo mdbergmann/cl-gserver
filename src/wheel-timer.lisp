@@ -47,11 +47,11 @@ But you can also create your own instance."
 
 `wheel-timer` is the `wt:wheel-timer` instance.  
 `delay` is the number of seconds (float) delay when `timer-fun` should be executed.  
-`timer-fun` is a 0-arity function that is executed after `delay`.  
+`timer-fun` is a 0-arity function that is executed after `delay`. BEWARE: the function is executed in the timer thread. Make sure that you off-load long running tasks to other threads, or to a custom dispatcher (i.e. `tasks`).
 `sig` is an optional symbol or string that is used to identify the timer and is used for `cancel`.  
 `reuse-sig` is a boolean that indicates whether the signature should be cleaned up after the timer has been executed.
 
-returns: signature (symbol) that represents the timer and can be used to cancel the timer."
+Returns: signature (symbol) that represents the timer and can be used to cancel the timer."
   (let ((signature (or sig (gensym "timer-")))
         (timer-hash (timer-hash wheel-timer)))
     (let ((timer (tw:make-timer (lambda (wheel timer)
@@ -72,10 +72,10 @@ returns: signature (symbol) that represents the timer and can be used to cancel 
 `wheel-timer` is the `wt:wheel-timer` instance.  
 `initial-delay` is the number of seconds (float) delay when `timer-fun` is executed the first time.  
 `delay` is the number of seconds (float) delay when `timer-fun` should be executed.  
-`timer-fun` is a 0-arity function that is executed after `delay`.  
+`timer-fun` is a 0-arity function that is executed after `delay`. BEWARE: the function is executed in the timer thread. Make sure that you off-load long running tasks to other threads, or to a custom dispatcher (i.e. `tasks`).
 `sig` is an optional symbol or string that is used to identify the timer and is used for `cancel-recurring`.
 
-returns the signature that was either passed in via `sig` or a generated one.
+Returns the signature that was either passed in via `sig` or a generated one.
 The signature can be used to cancel the timer via `cancel-recurring`."
   (let ((signature (or sig (gensym "recurring-timer-")))
         (timer-hash (timer-hash wheel-timer))

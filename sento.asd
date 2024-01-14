@@ -11,6 +11,7 @@
                "blackbird"
                "binding-arrows"
                "timer-wheel"
+               "local-time-duration"
                #-abcl "atomics"
                )
   :components ((:module "src"

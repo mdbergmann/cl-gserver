@@ -42,8 +42,10 @@ When we look at `*system*` in the repl we see some information of the actor syst
                         TIMEOUT-TIMER
                         (RESOLUTION 500 MAX-SIZE 1000)
                         EVENTSTREAM
-                       (DISPATCHER-ID
-                         SHARED)), user actors: 0, internal actors: 5>
+                        (DISPATCHER-ID SHARED)
+                        TIMEOUT-TIMER
+                        (ENABLED TRUE RESOLUTION 100 MAX-SIZE 500)
+                        ), user actors: 0, internal actors: 5>
 ```
 
 The `actor-system` has, by default, four shared message dispatcher workers. Depending on how busy the system tends to be this default can be increased. Those four workers are part of the 'internal actors'. The 5th actor drives the event-stream (later more on that, but in a nutshell it's something like an event bus).
@@ -350,7 +352,7 @@ The computation result can be 'awaited' for in an asynchronous manner and a resp
 
 Due to an asynchronous callback of a computation running is a separate thread, the `*sender*` must be copied into a lexical environment because at the time of when the callback is executed the `*sender*` can have a different value.
 
-For instance, if there is a potentially long running and asynchronous operation happening in 'receive', the _original_ sender must be captured and the async operation executed in a lexical context, like so (receice function):
+For instance, if there is a potentially long running and asynchronous operation happening in 'receive', the _original_ sender must be captured and the async operation executed in a lexical context, like so (receive function):
 
 ```elisp
 (lambda (msg)
@@ -367,6 +369,8 @@ For instance, if there is a potentially long running and asynchronous operation 
 Notice that for the lengthy operation the sender must be captured because if the lengthy operation is asynchronous 'receive' function is perhaps called for another message where `*sender*` is different. In that case `sender` must be supplied explicitly for `reply`.
 
 See [this test](../tests/spawn-in-receive-test.lisp) for more info.
+
+NOTE: you should not change actor state from within an asynchronously executed operation in `receive`. This is not thread-safe. The pattern for this case it to send a message to `self` and have a message handler case that will change the actor state. This will ensure that actor state is always changed in a thread-safe way.
 
 #### Changing behavior
 
@@ -406,8 +410,7 @@ See: API [documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENT
 
 #### Creating actors without a system
 
-It is still possible to create actors without a system. This is how you
-do it:
+It is still possible to create actors without a system. This is how you do it:
 
 ```elisp
 ;; make an actor
@@ -419,13 +422,11 @@ do it:
       (make-instance 'mesgb:message-box/bt))
 ```
 
-You have to take care yourself about stopping the actor and freeing
-resources.
+You have to take care yourself about stopping the actor and freeing resources.
 
 ### Agents
 
-An Agent is a specialized Actor. It is meant primarily for maintaining
-state and comes with some conveniences to do that.
+An Agent is a specialized Actor. It is meant primarily for maintaining state and comes with some conveniences to do that.
 
 To use an Agent import `sento.agent` package.
 
@@ -681,6 +682,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 - 'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.
 
 ### Version history
+
+**Version 3.1.0 (14.1.2024):** Added scheduler facility to actor-system that allows to schedule functions one or recurring. See API documentation for more info.
 
 **Version 3.0.0 (1.2.2023):** New major version. See migration guide if you have are migrating from version 2.
 

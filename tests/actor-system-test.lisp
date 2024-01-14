@@ -46,6 +46,12 @@
       (ac:shutdown system))
       ))
 
+(test create-system--custom-config--disabled-scheduler
+  "Create an actor-system with disabled scheduler for low footprint."
+  (let ((system (make-actor-system '(:scheduler (:enabled :false)))))
+    (is-false (asys:scheduler system))
+    (ac:shutdown system)))
+
 (test create-system--custom-config
   "Create an actor-system by passing a custom config."
   (let ((system (make-actor-system '(:dispatchers (:shared (:workers 2))))))

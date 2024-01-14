@@ -48,7 +48,9 @@ This shouldn't be used freely. It is used internally by the system to support `a
               "A general purpose scheduler that can be used by actors.
 See `wt:wheel-timer` for more info.
 
-The scheduler defaults to a resolution of 100 milliseconds and a maximum of 500 entries."))
+The scheduler defaults to a resolution of 100 milliseconds and a maximum of 500 entries.
+
+It is possible to disable the scheduler by setting the `:enabled` key to `:false` in the `:scheduler` section of the configuration."))
   (:documentation
    "An `actor-system` is the opening facility. The first thing you do is to create an `actor-system` using the main constructor `make-actor-system`.
 With the `actor-system` you can create actors via the `ac:actor-context` protocol function: `ac:actor-of`."))
@@ -113,9 +115,10 @@ See `config:config-from`."
                                timer-config))))
 
 (defun %register-scheduler (system scheduler-config)
-  (with-slots (scheduler) system
-    (setf scheduler (apply #'wt:make-wheel-timer
-                           scheduler-config))))
+  (when (eq :true (getf scheduler-config :enabled))
+    (with-slots (scheduler) system
+      (setf scheduler (apply #'wt:make-wheel-timer
+                             scheduler-config)))))
 
 (defun %register-dispatchers (system dispatcher-config actor-context)
   "Creates a plist of dispatchers for the `:dispatchers` configuration section."

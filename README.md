@@ -43,7 +43,7 @@ When we look at `*system*` in the repl we see some information of the actor syst
                         (RESOLUTION 500 MAX-SIZE 1000)
                         EVENTSTREAM
                         (DISPATCHER-ID SHARED)
-                        TIMEOUT-TIMER
+                        SCHEDULER
                         (ENABLED TRUE RESOLUTION 100 MAX-SIZE 500)
                         ), user actors: 0, internal actors: 5>
 ```

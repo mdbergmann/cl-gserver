@@ -42,7 +42,7 @@ But you can also create your own instance."
     (tw:initialize-timer-wheel (wheel instance))
     instance))
 
-(defun schedule-once (wheel-timer delay timer-fun &optional (sig nil) &key (reuse-sig nil))
+(defun schedule-once (wheel-timer delay timer-fun &key (sig nil) (reuse-sig nil))
   "Schedule a function execution once:
 
 `wheel-timer` is the `wt:wheel-timer` instance.  
@@ -86,8 +86,8 @@ The signature can be used to cancel the timer via `cancel-recurring`."
             ;; the timer could have been cancelled.
             (when (gethash signature timer-hash)
               (funcall timer-fun)
-              (schedule-once wheel-timer delay recurring-timer-fun signature :reuse-sig t))))
-    (schedule-once wheel-timer initial-delay recurring-timer-fun signature :reuse-sig t)
+              (schedule-once wheel-timer delay recurring-timer-fun :sig signature :reuse-sig t))))
+    (schedule-once wheel-timer initial-delay recurring-timer-fun :sig signature :reuse-sig t)
     signature))
 
 (defun cancel (wheel-timer sig)

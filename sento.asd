@@ -148,7 +148,7 @@
 ;; (asdf:test-system "sento/tests")
 ;;
 ;; (hlp:document (asdf:find-system :sento) :only-exported t)
-;; (pax:update-asdf-system-html-docs sento.docs:@sento :sento :target-dir #P"~/docs/")
+;; (pax:update-asdf-system-html-docs sento.docs::@sento :sento :target-dir #P"~/docs/")
 
 #|
 
@@ -175,6 +175,13 @@ OK - removed required 'cons' return on 'receive' function.
 OK - removed 'self' and 'state' in 'receive function. Now exists *self* and *state*.
 OK - added reply
 OK - cons-queue as separate 'high-speed' system
+
+Sento 3.1 todos:
+
+- check COUNTER-MP-UNBOUNDED and BOUNDED tests for LW 8
+- create documentation MGL-PAX
+- tag version
+- upload
 
 |#
 

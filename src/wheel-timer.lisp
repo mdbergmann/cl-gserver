@@ -29,9 +29,9 @@
 (defun make-wheel-timer (&rest config)
   "Creates a new `wt:wheel-timer`.
 
-`config` is a parameter for a list of key parameters including:
-  `:resolution`: the timer time resolution in milliseconds. 100 milliseconds is a good default.  
-  `:max-size`: the number of timer slots this wheel should have.
+`config` is a parameter for a list of key parameters including:  
+`:resolution` the timer time resolution in milliseconds. 100 milliseconds is a good default.  
+`:max-size` the number of timer slots this wheel should have.
 
 Note that an `asys:actor-system` includes an instance as `asys:scheduler` that can be used within actors.
 But you can also create your own instance."
@@ -47,7 +47,7 @@ But you can also create your own instance."
 
 `wheel-timer` is the `wt:wheel-timer` instance.  
 `delay` is the number of seconds (float) delay when `timer-fun` should be executed.  
-`timer-fun` is a 0-arity function that is executed after `delay`. BEWARE: the function is executed in the timer thread. Make sure that you off-load long running tasks to other threads, or to a custom dispatcher (i.e. `tasks`).
+`timer-fun` is a 0-arity function that is executed after `delay`. BEWARE: the function is executed in the timer thread. Make sure that you off-load long running tasks to other threads, or to a custom dispatcher (i.e. `tasks`).  
 `sig` is an optional symbol or string that is used to identify the timer and is used for `cancel`.  
 `reuse-sig` is a boolean that indicates whether the signature should be cleaned up after the timer has been executed.
 

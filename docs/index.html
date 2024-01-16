@@ -107,7 +107,7 @@ In simple terms, an actor system is a container where all actors live in. So at 
                         (RESOLUTION 500 MAX-SIZE 1000)
                         EVENTSTREAM
                         (DISPATCHER-ID SHARED)
-                        TIMEOUT-TIMER
+                        SCHEDULER
                         (ENABLED TRUE RESOLUTION 100 MAX-SIZE 500)
                         ), user actors: 0, internal actors: 5&gt;</code></pre>
 <p>The <code>actor-system</code> has, by default, four shared message dispatcher workers. Depending on how busy the system tends to be this default can be increased. Those four workers are part of the 'internal actors'. The 5th actor drives the event-stream (later more on that, but in a nutshell it's something like an event bus).</p>
@@ -2207,9 +2207,12 @@ Both <code>config</code> and <code>fallback-config</code> must be plists, or a '
 
 <p>Creates a new <a href="#SENTO.WHEEL-TIMER:WHEEL-TIMER%20CLASS" title="SENTO.WHEEL-TIMER:WHEEL-TIMER CLASS"><code>wt:wheel-timer</code></a>.</p>
 
-<p><code>config</code> is a parameter for a list of key parameters including:<br/>
-- <code>:resolution</code> the timer time resolution in milliseconds. 100 milliseconds is a good default.
-- <code>:max-size</code> the number of timer slots this wheel should have.</p>
+<p><code>config</code> is a parameter for a list of key parameters including:</p>
+
+<ul>
+<li><p><code>:resolution</code> the timer time resolution in milliseconds. 100 milliseconds is a good default.</p></li>
+<li><p><code>:max-size</code> the number of timer slots this wheel should have.</p></li>
+</ul>
 
 <p>Note that an <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>asys:actor-system</code></a> includes an instance as <a href="#SENTO.ACTOR-SYSTEM:SCHEDULER%20%28MGL-PAX:READER%20SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29" title="SENTO.ACTOR-SYSTEM:SCHEDULER (MGL-PAX:READER SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM)"><code>asys:scheduler</code></a> that can be used within actors.
 But you can also create your own instance.</p></li>

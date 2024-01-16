@@ -29,7 +29,8 @@
 (defun make-wheel-timer (&rest config)
   "Creates a new `wt:wheel-timer`.
 
-`config` is a parameter for a list of key parameters including:  
+`config` is a parameter for a list of key parameters including:
+
 - `:resolution` the timer time resolution in milliseconds. 100 milliseconds is a good default.
 - `:max-size` the number of timer slots this wheel should have.
 

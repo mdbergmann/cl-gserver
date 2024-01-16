@@ -36,7 +36,7 @@ The default name is concatenated of \"mesgb-\" and a `gensym` generated random n
                    "0 or nil will make an unbounded queue. 
 A value `> 0` will make a bounded queue.
 Don't make it too small. A queue size of 1000 might be a good choice."))
-  (:documentation "The user does not need to create a message-box manually. It is automatically created and added to the `actor` when the actor is created through `act:actor-of` or `ac:actor-of`."))
+  (:documentation "The user does not need to create a message-box manually. It is automatically created and added to the `actor` when the actor is created through `ac:actor-of`."))
 
 (defmethod initialize-instance :after ((self message-box-base) &key)
   (with-slots (queue max-queue-size) self
@@ -77,7 +77,9 @@ Provide `wait` EQ `T` to wait until the actor cell is stopped."))
 (defun wait-and-probe-for-msg-handler-result (msgbox push-item)
   (with-slots (time-out handler-result cancelled-p) push-item
     (unless
-        (assert-cond (lambda () (not (eq 'no-result handler-result))) time-out 0.05)
+        (assert-cond (lambda ()
+                       (not (eq 'no-result handler-result)))
+                     time-out 0.05)
       (log:warn "~a: time-out elapsed but result not available yet!" (name msgbox))
       (setf cancelled-p t)
       (error 'ask-timeout :wait-time time-out))))

@@ -30,8 +30,8 @@
   "Creates a new `wt:wheel-timer`.
 
 `config` is a parameter for a list of key parameters including:  
-`:resolution` the timer time resolution in milliseconds. 100 milliseconds is a good default.  
-`:max-size` the number of timer slots this wheel should have.
+- `:resolution` the timer time resolution in milliseconds. 100 milliseconds is a good default.
+- `:max-size` the number of timer slots this wheel should have.
 
 Note that an `asys:actor-system` includes an instance as `asys:scheduler` that can be used within actors.
 But you can also create your own instance."
@@ -45,11 +45,11 @@ But you can also create your own instance."
 (defun schedule-once (wheel-timer delay timer-fun &key (sig nil) (reuse-sig nil))
   "Schedule a function execution once:
 
-`wheel-timer` is the `wt:wheel-timer` instance.  
-`delay` is the number of seconds (float) delay when `timer-fun` should be executed.  
-`timer-fun` is a 0-arity function that is executed after `delay`. BEWARE: the function is executed in the timer thread. Make sure that you off-load long running tasks to other threads, or to a custom dispatcher (i.e. `tasks`).  
-`sig` is an optional symbol or string that is used to identify the timer and is used for `cancel`.  
-`reuse-sig` is a boolean that indicates whether the signature should be cleaned up after the timer has been executed.
+- `wheel-timer` is the `wt:wheel-timer` instance.
+- `delay` is the number of seconds (float) delay when `timer-fun` should be executed.
+- `timer-fun` is a 0-arity function that is executed after `delay`. BEWARE: the function is executed in the timer thread. Make sure that you off-load long running tasks to other threads, or to a custom dispatcher (i.e. `tasks`).
+- `sig` is an optional symbol or string that is used to identify the timer and is used for `cancel`.
+- `reuse-sig` is a boolean that indicates whether the signature should be cleaned up after the timer has been executed.
 
 Returns: signature (symbol) that represents the timer and can be used to cancel the timer."
   (let ((signature (or sig (gensym "timer-")))
@@ -69,11 +69,11 @@ Returns: signature (symbol) that represents the timer and can be used to cancel 
 (defun schedule-recurring (wheel-timer initial-delay delay timer-fun &optional (sig nil))
   "Schedule a recurring function execution:
 
-`wheel-timer` is the `wt:wheel-timer` instance.  
-`initial-delay` is the number of seconds (float) delay when `timer-fun` is executed the first time.  
-`delay` is the number of seconds (float) delay when `timer-fun` should be executed.  
-`timer-fun` is a 0-arity function that is executed after `delay`. BEWARE: the function is executed in the timer thread. Make sure that you off-load long running tasks to other threads, or to a custom dispatcher (i.e. `tasks`).
-`sig` is an optional symbol or string that is used to identify the timer and is used for `cancel-recurring`.
+- `wheel-timer` is the `wt:wheel-timer` instance.
+- `initial-delay` is the number of seconds (float) delay when `timer-fun` is executed the first time.
+- `delay` is the number of seconds (float) delay when `timer-fun` should be executed.
+- `timer-fun` is a 0-arity function that is executed after `delay`. BEWARE: the function is executed in the timer thread. Make sure that you off-load long running tasks to other threads, or to a custom dispatcher (i.e. `tasks`).
+- `sig` is an optional symbol or string that is used to identify the timer and is used for `cancel-recurring`.
 
 Returns the signature that was either passed in via `sig` or a generated one.
 The signature can be used to cancel the timer via `cancel-recurring`."

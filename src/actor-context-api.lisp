@@ -35,7 +35,7 @@ This represents a 'start' hook that is called after the actor was fully initiali
 This function allows to unsubsribe from event-stream or such.
 - `:state` key can be used to initialize with a state.
 - `:dispatcher` key can be used to define the message dispatcher manually.
-  Options are `:shared` (default) and `:pinned`.
+  Options that are available by default are `:shared` (default) and `:pinned`. When you defined a custom dispatcher it can be specified here.
 - `:type` can specify a custom actor class. See `act:make-actor` for more info.
 - `:name` to set a specific name to the actor, otherwise a random name will be used.
 - `:other-args` are in the actor instance as `other-init-args` and can be acted upon in i.e. `pre-start` for additional initialization."))

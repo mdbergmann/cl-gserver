@@ -16,11 +16,11 @@
                                   (dispatcher-id :shared))
   "Creates an agent that wraps a CL hash-table.
 
-`context`: something implementing `ac:actor-context` protocol like `asys:actor-system`. Specifying `nil` here creates an agent outside of an actor system. The user has to take care of that himself.  
-`initial-hash-table`: specify an initial hash-table.  
-`error-fun`: a 1-arrity function taking a condition that was raised.
-Use this to get notified of error when using the update functions of the agent.  
-`dispatcher-id`: a dispatcher. defaults to `:shared`."
+- `context`: something implementing `ac:actor-context` protocol like `asys:actor-system`. Specifying `nil` here creates an agent outside of an actor system. The user has to take care of that himself.
+- `initial-hash-table`: specify an initial hash-table.
+- `error-fun`: a 1-arrity function taking a condition that was raised.
+Use this to get notified of error when using the update functions of the agent.
+- `dispatcher-id`: a dispatcher. defaults to `:shared`."
   (check-type initial-hash-table hash-table)
   (agt:make-agent (lambda ()
                     (make-model :object initial-hash-table
@@ -49,7 +49,7 @@ Returns any raised condition or the value from `gethash`."
 
 (defun agent-remhash (key hash-agent)
   "Delete a hash-table entry. See `cl:remhash`.
-Returns `t` if entry existed, `nil` otherwise."
+Returns `T` if entry existed, `NIL` otherwise."
   (let ((hash-table (agt:agent-get-quick hash-agent
                                          (lambda (model) (model-object model)))))
     (if (gethash key hash-table)
@@ -67,8 +67,8 @@ Returns `t` if entry existed, `nil` otherwise."
 (defun agent-dohash (fun hash-agent)
   "'Do' arbitrary atomic operation on the hash-table.
 
-`fun`: is a 1-arity function taking the hash-table. This function can operate on the hash-table without interference from other threads. The result of this function must be a hash-table.  
-`hash-agent`: is the `hash-agent` instance.
+- `fun`: is a 1-arity function taking the hash-table. This function can operate on the hash-table without interference from other threads. The result of this function must be a hash-table.
+- `hash-agent`: is the `hash-agent` instance.
 
 The result of `agent-dohash` is `T`."
   (agt:agent-update hash-agent

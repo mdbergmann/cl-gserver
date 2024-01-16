@@ -40,11 +40,9 @@ This rarely (if at all) needs to change because the agent is very specific."
 (defun make-agent (state-fun &optional actor-context (dispatcher-id :shared))
   "Makes a new `agent` instance.
 
-`state-fun` is a function that takes no parameter and provides the initial state of the `agent` as return value.
-
-`actor-context`: optionally specify an `asys:actor-system` as `ac:actor-context`. If specified the agent will be registered in the system and destroyed with it should the `asys:actor-system` be destroyed. In addition the agent will use the systems shared message dispatcher and will _not_ create it's own.
-
-`dispatcher-id`: the dispatcher is configurable. Default is `:shared`. But you may use also `:pinned` or a custom configured one. Be aware that `:shared` of a custom dispatcher only works if an `actor-context` was specified."
+- `state-fun` is a function that takes no parameter and provides the initial state of the `agent` as return value.
+- `actor-context`: optionally specify an `asys:actor-system` as `ac:actor-context`. If specified the agent will be registered in the system and destroyed with it should the `asys:actor-system` be destroyed. In addition the agent will use the systems shared message dispatcher and will _not_ create it's own.
+- `dispatcher-id`: the dispatcher is configurable. Default is `:shared`. But you may use also `:pinned` or a custom configured one. Be aware that `:shared` of a custom dispatcher only works if an `actor-context` was specified."
   (let* ((state (funcall state-fun))
          (agent (if actor-context
                     (ac:actor-of actor-context
@@ -75,14 +73,14 @@ To return the current state `get-fun` may be just the `identity` function."
 
 (defun agent-update (agent update-fun)
   "Updates the `agent` state.
-`update-fun` must accept one parameter. That is the current state of the `agent`.
-The return value of `update-fun` will be taken as the new state of the `agent`."
+
+`update-fun` must accept one parameter. That is the current state of the `agent`. The return value of `update-fun` will be taken as the new state of the `agent`."
   (tell agent (cons :update update-fun)))
 
 (defun agent-update-and-get (agent update-fun)
   "Updates the `agent` state.
-`update-fun` must accept one parameter. That is the current state of the `agent`.
-The return value of `update-fun` will be taken as the new state of the `agent`.
+
+`update-fun` must accept one parameter. That is the current state of the `agent`. The return value of `update-fun` will be taken as the new state of the `agent`.
 This function makes the update and returns the new value."
   (ask-s agent (cons :update-and-get update-fun)))
 

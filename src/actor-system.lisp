@@ -234,7 +234,12 @@ Users should use `ac:find-actors`."
 
 (defmethod shutdown ((self actor-system) &key (wait nil))
   "See `ac:shutdown`"
-  (wt:shutdown-wheel-timer (timeout-timer self))
+  (with-slots (timeout-timer scheduler) self
+    (wt:shutdown-wheel-timer timeout-timer)
+    (setf timeout-timer nil)
+    (when scheduler
+      (wt:shutdown-wheel-timer scheduler)
+      (setf scheduler nil)))
   (ac:shutdown (user-actor-context self) :wait wait)
   (ac:shutdown (internal-actor-context self) :wait wait))
 

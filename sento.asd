@@ -1,5 +1,5 @@
 (defsystem "sento"
-  :version "3.1.0"
+  :version "3.1.1"
   :author "Manfred Bergmann"
   :license "Apache-2"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -178,10 +178,10 @@ OK - cons-queue as separate 'high-speed' system
 
 Sento 3.1 todos:
 
-- check COUNTER-MP-UNBOUNDED and BOUNDED tests for LW 8
-- create documentation MGL-PAX
-- tag version
-- upload
+OK - check COUNTER-MP-UNBOUNDED and BOUNDED tests for LW 8
+OK - create documentation MGL-PAX
+OK - tag version
+OK - upload
 
 |#
 

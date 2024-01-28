@@ -101,7 +101,9 @@ We use internal API here only for this test, do not use this otherwise."
 
     (ac:shutdown system)
     (is-true (await-cond 2.0
-               (= 0 (length (ac:all-actors system)))))))
+               (= 0 (length (ac:all-actors system)))))
+    (is-false (asys::timeout-timer system))
+    (is-false (asys::scheduler system))))
 
 (test shutdown-system--with-wait
   "Test shutting down the system by waiting for all actor to stop."

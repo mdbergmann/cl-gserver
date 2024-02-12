@@ -26,6 +26,29 @@
 ;; ----------- unbounded queue ------------
 ;; ----------------------------------------
 
+;; (defstruct queue
+;;   (head '() :type list)
+;;   (tail '() :type list))
+
+;; (defun enqueue (item queue)
+;;   (push item (queue-head queue)))
+
+;; (defun dequeue (queue)
+;;   (declare (optimize
+;;             (speed 3)
+;;             (safety 0)
+;;             (debug 0)
+;;             (compilation-speed 0)))
+;;   (unless (queue-tail queue)
+;;     (do ()
+;;         ((null (queue-head queue)))
+;;       (push (pop (queue-head queue))
+;;             (queue-tail queue))))
+;;   (when (queue-tail queue)
+;;     (values (pop (queue-tail queue))
+;;             t)))
+
+
 (defclass queue-unbounded (queue-base)
   ((queue :initform
           (make-instance 'jpl-queues:synchronized-queue
@@ -46,95 +69,66 @@
     (jpl-queues:empty? queue)))
 
 ;; ----------------------------------------
-;; ----------- bounded queue --------------
+;; --- Bounded-queue - cl-speedy-queue ----
 ;; ----------------------------------------
 
 (defclass queue-bounded (queue-base)
   ((queue :initform nil)
-   (max-items :initarg :max-items))
+   (lock :initform (bt:make-lock))
+   (cvar :initform (bt:make-condition-variable))
+   (max-items :initform 1000 :initarg :max-items)
+   (yield-threshold :initform nil))
   (:documentation "Bounded queue."))
 
 (defmethod initialize-instance :after ((self queue-bounded) &key)
-  (with-slots (queue max-items) self
-    (setf queue
-          (make-instance 'jpl-queues:synchronized-queue
-                         :queue 
-                         (make-instance 'jpl-queues:bounded-fifo-queue
-                                        :capacity max-items)))))
+  (with-slots (queue max-items yield-threshold) self
+    (if (< max-items 0) (error "Max-items 0 or less is not allowed!"))
+
+    (setf yield-threshold
+          (cond
+            ((<= max-items 2) 0)
+            ((<= max-items 10) 2)
+            ((<= max-items 20) 8)
+            (t (* (/ max-items 100) 95))))  ; 95%
+    (log:info "Yield threshold at: ~a" yield-threshold)
+
+    (setf queue (cl-speedy-queue:make-queue max-items))))
 
 (defmethod pushq ((self queue-bounded) element)
-  (with-slots (queue) self
-    (jpl-queues:enqueue element queue)))
+  (with-slots (queue lock cvar yield-threshold) self
+
+    (backpressure-if-necessary-on queue yield-threshold)
+
+    (bt:with-lock-held (lock)
+      (cl-speedy-queue:enqueue element queue)
+      (bt:condition-notify cvar))))
+
+
+(defun backpressure-if-necessary-on (queue yield-threshold)
+  (loop :for queue-count = (get-queue-count queue)
+        :for loop-count :from 0
+        :if (and (> loop-count 100) (> queue-count yield-threshold))
+          :do (progn
+                (log:warn "Unable to reduce queue pressure!")
+                (error "Unable to reduce queue pressure. Consider increasing queue-size or use more threads!"))
+        :while (> queue-count yield-threshold)
+        :do (progn
+              (log:debug "back-pressure, doing thread-yield (~a/~a)." queue-count yield-threshold)
+              (bt:thread-yield)
+              (sleep .01))))
+
+(defun get-queue-count (queue)
+  (cl-speedy-queue:queue-count queue))
 
 (defmethod popq ((self queue-bounded))
-  (with-slots (queue) self
-    (jpl-queues:dequeue queue)))
+  (with-slots (queue lock cvar) self
+    (bt:with-lock-held (lock)
+      (log:debug "Lock aquired...")
+      (loop :while (cl-speedy-queue:queue-empty-p queue)
+            :do (bt:condition-wait cvar lock)
+            :finally (return (cl-speedy-queue:dequeue queue))))))
 
 (defmethod emptyq-p ((self queue-bounded))
   (with-slots (queue) self
-    (jpl-queues:empty? queue)))
-
-;; ----------------------------------------
-;; ----------- cl-speedy-queue ------------
-;; ----------------------------------------
-
-;; (defclass queue-bounded (queue-base)
-;;   ((queue :initform nil)
-;;    (lock :initform (bt:make-lock))
-;;    (cvar :initform (bt:make-condition-variable))
-;;    (max-items :initform 1000 :initarg :max-items)
-;;    (yield-threshold :initform nil))
-;;   (:documentation "Bounded queue."))
-
-;; (defmethod initialize-instance :after ((self queue-bounded) &key)
-;;   (with-slots (queue max-items yield-threshold) self
-;;     (if (< max-items 0) (error "Max-items 0 or less is not allowed!"))
-
-;;     (setf yield-threshold
-;;           (cond
-;;             ((<= max-items 2) 0)
-;;             ((<= max-items 10) 2)
-;;             ((<= max-items 20) 8)
-;;             (t (* (/ max-items 100) 95))))  ; 95%
-;;     (log:info "Yield threshold at: ~a" yield-threshold)
-
-;;     (setf queue (cl-speedy-queue:make-queue max-items))))
-
-;; (defmethod pushq ((self queue-bounded) element)
-;;   (with-slots (queue lock cvar yield-threshold) self
-
-;;     (backpressure-if-necessary-on queue yield-threshold)
-
-;;     (bt:with-lock-held (lock)
-;;       (cl-speedy-queue:enqueue element queue)
-;;       (bt:condition-notify cvar))))
-
-
-;; (defun backpressure-if-necessary-on (queue yield-threshold)
-;;   (loop :for queue-count = (get-queue-count queue)
-;;         :for loop-count :from 0
-;;         :if (and (> loop-count 100) (> queue-count yield-threshold))
-;;           :do (progn
-;;                 (log:warn "Unable to reduce queue pressure!")
-;;                 (error "Unable to reduce queue pressure. Consider increasing queue-size or use more threads!"))
-;;         :while (> queue-count yield-threshold)
-;;         :do (progn
-;;               (log:debug "back-pressure, doing thread-yield (~a/~a)." queue-count yield-threshold)
-;;               (bt:thread-yield)
-;;               (sleep .01))))
-
-;; (defun get-queue-count (queue)
-;;   (cl-speedy-queue:queue-count queue))
-
-;; (defmethod popq ((self queue-bounded))
-;;   (with-slots (queue lock cvar) self
-;;     (bt:with-lock-held (lock)
-;;       (log:debug "Lock aquired...")
-;;       (loop :while (cl-speedy-queue:queue-empty-p queue)
-;;             :do (bt:condition-wait cvar lock)
-;;             :finally (return (cl-speedy-queue:dequeue queue))))))
-
-;; (defmethod emptyq-p ((self queue-bounded))
-;;   (with-slots (queue) self
-;;     (cl-speedy-queue:queue-empty-p queue)))
+    (cl-speedy-queue:queue-empty-p queue)))
 

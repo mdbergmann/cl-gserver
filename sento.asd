@@ -6,7 +6,7 @@
   :depends-on ("alexandria"
                "log4cl"
                "bordeaux-threads"
-               "jpl-queues"
+               "cl-speedy-queue"
                "str"
                "blackbird"
                "binding-arrows"

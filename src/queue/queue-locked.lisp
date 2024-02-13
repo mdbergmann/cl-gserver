@@ -1,7 +1,7 @@
 (in-package :sento.queue)
 
 ;; ----------------------------------------
-;; - unbounded queue using cas (lock-free)
+;; - unbounded queue using locks
 ;; ----------------------------------------
 
 #|
@@ -15,14 +15,10 @@ than the 'queue' implementation of lparallel.
 |#
 
 (defstruct queue
-  (head (atomic:make-atomic-reference :value '()))
-  (tail (atomic:make-atomic-reference :value '())))
+  (head '() :type list)
+  (tail '() :type list))
 
 (defun enqueue (item queue)
-  (loop
-    (atomic:atomic-cas
-     (queue-head queue))
-        )
   (push item (queue-head queue)))
 
 (defun dequeue (queue)
@@ -85,19 +81,25 @@ Copyright (c) 2011-2012, James M. Lawrence. All rights reserved.
 ;; ------- thread-safe queue --------
 
 (defclass queue-unbounded (queue-base)
-  ((queue :initform (make-raw-queue)))
+  ((queue :initform (make-queue))
+   (lock :initform (bt:make-lock))
+   (cvar :initform (bt:make-condition-variable)))
   (:documentation "Unbounded queue."))
 
 (defmethod pushq ((self queue-unbounded) element)
-  (with-slots (queue) self
-    (enqueue element queue)))
+  (with-slots (queue lock cvar) self
+    (bt:with-lock-held (lock)
+      (enqueue element queue)
+      (bt:condition-notify cvar))))
 
 (defmethod popq ((self queue-unbounded))
-  (with-slots (queue) self
+  (with-slots (queue lock cvar) self
+    (bt:with-lock-held (lock)
       (loop (multiple-value-bind (value presentp)
                 (dequeue queue)
               (if presentp
-                  (return value))))))
+                  (return value)
+                  (bt:condition-wait cvar lock)))))))
 
 (defmethod emptyq-p ((self queue-unbounded))
   (with-slots (queue) self

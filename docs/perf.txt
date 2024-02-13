@@ -1,11 +1,7 @@
-8443 => t: ~540
-10443 => t: ~666 ===> bail out
+macOS Sonoma 14.3.1, M1 Ultra 64 GB
 
-RAM: 16GB 	=> still not working
-			=> not related to host mem.
-			
 -----------------------------------------------
-SBCL 2.0.10
+SBCL 2.4.1
 -----------------------------------------------
 
 * (runner-bt)
@@ -14,39 +10,40 @@ SBCL 2.0.10
 
 Times: 1000000
 Evaluation took:
-  1.149 seconds of real time
-  6.767837 seconds of total run time (6.692038 user, 0.075799 system)
-  [ Run times consist of 0.218 seconds GC time, and 6.550 seconds non-GC time. ]
-  589.03% CPU
-  3,670,169,358 processor cycles
-  143,922,592 bytes consed
+  0.551 seconds of real time
+  8.424514 seconds of total run time (8.417146 user, 0.007368 system)
+  [ Real times consist of 0.011 seconds GC time, and 0.540 seconds non-GC time. ]
+  [ Run times consist of 0.010 seconds GC time, and 8.415 seconds non-GC time. ]
+  1529.04% CPU
+  176,248,864 bytes consed
+  
 Counter: 1000000
 Elapsed: 1
 
 * (runner-bt t)
 Times: 1000000
 Evaluation took:
-  2.940 seconds of real time
-  15.289726 seconds of total run time (4.989670 user, 10.300056 system)
-  [ Run times consist of 0.312 seconds GC time, and 14.978 seconds non-GC time. ]
-  520.07% CPU
-  9,385,812,947 processor cycles
-  314,407,872 bytes consed
+  3.673 seconds of real time
+  39.371905 seconds of total run time (32.085699 user, 7.286206 system)
+  [ Real times consist of 0.001 seconds GC time, and 3.672 seconds non-GC time. ]
+  [ Run times consist of 0.001 seconds GC time, and 39.371 seconds non-GC time. ]
+  1071.93% CPU
+  256,183,248 bytes consed
+  
 Counter: 1000000
-Elapsed: 3
+Elapsed: 4
 
 * (runner-bt t t)
 Times: 1000000
 Evaluation took:
-  6.831 seconds of real time
-  21.050441 seconds of total run time (13.324707 user, 7.725734 system)
-  [ Run times consist of 4.381 seconds GC time, and 16.670 seconds non-GC time. ]
-  308.15% CPU
-  21,805,348,791 processor cycles
-  2 page faults
-  1,824,298,976 bytes consed
+  1.504 seconds of real time
+  9.408103 seconds of total run time (9.151678 user, 0.256425 system)
+  [ Real times consist of 0.966 seconds GC time, and 0.538 seconds non-GC time. ]
+  [ Run times consist of 0.942 seconds GC time, and 8.467 seconds non-GC time. ]
+  625.53% CPU
+  1,755,578,464 bytes consed
+  
 Counter: 1000000
-Elapsed: 7
 
 --------------- shared ---------------
 
@@ -55,49 +52,49 @@ Elapsed: 7
 => shared actor
 Times: 1000000
 Evaluation took:
-  1.293 seconds of real time
-  12.001278 seconds of total run time (11.220945 user, 0.780333 system)
-  [ Run times consist of 0.193 seconds GC time, and 11.809 seconds non-GC time. ]
-  928.15% CPU
-  4,127,234,610 processor cycles
-  324,578,784 bytes consed
+  1.085 seconds of real time
+  10.606020 seconds of total run time (6.498268 user, 4.107752 system)
+  [ Real times consist of 0.125 seconds GC time, and 0.960 seconds non-GC time. ]
+  [ Run times consist of 0.122 seconds GC time, and 10.485 seconds non-GC time. ]
+  977.51% CPU
+  382,767,872 bytes consed
+  
 Counter: 1000000
-Elapsed: 2
+Elapsed: 1
 
 * (runner-dp t)
 => shared workers 8
 => shared actor
-Times: 240000
+Times: 1000000
 Evaluation took:
-  7.759 seconds of real time
-  15.923882 seconds of total run time (2.832515 user, 13.091367 system)
-  [ Run times consist of 0.007 seconds GC time, and 15.917 seconds non-GC time. ]
-  205.23% CPU
-  24,768,755,038 processor cycles
-  113,326,512 bytes consed
-
-Counter: 240000
-Elapsed: 8
-=> on the limit. using more messages SBCL will take expotentially longer to finish.
+  3.003 seconds of real time
+  35.598473 seconds of total run time (21.116686 user, 14.481787 system)
+  [ Real times consist of 0.004 seconds GC time, and 2.999 seconds non-GC time. ]
+  [ Run times consist of 0.004 seconds GC time, and 35.595 seconds non-GC time. ]
+  1185.41% CPU
+  462,156,336 bytes consed
+  
+Counter: 1000000
+Elapsed: 3
 
 * (runner-dp t t)
-=> shared workers 50
+=> shared workers 8
 => shared actor
-Times: 400000
+Times: 1000000
 Evaluation took:
-  4.383 seconds of real time
-  16.966884 seconds of total run time (8.290559 user, 8.676325 system)
-  [ Run times consist of 2.266 seconds GC time, and 14.701 seconds non-GC time. ]
-  387.11% CPU
-  13,990,936,949 processor cycles
-  2 page faults
-  766,938,832 bytes consed
-Counter: 400000
-Elapsed: 4
+  2.961 seconds of real time
+  12.791957 seconds of total run time (8.335099 user, 4.456858 system)
+  [ Real times consist of 1.942 seconds GC time, and 1.019 seconds non-GC time. ]
+  [ Run times consist of 1.897 seconds GC time, and 10.895 seconds non-GC time. ]
+  432.02% CPU
+  1,962,820,864 bytes consed
+  
+Counter: 1000000
+Elapsed: 3
 
 
 -----------------------------------------------
-CCL 1.12
+CCL 1.12 - iMac Pro x86_64
 -----------------------------------------------
 
 ? (runner-bt)
@@ -187,7 +184,7 @@ Elapsed: 112
 
 
 -----------------------------------------------
-ABCL 1.8.0
+ABCL 1.9.2
 -----------------------------------------------
 
 CL-USER(2): (runner-bt)
@@ -195,24 +192,23 @@ CL-USER(2): (runner-bt)
 => pinned actor
 
 Times: 1000000
-7.455 seconds real time
-33313792 cons cells
+6.921 seconds real time
+32761756 cons cells
 Counter: 1000000
 Elapsed: 7
 
 CL-USER(4): (runner-bt t)
 Times: 1000000
-6.956 seconds real time
-33546173 cons cells
+9.451 seconds real time
+31647910 cons cells
 Counter: 1000000
-Elapsed: 7
+Elapsed: 9
 
-CL-USER(7): (runner-bt t t)
 Times: 1000000
-20.815 seconds real time
-181465619 cons cells
+10.118 seconds real time
+109662158 cons cells
 Counter: 1000000
-Elapsed: 21
+Elapsed: 10
 
 -------------------- shared --------------------
 
@@ -220,112 +216,98 @@ CL-USER(9): (runner-dp)
 => shared workers 8
 => shared actor
 Times: 1000000
-6.237 seconds real time
-54622191 cons cells
+6.731 seconds real time
+60731252 cons cells
 Counter: 1000000
-Elapsed: 6
+Elapsed: 7
 
 CL-USER(11): (runner-dp t)
 => shared workers 8
 => shared actor
 Times: 1000000
-7.098 seconds real time
-57684205 cons cells
+8.915 seconds real time
+61829192 cons cells
 Counter: 1000000
-Elapsed: 7
+Elapsed: 9
 
 CL-USER(14): (runner-dp t t)
-=> shared workers 50
-=> shared actor
-Times: 80000
-1.682 seconds real time
-14873001 cons cells
-Counter: 80000
-Elapsed: 2
-
-CL-USER(2): (runner-dp t t)
-=> shared workers 50
+=> shared workers 8
 => shared actor
 Times: 1000000
-24.805 seconds real time
-194439752 cons cells
+11.872 seconds real time
+116951862 cons cells
 Counter: 1000000
-Elapsed: 25
-
-=> ABCL makes overall a very good picture. 
-Probably because of the battle proven VM and the very efficient and proven GC.
+Elapsed: 11
 
 
 -----------------------------------------------
-LispWorks 8.0
+LispWorks 8.0.1
 -----------------------------------------------
 
 CL-USER 9 > (runner-bt)
 Times: 1000000
-User time    =        2.781
-System time  =        0.694
-Elapsed time =        1.767
-Allocation   = 240219976 bytes
-112471 Page faults
-GC time      =        0.500
-Counter: 1000000
-Elapsed: 1
+User time    =        3.865
+System time  =        0.959
+Elapsed time =        2.599   <-
+Allocation   = 3016212048 bytes
+17707 Page faults
+Calls to %EVAL    447
+GC time      =        0.158Counter: 1000000
+Elapsed: 2
 
 CL-USER 10 > (runner-bt t)
 Times: 1000000
-User time    =       11.112
-System time  =        5.484
-Elapsed time =        3.713
-Allocation   = 593288432 bytes
-1281 Page faults
-GC time      =        0.027
-Counter: 1000000
-Elapsed: 3
+User time    =       10.182
+System time  =       10.434
+Elapsed time =        5.898   <-
+Allocation   = 3465326544 bytes
+147 Page faults
+Calls to %EVAL    279
+GC time      =        0.039Counter: 1000000
+Elapsed: 6
 
 CL-USER 11 > (runner-bt t t)
 Times: 1000000
-User time    =       22.506
-System time  =        5.408
-Elapsed time =       10.310
-Allocation   = 2327968248 bytes
-775742 Page faults
-Calls to %EVAL    219
-GC time      =        5.709
-Counter: 1000000
-Elapsed: 10
+User time    =       11.759
+System time  =        2.372
+Elapsed time =        4.162   <-
+Allocation   = 4681355176 bytes
+154043 Page faults
+Calls to %EVAL    405
+GC time      =        1.300Counter: 1000000
+Elapsed: 4
 
 -------------------- shared --------------------
 
 CL-USER 12 > (runner-dp)
 Times: 1000000
-User time    =        9.678
-System time  =        3.234
-Elapsed time =        3.905
-Allocation   = 545296248 bytes
-201976 Page faults
-GC time      =        1.629
-Counter: 1000000
+User time    =        9.813
+System time  =        5.437
+Elapsed time =        4.702   <-
+Allocation   = 3217429544 bytes
+23192 Page faults
+Calls to %EVAL    579
+GC time      =        0.284Counter: 1000000
 Elapsed: 4
 
 CL-USER 13 > (runner-dp t)
 Times: 1000000
-User time    =       22.872
-System time  =       19.456
-Elapsed time =        4.726
-Allocation   = 897306480 bytes
-744 Page faults
-GC time      =        0.012
-Counter: 1000000
-Elapsed: 4
+User time    =       21.889
+System time  =       35.083
+Elapsed time =        9.287   <-
+Allocation   = 3665359600 bytes
+293 Page faults
+Calls to %EVAL    279
+GC time      =        0.108Counter: 1000000
+Elapsed: 9
 
 CL-USER 14 > (runner-dp t t)
 Times: 1000000
-User time    =       24.325
-System time  =        4.782
-Elapsed time =       13.753
-Allocation   = 2468653304 bytes
-1024802 Page faults
-Calls to %EVAL    261
-GC time      =        8.650
-Counter: 1000000
-Elapsed: 13
+User time    =       16.998
+System time  =        5.861
+Elapsed time =        6.111   <-
+Allocation   = 4881427552 bytes
+173663 Page faults
+Calls to %EVAL    567
+GC time      =        1.588Counter: 1000000
+Elapsed: 6

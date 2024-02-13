@@ -1,4 +1,4 @@
-<!--![CI](https://github.com/mdbergmann/cl-gserver/workflows/CI/badge.svg?branch=master)-->
+![CI](https://github.com/mdbergmann/cl-gserver/workflows/CI/badge.svg?branch=master)
 
 ### Introduction - Actor framework featuring actors and agents
 
@@ -687,6 +687,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 - 'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.
 
 ### Version history
+
+**Version 3.2.0 (13.2.2024):** Message-box queue changes. SBCL now uses a separate fast CAS based queue coming as a contrib package. The other impls use a faster queue by default but still with locking. New benchmarks.
 
 **Version 3.1.0 (14.1.2024):** Added scheduler facility to actor-system that allows to schedule functions one or recurring. See API documentation for more info.
 

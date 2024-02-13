@@ -4,6 +4,7 @@
   (:export #:make-atomic-reference
            #:make-atomic-integer
            #:atomic-get
+           #:atomic-cas
            #:atomic-swap))
 
 (in-package :sento.atomic)

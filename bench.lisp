@@ -19,10 +19,7 @@
 (defun runner-bt (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
   (declare (ignore queue-size))
   ;; dispatchers used for the async-ask
-  #+(or abcl clasp lispworks8 allegro)
-  (setf *per-thread* 125000)
-  #+sbcl
-  (setf *per-thread* 75000)  
+  (setf *per-thread* 250000)  
   #+ccl
   (setf *per-thread* (if asyncask 10000 125000))
   (setf *system* (asys:make-actor-system '(:dispatchers (:shared (:workers 8)))))
@@ -49,7 +46,7 @@
                              (act:tell *actor* :foo))))
                      :name x))
                   (mapcar (lambda (n) (format nil "thread-~a" n))
-                          (loop for n from 1 to +threads+ collect n))))
+                          (loop :for n :from 1 :to +threads+ :collect n))))
      (miscutils:assert-cond (lambda () (= *counter* (max-loop))) 20)))
   (setf *endtime* (get-universal-time))
   (format t "Counter: ~a~%" *counter*)
@@ -60,7 +57,7 @@
 (defun runner-dp (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
   (declare (ignore queue-size))
   #+sbcl
-  (setf *per-thread* (if (or withreply-p asyncask) 50000 125000))
+  (setf *per-thread* 250000) ;(if (or withreply-p asyncask) 50000 125000))
   #+ccl
   (setf *per-thread* (if asyncask 10000 125000))
   #+(or abcl clasp allegro lispworks8)

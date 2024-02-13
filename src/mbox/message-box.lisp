@@ -138,9 +138,10 @@ this kind of queue because each message-box (and with that each actor) requires 
   (log:trace "~a: trying to pop from queue..." (name msgbox))
   (with-slots (queue) msgbox
     (let ((item (queue:popq queue)))
-      (log:debug "~a: got item: ~a" (name msgbox) item)
-      (process-queue-item msgbox item)
-      (incf (slot-value msgbox 'processed-messages)))))
+      (when item
+        (log:debug "~a: got item: ~a" (name msgbox) item)
+        (process-queue-item msgbox item)
+        (incf (slot-value msgbox 'processed-messages))))))
 
 (defun process-queue-item (msgbox item)
   "The `time-out' handling in here is to make sure that handling of the

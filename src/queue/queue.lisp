@@ -22,51 +22,9 @@
 (defgeneric emptyq-p (queue-base)
   (:documentation "Returns `T' if there is no element in the queue."))
 
-;; ----------------------------------------
-;; ----------- unbounded queue ------------
-;; ----------------------------------------
-
-;; (defstruct queue
-;;   (head '() :type list)
-;;   (tail '() :type list))
-
-;; (defun enqueue (item queue)
-;;   (push item (queue-head queue)))
-
-;; (defun dequeue (queue)
-;;   (declare (optimize
-;;             (speed 3)
-;;             (safety 0)
-;;             (debug 0)
-;;             (compilation-speed 0)))
-;;   (unless (queue-tail queue)
-;;     (do ()
-;;         ((null (queue-head queue)))
-;;       (push (pop (queue-head queue))
-;;             (queue-tail queue))))
-;;   (when (queue-tail queue)
-;;     (values (pop (queue-tail queue))
-;;             t)))
-
-
-(defclass queue-unbounded (queue-base)
-  ((queue :initform
-          (make-instance 'jpl-queues:synchronized-queue
-                         :queue 
-                         (make-instance 'jpl-queues:unbounded-fifo-queue))))
-  (:documentation "Unbounded queue."))
-
-(defmethod pushq ((self queue-unbounded) element)
-  (with-slots (queue) self
-    (jpl-queues:enqueue element queue)))
-
-(defmethod popq ((self queue-unbounded))
-  (with-slots (queue) self
-    (jpl-queues:dequeue queue)))
-
-(defmethod emptyq-p ((self queue-unbounded))
-  (with-slots (queue) self
-    (jpl-queues:empty? queue)))
+;;
+;; unbounded queues in separate files
+;;
 
 ;; ----------------------------------------
 ;; --- Bounded-queue - cl-speedy-queue ----
@@ -123,7 +81,6 @@
 (defmethod popq ((self queue-bounded))
   (with-slots (queue lock cvar) self
     (bt:with-lock-held (lock)
-      (log:debug "Lock aquired...")
       (loop :while (cl-speedy-queue:queue-empty-p queue)
             :do (bt:condition-wait cvar lock)
             :finally (return (cl-speedy-queue:dequeue queue))))))

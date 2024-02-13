@@ -29,7 +29,9 @@
                  (:file "dispatcher-api")
                  (:module "queue"
                   :components
-                  ((:file "queue")))
+                  ((:file "queue")
+                   (:file "queue-locked")
+                   #+sbcl (:file "queue-sbcl")))
                  (:module "mbox"
                   :components
                   ((:file "message-box")))
@@ -102,44 +104,6 @@
   :depends-on ("sento"
                "mgl-pax/full")
   :components ((:file "documentation")))
-
-
-;; --------------------------------
-;; lparallels high speec cons-queue
-;; this is a separate system in order to reduce dependencies
-;; for 'normal' use the jpl-queues are fully sufficient
-;; --------------------------------
-
-(defsystem "sento/high-speed-queue"
-  :author "Manfred Bergmann"
-  :license "Apache-2"
-  :description "High speed unbounded queue based on lparallel's cons-queue."
-  :depends-on ("sento"
-               "lparallel"
-               )
-  :components ((:module "src"
-                :serial t
-                :components
-                ((:module "queue"
-                  :components
-                  ((:file "queue-hsq"))))))
-  :in-order-to ((test-op (test-op "sento-high-speed-queue/tests"))))
-
-(defsystem "sento/high-speed-queue-tests"
-  :author "Manfred Bergmann"
-  :depends-on ("sento/high-speed-queue"
-               "fiveam"
-               "cl-mock")
-  :components ((:module "tests"
-                :components
-                ((:file "all-test")
-                 (:file "actor-cell-test")
-                 (:file "actor-mp-test")
-                 )))
-  :description "Test system for sento"
-  :perform (test-op (op c) (symbol-call :fiveam :run!
-                                        (uiop:find-symbol* '#:test-suite
-                                                           '#:sento.tests))))
 
 ;; load system
 ;; (asdf:load-system "sento")

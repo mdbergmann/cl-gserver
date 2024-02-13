@@ -1,6 +1,6 @@
 (in-package :sento.queue)
 
-(eval-when (:compile-toplevel)
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (require :sb-concurrency))
 
 ;; ----------------------------------------

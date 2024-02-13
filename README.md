@@ -633,12 +633,12 @@ This will tell log4cl to do any logging for sento in warn level.
 
 Hardware specs (M1)):
 
--   Mac M1 Ultra, 32 GB RAM
+-   Mac M1 Ultra, 64 GB RAM
 
 ![](./docs/perf-M1Ultra.png)
 ![](perf-M1Ultra.png)
 
-Hardware specs (x86-64), bench of previous version, Sento 2:
+Hardware specs (x86-64):
 
 -   iMac Pro (2017), 8 Core Xeon, 32 GB RAM
 
@@ -648,15 +648,15 @@ Hardware specs (x86-64), bench of previous version, Sento 2:
 
 **All**
 
-Version 3 of Sento uses the jpl-queues package which is slightly slower than the lparallel cons-queue. The lparallel cons-queue package is available as separate asdf system if needed and if the additional dependency is acceptable.
+Version 3.2.0 of Sento uses the sbcl `sb-concurrent:queue` whcih is very fast and works using CAS (compare-and-swap) where as the other implementations use a still fast double stack queue protected by locking.
 
-The benchmark was created by having 8 threads throwing each 125k (1m altogether) messages at 1 actor. The timing was taken for when the actor did finish processing those 1m messages. The messages were sent by either all `tell`, `ask-s`, or `ask` to an actor whose message-box worked using a single thread (`:pinned`) or a dispatched message queue (`:shared` / `dispatched`) with 8 workers.
+The benchmark was created by having 8 threads throwing each 125k (1M altogether) messages at 1 actor. The timing was taken for when the actor did finish processing those 1M messages. The messages were sent by either all `tell`, `ask-s`, or `ask` to an actor whose message-box worked using a single thread (`:pinned`) or a dispatched message queue (`:shared` / `dispatched`) with 8 workers.
 
 Of course a `tell` is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow.
 
-**SBCL (v2.3.0)**
+**SBCL (v2.4.1)**
 
-Even though SBCL is by far the fastest one with `tell` on both `:pinned` and `dispatched`, it had massive problems on `dispatched - ask-s` where I had to lower the number of messages to 200k alltogether. Beyond that value SBCL didn't get it worked out.
+SBCL is very fast, but this tests uses SBCLs own queue implementation based on CAS instead of locking.
 
 **LispWorks (8.0.1)**
 
@@ -668,7 +668,12 @@ Unfortunately CCL doesn't work natively on M1 Apple CPU.
 
 **ABCL (1.9)**
 
-The pleasant surprise was ABCL. While not being the fastest it is the most robust. Where SBCL and CCL were struggling you could throw anything at ABCL and it'll cope with it. I'm assuming that this is because of the massively battle proven Java Runtime.
+The pleasant surprise was ABCL. While not being the fastest it is very robust.
+
+**Clasp 2.5.0**
+
+Very slow. Used default settings, as also for the other tests.
+Maybe something can be tweaked?
 
 ### Migration guide for moving from Sento 2 to Sento 3
 

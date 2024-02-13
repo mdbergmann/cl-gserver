@@ -1,7 +1,7 @@
-macOS Sonoma 14.3.1, M1 Ultra 64 GB
+macOS Sonoma 14.3.1
 
 -----------------------------------------------
-SBCL 2.4.1
+SBCL 2.4.1 -- M1 Ultra 64 GB
 -----------------------------------------------
 
 * (runner-bt)
@@ -92,6 +92,104 @@ Evaluation took:
 Counter: 1000000
 Elapsed: 3
 
+-----------------------------------------------
+SBCL 2.4.1 -- iMac Pro 32 GB
+-----------------------------------------------
+
+* (runner-bt)
+=> shared workers 8
+=> pinned actor
+
+Times: 1000000
+Evaluation took:
+  0.567 seconds of real time
+  4.901028 seconds of total run time (4.838750 user, 0.062278 system)
+  [ Real times consist of 0.215 seconds GC time, and 0.352 seconds non-GC time. ]
+  [ Run times consist of 0.215 seconds GC time, and 4.687 seconds non-GC time. ]
+  864.37% CPU
+  1,812,455,642 processor cycles
+  183,374,000 bytes consed
+
+Counter: 1000000
+Elapsed: 1
+
+* (runner-bt t)
+Times: 1000000
+Evaluation took:
+  2.728 seconds of real time
+  36.064127 seconds of total run time (27.292594 user, 8.771533 system)
+  [ Real times consist of 0.012 seconds GC time, and 2.716 seconds non-GC time. ]
+  [ Run times consist of 0.012 seconds GC time, and 36.053 seconds non-GC time. ]
+  1321.99% CPU
+  8,710,369,829 processor cycles
+  271,096,352 bytes consed
+
+Counter: 1000000
+Elapsed: 2
+
+* (runner-bt t t)
+Times: 1000000
+Evaluation took:
+  1.339 seconds of real time
+  8.470251 seconds of total run time (8.014314 user, 0.455937 system)
+  [ Real times consist of 0.769 seconds GC time, and 0.570 seconds non-GC time. ]
+  [ Run times consist of 0.769 seconds GC time, and 7.702 seconds non-GC time. ]
+  632.56% CPU
+  4,275,732,982 processor cycles
+  1,343,667,136 bytes consed
+
+Counter: 1000000
+Elapsed: 2
+
+--------------- shared ---------------
+
+* (runner-dp)
+=> shared workers 8
+=> shared actor
+Times: 1000000
+Evaluation took:
+  1.871 seconds of real time
+  7.283084 seconds of total run time (7.031098 user, 0.251986 system)
+  [ Real times consist of 1.245 seconds GC time, and 0.626 seconds non-GC time. ]
+  [ Run times consist of 1.245 seconds GC time, and 6.039 seconds non-GC time. ]
+  389.26% CPU
+  5,974,839,985 processor cycles
+  365,682,864 bytes consed
+
+Counter: 1000000
+Elapsed: 2
+
+* (runner-dp t)
+=> shared workers 8
+=> shared actor
+Times: 1000000
+Evaluation took:
+  2.720 seconds of real time
+  34.676543 seconds of total run time (25.833824 user, 8.842719 system)
+  [ Real times consist of 0.019 seconds GC time, and 2.701 seconds non-GC time. ]
+  [ Run times consist of 0.019 seconds GC time, and 34.658 seconds non-GC time. ]
+  1274.89% CPU
+  8,682,382,473 processor cycles
+  462,097,216 bytes consed
+
+Counter: 1000000
+Elapsed: 3
+
+* (runner-dp t t)
+=> shared workers 8
+=> shared actor
+Times: 1000000
+Evaluation took:
+  3.987 seconds of real time
+  10.798652 seconds of total run time (9.702490 user, 1.096162 system)
+  [ Real times consist of 3.266 seconds GC time, and 0.721 seconds non-GC time. ]
+  [ Run times consist of 3.266 seconds GC time, and 7.533 seconds non-GC time. ]
+  270.86% CPU
+  12,727,849,434 processor cycles
+  1,520,687,760 bytes consed
+
+Counter: 1000000
+Elapsed: 4
 
 -----------------------------------------------
 CCL 1.12 - iMac Pro x86_64
@@ -102,40 +200,38 @@ CCL 1.12 - iMac Pro x86_64
 => pinned actor
 
 Times: 1000000
-took  3,901,648 microseconds ( 3.901648 seconds) to run.
-        865,534 microseconds ( 0.865534 seconds, 22.18%) of which was spent in GC.
+took  3,735,285 microseconds ( 3.735285 seconds) to run.
+        892,462 microseconds ( 0.892462 seconds, 23.89%) of which was spent in GC.
 During that period, and with 16 available CPU cores,
-      5,124,677 microseconds ( 5.124677 seconds) were spent in user mode
-     12,923,066 microseconds (12.923066 seconds) were spent in system mode
- 23,808 bytes of memory allocated.
- 41,405 minor page faults, 0 major page faults, 0 swaps.
+      6,321,762 microseconds ( 6.321762 seconds) were spent in user mode
+     11,134,786 microseconds (11.134786 seconds) were spent in system mode
+ 23,520 bytes of memory allocated.
+ 27,722 minor page faults, 0 major page faults, 0 swaps.
 Counter: 1000000
-Elapsed: 3
+Elapsed: 4
 
 ? (runner-bt t)
 Times: 1000000
-took  8,319,444 microseconds ( 8.319444 seconds) to run.
-        276,493 microseconds ( 0.276493 seconds, 3.32%) of which was spent in GC.
+took  7,832,212 microseconds ( 7.832212 seconds) to run.
+        251,903 microseconds ( 0.251903 seconds, 3.22%) of which was spent in GC.
 During that period, and with 16 available CPU cores,
-      8,173,109 microseconds ( 8.173110 seconds) were spent in user mode
-     14,331,704 microseconds (14.331704 seconds) were spent in system mode
+      9,236,672 microseconds ( 9.236672 seconds) were spent in user mode
+     12,266,076 microseconds (12.266076 seconds) were spent in system mode
  23,520 bytes of memory allocated.
- 521 minor page faults, 0 major page faults, 0 swaps.
+ 1,465 minor page faults, 0 major page faults, 0 swaps.
 Counter: 1000000
 Elapsed: 8
 
 ? (runner-bt t t)
-Times: 80000
-took 13,808,364 microseconds (13.808364 seconds) to run.
-     12,026,170 microseconds (12.026170 seconds, 87.09%) of which was spent in GC.
+took 11,870,205 microseconds (11.870205 seconds) to run.
+      1,459,052 microseconds ( 1.459052 seconds, 12.29%) of which was spent in GC.
 During that period, and with 16 available CPU cores,
-     15,397,814 microseconds (15.397814 seconds) were spent in user mode
-      4,837,212 microseconds ( 4.837212 seconds) were spent in system mode
- 23,808 bytes of memory allocated.
- 27,405 minor page faults, 0 major page faults, 0 swaps.
-Counter: 80000
-Elapsed: 14
-=> brings system to it's limits regarding resources with segmentation faults, etc.
+     24,410,590 microseconds (24.410590 seconds) were spent in user mode
+     19,746,769 microseconds (19.746769 seconds) were spent in system mode
+ 23,520 bytes of memory allocated.
+ 2,852 minor page faults, 0 major page faults, 0 swaps.
+Counter: 1000000
+Elapsed: 12
 
 -------------------- shared --------------------
 
@@ -143,48 +239,46 @@ Elapsed: 14
 => shared workers 8
 => shared actor
 Times: 1000000
-took  5,332,663 microseconds ( 5.332663 seconds) to run.
-      2,533,410 microseconds ( 2.533410 seconds, 47.51%) of which was spent in GC.
+took  3,852,890 microseconds ( 3.852890 seconds) to run.
+        105,558 microseconds ( 0.105558 seconds, 2.74%) of which was spent in GC.
 During that period, and with 16 available CPU cores,
-     12,616,837 microseconds (12.616837 seconds) were spent in user mode
-     20,254,917 microseconds (20.254915 seconds) were spent in system mode
- 23,808 bytes of memory allocated.
- 23,788 minor page faults, 0 major page faults, 0 swaps.
+     14,460,898 microseconds (14.460898 seconds) were spent in user mode
+     29,358,306 microseconds (29.358307 seconds) were spent in system mode
+ 23,520 bytes of memory allocated.
+ 63 minor page faults, 0 major page faults, 0 swaps.
 Counter: 1000000
-Elapsed: 6
+Elapsed: 4
 
 ? (runner-dp t)
 => shared workers 8
 => shared actor
 Times: 1000000
-took 10,035,938 microseconds (10.035938 seconds) to run.
-        446,813 microseconds ( 0.446813 seconds, 4.45%) of which was spent in GC.
+took  9,154,598 microseconds ( 9.154598 seconds) to run.
+        351,221 microseconds ( 0.351221 seconds, 3.84%) of which was spent in GC.
 During that period, and with 16 available CPU cores,
-     16,254,141 microseconds (16.254140 seconds) were spent in user mode
-     33,006,477 microseconds (33.006477 seconds) were spent in system mode
- 23,808 bytes of memory allocated.
- 1,687 minor page faults, 0 major page faults, 0 swaps.
+     18,202,428 microseconds (18.202429 seconds) were spent in user mode
+     23,289,613 microseconds (23.289612 seconds) were spent in system mode
+ 23,520 bytes of memory allocated.
+ 68 minor page faults, 0 major page faults, 0 swaps.
 Counter: 1000000
-Elapsed: 10
+Elapsed: 9
 
 ? (runner-dp t t)
-=> shared workers 50
+=> shared workers 8
 => shared actor
-Times: 80000
-took 111,954,132 microseconds (111.954124 seconds) to run.
-     103,158,500 microseconds (103.158500 seconds, 92.14%) of which was spent in GC.
+Times: 1000000
+took 12,740,458 microseconds (12.740458 seconds) to run.
+      1,162,761 microseconds ( 1.162761 seconds, 9.13%) of which was spent in GC.
 During that period, and with 16 available CPU cores,
-     114,825,191 microseconds (114.825195 seconds) were spent in user mode
-      43,729,565 microseconds ( 43.729565 seconds) were spent in system mode
- 23,808 bytes of memory allocated.
- 41,822 minor page faults, 0 major page faults, 0 swaps.
-Counter: 80000
-Elapsed: 112
-=> brings system to it's limits regarding resources with segmentation faults, etc.
-
+     36,092,462 microseconds (36.092464 seconds) were spent in user mode
+     25,330,137 microseconds (25.330135 seconds) were spent in system mode
+ 23,520 bytes of memory allocated.
+ 72 minor page faults, 0 major page faults, 0 swaps.
+Counter: 1000000
+Elapsed: 13
 
 -----------------------------------------------
-ABCL 1.9.2
+ABCL 1.9.2 -- M1 Ultra - 64GB
 -----------------------------------------------
 
 CL-USER(2): (runner-bt)
@@ -241,7 +335,7 @@ Elapsed: 11
 
 
 -----------------------------------------------
-LispWorks 8.0.1
+LispWorks 8.0.1 -- M1 Ultra 64 GB
 -----------------------------------------------
 
 CL-USER 9 > (runner-bt)
@@ -311,3 +405,118 @@ Allocation   = 4881427552 bytes
 Calls to %EVAL    567
 GC time      =        1.588Counter: 1000000
 Elapsed: 6
+
+-----------------------------------------------
+LispWorks 8.0.1 -- iMap Pro - 32 GB
+-----------------------------------------------
+
+CL-USER 9 > (runner-bt)
+Times: 1000000
+User time    =        5.993
+System time  =        0.890
+Elapsed time =        3.545
+Allocation   = 3008533264 bytes
+83782 Page faults
+Calls to %EVAL    593
+GC time      =        0.390Counter: 1000000
+Elapsed: 4
+
+CL-USER 10 > (runner-bt t)
+Times: 1000000
+User time    =       14.092
+System time  =        4.956
+Elapsed time =        5.971
+Allocation   = 3289206616 bytes
+814 Page faults
+Calls to %EVAL    335
+GC time      =        0.069Counter: 1000000
+Elapsed: 6
+
+CL-USER 11 > (runner-bt t t)
+Times: 1000000
+User time    =       13.579
+System time  =        1.495
+Elapsed time =        7.897
+Allocation   = 4464237848 bytes
+768208 Page faults
+Calls to %EVAL    563
+GC time      =        3.1752Counter: 1000000
+Elapsed: 7
+
+-------------------- shared --------------------
+
+CL-USER 12 > (runner-dp)
+Times: 1000000
+User time    =       14.098
+System time  =        5.889
+Elapsed time =        9.032
+Allocation   = 3217427760 bytes
+189097 Page faults
+Calls to %EVAL    1133
+GC time      =        0.1360Counter: 1000000
+Elapsed: 9
+
+CL-USER 13 > (runner-dp t)
+Times: 1000000
+User time    =       26.777
+System time  =       14.391
+Elapsed time =        6.974
+Allocation   = 3489248440 bytes
+749 Page faults
+Calls to %EVAL    335
+GC time      =        0.077Counter: 1000000
+Elapsed: 7
+
+CL-USER 14 > (runner-dp t t)
+Times: 1000000
+User time    =       20.791
+System time  =        5.581
+Elapsed time =       11.640
+Allocation   = 4665423376 bytes
+514606 Page faults
+Calls to %EVAL    1109
+GC time      =        3.769Counter: 1000000
+Elapsed: 12
+
+-----------------------------------------------
+Clasp 2.5.0 -- iMap Pro - 32 GB
+-----------------------------------------------
+
+COMMON-LISP-USER> (runner-bt)
+Times: 1000000
+Time real(15.108 secs) run(15.108 secs) consed(11144 bytes) unwinds(0)
+Counter: 1000000
+Elapsed: 15
+
+COMMON-LISP-USER> (runner-bt t)
+Times: 1000000
+Time real(21.667 secs) run(21.667 secs) consed(11144 bytes) unwinds(0)
+Counter: 1000000
+Elapsed: 22
+
+COMMON-LISP-USER> (runner-bt t t)
+Times: 1000000
+Time real(48.740 secs) run(48.740 secs) consed(11144 bytes) unwinds(0)
+Counter: 1000000
+Elapsed: 49
+
+-------------------- shared --------------------
+
+COMMON-LISP-USER> (runner-dp)
+Times: 1000000
+Time real(40.290 secs) run(40.289 secs) consed(11144 bytes) unwinds(0)
+Counter: 1000000
+Elapsed: 40
+
+COMMON-LISP-USER> (runner-dp t)
+Times: 1000000
+Time real(35.641 secs) run(35.641 secs) consed(11144 bytes) unwinds(0)
+Counter: 1000000
+Elapsed: 35
+
+COMMON-LISP-USER> (runner-dp t t)
+Times: 1000000
+Time real(63.185 secs) run(63.185 secs) consed(11144 bytes) unwinds(0)
+Counter: 1000000
+Elapsed: 63
+

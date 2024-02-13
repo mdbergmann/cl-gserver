@@ -1,11 +1,7 @@
 (in-package :sento.queue)
 
 (eval-when (:compile-toplevel)
-  (require :sb-concurrency)
-  (shadowing-import '(sb-concurrency:make-queue
-                      sb-concurrency:enqueue
-                      sb-concurrency:dequeue
-                      sb-concurrency:queue-empty-p)))
+  (require :sb-concurrency))
 
 ;; ----------------------------------------
 ;; ---- unbounded queue - sbcl only -------
@@ -14,17 +10,17 @@
 
 (defclass queue-unbounded (queue-base)
   ((queue :initform
-          (make-queue)))
+          (sb-concurrency:make-queue)))
   (:documentation "Unbounded queue."))
 
 (defmethod pushq ((self queue-unbounded) element)
   (with-slots (queue) self
-    (enqueue element queue)))
+    (sb-concurrency:enqueue element queue)))
 
 (defmethod popq ((self queue-unbounded))
   (with-slots (queue) self
-    (dequeue queue)))
+    (sb-concurrency:dequeue queue)))
 
 (defmethod emptyq-p ((self queue-unbounded))
   (with-slots (queue) self
-    (queue-empty-p queue)))
+    (sb-concurrency:queue-empty-p queue)))

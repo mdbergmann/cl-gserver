@@ -10,7 +10,7 @@
 (in-package :sento.queue)
 
 (defclass queue-base ()
-  ((queue :initform nil))
+  ()
   (:documentation "The base queue."))
 
 (defgeneric pushq (queue-base element)

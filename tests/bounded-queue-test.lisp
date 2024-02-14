@@ -27,5 +27,3 @@
     (is (= 1 (popq cut)))
     (is (= 1 (queued-count cut)))
     (pushq cut 3)))
-
-(run! 'bounded-queue-tests)

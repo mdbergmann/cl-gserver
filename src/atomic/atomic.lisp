@@ -36,9 +36,9 @@ Return non-NIL if this atomic operaion succeeded, or return NIL if it failed."
   "Updates the cell value of REF atomically to the value returned by calling function
 FN with ARGS and the previous cell value of REF. The first argument of FN should be
 the previous cell value of REF."
-  (loop :for old = (atomic-get ref)
-        :for new = (apply fn old args)
-        :until (atomic-cas ref old new)
+  (loop :for old := (atomic-get ref)
+        :for new := (apply fn old args)
+        :until (or (eq :end new) (atomic-cas ref old new))
         :finally (return new)))
 
 ;; --------------- integer/long --------------

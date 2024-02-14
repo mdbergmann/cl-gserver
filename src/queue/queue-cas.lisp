@@ -7,94 +7,77 @@
 ;; ----------------------------------------
 
 #|
-The queue is a simple queue that is not thread-safe.
-It is based on 2 stacks, one for the head and one for the tail.
-When the tail is empty, the head is reversed and pushed to the tail.
-This is from the book "Programming Algorithms in Lisp" by Vsevolod Domkin.
-
-This queue is fast, but requires a lot of memory. Roughly 1/3 more
-than the 'queue' implementation of lparallel.
+Implementation copied and adapted from SBCL's queue.lisp
 |#
 
-(defstruct queue
-  (head (atomic:make-atomic-reference :value '()))
-  (tail (atomic:make-atomic-reference :value '())))
+(defconstant +dummy+ '.dummy.)
+(defconstant +dead-end+ '.dead-end.)
+
+(defstruct (queue
+            (:constructor %make-queue (head tail))
+            (:copier nil)
+            (:predicate queueq))
+  (head (error "No head"))
+  (tail (error "No tail")))
+
+(defun make-queue ()
+  (let* ((dummy (cons +dummy+ nil))
+         (queue (%make-queue
+                 (atomic:make-atomic-reference :value dummy)
+                 (atomic:make-atomic-reference :value dummy))))
+    (flet ((enc-1 (x)
+             (enqueue x queue)))
+      (declare (dynamic-extent #'enc-1))
+      (map nil #'enc-1 nil))
+    queue))
 
 (defun enqueue (item queue)
-  (atomic:atomic-swap
-   (queue-head queue)
-   (lambda (lst) (cons item lst))))
+  (declare (optimize speed))
+  (let ((new (cons item nil)))
+    (atomic:atomic-swap (queue-tail queue)
+                        (lambda (old)
+                          (setf (cdr old) new)
+                          new))
+    (setf (queue-tail queue) (atomic:make-atomic-reference :value new))
+    item))
 
 (defun dequeue (queue)
-  (declare (optimize
-            (speed 3)
-            (safety 0)
-            (debug 0)
-            (compilation-speed 0)))
-  (unless (atomic:atomic-get (queue-tail queue))
-    (do ()
-        ((null (atomic:atomic-get (queue-head queue))))
-      (loop
-        (let ((qhead (atomic:atomic-get (queue-head queue)))
-              (qtail (atomic:atomic-get (queue-tail queue))))
-          (destructuring-bind (head . tail) qhead
-            (when (and
-                   (atomic:atomic-cas (queue-head queue)
-                                      qhead tail)
-                   (atomic:atomic-cas (queue-tail queue)
-                                      qtail
-                                      (cons head qtail)))
-              (return)))))))
-  (when (atomic:atomic-get (queue-tail queue))
-    (let* ((qtail (atomic:atomic-get (queue-tail queue)))
-           (head (car qtail)))
-      (atomic:atomic-swap (queue-tail queue)
-                          (lambda (lst) (cdr lst)))
-      (values head t))))
+  (declare (optimize speed))
+  (let ((next (atomic:atomic-swap
+               (queue-head queue)
+               (lambda (head)
+                 (let ((next (cdr head)))
+                   ;;(print next)
+                   (typecase next
+                     (null :end) ;; break cas
+                     (cons next)))))))
+    ;;(print next)
+    (when (eq next :end)
+      (return-from dequeue (values nil nil)))
+    (let ((item (car next)))
+      (setf ;;(cdr head) +dead-end+
+            (car next) +dummy+)
+      (values item t))))
+
+  
+  ;; (let* ((head (atomic:atomic-get (queue-head queue)))
+  ;;        (next (cdr head)))
+  ;;   (typecase next
+  ;;     (null (values nil nil))
+  ;;     (cons
+  ;;      (atomic:atomic-swap
+  ;;       (queue-head queue)
+  ;;       (lambda () next))
+  ;;      (let ((item (car next)))
+  ;;        (setf (cdr head) +dead-end+
+  ;;              (car next) +dummy+)
+  ;;        (values item t))))))
 
 (defun emptyp (queue)
-  (not (or (queue-head queue)
-           (queue-tail queue))))
+  (null (cdr (atomic:atomic-get (queue-head queue)))))
 
 
-#|
-queue implementation from lparallel.
-Copyright (c) 2011-2012, James M. Lawrence. All rights reserved.
-
-|#
-
-;; (defstruct queue
-;;   (head '() :type list)
-;;   (tail '() :type list))
-
-;; (defun enqueue (item queue)
-;;   (declare (optimize
-;;             (speed 3) (safety 0) (debug 0)
-;;             (compilation-speed 0)))
-;;   (let ((new (cons item nil)))
-;;     (if (queue-head queue)
-;;         (setf (cdr (queue-tail queue)) new)
-;;         (setf (queue-head queue) new))
-;;     (setf (queue-tail queue) new)))
-
-;; (defun dequeue (queue)
-;;   (declare (optimize
-;;             (speed 3) (safety 0) (debug 0)
-;;             (compilation-speed 0)))
-;;   (let ((item (queue-head queue)))
-;;     (if item
-;;         (multiple-value-prog1 (values (car item) t)
-;;           (when (null (setf (queue-head queue) (cdr item)))
-;;             (setf (queue-tail queue) nil))
-;;           ;; clear item for conservative gcs
-;;           (setf (car item) nil
-;;                 (cdr item) nil))
-;;         (values nil nil))))
-
-;; (defun emptyp (queue)
-;;   (not (queue-head queue)))
-
-;; ------- thread-safe queue --------
+;; ----------------------------------------
 
 (defclass queue-unbounded (queue-base)
   ((queue :initform (make-queue)))

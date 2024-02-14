@@ -18,10 +18,14 @@
     (is (= 1 (popq cut)))
     (is-true (emptyq-p cut))))
 
-(test bounded-queue--raise-condition when queue full
+(test bounded-queue--raise-condition-when-queue-full
   (let ((cut (make-instance 'queue-bounded :max-items 2)))
     (pushq cut 1)
     (pushq cut 2)
+    (is (= 2 (queued-count cut)))
     (signals queue-full-error (pushq cut 3))
     (is (= 1 (popq cut)))
+    (is (= 1 (queued-count cut)))
     (pushq cut 3)))
+
+(run! 'bounded-queue-tests)

@@ -45,7 +45,8 @@
   ((queue :initform nil)
    (lock :initform (bt:make-lock))
    (cvar :initform (bt:make-condition-variable))
-   (max-items :initform 1000 :initarg :max-items))
+   (max-items :initform 1000 :initarg :max-items)
+   (fill-count :initform 0)) ; cl-speedy-queue has issues with queued items count
   (:documentation "Bounded queue."))
 
 (defmethod initialize-instance :after ((self queue-bounded) &key)
@@ -54,11 +55,12 @@
     (setf queue (cl-speedy-queue:make-queue max-items))))
 
 (defmethod pushq ((self queue-bounded) element)
-  (with-slots (queue lock cvar yield-threshold) self
+  (with-slots (queue lock cvar fill-count max-items) self
+    (when (>= fill-count max-items)
+      (error 'queue-full-error :queue self))
     (bt:with-lock-held (lock)
-      (when (cl-speedy-queue:queue-full-p queue)
-        (error 'queue-full-error :queue self))
       (cl-speedy-queue:enqueue element queue)
+      (incf fill-count)
       (bt:condition-notify cvar))))
 
 (defmethod popq ((self queue-bounded))
@@ -66,11 +68,14 @@
     (bt:with-lock-held (lock)
       (loop :while (cl-speedy-queue:queue-empty-p queue)
             :do (bt:condition-wait cvar lock)
-            :finally (return (cl-speedy-queue:dequeue queue))))))
+            :finally (return
+                       (progn
+                         (decf (slot-value self 'fill-count))
+                         (cl-speedy-queue:dequeue queue)))))))
 
 (defmethod emptyq-p ((self queue-bounded))
   (with-slots (queue) self
     (cl-speedy-queue:queue-empty-p queue)))
 
 (defmethod queued-count ((self queue-bounded))
-  (cl-speedy-queue:queue-count self))
+  (slot-value self 'fill-count))

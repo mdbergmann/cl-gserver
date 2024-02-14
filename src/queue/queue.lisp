@@ -5,7 +5,10 @@
            #:queue-bounded
            #:pushq
            #:popq
-           #:emptyq-p))
+           #:emptyq-p
+           #:queued-count
+           ;; conditions
+           #:queue-full-error))
 
 (in-package :sento.queue)
 
@@ -22,6 +25,9 @@
 (defgeneric emptyq-p (queue-base)
   (:documentation "Returns `T' if there is no element in the queue."))
 
+(defgeneric queued-count (queue-base)
+  (:documentation "Returns the number of elements in the queue."))
+
 ;;
 ;; unbounded queues in separate files
 ;;
@@ -30,53 +36,30 @@
 ;; --- Bounded-queue - cl-speedy-queue ----
 ;; ----------------------------------------
 
+(define-condition queue-full-error (error)
+  ((queue :initarg :queue :reader queue))
+  (:report (lambda (condition stream)
+             (format stream "Queue '~a' is full!" (queue condition)))))
+
 (defclass queue-bounded (queue-base)
   ((queue :initform nil)
    (lock :initform (bt:make-lock))
    (cvar :initform (bt:make-condition-variable))
-   (max-items :initform 1000 :initarg :max-items)
-   (yield-threshold :initform nil))
+   (max-items :initform 1000 :initarg :max-items))
   (:documentation "Bounded queue."))
 
 (defmethod initialize-instance :after ((self queue-bounded) &key)
-  (with-slots (queue max-items yield-threshold) self
+  (with-slots (queue max-items) self
     (if (< max-items 0) (error "Max-items 0 or less is not allowed!"))
-
-    (setf yield-threshold
-          (cond
-            ((<= max-items 2) 0)
-            ((<= max-items 10) 2)
-            ((<= max-items 20) 8)
-            (t (* (/ max-items 100) 95))))  ; 95%
-    (log:info "Yield threshold at: ~a" yield-threshold)
-
     (setf queue (cl-speedy-queue:make-queue max-items))))
 
 (defmethod pushq ((self queue-bounded) element)
   (with-slots (queue lock cvar yield-threshold) self
-
-    (backpressure-if-necessary-on queue yield-threshold)
-
     (bt:with-lock-held (lock)
+      (when (cl-speedy-queue:queue-full-p queue)
+        (error 'queue-full-error :queue self))
       (cl-speedy-queue:enqueue element queue)
       (bt:condition-notify cvar))))
-
-
-(defun backpressure-if-necessary-on (queue yield-threshold)
-  (loop :for queue-count = (get-queue-count queue)
-        :for loop-count :from 0
-        :if (and (> loop-count 100) (> queue-count yield-threshold))
-          :do (progn
-                (log:warn "Unable to reduce queue pressure!")
-                (error "Unable to reduce queue pressure. Consider increasing queue-size or use more threads!"))
-        :while (> queue-count yield-threshold)
-        :do (progn
-              (log:debug "back-pressure, doing thread-yield (~a/~a)." queue-count yield-threshold)
-              (bt:thread-yield)
-              (sleep .01))))
-
-(defun get-queue-count (queue)
-  (cl-speedy-queue:queue-count queue))
 
 (defmethod popq ((self queue-bounded))
   (with-slots (queue lock cvar) self
@@ -89,3 +72,5 @@
   (with-slots (queue) self
     (cl-speedy-queue:queue-empty-p queue)))
 
+(defmethod queued-count ((self queue-bounded))
+  (cl-speedy-queue:queue-count self))

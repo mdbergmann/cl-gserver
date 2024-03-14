@@ -100,5 +100,6 @@ The signature can be used to cancel the timer via `cancel-recurring`."
 
 (defun shutdown-wheel-timer (wheel-timer)
   "Shuts down the wheel timer and free resources."
-  (clrhash (timer-hash wheel-timer))
-  (tw:shutdown-timer-wheel (wheel wheel-timer)))
+  (when wheel-timer
+    (clrhash (timer-hash wheel-timer))
+    (tw:shutdown-timer-wheel (wheel wheel-timer))))

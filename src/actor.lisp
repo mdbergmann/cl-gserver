@@ -11,18 +11,22 @@
                       ev:publish
                       ac:find-actors
                       ac:all-actors
-                      ac:actor-of)))
+                      ac:actor-of))
+  ;; add symbol-functions for ! and ?
+  (setf (symbol-function '!) #'act:tell)
+  (setf (symbol-function '?) #'act:ask))
 
 ;; we want to use symbols in this package rather than 'cell'.
 (define-symbol-macro *self* act-cell:*self*)
 (define-symbol-macro *state* act-cell:*state*)
 (define-symbol-macro *sender* act-cell:*sender*)
 
-;; add symbol-functions for ! and ?
-(setf (symbol-function '!) #'act:tell)
-(setf (symbol-function '?) #'act:ask)
-
-(defmethod make-actor (receive &key name state (type 'actor) (init nil) (destroy nil) (other-init-args nil))
+(defmethod make-actor (receive &key
+                                 name state
+                                 (type 'actor)
+                                 (init nil)
+                                 (destroy nil)
+                                 (other-init-args nil))
   (make-instance type
                  :name name
                  :state state

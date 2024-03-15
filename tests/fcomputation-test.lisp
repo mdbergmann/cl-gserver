@@ -107,3 +107,9 @@ mixed future, normal and async-future map-fun result."
     (is-true (assert-cond (lambda ()
                             (= 1 completed-val))
                           1))))
+
+(test await-fut
+  (multiple-value-bind (res fut)
+      (fawait (with-fut 0) :timeout 1)
+    (is (= 0 res))
+    (is (futurep fut))))

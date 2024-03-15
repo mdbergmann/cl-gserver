@@ -38,9 +38,8 @@
 (defun finalize-initialization (actor message-box actor-context)
   "Private API: finalize initialization of the actor with a `mesgb:message-box` and an `ac:actor-context`."
   (setf (act:context actor) actor-context)
-  ;; not fully sure is we allow to have the msgbox being setup or not.
-  (pre-start actor)
-  (setf (act-cell:msgbox actor) message-box))
+  (setf (act-cell:msgbox actor) message-box)
+  (pre-start actor))
 
 (defmethod print-object ((obj actor) stream)
   (print-unreadable-object (obj stream :type t)

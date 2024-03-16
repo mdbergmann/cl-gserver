@@ -11,10 +11,11 @@
                       ev:publish
                       ac:find-actors
                       ac:all-actors
-                      ac:actor-of))
-  ;; add symbol-functions for ! and ?
-  (setf (symbol-function '!) #'act:tell)
-  (setf (symbol-function '?) #'act:ask))
+                      ac:actor-of)))
+
+;; add symbol-functions for ! and ?
+(setf (symbol-function '!) #'act:tell)
+(setf (symbol-function '?) #'act:ask)
 
 ;; we want to use symbols in this package rather than 'cell'.
 (define-symbol-macro *self* act-cell:*self*)

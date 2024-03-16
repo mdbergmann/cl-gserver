@@ -38,12 +38,13 @@ This blocks the calling thread."
   (with-gensyms (c)
     `(handler-case
          (bt:with-timeout (,wait-time)
-                     ,@body)
+           ,@body)
        (bt:timeout (,c)
          (error ,c))
        ;; the below is not needed anymore with SBCL 2.1. Will keep it anyway for compatibility.
        #+sbcl
        (sb-ext:timeout (,c)
+         (declare (ignore ,c))
          (log:warn "sb-ext:timeout, wrapping to 'expired'.")
          (error 'bt:timeout :length ,wait-time)))))
 

@@ -222,7 +222,7 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
   "Replies to a sender. Sender must exist.
 Use this from within receive function to reply to a sender."
   (if sender
-      (act:tell sender msg *self*)
+      (tell sender msg *self*)
       (log:warn "Reply used without sender!")))
 
 ;; -------------------------------

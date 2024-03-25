@@ -15,11 +15,13 @@
   "Waits until `cond-fun' is not `nil' or `max-time' elapsed.
 This blocks the calling thread."
   (loop
-    :with wait-acc = 0
-    :unless (or (funcall cond-fun) (> wait-acc max-time))
+    :for fun-result := (funcall cond-fun)
+    :with wait-acc := 0
+    :while (and (not fun-result) (< wait-acc max-time))
       :do (progn
             (sleep sleep-time)
-            (incf wait-acc sleep-time))))
+            (incf wait-acc sleep-time))
+    :finally (return fun-result)))
 
 (define-condition ask-timeout (serious-condition)
   ((wait-time :initform nil

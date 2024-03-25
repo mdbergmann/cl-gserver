@@ -49,14 +49,14 @@ Example:
 (with-fut-resolve
   (bt:make-thread
    (lambda ()
-     (fresolve (do-some-lengthy-calculation)))))
+     (let ((result (do-some-lengthy-calculation)))
+       (fresolve result)))))
 ```
 "
-  `(macrolet ((fresolve (resolve-form)
-                `(make-future (lambda (resolve-fun)
-                                (let ((resolved ,resolve-form))
-                                  (funcall resolve-fun resolved))))))
-     ,@body))
+  `(make-future (lambda (resolve-fun)
+                  (macrolet ((fresolve (resolve-value)
+                               `(funcall resolve-fun ,resolve-value)))
+                     ,@body))))
 
 (defun make-future (execute-fun)
   "Creates a future. `execute-fun` is the lambda that is executed when the future is created.
@@ -101,7 +101,7 @@ Create a future with:
 (defun %fcompleted (future completed-fun)
   (with-slots (promise) future
     (attach promise completed-fun))
-  nil)
+  future)
 
 (defmacro fcompleted (future (result) &body body)
   "Completion handler on the given `future`.
@@ -109,6 +109,7 @@ Create a future with:
 If the `future` is already complete then the `body` executed immediately.  
 `result` represents the future result.
 `body` is executed when future completed.
+Returns the future.
 
 Example:
 

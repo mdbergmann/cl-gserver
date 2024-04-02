@@ -31,7 +31,8 @@
                   :components
                   ((:file "queue")
                    (:file "queue-locked")
-                   #+sbcl (:file "queue-sbcl")))
+                   ;;#+sbcl (:file "queue-sbcl")
+                   ))
                  (:module "mbox"
                   :components
                   ((:file "message-box")))

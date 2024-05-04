@@ -211,7 +211,7 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
              (handler-case
                  (timeutils:with-waitfor (time-out)
                    (timeutils:wait-cond (lambda () result-received-p) 0.1))
-               (bt:timeout (c)
+               (bt2:timeout (c)
                  (handle-timeout c))))))))))
 
 ;; -------------------------------

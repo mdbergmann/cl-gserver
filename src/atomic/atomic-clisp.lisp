@@ -9,7 +9,7 @@
   lock)
 
 (defun make-atomic-reference (&key (value nil))
-  (%make-atomic-reference value (bt:make-lock)))
+  (%make-atomic-reference value (bt2:make-lock)))
 
 (defmethod print-object ((ref atomic-reference) stream)
   (print-unreadable-object (ref stream :type t :identity t)
@@ -20,7 +20,7 @@
 
 (defmethod atomic-cas ((ref atomic-reference) old new)
   (declare (ignore old))
-  (bt:with-lock-held ((atomic-reference-lock ref))
+  (bt2:with-lock-held ((atomic-reference-lock ref))
     (setf (atomic-place ref) new)))
 
 (defmethod atomic-get ((ref atomic-reference))
@@ -39,7 +39,7 @@
   lock)
 
 (defun make-atomic-integer (&key (value 0))
-  (%make-atomic-reference value (bt:make-lock)))
+  (%make-atomic-reference value (bt2:make-lock)))
 
 (defmethod print-object ((int atomic-integer) stream)
   (print-unreadable-object (int stream :type t :identity t)
@@ -50,7 +50,7 @@
 
 (defmethod atomic-cas ((int atomic-integer) old new)
   (declare (ignore old))
-  (bt:with-lock-held ((atomic-reference-lock int))
+  (bt2:with-lock-held ((atomic-reference-lock int))
     (setf (atomic-place int) new)))
 
 (defmethod atomic-swap ((int atomic-integer) fn &rest args)

@@ -43,8 +43,8 @@
 
 (defclass queue-bounded (queue-base)
   ((queue :initform nil)
-   (lock :initform (bt:make-lock))
-   (cvar :initform (bt:make-condition-variable))
+   (lock :initform (bt2:make-lock))
+   (cvar :initform (bt2:make-condition-variable))
    (max-items :initform 1000 :initarg :max-items)
    (fill-count :initform 0)) ; cl-speedy-queue has issues with queued items count
   (:documentation "Bounded queue."))
@@ -58,16 +58,16 @@
   (with-slots (queue lock cvar fill-count max-items) self
     (when (>= fill-count max-items)
       (error 'queue-full-error :queue self))
-    (bt:with-lock-held (lock)
+    (bt2:with-lock-held (lock)
       (cl-speedy-queue:enqueue element queue)
       (incf fill-count)
-      (bt:condition-notify cvar))))
+      (bt2:condition-notify cvar))))
 
 (defmethod popq ((self queue-bounded))
   (with-slots (queue lock cvar) self
-    (bt:with-lock-held (lock)
+    (bt2:with-lock-held (lock)
       (loop :while (cl-speedy-queue:queue-empty-p queue)
-            :do (bt:condition-wait cvar lock)
+            :do (bt2:condition-wait cvar lock)
             :finally (return
                        (progn
                          (decf (slot-value self 'fill-count))

@@ -33,7 +33,7 @@ The default name is concatenated of \"mesgb-\" and a `gensym` generated random n
                    :initarg :max-queue-size
                    :reader max-queue-size
                    :documentation
-                   "0 or nil will make an unbounded queue. 
+                   "0 or nil will make an unbounded queue.
 A value `> 0` will make a bounded queue.
 Don't make it too small. A queue size of 1000 might be a good choice."))
   (:documentation "The user does not need to create a message-box manually. It is automatically created and added to the `actor` when the actor is created through `ac:actor-of`."))
@@ -121,7 +121,7 @@ this kind of queue because each message-box (and with that each actor) requires 
 
 (defmethod initialize-instance :after ((self message-box/bt) &key)
   (with-slots (name queue-thread) self
-    (setf queue-thread (bt:make-thread
+    (setf queue-thread (bt2:make-thread
                         (lambda () (message-processing-loop self))
                         :name  (mkstr "message-thread-" name))))
   (when (next-method-p)
@@ -159,9 +159,9 @@ This function sets the result as `handler-result' in `item'. The return of this 
     (when cancelled-p
       (log:warn "~a: item got cancelled: ~a" (name msgbox) item)
       (when withreply-p
-        (bt:condition-notify withreply-cvar))
+        (bt2:condition-notify withreply-cvar))
       (return-from process-queue-item :cancelled))
-    
+
     (flet ((handler-fun ()
              (log:trace "~a: withreply: handler-fun-args..." (name msgbox))
              (setf handler-result
@@ -169,13 +169,13 @@ This function sets the result as `handler-result' in `item'. The return of this 
              (log:trace "~a: withreply: handler-fun-args result: ~a"
                         (name msgbox) handler-result)))
       (if withreply-p
-          (bt:with-lock-held (withreply-lock)
+          (bt2:with-lock-held (withreply-lock)
             ;; make sure we release the lock also on error
             (unwind-protect
                  (if time-out
                      (unless cancelled-p (handler-fun))
                      (handler-fun))
-              (bt:condition-notify withreply-cvar)))
+              (bt2:condition-notify withreply-cvar)))
           (handler-fun)))))
 
 (defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun-args)
@@ -200,8 +200,8 @@ The submitting code has to await the side-effect and possibly handle a timeout."
 
 (defun submit/reply (msgbox queue message time-out handler-fun-args)
   "This function has to provide a result and so it has to wait until the queue thread has processed the message. Processing of the queue item is done in `process-queue-item'."
-  (let* ((withreply-lock (bt:make-lock))
-         (withreply-cvar (bt:make-condition-variable))
+  (let* ((withreply-lock (bt2:make-lock))
+         (withreply-cvar (bt2:make-condition-variable))
          (push-item (make-message-item/bt
                      :message message
                      :withreply-p t
@@ -211,14 +211,14 @@ The submitting code has to await the side-effect and possibly handle a timeout."
                      :handler-fun-args handler-fun-args
                      :handler-result 'no-result)))
     (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
-    (bt:with-lock-held (withreply-lock)
+    (bt2:with-lock-held (withreply-lock)
       (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
       (queue:pushq queue push-item)
 
       (if time-out
           (wait-and-probe-for-msg-handler-result msgbox push-item)
-          (bt:condition-wait withreply-cvar withreply-lock)))
-    
+          (bt2:condition-wait withreply-cvar withreply-lock)))
+
     (with-slots (handler-result) push-item
       (log:trace "~a: withreply: result should be available: ~a" (name msgbox) handler-result)
       handler-result)))
@@ -256,7 +256,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
                :reader dispatcher
                :documentation
                "The dispatcher from the system.")
-   (lock :initform (bt:make-lock)))
+   (lock :initform (bt2:make-lock)))
   (:documentation
    "This message box is a message-box that uses the `system`s `dispatcher`.
 This has the advantage that an almost unlimited actors/agents can be created.
@@ -286,12 +286,12 @@ The `handler-fun-args' is part of the message item."
         (log:warn "~a: item got cancelled: ~a" name popped-item))
       (unless cancelled-p
         ;; protect the actor from concurrent state changes on the shared dispatcher
-        (bt:acquire-lock lock t)
+        (bt2:acquire-lock lock :wait t)
         (unwind-protect
              (unless cancelled-p
                (setf handler-result (call-handler-fun handler-fun-args message))
                handler-result)
-          (bt:release-lock lock))))))
+          (bt2:release-lock lock))))))
 
 (defmethod submit ((self message-box/dp) message withreply-p time-out handler-fun-args)
   "Submitting a message on a multi-threaded `dispatcher` is different as submitting on a single threaded message-box. On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads. On the `dispatcher` this is not the case. The order cannot be guaranteed when messages are processed by different `dispatcher` threads. However, we still guarantee a 'single-threadedness' regarding the state of the actor. This is achieved here by protecting the `handler-fun-args` execution with a lock.

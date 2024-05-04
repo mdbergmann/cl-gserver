@@ -19,8 +19,8 @@
 (defclass future ()
   ((promise :initform nil))
   (:documentation
-   "The wrapped [blackbird](https://orthecreedence.github.io/blackbird/) `promise`, here called `future`.  
-Not all features of blackbird's `promise` are supported.  
+   "The wrapped [blackbird](https://orthecreedence.github.io/blackbird/) `promise`, here called `future`.
+Not all features of blackbird's `promise` are supported.
 This `future` wrapper changes the terminology. A `future` is a delayed computation.
 A `promise` is the fulfillment of the delayed computation."))
 
@@ -47,7 +47,7 @@ Example:
 
 ```
 (with-fut-resolve
-  (bt:make-thread
+  (bt2:make-thread
    (lambda ()
      (let ((result (do-some-lengthy-calculation)))
        (fresolve result)))))
@@ -62,15 +62,15 @@ Example:
   "Creates a future. `execute-fun` is the lambda that is executed when the future is created.
 `execute-fun` takes a parameter which is the `execute-fun` funtion. `execute-fun` function
 takes the `promise` as parameter which is the computed value. Calling `execute-fun` with the promise
-will fulfill the `future`.  
+will fulfill the `future`.
 Manually calling `execute-fun` to fulfill the `future` is in contrast to just fulfill the `future` from a return value. The benefit of the `execute-fun` is flexibility. In  a multi-threaded environment `execute-fun` could spawn a thread, in which case `execute-fun` would return immediately but no promise-value can be given at that time. The `execute-fun` can be called from a thread and provide the promise.
 
 Create a future with:
 
 ```elisp
-(make-future (lambda (execute-fun) 
+(make-future (lambda (execute-fun)
                (let ((promise (delayed-computation)))
-                 (bt:make-thread (lambda ()
+                 (bt2:make-thread (lambda ()
                    (sleep 0.5)
                    (funcall execute-fun promise))))))
 ```
@@ -106,7 +106,7 @@ Create a future with:
 (defmacro fcompleted (future (result) &body body)
   "Completion handler on the given `future`.
 
-If the `future` is already complete then the `body` executed immediately.  
+If the `future` is already complete then the `body` executed immediately.
 `result` represents the future result.
 `body` is executed when future completed.
 Returns the future.
@@ -124,9 +124,9 @@ Example:
   `(%fcompleted ,future (lambda (,result) ,@body)))
 
 (defun fawait (fut &key timeout (sleep-time 0.1))
-  "Wait for the future `FUT` to be ready. Returns `VALUES` with `result' of the future and `FUT'.  
+  "Wait for the future `FUT` to be ready. Returns `VALUES` with `result' of the future and `FUT'.
 If the future is not ready after `TIMEOUT` seconds the `result' is `NIL'.
-The `SLEEP-TIME` parameter specifies the time to sleep between checks of the future.  
+The `SLEEP-TIME` parameter specifies the time to sleep between checks of the future.
 The wait is based on attempts. To be accurate in terms of `TIMEOUT` the `SLEEP-TIME` should be a divisor of `TIMEOUT`.
 Disclaimer: naive implementation. There may be better solutions."
   (assert (and timeout (>= timeout 0)) (timeout) "Timeout must be greater or equal to 0")

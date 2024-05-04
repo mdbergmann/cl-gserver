@@ -19,7 +19,7 @@
 (defun runner-bt (&optional (withreply-p nil) (asyncask nil) (queue-size 0))
   (declare (ignore queue-size))
   ;; dispatchers used for the async-ask
-  (setf *per-thread* 125000)  
+  (setf *per-thread* 125000)
   (setf *system* (asys:make-actor-system '(:dispatchers (:shared (:workers 8)))))
   (setf *actor* (ac:actor-of *system*
                              :receive (lambda (msg)
@@ -32,9 +32,9 @@
   (format t "Times: ~a~%" (max-loop))
   (time
    (progn
-     (map nil #'bt:join-thread
+     (map nil #'bt2:join-thread
           (mapcar (lambda (x)
-                    (bt:make-thread
+                    (bt2:make-thread
                      (lambda ()
                        (dotimes (n *per-thread*)
                          (if withreply-p
@@ -68,9 +68,9 @@
   (format t "Times: ~a~%" (max-loop))
   (time
    (progn
-     (map nil #'bt:join-thread
+     (map nil #'bt2:join-thread
           (mapcar (lambda (x)
-                    (bt:make-thread
+                    (bt2:make-thread
                      (lambda ()
                        (dotimes (n *per-thread*)
                          (if withreply-p
@@ -112,7 +112,7 @@
 
 ;;   (unwind-protect
 ;;        (time
-;;         (progn 
+;;         (progn
 ;;           (map nil #'lparallel:force
 ;;                (mapcar (lambda (x)
 ;;                          (lparallel:future

@@ -24,9 +24,9 @@
             (progn
               ;; Delegating the work could also be done via a third-party thread-pool
               ;; or a library like lparallel
-              (bt:make-thread (lambda ()
-                                (sleep 1.0)
-                                (reply :spawn-result sender)))))))))
+              (bt2:make-thread (lambda ()
+                                 (sleep 1.0)
+                                 (reply :spawn-result sender)))))))))
 
 (test spawn-in-receive
   "Spawn  a thread in `receive' which does the work.

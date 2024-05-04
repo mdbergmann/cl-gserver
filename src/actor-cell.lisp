@@ -66,7 +66,7 @@ one can decide what kind of message-box/dispatcher should be used for the new `a
 
 See `actor-context` `actor-of` method for more information on this.
 
-To stop an `actor` message handling and you can send the `:stop` message 
+To stop an `actor` message handling and you can send the `:stop` message
 either via `call` (which will respond with `:stopped`) or `cast`.
 This is to cleanup thread resources when the actor is not needed anymore.
 
@@ -104,12 +104,12 @@ State of the cell can be changed via `setf`ing `*state*` variable."))
 
 (defgeneric stop (actor-cell &optional wait)
   (:documentation "Stops the actor-cells message processing gracefully.
-This is not an immediate stop.  
+This is not an immediate stop.
 There are two ways to stop an actor (cell).
 
 1. by calling this function.
-It is not an immediate stop. The actor will finish the current message processing.  
-`wait`: waits until the cell is stopped.  
+It is not an immediate stop. The actor will finish the current message processing.
+`wait`: waits until the cell is stopped.
 
 2. by sending `:stop` to the actor (cell).
 This won't allow to wait when the actor is stopped, even not with `ask-s`.
@@ -124,9 +124,9 @@ The `:stop` message (symbol) is normally processed by the actors message process
 Specify a timeout in seconds if you require a result within a certain period of time.
 Be aware though that this is a resource intensive wait based on a waiting thread.
 The result can be of different types.
-Normal result: the last expression of `handle-call` (or `receive` in `act:actor`) implementation. 
+Normal result: the last expression of `handle-call` (or `receive` in `act:actor`) implementation.
 Error result: `(cons :handler-error <condition>)'
-In case of time-out the error condition is a bt:timeout."
+In case of time-out the error condition is a bt2:timeout."
   (when message
     (let ((result (submit-message actor-cell message t nil time-out)))
       (log:debug "~a: message process result: ~a" (name actor-cell) result)
@@ -138,7 +138,7 @@ If a `sender' is specified the result will be sent to the sender."
   (when message
     (let ((result (submit-message actor-cell message nil sender nil)))
       (log:debug "~a: message process result: ~a" (name actor-cell) result)
-      result)))  
+      result)))
 
 (defun running-p (actor-cell)
   "Returns true if this server is running. `nil` otherwise."
@@ -153,7 +153,7 @@ If a `sender' is specified the result will be sent to the sender."
       (when msgbox
         (mesgb:stop msgbox wait)))))
 
-;; -----------------------------------------------    
+;; -----------------------------------------------
 ;; internal functions
 ;; -----------------------------------------------
 

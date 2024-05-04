@@ -40,13 +40,13 @@
   (when pinned
     (run-pinned-test queue-size
       (&body)))
-  
+
   (when shared
     (run-system-test :random
       (&body))
     (run-system-test :round-robin
       (&body)))
-  
+
   (lparallel:end-kernel))
 
 (defmacro run-pinned-test (queue-size &body body)
@@ -101,7 +101,7 @@
   (with-fixture mp-setup (nil nil t)
     (mapcar (lambda (x)
               (declare (ignore x))
-              (bt:make-thread
+              (bt2:make-thread
                (lambda ()
                  (loop :repeat (1+ per-thread)
                        :for async = (random 2)

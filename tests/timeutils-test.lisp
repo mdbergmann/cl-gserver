@@ -15,7 +15,7 @@
 
 (test timer--create
   "Test create timer"
-  (is (typep (make-timer 0.1 (lambda ())) 'bt:thread)))
+  (is (typep (make-timer 0.1 (lambda ())) 'bt2:thread)))
 
 (test timer--run
   "Tests the timer run."

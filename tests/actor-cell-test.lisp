@@ -22,7 +22,7 @@
     (funcall call-fun message))
   (defmethod handle-cast ((cell test-cell) message)
     (funcall cast-fun message))
-  
+
   (let ((cut (make-instance 'test-cell
                             :state state)))
     (setf (msgbox cut) (make-instance 'mesgb:message-box/bt))
@@ -72,7 +72,7 @@
     (let ((now (get-internal-real-time)))
       (cast cut :wait)  ;; send message that waits a bit but is async
       (stop cut t)  ;; stop has to wait until stopped
-      (is-false (bt:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread)))
+      (is-false (bt2:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread)))
       (is (> (- (get-internal-real-time) now) 300)))))
 
 (test no-message-box

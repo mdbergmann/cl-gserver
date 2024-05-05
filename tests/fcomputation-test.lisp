@@ -43,7 +43,7 @@
   "Test the completion with fcompleted callback with a delayed execution."
 
   (let ((future (make-future (lambda (resolve-fun)
-                               (bt:make-thread
+                               (bt2:make-thread
                                 (lambda ()
                                   (sleep 0.5)
                                   (funcall resolve-fun "fulfilled"))))))

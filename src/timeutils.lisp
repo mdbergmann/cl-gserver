@@ -39,19 +39,19 @@ This blocks the calling thread."
   "Spawns thread with timeout. Blocks until computation is done, or timeout elapsed."
   (with-gensyms (c)
     `(handler-case
-         (bt:with-timeout (,wait-time)
+         (bt2:with-timeout (,wait-time)
            ,@body)
-       (bt:timeout (,c)
+       (bt2:timeout (,c)
          (error ,c))
        ;; the below is not needed anymore with SBCL 2.1. Will keep it anyway for compatibility.
        #+sbcl
        (sb-ext:timeout (,c)
          (declare (ignore ,c))
          (log:warn "sb-ext:timeout, wrapping to 'expired'.")
-         (error 'bt:timeout :length ,wait-time)))))
+         (error 'bt2:timeout :seconds ,wait-time)))))
 
 (defun make-timer (delay run-fun)
-  (bt:make-thread (lambda ()
+  (bt2:make-thread (lambda ()
                     (sleep delay)
                     (funcall run-fun))
                   :name (string (gensym "timer-"))))

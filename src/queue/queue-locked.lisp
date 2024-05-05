@@ -82,24 +82,24 @@ Copyright (c) 2011-2012, James M. Lawrence. All rights reserved.
 
 (defclass queue-unbounded (queue-base)
   ((queue :initform (make-queue))
-   (lock :initform (bt:make-lock))
-   (cvar :initform (bt:make-condition-variable)))
+   (lock :initform (bt2:make-lock))
+   (cvar :initform (bt2:make-condition-variable)))
   (:documentation "Unbounded queue."))
 
 (defmethod pushq ((self queue-unbounded) element)
   (with-slots (queue lock cvar) self
-    (bt:with-lock-held (lock)
+    (bt2:with-lock-held (lock)
       (enqueue element queue)
-      (bt:condition-notify cvar))))
+      (bt2:condition-notify cvar))))
 
 (defmethod popq ((self queue-unbounded))
   (with-slots (queue lock cvar) self
-    (bt:with-lock-held (lock)
+    (bt2:with-lock-held (lock)
       (loop (multiple-value-bind (value presentp)
                 (dequeue queue)
               (if presentp
                   (return value)
-                  (bt:condition-wait cvar lock)))))))
+                  (bt2:condition-wait cvar lock)))))))
 
 (defmethod emptyq-p ((self queue-unbounded))
   (with-slots (queue) self

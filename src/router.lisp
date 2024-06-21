@@ -90,23 +90,35 @@ A router `strategy` defines how one of the actors is determined as the forwardin
 (defmethod tell ((self router) message &optional sender)
   "Posts the message to one routee. The routee is chosen from the router `strategy`.
 Otherwise see: `act:tell`."
-  (tell
-   (elt (slot-value self 'routees) (get-strategy-index self))
-   message
-   sender))
+  (let ((routees (routees self)))
+    (when (<= (length routees) 0)
+      (log:info "No routees available!")
+      (return-from tell nil))
+    (tell
+     (elt routees (get-strategy-index self))
+     message
+     sender)))
 
 (defmethod ask-s ((self router) message &key time-out)
   "Posts the message to one routee. The routee is chosen from the router `strategy`.
 Otherwise see: `act:ask-s`."
-  (ask-s
-   (elt (slot-value self 'routees) (get-strategy-index self))
-   message
-   :time-out time-out))
+  (let ((routees (routees self)))
+    (when (<= (length routees) 0)
+      (log:info "No routees available!")
+      (return-from ask-s nil))
+    (ask-s
+     (elt routees (get-strategy-index self))
+     message
+     :time-out time-out)))
 
 (defmethod ask ((self router) message &key time-out)
   "Posts the message to one routee. The routee is chosen from the router `strategy`.
 Otherwise see: `act:ask`."
-  (ask
-   (elt (slot-value self 'routees) (get-strategy-index self))
-   message
-   :time-out time-out))
+  (let ((routees (routees self)))
+    (when (<= (length routees) 0)
+      (log:info "No routees available!")
+      (return-from ask nil))
+    (ask
+     (elt routees (get-strategy-index self))
+     message
+     :time-out time-out)))

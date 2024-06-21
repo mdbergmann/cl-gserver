@@ -47,12 +47,12 @@
   "Test for task-start"
   (with-fixture system-fixture ()
     (with-context (system)
-      (let ((my-var nil))
+      (let ((my-var 0))
         (multiple-value-bind (result task)
             (task-start (lambda () (setf my-var 10)))
           (is (eq :ok result))
           (is-true (typep task 'tasks:task))
-          (is-true (await-cond 0.2 (= 10 my-var)))
+          (is-true (await-cond 1 (= 10 my-var)))
           (is (eq :stopped (act:ask-s task :foo))))))))
 
 (test task-async

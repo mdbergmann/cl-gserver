@@ -124,7 +124,7 @@ The task is automatically stopped and removed from the context and will not be a
          (progn
            (act:tell task (cons :exec fun))
            (values :ok task))
-      (ac:stop *task-context* task))))
+      (act:tell task :stop))))
 
 (defun task-async (fun &key on-complete-fun)
   "`task-async` schedules the function `fun` for asynchronous execution.
@@ -171,7 +171,7 @@ Example:
           (future:fcompleted (act:ask task (cons :exec fun))
               (result)
             (funcall on-complete-fun result)
-            (act:tell task :stop))
+            (ac:stop *task-context* task))
           task)
         (progn 
           (act:tell task (cons :exec fun))

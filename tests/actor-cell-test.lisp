@@ -61,20 +61,6 @@
 ;;     (call cut :stop)
 ;;     (is (string= "after-stop-fun-executed" *after-stop-val*))))
 
-(test stop--with-wait
-  "Tests `stop` function of the cell."
-  (with-fixture cell-fixture (nil
-                              (lambda (message)
-                                (declare (ignore message))
-                                (sleep 0.3)
-                                "receive-return")
-                              0)
-    (let ((now (get-internal-real-time)))
-      (cast cut :wait)  ;; send message that waits a bit but is async
-      (stop cut t)  ;; stop has to wait until stopped
-      (is-false (bt2:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread)))
-      (is (> (- (get-internal-real-time) now) 300)))))
-
 (test no-message-box
   "Test responds with :no-message-handling when no msgbox is configured."
   (defclass no-msg-server (actor-cell) ())
@@ -176,3 +162,53 @@
   (let ((cut (make-instance 'stopping-cell)))
     (setf (msgbox cut) (make-instance 'mesgb:message-box/bt))
     (is (eq :stopped (call cut :stop)))))
+
+(test stopping-cell--using-stop
+  "Stopping using `stop` method should discard any other enqueued messages."
+  (let ((received nil))
+    (with-fixture cell-fixture (nil
+                                (lambda (message)
+                                  (push message received)
+                                  (sleep .5)
+                                  nil)
+                                0)
+      (sleep 0.2)  ;; give the cell some time to start before sending the first message
+      (cast cut :first)
+      (cast cut :second)
+      (stop cut)
+      (cast cut :third)
+      (sleep 1.0)
+      (is (equalp '(:first) received))
+      ))
+  )
+
+(test stopping-cell--using-stop--with-wait
+  "Stopping using `stop` method should discard any other enqueued messages."
+  (let ((received nil))
+    (with-fixture cell-fixture (nil
+                                (lambda (message)
+                                  (push message received)
+                                  (sleep .5)
+                                  nil)
+                                0)
+      (sleep 0.2)  ;; give the cell some time to start before sending the first message
+      (cast cut :first)
+      (cast cut :second)
+      (stop cut t)
+      (cast cut :third)
+      (is (equalp '(:first) received))
+      ))
+  )
+
+(test stop--with-wait
+  "Tests `stop` function of the cell."
+  (with-fixture cell-fixture (nil
+                              (lambda (message)
+                                (declare (ignore message))
+                                (sleep 0.3)
+                                "receive-return")
+                              0)
+    (let ((now (get-internal-real-time)))
+      (cast cut :wait)  ;; send message that waits a bit but is async
+      (stop cut t)  ;; stop has to wait until stopped
+      (is-false (bt2:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread))))))

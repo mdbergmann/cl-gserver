@@ -29,6 +29,9 @@ The default name is concatenated of \"mesgb-\" and a `gensym` generated random n
    (queue :initform nil
           :documentation
           "Which type of queue will be used depends on the `max-queue-size` setting.")
+   (should-run :initform t
+               :documentation
+               "Flag that indicates whether the message processing should commence.")
    (max-queue-size :initform 0
                    :initarg :max-queue-size
                    :reader max-queue-size
@@ -109,10 +112,7 @@ Provide `wait` EQ `T` to wait until the actor cell is stopped."))
 (defclass message-box/bt (message-box-base)
   ((queue-thread :initform nil
                  :documentation
-                 "The thread that pops queue items.")
-   (should-run :initform t
-               :documentation
-               "Flag that indicates whether the message processing should commence."))
+                 "The thread that pops queue items."))
   (:documentation
    "Bordeaux-Threads based message-box with a single thread operating on a message queue.
 This is used when the actor is created using a `:pinned` dispatcher type.
@@ -223,21 +223,14 @@ The submitting code has to await the side-effect and possibly handle a timeout."
       (log:trace "~a: withreply: result should be available: ~a" (name msgbox) handler-result)
       handler-result)))
 
-(defun %triggered-stop-fun (msg self)
-  (when (eq :trigger-ending-the-processing-loop msg)
-    (log:debug "Trigger mesgb stop!")
-    (with-slots (should-run) self
-      (setf should-run nil))))
-
 (defmethod stop ((self message-box/bt) &optional (wait nil))
   (when (next-method-p)
     (call-next-method))
-  (with-slots (should-run) self
-    ;; the next just enforces a 'pop' on the queue to make the message processing stop
-    ;; using `wait' here (which is `withreply-p') will cause a dead-lock.
-    ;; have to find another way to stop with waiting.
-    (submit self :trigger-ending-the-processing-loop wait nil (list #'%triggered-stop-fun self))
-    (setf should-run nil)))
+  (with-slots (should-run queue-thread) self
+    (setf should-run nil)
+    (submit self :trigger-ending-the-processing-loop nil nil nil)
+    (when wait
+      (bt2:join-thread queue-thread))))
 
 ;; ----------------------------------------
 ;; ------------- dispatcher msgbox---------
@@ -272,26 +265,27 @@ The `dispatcher` is kind of like a thread pool."))
 It knows the message-box of the origin actor and acts on it.
 It pops the message from the message-boxes queue and applies the function in `handler-fun-args` on it.
 The `handler-fun-args' is part of the message item."
-  (with-slots (name queue) msgbox
+  (with-slots (name queue should-run) msgbox
     (log:trace "~a: popping message..." name)
     (let ((popped-item (popq queue)))
-      (handle-popped-item popped-item msgbox))))
+      (when should-run
+        (handle-popped-item popped-item msgbox)))))
 
 (defun handle-popped-item (popped-item msgbox)
   "Handles the popped message. Means: applies the function in `handler-fun-args` on the message."
-  (with-slots (name lock) msgbox
+  (with-slots (name lock should-run) msgbox
     (with-slots (message cancelled-p handler-fun-args handler-result) popped-item
       (log:debug "~a: popped message: ~a" name popped-item)
-      (when cancelled-p
-        (log:warn "~a: item got cancelled: ~a" name popped-item))
-      (unless cancelled-p
-        ;; protect the actor from concurrent state changes on the shared dispatcher
-        (bt2:acquire-lock lock :wait t)
-        (unwind-protect
-             (unless cancelled-p
-               (setf handler-result (call-handler-fun handler-fun-args message))
-               handler-result)
-          (bt2:release-lock lock))))))
+      (unless (and should-run (not cancelled-p))
+        (log:warn "~a: item got cancelled or message-box stopped: ~a" name popped-item)
+        (return-from handle-popped-item))
+      ;; protect the actor from concurrent state changes on the shared dispatcher
+      (bt2:acquire-lock lock :wait t)
+      (unwind-protect
+           (when (and should-run (not cancelled-p))
+             (setf handler-result (call-handler-fun handler-fun-args message))
+             handler-result)
+        (bt2:release-lock lock)))))
 
 (defmethod submit ((self message-box/dp) message withreply-p time-out handler-fun-args)
   "Submitting a message on a multi-threaded `dispatcher` is different as submitting on a single threaded message-box. On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads. On the `dispatcher` this is not the case. The order cannot be guaranteed when messages are processed by different `dispatcher` threads. However, we still guarantee a 'single-threadedness' regarding the state of the actor. This is achieved here by protecting the `handler-fun-args` execution with a lock.
@@ -345,6 +339,12 @@ Returns just `T'. Return is actually ignore."
   (dispatch-async dispatcher dispatcher-fun-args))
 
 (defmethod stop ((self message-box/dp) &optional (wait nil))
+  "Stop the message processing.
+This discards further message processing on queued messages.
+The message currently being processed will be processed to the end.
+The `wait` flag has no consequence for the `dispatcher` message-box."
   (declare (ignore wait))
   (when (next-method-p)
-    (call-next-method)))
+    (call-next-method))
+  (setf (slot-value self 'should-run) nil)
+  (submit self :trigger-ending-the-processing-loop nil nil nil))

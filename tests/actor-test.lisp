@@ -266,6 +266,26 @@
                               (typep (cdr n) 'ask-timeout)))
                   (mapcar #'fresult futures)))))))
 
+(test stop--shared--discards-remaining-messages
+  "Tests that stopping an actor discards remaining messages in the message box."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (let* ((received nil)
+           (actor (actor-of cut
+                            :receive (lambda (msg)
+                                       (push msg received)
+                                       (sleep .5)))))
+      (tell actor :first)
+      (tell actor :second)
+      (sleep .1)
+      (act-cell:stop actor)
+      (tell actor :third)
+      (sleep 1.5)
+      (is (or (equalp '(:first) received)
+              (equalp '(:second) received))))
+  ))
+
 (test ask-s--pinned--timeout
   "Tests for ask-s timeout."
   (with-fixture actor-fixture ((lambda (msg)

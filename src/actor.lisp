@@ -30,10 +30,11 @@
                                (init nil)
                                (destroy nil)
                                &allow-other-keys)
-  (declare (ignore name state receive init destroy))
+  (declare (ignore name state init destroy))
   (alexandria:remove-from-plistf all-args
                                  :type)
   (apply #'make-instance type
+         :receive receive
          all-args))
 
 
@@ -256,18 +257,16 @@ Use this from within receive function to reply to a sender."
   (ac:all-actors (context actor)))
 
 (defmethod actor-of ((actor actor)
+                     &rest all-args
                      &key receive
-                       (init nil) (destroy nil)
-                       (dispatcher :shared) (state nil)
-                       (type 'act:actor) (name nil)
-                       (other-args nil))
+                          (init nil)
+                          (destroy nil)
+                          (dispatcher :shared)
+                          (state nil)
+                          (type 'act:actor)
+                          (name nil))
+  (declare (ignore init destroy dispatcher state type name))
   "`ac:actor-context` protocol implementation"
-  (ac:actor-of (context actor)
-    :receive receive
-    :init init
-    :destroy destroy
-    :dispatcher dispatcher
-    :state state
-    :type type
-    :name name
-    :other-args other-args))
+  (apply #'ac:actor-of
+         (context actor)
+         all-args))

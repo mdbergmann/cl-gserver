@@ -85,8 +85,7 @@ If you have additional initializations to make you can do so in `initialize-inst
 
 - `init` and `destroy`: are functions that take one argument, the actor instance.
 Those hooks are called on (after) initialization and (after) stop respectively.
-
-- `other-init-args`: are additional arguments passed to `initialize-instance` of the actor class."))
+"))
 
 (defgeneric pre-start (actor)
   (:documentation

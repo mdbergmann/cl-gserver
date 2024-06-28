@@ -136,7 +136,7 @@ See `config:config-from`."
     (otherwise (user-actor-context system))))
 
 (defun %actor-of (system
-                  &rest all-args
+                  &rest rest
                   &key receive
                        init
                        destroy
@@ -147,13 +147,29 @@ See `config:config-from`."
                        (context-key :user)
                        (queue-size nil)
                   &allow-other-keys)
-  (declare (ignore receive init destroy dispatcher state type name queue-size))
   "Private API to create system actors. Context-key is either `:internal` or `:user`
 Users should use `actor-of`."
-  (alexandria:remove-from-plistf all-args
-                                 :context-key)
-  (apply #'ac:actor-of (actor-context-for-key context-key system)
-         all-args))
+  (alexandria:remove-from-plistf rest
+                                 :context-key
+                                 :receive
+                                 :init
+                                 :destroy 
+                                 :dispatcher 
+                                 :state 
+                                 :type 
+                                 :name 
+                                 :queue-size)
+  (apply #'ac:actor-of
+         (actor-context-for-key context-key system)
+         :receive receive
+         :init init
+         :destroy destroy
+         :dispatcher dispatcher
+         :state state
+         :type type
+         :name name
+         :queue-size queue-size
+         rest))
 
 (defun %find-actors (system path &key test key context-key)
   "Private API to find actors in both contexts the actor-system supports.
@@ -201,7 +217,7 @@ Users should use `ac:find-actors`."
 ;; ----------------------------------------
 
 (defmethod actor-of ((system actor-system)
-                     &rest all-args
+                     &rest rest
                      &key receive
                           (init nil)
                           (destroy nil)
@@ -211,12 +227,28 @@ Users should use `ac:find-actors`."
                           (name nil)
                           (queue-size nil)
                      &allow-other-keys)
-  (declare (ignore receive init destroy dispatcher state type name queue-size))
   "See `ac:actor-of`"
+  (alexandria:remove-from-plistf rest
+                                 :receive
+                                 :init
+                                 :destroy
+                                 :dispatcher
+                                 :state
+                                 :type 
+                                 :name
+                                 :queue-size)
   (apply #'%actor-of
          system
          :context-key :user
-         all-args))
+         :init init
+         :receive receive
+         :destroy destroy
+         :dispatcher dispatcher
+         :state state
+         :type type
+         :name name
+         :queue-size queue-size
+         rest))
 
 (defmethod find-actors ((self actor-system) path &key (test #'string=) (key #'act-cell:name))
   "See `ac:find-actors`"

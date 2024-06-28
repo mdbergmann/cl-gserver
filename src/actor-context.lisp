@@ -107,7 +107,7 @@ An `act:actor` contains an `actor-context`."
     context))
 
 (defmethod actor-of ((context actor-context)
-                     &rest all-args
+                     &rest rest
                      &key
                      receive
                      (init nil)
@@ -118,15 +118,24 @@ An `act:actor` contains an `actor-context`."
                      (name nil)
                      (queue-size nil)
                      &allow-other-keys)
-  (declare (ignore init destroy state type name))
   "See `ac:actor-of`."
   (check-type receive function "a function!")
-  (alexandria:remove-from-plistf all-args
+  (alexandria:remove-from-plistf rest
                                  :queue-size
-                                 :dispatcher)
+                                 :dispatcher
+                                 :init
+                                 :destroy
+                                 :state
+                                 :type
+                                 :name)
   (%actor-of context
              (lambda () (apply #'act:make-actor receive
-                               all-args))
+                               :init init
+                               :destroy destroy
+                               :state state
+                               :type type
+                               :name name
+                               rest))
              :dispatcher dispatcher
              :queue-size queue-size))
 

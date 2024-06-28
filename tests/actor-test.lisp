@@ -50,11 +50,10 @@
 
 (test make-actor--custom-type
   "Tests making an actor instance that is not the default 'actor type."
-  (let ((actor (make-actor "foo"
-                           :receive (lambda (msg)
-                                      (declare (ignore msg)))
+  (let ((actor (make-actor (lambda (msg)
+                             (declare (ignore msg)))
                            :type 'custom-actor
-                           :custom-arg 100 )))
+                           :custom-arg 100)))
     (is (typep actor
                'custom-actor))
     (is (equal 100

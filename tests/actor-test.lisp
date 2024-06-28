@@ -42,10 +42,24 @@
     (is (string= "Foo" (act-cell:name cut)))
     (is (equalp '(1) (act-cell:state cut)))))
 
-(defclass custom-actor (actor) ())
+
+(defclass custom-actor (actor)
+  ((custom-arg :initarg :custom-arg
+               :initform nil
+               :reader custom-arg)))
+
 (test make-actor--custom-type
   "Tests making an actor instance that is not the default 'actor type."
-  (is (typep (make-actor "foo" :type 'custom-actor) 'custom-actor)))
+  (let ((actor (make-actor "foo"
+                           :receive (lambda (msg)
+                                      (declare (ignore msg)))
+                           :type 'custom-actor
+                           :custom-arg 100 )))
+    (is (typep actor
+               'custom-actor))
+    (is (equal 100
+               (custom-arg actor)))))
+
 
 (test make-actor--with-init-and-destroy
   "Tests the `init' and `destroy' hooks."
@@ -494,4 +508,3 @@
                "Counter of unsuccessful attempts should be equal to 9, but it is ~A"
                queue-full-counter))
       (ac:shutdown sys))))
-

@@ -466,3 +466,32 @@
            (is-true init-called)
            (is (equalp '(1 2 3) (act-cell:state actor))))
       (ac:shutdown sys))))
+
+
+(test actor-of--limit-queue-size
+  "Tests that actor's queue size can be limited."
+  (let ((sys (asys:make-actor-system)))
+    (unwind-protect
+         (let* ((counter 0)
+                (queue-full-counter 0)
+                (actor (actor-of sys
+                                 :receive (lambda (msg)
+                                            (declare (ignore msg))
+                                            (sleep 1)
+                                            (incf counter))
+                                 :queue-size 1)))
+           (loop repeat 10
+                 do (handler-case (tell actor "run")
+                      (sento.queue:queue-full-error ()
+                        (incf queue-full-counter))))
+           
+           (sleep 2)
+           
+           (is (= 1 counter)
+               "Counter was incremented more then 1 time, it's value is ~A"
+               counter)
+           (is (= 9 queue-full-counter)
+               "Counter of unsuccessful attempts should be equal to 9, but it is ~A"
+               queue-full-counter))
+      (ac:shutdown sys))))
+

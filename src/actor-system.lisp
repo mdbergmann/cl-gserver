@@ -136,26 +136,24 @@ See `config:config-from`."
     (otherwise (user-actor-context system))))
 
 (defun %actor-of (system
+                  &rest all-args
                   &key receive
-                    init
-                    destroy
-                    dispatcher
-                    state
-                    (type 'act:actor)
-                    name
-                    (context-key :user)
-                    (other-args nil))
+                       init
+                       destroy
+                       dispatcher
+                       state
+                       (type 'act:actor)
+                       name
+                       (context-key :user)
+                       (queue-size nil)
+                  &allow-other-keys)
+  (declare (ignore receive init destroy dispatcher state type name queue-size))
   "Private API to create system actors. Context-key is either `:internal` or `:user`
 Users should use `actor-of`."
-  (ac:actor-of (actor-context-for-key context-key system)
-    :receive receive
-    :init init
-    :destroy destroy
-    :dispatcher dispatcher
-    :state state
-    :type type
-    :name name
-    :other-args other-args))
+  (alexandria:remove-from-plistf all-args
+                                 :context-key)
+  (apply #'ac:actor-of (actor-context-for-key context-key system)
+         all-args))
 
 (defun %find-actors (system path &key test key context-key)
   "Private API to find actors in both contexts the actor-system supports.
@@ -203,22 +201,22 @@ Users should use `ac:find-actors`."
 ;; ----------------------------------------
 
 (defmethod actor-of ((system actor-system)
+                     &rest all-args
                      &key receive
-                       (init nil) (destroy nil)
-                       (dispatcher :shared) (state nil)
-                       (type 'act:actor) (name nil)
-                       (other-args nil))
+                          (init nil)
+                          (destroy nil)
+                          (dispatcher :shared)
+                          (state nil)
+                          (type 'act:actor)
+                          (name nil)
+                          (queue-size nil)
+                     &allow-other-keys)
+  (declare (ignore receive init destroy dispatcher state type name queue-size))
   "See `ac:actor-of`"
-  (%actor-of system
-    :receive receive
-    :init init
-    :destroy destroy
-    :dispatcher dispatcher
-    :state state
-    :type type
-    :name name
-    :context-key :user
-    :other-args other-args))
+  (apply #'%actor-of
+         system
+         :context-key :user
+         all-args))
 
 (defmethod find-actors ((self actor-system) path &key (test #'string=) (key #'act-cell:name))
   "See `ac:find-actors`"

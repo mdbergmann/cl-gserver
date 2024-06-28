@@ -22,19 +22,20 @@
 (define-symbol-macro *state* act-cell:*state*)
 (define-symbol-macro *sender* act-cell:*sender*)
 
-(defmethod make-actor (receive &key
-                                 name state
-                                 (type 'actor)
-                                 (init nil)
-                                 (destroy nil)
-                                 (other-init-args nil))
-  (make-instance type
-                 :name name
-                 :state state
-                 :receive receive
-                 :init init
-                 :destroy destroy
-                 :other-init-args other-init-args))
+(defmethod make-actor (receive &rest all-args
+                               &key
+                               name
+                               state
+                               (type 'actor)
+                               (init nil)
+                               (destroy nil)
+                               &allow-other-keys)
+  (declare (ignore name state receive init destroy))
+  (alexandria:remove-from-plistf all-args
+                                 :type)
+  (apply #'make-instance type
+         all-args))
+
 
 (defun finalize-initialization (actor message-box actor-context)
   "Private API: finalize initialization of the actor with a `mesgb:message-box` and an `ac:actor-context`."

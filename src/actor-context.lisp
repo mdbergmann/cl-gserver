@@ -107,22 +107,28 @@ An `act:actor` contains an `actor-context`."
     context))
 
 (defmethod actor-of ((context actor-context)
-                     &key receive
-                       (init nil) (destroy nil)
-                       (dispatcher :shared) (state nil)
-                       (type 'act:actor) (name nil)
-                       (other-args nil))
+                     &rest all-args
+                     &key
+                     receive
+                     (init nil)
+                     (destroy nil)
+                     (dispatcher :shared)
+                     (state nil)
+                     (type 'act:actor)
+                     (name nil)
+                     (queue-size nil)
+                     &allow-other-keys)
+  (declare (ignore init destroy state type name))
   "See `ac:actor-of`."
   (check-type receive function "a function!")
+  (alexandria:remove-from-plistf all-args
+                                 :queue-size
+                                 :dispatcher)
   (%actor-of context
-             (lambda () (act:make-actor receive
-                                   :state state
-                                   :name name
-                                   :type type
-                                   :init init
-                                   :destroy destroy
-                                   :other-init-args other-args))
-             :dispatcher dispatcher))
+             (lambda () (apply #'act:make-actor receive
+                               all-args))
+             :dispatcher dispatcher
+             :queue-size queue-size))
 
 ;; test 2-arity function with 'path' and 'act-cell-name' (default)
 (defmethod find-actors ((context actor-context) path &key (test #'string=) (key #'act-cell:name))

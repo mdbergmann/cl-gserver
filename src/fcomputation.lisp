@@ -98,7 +98,6 @@ Create a future with:
   "Is `future` completed? Returns either `t` or `nil`."
   (with-slots (promise) future
     (or (promise-finished-p promise)
-        ;; QUESTION:
         ;; When queue is full and we are trying to ask
         ;; actor do more job, it will return a future
         ;; where promise is not finished but errored.

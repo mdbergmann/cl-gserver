@@ -18,7 +18,7 @@
 (in-package :sento.actor-context)
 
 (defgeneric actor-of (context
-                      &key receive init destroy dispatcher state type name queue-size
+                      &key receive init destroy dispatcher state type name
                       &allow-other-keys)
   (:documentation "Interface for creating an actor.
 
@@ -38,7 +38,12 @@ This function allows to unsubsribe from event-stream or such.
 - `:dispatcher` key can be used to define the message dispatcher manually.
   Options that are available by default are `:shared` (default) and `:pinned`. When you defined a custom dispatcher it can be specified here.
 - `:type` can specify a custom actor class. See `act:make-actor` for more info.
-- `:name` to set a specific name to the actor, otherwise a random name will be used."))
+- `:name` to set a specific name to the actor, otherwise a random name will be used.
+
+Additional options:
+
+- `:queue-size` limits the message-box's size. By default, it is unbounded.
+"))
 
 (defgeneric find-actors (context path &key test key)
   (:documentation "Returns actors to be found by the criteria of:

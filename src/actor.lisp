@@ -260,7 +260,7 @@ Use this from within receive function to reply to a sender."
   (ac:all-actors (context actor)))
 
 (defmethod actor-of ((actor actor)
-                     &rest all-args
+                     &rest rest
                      &key receive
                           (init nil)
                           (destroy nil)
@@ -268,8 +268,8 @@ Use this from within receive function to reply to a sender."
                           (state nil)
                           (type 'act:actor)
                           (name nil))
-  (declare (ignore init destroy dispatcher state type name))
+  (declare (ignore receive init destroy dispatcher state type name))
   "`ac:actor-context` protocol implementation"
   (apply #'ac:actor-of
          (context actor)
-         all-args))
+         rest))

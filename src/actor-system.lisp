@@ -217,7 +217,6 @@ Users should use `ac:find-actors`."
                           (state nil)
                           (type 'act:actor)
                           (name nil)
-                          (queue-size nil)
                      &allow-other-keys)
   "See `ac:actor-of`"
   (apply #'%actor-of
@@ -230,7 +229,6 @@ Users should use `ac:find-actors`."
          :state state
          :type type
          :name name
-         :queue-size queue-size
          rest))
 
 (defmethod find-actors ((self actor-system) path &key (test #'string=) (key #'act-cell:name))

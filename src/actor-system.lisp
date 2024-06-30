@@ -150,15 +150,7 @@ See `config:config-from`."
   "Private API to create system actors. Context-key is either `:internal` or `:user`
 Users should use `actor-of`."
   (alexandria:remove-from-plistf rest
-                                 :context-key
-                                 :receive
-                                 :init
-                                 :destroy 
-                                 :dispatcher 
-                                 :state 
-                                 :type 
-                                 :name 
-                                 :queue-size)
+                                 :context-key)
   (apply #'ac:actor-of
          (actor-context-for-key context-key system)
          :receive receive
@@ -228,15 +220,6 @@ Users should use `ac:find-actors`."
                           (queue-size nil)
                      &allow-other-keys)
   "See `ac:actor-of`"
-  (alexandria:remove-from-plistf rest
-                                 :receive
-                                 :init
-                                 :destroy
-                                 :dispatcher
-                                 :state
-                                 :type 
-                                 :name
-                                 :queue-size)
   (apply #'%actor-of
          system
          :context-key :user

@@ -22,7 +22,7 @@
 (define-symbol-macro *state* act-cell:*state*)
 (define-symbol-macro *sender* act-cell:*sender*)
 
-(defmethod make-actor (receive &rest all-args
+(defmethod make-actor (receive &rest rest
                                &key
                                name
                                state
@@ -30,12 +30,15 @@
                                (init nil)
                                (destroy nil)
                                &allow-other-keys)
-  (declare (ignore name state init destroy))
-  (alexandria:remove-from-plistf all-args
+  (alexandria:remove-from-plistf rest
                                  :type)
   (apply #'make-instance type
          :receive receive
-         all-args))
+         :init init
+         :destroy destroy
+         :name name
+         :state state
+         rest))
 
 
 (defun finalize-initialization (actor message-box actor-context)

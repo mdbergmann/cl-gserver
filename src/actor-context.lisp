@@ -120,14 +120,10 @@ An `act:actor` contains an `actor-context`."
                      &allow-other-keys)
   "See `ac:actor-of`."
   (check-type receive function "a function!")
+
   (alexandria:remove-from-plistf rest
                                  :queue-size
-                                 :dispatcher
-                                 :init
-                                 :destroy
-                                 :state
-                                 :type
-                                 :name)
+                                 :dispatcher)
   (%actor-of context
              (lambda () (apply #'act:make-actor receive
                                :init init

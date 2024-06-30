@@ -7,6 +7,7 @@
            #:make-future
            #:futurep
            #:complete-p
+           #:error-p
            #:fcompleted
            #:fawait
            #:fresult
@@ -96,7 +97,21 @@ Create a future with:
 (defun complete-p (future)
   "Is `future` completed? Returns either `t` or `nil`."
   (with-slots (promise) future
-    (promise-finished-p promise)))
+    (or (promise-finished-p promise)
+        ;; QUESTION:
+        ;; When queue is full and we are trying to ask
+        ;; actor do more job, it will return a future
+        ;; where promise is not finished but errored.
+        ;; I think this state should be considered as
+        ;; COMPLETED, because nothing will happen with
+        ;; such future anymore.
+        (blackbird-base::promise-errored-p promise))))
+
+(defun error-p (future)
+  "Is `future` errored? Returns either `t` or `nil`."
+  (with-slots (promise) future
+    ;; For some reason, this function is not external in the blackbird :(
+    (blackbird-base::promise-errored-p promise)))
 
 (defun %fcompleted (future completed-fun)
   (with-slots (promise) future

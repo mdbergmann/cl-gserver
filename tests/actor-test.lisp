@@ -486,24 +486,30 @@
   (let ((sys (asys:make-actor-system)))
     (unwind-protect
          (let* ((counter 0)
-                (queue-full-counter 0)
                 (actor (actor-of sys
                                  :receive (lambda (msg)
                                             (declare (ignore msg))
-                                            (sleep 1)
-                                            (incf counter))
-                                 :queue-size 1)))
-           (loop repeat 10
-                 do (handler-case (tell actor "run")
-                      (sento.queue:queue-full-error ()
-                        (incf queue-full-counter))))
-           
-           (sleep 2)
+                                            (sleep 0.1)
+                                            (incf counter)
+                                            (reply t))
+                                 :queue-size 1))
+                (futures
+                  (loop repeat 10
+                        collect (ask actor "run") into futures
+                        finally
+                           (is-true (await-cond 2
+                                      (every #'complete-p
+                                             futures)))
+                           (return futures))))
            
            (is (= 1 counter)
                "Counter was incremented more then 1 time, it's value is ~A"
                counter)
-           (is (= 9 queue-full-counter)
-               "Counter of unsuccessful attempts should be equal to 9, but it is ~A"
-               queue-full-counter))
+           
+           (let ((queue-full-counter
+                   (length (remove-if-not #'error-p
+                                          futures))))
+             (is (= 9 queue-full-counter)
+                 "Counter of unsuccessful attempts should be equal to 9, but it is ~A"
+                 queue-full-counter)))
       (ac:shutdown sys))))

@@ -2,7 +2,6 @@
   (:use :cl)
   (:nicknames :act)
   (:export #:make-actor
-           #:other-init-args
            #:actor
            #:tell
            #:!
@@ -28,11 +27,7 @@
 (in-package :sento.actor)
 
 (defclass actor (actor-cell)
-  ((other-init-args :initarg :other-init-args
-                    :initform nil
-                    :reader other-init-args
-                    :documentation "Other init args passed to `make-actor`")
-   (receive :initarg :receive
+  ((receive :initarg :receive
             :initform (error "'receive' must be specified!")
             :reader receive
             :documentation
@@ -71,7 +66,7 @@ There is asynchronous `tell`, a synchronous `ask-s` and asynchronous `ask` which
 
 To stop an actors message processing in order to cleanup resouces you should `tell` (or `ask-s`) the `:stop` message. It will respond with `:stopped` (in case of `ask(-s)`)."))
 
-(defgeneric make-actor (receive &key name state type init destroy other-init-args)
+(defgeneric make-actor (receive &key name state type init destroy &allow-other-keys)
   (:documentation
    "Constructs an `actor`.
 
@@ -90,8 +85,7 @@ If you have additional initializations to make you can do so in `initialize-inst
 
 - `init` and `destroy`: are functions that take one argument, the actor instance.
 Those hooks are called on (after) initialization and (after) stop respectively.
-
-- `other-init-args`: are additional arguments passed to `initialize-instance` of the actor class."))
+"))
 
 (defgeneric pre-start (actor)
   (:documentation

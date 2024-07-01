@@ -52,6 +52,16 @@
     (fcompleted future (value) (setf completed-value value))
     (is (eq t (assert-cond (lambda () (string= "fulfilled" completed-value)) 1)))))
 
+(test complete-with-error
+  "Test the completion with fcompleted callback with an error."
+
+  (let ((future (make-future (lambda (resolve-fun)
+                               (declare (ignore resolve-fun))
+                               (error "Some error")))))
+    (is (eq :not-ready (fresult future)))
+    (is (complete-p future))
+    (is (error-p future))))
+
 (test mapping-futures--with-fut-macro
   "Tests mapping futures"
   (flet ((future-generator (x)

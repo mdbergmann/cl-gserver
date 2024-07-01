@@ -42,10 +42,23 @@
     (is (string= "Foo" (act-cell:name cut)))
     (is (equalp '(1) (act-cell:state cut)))))
 
-(defclass custom-actor (actor) ())
+
+(defclass custom-actor (actor)
+  ((custom-arg :initarg :custom-arg
+               :initform nil
+               :reader custom-arg)))
+
 (test make-actor--custom-type
   "Tests making an actor instance that is not the default 'actor type."
-  (is (typep (make-actor "foo" :type 'custom-actor) 'custom-actor)))
+  (let ((actor (make-actor (lambda (msg)
+                             (declare (ignore msg)))
+                           :type 'custom-actor
+                           :custom-arg 100)))
+    (is (typep actor
+               'custom-actor))
+    (is (equal 100
+               (custom-arg actor)))))
+
 
 (test make-actor--with-init-and-destroy
   "Tests the `init' and `destroy' hooks."
@@ -485,4 +498,38 @@
                                                   "Bar")))))
            (is-true init-called)
            (is (equalp '(1 2 3) (act-cell:state actor))))
+      (ac:shutdown sys))))
+
+
+(test actor-of--limit-queue-size
+  "Tests that actor's queue size can be limited."
+  (let ((sys (asys:make-actor-system)))
+    (unwind-protect
+         (let* ((counter 0)
+                (actor (actor-of sys
+                                 :receive (lambda (msg)
+                                            (declare (ignore msg))
+                                            (sleep 0.1)
+                                            (incf counter)
+                                            (reply t))
+                                 :queue-size 1))
+                (futures
+                  (loop repeat 10
+                        collect (ask actor "run") into futures
+                        finally
+                           (is-true (await-cond 2
+                                      (every #'complete-p
+                                             futures)))
+                           (return futures))))
+           
+           (is (= 1 counter)
+               "Counter was incremented more then 1 time, it's value is ~A"
+               counter)
+           
+           (let ((queue-full-counter
+                   (length (remove-if-not #'error-p
+                                          futures))))
+             (is (= 9 queue-full-counter)
+                 "Counter of unsuccessful attempts should be equal to 9, but it is ~A"
+                 queue-full-counter)))
       (ac:shutdown sys))))

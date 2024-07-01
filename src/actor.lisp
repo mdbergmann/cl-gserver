@@ -22,19 +22,24 @@
 (define-symbol-macro *state* act-cell:*state*)
 (define-symbol-macro *sender* act-cell:*sender*)
 
-(defmethod make-actor (receive &key
-                                 name state
-                                 (type 'actor)
-                                 (init nil)
-                                 (destroy nil)
-                                 (other-init-args nil))
-  (make-instance type
-                 :name name
-                 :state state
-                 :receive receive
-                 :init init
-                 :destroy destroy
-                 :other-init-args other-init-args))
+(defmethod make-actor (receive &rest rest
+                               &key
+                               name
+                               state
+                               (type 'actor)
+                               (init nil)
+                               (destroy nil)
+                               &allow-other-keys)
+  (alexandria:remove-from-plistf rest
+                                 :type)
+  (apply #'make-instance type
+         :receive receive
+         :init init
+         :destroy destroy
+         :name name
+         :state state
+         rest))
+
 
 (defun finalize-initialization (actor message-box actor-context)
   "Private API: finalize initialization of the actor with a `mesgb:message-box` and an `ac:actor-context`."
@@ -255,18 +260,16 @@ Use this from within receive function to reply to a sender."
   (ac:all-actors (context actor)))
 
 (defmethod actor-of ((actor actor)
+                     &rest rest
                      &key receive
-                       (init nil) (destroy nil)
-                       (dispatcher :shared) (state nil)
-                       (type 'act:actor) (name nil)
-                       (other-args nil))
+                          (init nil)
+                          (destroy nil)
+                          (dispatcher :shared)
+                          (state nil)
+                          (type 'act:actor)
+                          (name nil))
+  (declare (ignore receive init destroy dispatcher state type name))
   "`ac:actor-context` protocol implementation"
-  (ac:actor-of (context actor)
-    :receive receive
-    :init init
-    :destroy destroy
-    :dispatcher dispatcher
-    :state state
-    :type type
-    :name name
-    :other-args other-args))
+  (apply #'ac:actor-of
+         (context actor)
+         rest))

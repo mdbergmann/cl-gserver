@@ -505,31 +505,14 @@
   "Tests that actor's queue size can be limited."
   (let ((sys (asys:make-actor-system)))
     (unwind-protect
-         (let* ((counter 0)
-                (actor (actor-of sys
+         (let* ((actor (actor-of sys
                                  :receive (lambda (msg)
-                                            (declare (ignore msg))
-                                            (sleep 0.1)
-                                            (incf counter)
-                                            (reply t))
+                                            (declare (ignore msg)))
                                  :queue-size 1))
-                (futures
-                  (loop repeat 10
-                        collect (ask actor "run") into futures
-                        finally
-                           (is-true (await-cond 2
-                                      (every #'complete-p
-                                             futures)))
-                           (return futures))))
-           
-           (is (= 1 counter)
-               "Counter was incremented more then 1 time, it's value is ~A"
-               counter)
-           
-           (let ((queue-full-counter
-                   (length (remove-if-not #'error-p
-                                          futures))))
-             (is (= 9 queue-full-counter)
-                 "Counter of unsuccessful attempts should be equal to 9, but it is ~A"
-                 queue-full-counter)))
+                (tells
+                  (loop :repeat 10
+                        :collect (ignore-errors
+                                  (tell actor "run")))))
+           (is (= 1 (length (mapcan (lambda (x) (if x (list x))) tells))))
+           (is (= 9 (length (mapcan (lambda (x) (if (null x) (list x))) tells)))))
       (ac:shutdown sys))))

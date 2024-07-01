@@ -97,20 +97,22 @@ Create a future with:
 (defun complete-p (future)
   "Is `future` completed? Returns either `t` or `nil`."
   (with-slots (promise) future
-    (or (promise-finished-p promise)
-        ;; When queue is full and we are trying to ask
-        ;; actor do more job, it will return a future
-        ;; where promise is not finished but errored.
-        ;; I think this state should be considered as
-        ;; COMPLETED, because nothing will happen with
-        ;; such future anymore.
-        (blackbird-base::promise-errored-p promise))))
+    (let ((the-promise (blackbird-base::lookup-forwarded-promise promise)))
+      (or (promise-finished-p the-promise)
+          ;; When queue is full and we are trying to ask
+          ;; actor do more job, it will return a future
+          ;; where promise is not finished but errored.
+          ;; I think this state should be considered as
+          ;; COMPLETED, because nothing will happen with
+          ;; such future anymore.
+          (blackbird-base::promise-errored-p the-promise)))))
 
 (defun error-p (future)
   "Is `future` errored? Returns either `t` or `nil`."
   (with-slots (promise) future
     ;; For some reason, this function is not external in the blackbird :(
-    (blackbird-base::promise-errored-p promise)))
+    (let ((the-promise (blackbird-base::lookup-forwarded-promise promise)))
+      (blackbird-base::promise-errored-p the-promise))))
 
 (defun %fcompleted (future completed-fun)
   (with-slots (promise) future
@@ -158,10 +160,15 @@ Disclaimer: naive implementation. There may be better solutions."
   "Get the computation result. If not yet available `:not-ready` is returned."
   (with-slots (promise) future
     (let ((the-promise (blackbird-base::lookup-forwarded-promise promise)))
-      (with-slots (values) the-promise
-        (if (null values)
-            :not-ready
-            (car values))))))
+      (cond
+        ((error-p future)
+         (blackbird-base::promise-error the-promise))
+        ((complete-p future)
+         (with-slots (values) the-promise
+           (if (null values)
+               :Not-ready
+               (car values))))
+        (t :not-ready)))))
 
 (defmacro frecover (future &rest handler-forms)
   "Catch errors in futures using `frecover`

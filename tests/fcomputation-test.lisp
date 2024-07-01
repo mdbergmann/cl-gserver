@@ -58,9 +58,10 @@
   (let ((future (make-future (lambda (resolve-fun)
                                (declare (ignore resolve-fun))
                                (error "Some error")))))
-    (is (eq :not-ready (fresult future)))
     (is (complete-p future))
-    (is (error-p future))))
+    (is (error-p future))
+    (is (typep (fresult future) 'simple-error))
+    (is (equal "Some error" (simple-condition-format-control (fresult future))))))
 
 (test mapping-futures--with-fut-macro
   "Tests mapping futures"
@@ -71,7 +72,7 @@
                       (fmap (future-generator completed-value) (completed-value)
                         completed-value)))))
       (is-true (assert-cond (lambda ()
-                              (= 3 (fresult future)))
+                              (eql 3 (fresult future)))
                             1)))))
 
 (test mapping-using-arrows

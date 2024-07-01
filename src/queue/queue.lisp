@@ -56,9 +56,9 @@
 
 (defmethod pushq ((self queue-bounded) element)
   (with-slots (queue lock cvar fill-count max-items) self
-    (when (>= fill-count max-items)
-      (error 'queue-full-error :queue self))
     (bt2:with-lock-held (lock)
+      (when (>= fill-count max-items)
+        (error 'queue-full-error :queue self))
       (cl-speedy-queue:enqueue element queue)
       (incf fill-count)
       (bt2:condition-notify cvar))))

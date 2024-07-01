@@ -1,5 +1,5 @@
 (defsystem "sento"
-  :version "3.1.1"
+  :version "3.3.0"
   :author "Manfred Bergmann"
   :license "Apache-2"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -73,6 +73,7 @@
                  (:file "config-test")
                  (:file "wheel-timer-test")
                  (:file "timeutils-test")
+                 (:file "bounded-queue-test")
                  (:file "actor-cell-test")
                  (:file "actor-mp-test")
                  (:file "agent-test")

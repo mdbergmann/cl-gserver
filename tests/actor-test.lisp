@@ -3,7 +3,8 @@
   (:shadow #:! #:?)
   (:import-from #:miscutils
                 #:assert-cond
-                #:await-cond)
+                #:await-cond
+                #:filter)
   (:import-from #:timeutils
                 #:ask-timeout)
   (:import-from #:ac
@@ -513,6 +514,6 @@
                   (loop :repeat 10
                         :collect (ignore-errors
                                   (tell actor "run")))))
-           (is (= 1 (length (mapcan (lambda (x) (if x (list x))) tells))))
-           (is (= 9 (length (mapcan (lambda (x) (if (null x) (list x))) tells)))))
+           (is (= 1 (length (filter (lambda (x) (if x x)) tells))))
+           (is (= 9 (length (filter #'null tells)))))
       (ac:shutdown sys))))

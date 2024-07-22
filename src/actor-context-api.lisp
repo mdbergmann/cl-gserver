@@ -28,8 +28,8 @@ Using this function there is no need to use both `act:make-actor`.
 `context` is either an `asys:actor-system`, an `ac:actor-context`, or an `act:actor` (any type of actor).
 The new actor is created in the given context.
 
-- `:receive` is required and must be a 3-arity lambda with arguments: 1. the actor, 2. the message, 3. the state
-  Usually expressed as `(lambda (self msg state))`.
+- `:receive` is required and must be a 1-arity function where the arguments is received message object.
+The function can be just a lambda like `(lambda (msg) ...)`.
 - `:init`: is an optional initialization function with one argument: the actor instance (self).
 This represents a 'start' hook that is called after the actor was fully initialized.
 - `:destroy`: is an optional destroy function also with the actor instance as argument.

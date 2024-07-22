@@ -270,6 +270,4 @@ Use this from within receive function to reply to a sender."
                           (name nil))
   (declare (ignore receive init destroy dispatcher state type name))
   "`ac:actor-context` protocol implementation"
-  (apply #'ac:actor-of
-         (context actor)
-         rest))
+  (apply #'ac:actor-of (context actor) rest))

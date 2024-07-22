@@ -89,7 +89,8 @@ Provide `wait` EQ `T` to wait until the actor cell is stopped."))
 
 (defun call-handler-fun (handler-fun-args message)
   "`handler-fun-args' is a list with a function at `car' and args as `cdr'.
-`message' is prepended to args."
+`message' is prepended to args.
+This is used to break the environment possibly captured as closure at 'submit' stage."
   (when handler-fun-args
     (let ((fun (car handler-fun-args))
           (args (cdr handler-fun-args)))
@@ -187,17 +188,6 @@ It will be apply'ed with the rest of the args when the message was 'popped' from
         (submit/reply self queue message time-out handler-fun-args)
         (submit/no-reply self queue message handler-fun-args))))
 
-(defun submit/no-reply (msgbox queue message handler-fun-args)
-  "This is quite efficient, no locking necessary.
-If the message was submitted with timeout then the timeout plays no role here, the message is handled anyhow.
-The submitting code has to await the side-effect and possibly handle a timeout."
-  (let ((push-item (make-message-item/bt
-                    :message message
-                    :handler-fun-args handler-fun-args)))
-    (log:debug "~a: pushing item to queue: ~a" (name msgbox) push-item)
-    (queue:pushq queue push-item)
-    t))
-
 (defun submit/reply (msgbox queue message time-out handler-fun-args)
   "This function has to provide a result and so it has to wait until the queue thread has processed the message. Processing of the queue item is done in `process-queue-item'."
   (let* ((withreply-lock (bt2:make-lock))
@@ -222,6 +212,17 @@ The submitting code has to await the side-effect and possibly handle a timeout."
     (with-slots (handler-result) push-item
       (log:trace "~a: withreply: result should be available: ~a" (name msgbox) handler-result)
       handler-result)))
+
+(defun submit/no-reply (msgbox queue message handler-fun-args)
+  "This is quite efficient, no locking necessary.
+If the message was submitted with timeout then the timeout plays no role here, the message is handled anyhow.
+The submitting code has to await the side-effect and possibly handle a timeout."
+  (let ((push-item (make-message-item/bt
+                    :message message
+                    :handler-fun-args handler-fun-args)))
+    (log:debug "~a: pushing item to queue: ~a" (name msgbox) push-item)
+    (queue:pushq queue push-item)
+    t))
 
 (defmethod stop ((self message-box/bt) &optional (wait nil))
   (when (next-method-p)

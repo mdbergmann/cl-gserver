@@ -17,6 +17,12 @@ Sento features:
 (Please also checkout the API [documentation](https://mdbergmann.github.io/cl-gserver/index.html) for further information)
 (for migrations from Sento v2, please check below migration guide)
 
+### Projects using Sento (for example usage):
+
+- [Chipi automation tool](https://github.com/mdbergmann/chipi): Actors used for foundational primitives like 'items' and 'persistences'.
+- [KNX-conn](https://github.com/mdbergmann/knx-conn): Used for asynchronous reading/writing from/to KNX bus
+- [Hunchentoot taskmanager](https://github.com/mdbergmann/cl-tbnl-gserver-tmgr): High throughput Hunchentoot task manager
+
 #### Creating an actor-system
 
 The first thing you wanna do is to create an actor system.

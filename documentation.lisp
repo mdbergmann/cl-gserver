@@ -84,6 +84,10 @@
   (future:fmap pax:macro)
   (future:frecover pax:macro))
 
+(in-package :async-future)
+(pax:defsection @async-future (:title "Async Future handling")
+  (async-future:fasync-completed pax:macro))
+
 (in-package :act)
 (pax:defsection @actor (:title "Actor")
   (act:actor class)
@@ -109,6 +113,7 @@
   (ac:find-actors (method () (act:actor t)))
   (ac:all-actors (method () (act:actor)))
   (ac:actor-of (method () (act:actor)))
+  (ac:system (method () (act:actor)))
   
   (act-cell::@actor-cell pax:section)
   (mesgb::@message-box-base pax:section)
@@ -244,6 +249,8 @@
   (disp::@dispatcher pax:section)
   (router::@router pax:section)
   (ev::@eventstream pax:section)
+  (future::@future pax:section)
+  (async-future::@async-future pax:section)
   (tasks::@tasks pax:section)
   (config::@config pax:section)
   (wt::@scheduler pax:section))

@@ -166,7 +166,7 @@ Disclaimer: naive implementation. There may be better solutions."
         ((complete-p future)
          (with-slots (values) the-promise
            (if (null values)
-               :Not-ready
+               :not-ready
                (car values))))
         (t :not-ready)))))
 

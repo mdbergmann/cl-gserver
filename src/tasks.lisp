@@ -130,7 +130,7 @@ The task is automatically stopped and removed from the context and will not be a
   "`task-async` schedules the function `fun` for asynchronous execution.
 `fun` must be a 0-arity function.
 `on-complete-fun` is a 1-arity completion handler function. When called the result is delivered.
-The completion handler function parameter may also be a `(cons :handler-error condition)` construct in case an error happened within the message handling.
+The completion handler function parameter may also be a `(cons :handler-error condition)` construct in case an error happened within the message handling. Be also aware that the `on-complete-fun` function is also called on the defined dispatcher execution environment and _not_ on the calling thread.
 
 Using `task-async` provides two alternatives:
 
@@ -170,8 +170,9 @@ Example:
         (progn
           (future:fcompleted (act:ask task (cons :exec fun))
               (result)
-            (funcall on-complete-fun result)
-            (ac:stop *task-context* task))
+            (act:tell task (cons :exec (lambda () (funcall on-complete-fun result))))
+            (act:tell task :stop))
+          ;;(ac:stop *task-context* task))
           task)
         (progn 
           (act:tell task (cons :exec fun))

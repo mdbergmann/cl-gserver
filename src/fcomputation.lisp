@@ -122,7 +122,7 @@ Create a future with:
 (defmacro fcompleted (future (result) &body body)
   "Completion handler on the given `future`.
 
-If the `future` is already complete then the `body` executed immediately.
+If the `future` is already complete then the `body` executes immediately.
 `result` represents the future result.
 `body` is executed when future completed.
 Returns the future.

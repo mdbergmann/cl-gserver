@@ -27,7 +27,8 @@ Only use the defined interface here to talk to them."))
 (defgeneric dispatch (dispatcher dispatcher-exec-fun)
   (:documentation
    "Dispatches a function (`dispatch-exec-fun`) to a worker of the dispatcher to execute there.
-`dispatch` does a `ask-s` to a `dispatcher` worker, which means this call will block."))
+`dispatch` does a `ask-s` to a `dispatcher` worker, which means this call will block.
+The parameter `dispatcher-exec-fun` if of the form: `(list (function <something>))`"))
 
 (defgeneric dispatch-async (dispatcher dispatcher-exec-fun)
   (:documentation

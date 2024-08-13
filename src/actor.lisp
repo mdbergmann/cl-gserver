@@ -11,7 +11,8 @@
                       ev:publish
                       ac:find-actors
                       ac:all-actors
-                      ac:actor-of)))
+                      ac:actor-of
+                      ac:system)))
 
 ;; add symbol-functions for ! and ?
 (setf (symbol-function '!) #'act:tell)
@@ -271,3 +272,7 @@ Use this from within receive function to reply to a sender."
   (declare (ignore receive init destroy dispatcher state type name))
   "`ac:actor-context` protocol implementation"
   (apply #'ac:actor-of (context actor) rest))
+
+(defmethod system ((actor actor))
+  "Retrieves the `asys:actor-system` from actor."
+  (ac:system (context actor)))

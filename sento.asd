@@ -1,5 +1,5 @@
 (defsystem "sento"
-  :version "3.3.1"
+  :version "3.4.0"
   :author "Manfred Bergmann"
   :license "Apache-2"
   :description "Actor framework featuring actors and agents for easy access to state and asynchronous operations."
@@ -26,6 +26,7 @@
                  (:file "wheel-timer")
                  (:file "timeutils")
                  (:file "miscutils")
+                 (:file "fcomputation")
                  (:file "dispatcher-api")
                  (:module "queue"
                   :components
@@ -41,7 +42,7 @@
                  (:file "eventstream-api")
                  (:file "actor-system-api")
                  (:file "actor-context-api")
-                 (:file "fcomputation")
+                 (:file "fasync-completed")
                  (:file "actor")
                  (:file "agent")
                  (:file "eventstream")
@@ -86,6 +87,7 @@
                  (:file "eventstream-test")
                  (:file "actor-context-test")
                  (:file "fcomputation-test")
+                 (:file "fasync-completed-test")
                  (:file "dispatcher-test")
                  (:file "actor-system-test")
                  (:file "actor-tree-test")

@@ -118,8 +118,7 @@
   (act-cell::@actor-cell pax:section)
   (mesgb::@message-box-base pax:section)
   (mesgb::@message-box/bt pax:section)
-  (mesgb::@message-box/dp pax:section)
-  (future::@future pax:section))
+  (mesgb::@message-box/dp pax:section))
 
 (in-package :agthash)
 (pax:defsection @hash-agent (:title "Hash-table agent")
@@ -250,7 +249,7 @@
   (router::@router pax:section)
   (ev::@eventstream pax:section)
   (future::@future pax:section)
-  (async-future::@async-future pax:section)
+  ;;(async-future::@async-future pax:section)
   (tasks::@tasks pax:section)
   (config::@config pax:section)
   (wt::@scheduler pax:section))

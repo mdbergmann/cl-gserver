@@ -51,7 +51,6 @@
 <li><a href="#SENTO.MESSAGEB:@MESSAGE-BOX-BASE%20MGL-PAX:SECTION" title="Message-box base class">2.3.2 Message-box base class</a></li>
 <li><a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FBT%20MGL-PAX:SECTION" title="Message-box threaded">2.3.3 Message-box threaded</a></li>
 <li><a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FDP%20MGL-PAX:SECTION" title="Message-box dispatched">2.3.4 Message-box dispatched</a></li>
-<li><a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">2.3.5 Future (delayed-computation)</a></li>
 </ul></li>
 <li><a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION" title="Agent">2.4 Agent</a>
 
@@ -67,9 +66,10 @@
 </ul></li>
 <li><a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">2.7 Router</a></li>
 <li><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">2.8 Eventstream</a></li>
-<li><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">2.9 Tasks</a></li>
-<li><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">2.10 Config</a></li>
-<li><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">2.11 Scheduler</a></li>
+<li><a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">2.9 Future (delayed-computation)</a></li>
+<li><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">2.10 Tasks</a></li>
+<li><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">2.11 Config</a></li>
+<li><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">2.12 Scheduler</a></li>
 </ul></li>
 </ul>
 <h6>[in package SENTO.DOCS]</h6>
@@ -77,7 +77,7 @@
 <a id="SENTO.DOCS:@README%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="sento.html" title="sento documentation">&#8592;</a> <a href="sento.html" title="sento documentation">&#8593;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8594;</a> <a href="#SENTO.DOCS:@README%20MGL-PAX:SECTION" title="Introduction">&#8634;</a></span></span></p>
 <h2><a href="#SENTO.DOCS:@README%20MGL-PAX:SECTION">1 Introduction</a></h2>
-<!--![CI](https://github.com/mdbergmann/cl-gserver/workflows/CI/badge.svg?branch=master)-->
+<p><img src="https://github.com/mdbergmann/cl-gserver/workflows/CI/badge.svg?branch=master" alt="CI" /></p>
 <h3>Introduction - Actor framework featuring actors and agents</h3>
 <p><strong>Sento</strong> is a 'message passing' library/framework with actors similar to Erlang or Akka. It supports creating systems that should work reactive, require parallel computing and event based message handling.</p>
 <p>Sento features:</p>
@@ -88,13 +88,15 @@
 <li>EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages. This is similar to an event-bus.</li>
 <li>Tasks: a simple API for concurrency.</li>
 </ul>
-<h3>Changes from Sento 2</h3>
-<p>No new features actually. But many cleanups, obstacles removed, and hopefully a more consistent way of doing things. There are many API changes so it varants a major version update.
-One of the big obstacles, the <code>cons</code> return was removed. This was still a relict from early versions where things were more leaned on the Erlang GenServer way of doing things. But Common Lisp is not Erlang VM.
-The changes should allow adding more features in the future, like remoting support. But this is not easy, in partucular to make it secure.</p>
 <h3>Intro</h3>
 <p>(Please also checkout the API <a href="https://mdbergmann.github.io/cl-gserver/index.html" >documentation</a> for further information)
 (for migrations from Sento v2, please check below migration guide)</p>
+<h3>Projects using Sento (for example usage):</h3>
+<ul>
+<li><a href="https://github.com/mdbergmann/chipi" >Chipi automation tool</a>: Actors used for foundational primitives like 'items' and 'persistences'.</li>
+<li><a href="https://github.com/mdbergmann/knx-conn" >KNX-conn</a>: Used for asynchronous reading/writing from/to KNX bus</li>
+<li><a href="https://github.com/mdbergmann/cl-tbnl-gserver-tmgr" >Hunchentoot taskmanager</a>: High throughput Hunchentoot task manager</li>
+</ul>
 <h4>Creating an actor-system</h4>
 <p>The first thing you wanna do is to create an actor system.
 In simple terms, an actor system is a container where all actors live in. So at any time the actor system knows which actors exist.</p>
@@ -462,28 +464,31 @@ The concurrency here depends on the number of dispatcher workers.</p>
 <h3>Benchmarks</h3>
 <p>Hardware specs (M1)):</p>
 <ul>
-<li>Mac M1 Ultra, 32 GB RAM</li>
+<li>Mac M1 Ultra, 64 GB RAM</li>
 </ul>
 <p><img src="./docs/perf-M1Ultra.png" alt="" />
 <img src="perf-M1Ultra.png" alt="" /></p>
-<p>Hardware specs (x86-64), bench of previous version, Sento 2:</p>
+<p>Hardware specs (x86-64):</p>
 <ul>
 <li>iMac Pro (2017), 8 Core Xeon, 32 GB RAM</li>
 </ul>
 <p><img src="./docs/perf-x86_64.png" alt="" />
 <img src="perf-x86_64.png" alt="" /></p>
 <p><strong>All</strong></p>
-<p>Version 3 of Sento uses the jpl-queues package which is slightly slower than the lparallel cons-queue. The lparallel cons-queue package is available as separate asdf system if needed and if the additional dependency is acceptable.</p>
-<p>The benchmark was created by having 8 threads throwing each 125k (1m altogether) messages at 1 actor. The timing was taken for when the actor did finish processing those 1m messages. The messages were sent by either all <code>tell</code>, <code>ask-s</code>, or <code>ask</code> to an actor whose message-box worked using a single thread (<code>:pinned</code>) or a dispatched message queue (<code>:shared</code> / <code>dispatched</code>) with 8 workers.</p>
+<p>Version 3.2.0 of Sento uses the sbcl <code>sb-concurrent:queue</code> whcih is very fast and works using CAS (compare-and-swap) where as the other implementations use a still fast double stack queue protected by locking.</p>
+<p>The benchmark was created by having 8 threads throwing each 125k (1M altogether) messages at 1 actor. The timing was taken for when the actor did finish processing those 1M messages. The messages were sent by either all <code>tell</code>, <code>ask-s</code>, or <code>ask</code> to an actor whose message-box worked using a single thread (<code>:pinned</code>) or a dispatched message queue (<code>:shared</code> / <code>dispatched</code>) with 8 workers.</p>
 <p>Of course a <code>tell</code> is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow.</p>
-<p><strong>SBCL (v2.3.0)</strong></p>
-<p>Even though SBCL is by far the fastest one with <code>tell</code> on both <code>:pinned</code> and <code>dispatched</code>, it had massive problems on <code>dispatched - ask-s</code> where I had to lower the number of messages to 200k alltogether. Beyond that value SBCL didn't get it worked out.</p>
+<p><strong>SBCL (v2.4.1)</strong></p>
+<p>SBCL is very fast, but this tests uses SBCLs own queue implementation based on CAS instead of locking.</p>
 <p><strong>LispWorks (8.0.1)</strong></p>
 <p>LispWorks is fast overall. Not as fast as SBCL. But it seems the GC is more robust, in particular on the <code>dispatched - ask</code>.</p>
 <p><strong>CCL (v1.12)</strong></p>
 <p>Unfortunately CCL doesn't work natively on M1 Apple CPU.</p>
 <p><strong>ABCL (1.9)</strong></p>
-<p>The pleasant surprise was ABCL. While not being the fastest it is the most robust. Where SBCL and CCL were struggling you could throw anything at ABCL and it'll cope with it. I'm assuming that this is because of the massively battle proven Java Runtime.</p>
+<p>The pleasant surprise was ABCL. While not being the fastest it is very robust.</p>
+<p><strong>Clasp 2.5.0</strong></p>
+<p>Very slow. Used default settings, as also for the other tests.
+Maybe something can be tweaked?</p>
 <h3>Migration guide for moving from Sento 2 to Sento 3</h3>
 <ul>
 <li><p>the receive function is now 1-arity. It only takes the a message parameter.
@@ -493,6 +498,8 @@ Previous 'self' and 'state' parameters are now accessible via <code>*self*</code
 <li><p>'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.</p></li>
 </ul>
 <h3>Version history</h3>
+<p><strong>Version 3.3.0 (1.7.2024):</strong> See: <a href="https://github.com/mdbergmann/cl-gserver/compare/3.2.1...3.3.0" >Changelog</a></p>
+<p><strong>Version 3.2.0 (13.2.2024):</strong> Message-box queue changes. SBCL now uses a separate fast CAS based queue coming as a contrib package. The other impls use a faster queue by default but still with locking. New benchmarks.</p>
 <p><strong>Version 3.1.0 (14.1.2024):</strong> Added scheduler facility to actor-system that allows to schedule functions one or recurring. See API documentation for more info.</p>
 <p><strong>Version 3.0.4 (10.7.2023):</strong> Allow additional initialization arguments be passed to actor. Wheel-time now knows CANCEL function. Partial fix for clasp (2.3.0).</p>
 <p><strong>Version 3.0.3 (1.4.2023):</strong> Minor implementation changes regarding pre-start and after-stop.</p>
@@ -768,7 +775,7 @@ Current exists:</p>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AACTOR-OF-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:ACTOR-OF%20GENERIC-FUNCTION"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20GENERIC-FUNCTION" >ACTOR-OF</a></span></span> <span class="locative-args">CONTEXT &amp;KEY RECEIVE INIT DESTROY DISPATCHER STATE TYPE NAME OTHER-ARGS</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20GENERIC-FUNCTION" >ACTOR-OF</a></span></span> <span class="locative-args">CONTEXT &amp;KEY RECEIVE INIT DESTROY DISPATCHER STATE TYPE NAME QUEUE-SIZE &amp;ALLOW-OTHER-KEYS</span></span></p>
 
 <p>Interface for creating an actor.</p>
 
@@ -779,8 +786,8 @@ Using this function there is no need to use both <code>act:make-actor</code>.</p
 The new actor is created in the given context.</p>
 
 <ul>
-<li><p><code>:receive</code> is required and must be a 3-arity lambda with arguments: 1. the actor, 2. the message, 3. the state
-  Usually expressed as <code>(lambda (self msg state))</code>.</p></li>
+<li><p><code>:receive</code> is required and must be a 1-arity function where the arguments is received message object.
+The function can be just a lambda like <code>(lambda (msg) ...)</code>.</p></li>
 <li><p><code>:init</code>: is an optional initialization function with one argument: the actor instance (self).
 This represents a 'start' hook that is called after the actor was fully initialized.</p></li>
 <li><p><code>:destroy</code>: is an optional destroy function also with the actor instance as argument.
@@ -790,7 +797,12 @@ This function allows to unsubsribe from event-stream or such.</p></li>
   Options that are available by default are <code>:shared</code> (default) and <code>:pinned</code>. When you defined a custom dispatcher it can be specified here.</p></li>
 <li><p><code>:type</code> can specify a custom actor class. See <code>act:make-actor</code> for more info.</p></li>
 <li><p><code>:name</code> to set a specific name to the actor, otherwise a random name will be used.</p></li>
-<li><p><code>:other-args</code> are in the actor instance as <code>other-init-args</code> and can be acted upon in i.e. <code>pre-start</code> for additional initialization.</p></li>
+</ul>
+
+<p>Additional options:</p>
+
+<ul>
+<li><code>:queue-size</code> limits the message-box's size. By default, it is unbounded.</li>
 </ul></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29"></a>
@@ -859,7 +871,7 @@ Specify <code>wait</code> as <code>T</code> to block until all actors of the con
 <p><a id="x-28SENTO-2EACTOR-3AMAKE-ACTOR-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.ACTOR:MAKE-ACTOR%20GENERIC-FUNCTION"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:MAKE-ACTOR%20GENERIC-FUNCTION" >MAKE-ACTOR</a></span></span> <span class="locative-args">RECEIVE &amp;KEY NAME STATE TYPE INIT DESTROY OTHER-INIT-ARGS</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:MAKE-ACTOR%20GENERIC-FUNCTION" >MAKE-ACTOR</a></span></span> <span class="locative-args">RECEIVE &amp;KEY NAME STATE TYPE INIT DESTROY &amp;ALLOW-OTHER-KEYS</span></span></p>
 
 <p>Constructs an <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>actor</code></a>.</p>
 
@@ -875,7 +887,6 @@ If you have additional initializations to make you can do so in <a href="http://
 <li><p><code>state</code>: initialize an actor with a state. (default is <code>nil</code>)</p></li>
 <li><p><code>init</code> and <code>destroy</code>: are functions that take one argument, the actor instance.
 Those hooks are called on (after) initialization and (after) stop respectively.</p></li>
-<li><p><code>other-init-args</code>: are additional arguments passed to <code>initialize-instance</code> of the actor class.</p></li>
 </ul></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-3ATELL-20GENERIC-FUNCTION-29"></a>
@@ -1044,6 +1055,13 @@ This generic function is more meant to create specialized actors by providing di
 
 <p><a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a> protocol implementation</p></li>
 </ul>
+<p><a id="x-28SENTO-2EACTOR-CONTEXT-3ASYSTEM-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-29-29-29"></a>
+<a id="SENTO.ACTOR-CONTEXT:SYSTEM%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:SYSTEM%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >SYSTEM</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
+
+<p>Retrieves the <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>asys:actor-system</code></a> from actor.</p></li>
+</ul>
 <p><a id="x-28SENTO-2EACTOR-CELL-3A-40ACTOR-CELL-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.ACTOR-CELL:@ACTOR-CELL%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.ACTOR:@ACTOR%20MGL-PAX:SECTION" title="Actor">&#8592;</a> <a href="#SENTO.ACTOR:@ACTOR%20MGL-PAX:SECTION" title="Actor">&#8593;</a> <a href="#SENTO.MESSAGEB:@MESSAGE-BOX-BASE%20MGL-PAX:SECTION" title="Message-box base class">&#8594;</a> <a href="#SENTO.ACTOR-CELL:@ACTOR-CELL%20MGL-PAX:SECTION" title="Actor-Cell">&#8634;</a></span></span></p>
@@ -1068,7 +1086,7 @@ one can decide what kind of message-box/dispatcher should be used for the new <c
 
 <p>See <code>actor-context</code> <code>actor-of</code> method for more information on this.</p>
 
-<p>To stop an <code>actor</code> message handling and you can send the <code>:stop</code> message 
+<p>To stop an <code>actor</code> message handling and you can send the <code>:stop</code> message
 either via <code>call</code> (which will respond with <code>:stopped</code>) or <code>cast</code>.
 This is to cleanup thread resources when the actor is not needed anymore.</p>
 
@@ -1120,13 +1138,13 @@ State of the cell can be changed via <a href="http://www.lispworks.com/documenta
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:STOP%20GENERIC-FUNCTION" >STOP</a></span></span> <span class="locative-args">ACTOR-CELL &amp;OPTIONAL WAIT</span></span></p>
 
 <p>Stops the actor-cells message processing gracefully.
-This is not an immediate stop.<br/>
+This is not an immediate stop.
 There are two ways to stop an actor (cell).</p>
 
 <ol>
 <li><p>by calling this function.
-It is not an immediate stop. The actor will finish the current message processing.<br/>
-<code>wait</code>: waits until the cell is stopped.  </p></li>
+It is not an immediate stop. The actor will finish the current message processing.
+<code>wait</code>: waits until the cell is stopped.</p></li>
 <li><p>by sending <code>:stop</code> to the actor (cell).
 This won't allow to wait when the actor is stopped, even not with <code>ask-s</code>.
 The <code>:stop</code> message (symbol) is normally processed by the actors message processing.</p></li>
@@ -1141,9 +1159,9 @@ The <code>:stop</code> message (symbol) is normally processed by the actors mess
 Specify a timeout in seconds if you require a result within a certain period of time.
 Be aware though that this is a resource intensive wait based on a waiting thread.
 The result can be of different types.
-Normal result: the last expression of <a href="#SENTO.ACTOR-CELL:HANDLE-CALL%20GENERIC-FUNCTION" title="SENTO.ACTOR-CELL:HANDLE-CALL GENERIC-FUNCTION"><code>handle-call</code></a> (or <code>receive</code> in <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>act:actor</code></a>) implementation. 
+Normal result: the last expression of <a href="#SENTO.ACTOR-CELL:HANDLE-CALL%20GENERIC-FUNCTION" title="SENTO.ACTOR-CELL:HANDLE-CALL GENERIC-FUNCTION"><code>handle-call</code></a> (or <code>receive</code> in <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>act:actor</code></a>) implementation.
 Error result: `(cons :handler-error <condition>)'
-In case of time-out the error condition is a bt:timeout.</p></li>
+In case of time-out the error condition is a bt2:timeout.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CELL-3ACAST-20FUNCTION-29"></a>
 <a id="SENTO.ACTOR-CELL:CAST%20FUNCTION"></a></p>
@@ -1185,7 +1203,7 @@ The default name is concatenated of &quot;mesgb-&quot; and a <a href="http://www
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#SENTO.MESSAGEB:MAX-QUEUE-SIZE%20%28MGL-PAX:READER%20SENTO.MESSAGEB:MESSAGE-BOX-BASE%29" >MAX-QUEUE-SIZE</a></span></span> <span class="locative-args">MESSAGE-BOX-BASE (:MAX-QUEUE-SIZE = 0)</span></span></p>
 
-<p>0 or nil will make an unbounded queue. 
+<p>0 or nil will make an unbounded queue.
 A value <code>&gt; 0</code> will make a bounded queue.
 Don't make it too small. A queue size of 1000 might be a good choice.</p></li>
 </ul>
@@ -1237,7 +1255,7 @@ It will be apply'ed with the rest of the args when the message was 'popped' from
 </ul>
 <p><a id="x-28SENTO-2EMESSAGEB-3A-40MESSAGE-BOX-2FDP-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.MESSAGEB:@MESSAGE-BOX%2FDP%20MGL-PAX:SECTION"></a></p>
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FBT%20MGL-PAX:SECTION" title="Message-box threaded">&#8592;</a> <a href="#SENTO.ACTOR:@ACTOR%20MGL-PAX:SECTION" title="Actor">&#8593;</a> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8594;</a> <a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FDP%20MGL-PAX:SECTION" title="Message-box dispatched">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FBT%20MGL-PAX:SECTION" title="Message-box threaded">&#8592;</a> <a href="#SENTO.ACTOR:@ACTOR%20MGL-PAX:SECTION" title="Actor">&#8593;</a> <a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION" title="Agent">&#8594;</a> <a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FDP%20MGL-PAX:SECTION" title="Message-box dispatched">&#8634;</a></span></span></p>
 <h4><a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FDP%20MGL-PAX:SECTION">2.3.4 Message-box dispatched</a></h4>
 <h6>[in package SENTO.MESSAGEB with nicknames MESGB]</h6>
 <p><a id="x-28SENTO-2EMESSAGEB-3AMESSAGE-BOX-2FDP-20CLASS-29"></a>
@@ -1263,138 +1281,9 @@ handling of the message on the dispatcher queue thread.</p>
 
 <p>Returns the handler-result if <code>withreply-p' is eq to``T</code>', otherwise the return is just `<code>T</code>' and is usually ignored.</p></li>
 </ul>
-<p><a id="x-28SENTO-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29"></a>
-<a id="SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION"></a></p>
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FDP%20MGL-PAX:SECTION" title="Message-box dispatched">&#8592;</a> <a href="#SENTO.ACTOR:@ACTOR%20MGL-PAX:SECTION" title="Actor">&#8593;</a> <a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION" title="Agent">&#8594;</a> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8634;</a></span></span></p>
-<h4><a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION">2.3.5 Future (delayed-computation)</a></h4>
-<h6>[in package SENTO.FUTURE with nicknames FUTURE]</h6>
-<p><a id="x-28SENTO-2EFUTURE-3AFUTURE-20CLASS-29"></a>
-<a id="SENTO.FUTURE:FUTURE%20CLASS"></a></p>
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FUTURE%20CLASS" >FUTURE</a></span></span></span></p>
-
-<p>The wrapped <a href="https://orthecreedence.github.io/blackbird/" >blackbird</a> <code>promise</code>, here called <code>future</code>.<br/>
-Not all features of blackbird's <code>promise</code> are supported.<br/>
-This <code>future</code> wrapper changes the terminology. A <code>future</code> is a delayed computation.
-A <code>promise</code> is the fulfillment of the delayed computation.</p></li>
-</ul>
-<p><a id="x-28SENTO-2EFUTURE-3AWITH-FUT-20MGL-PAX-3AMACRO-29"></a>
-<a id="SENTO.FUTURE:WITH-FUT%20MGL-PAX:MACRO"></a></p>
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:WITH-FUT%20MGL-PAX:MACRO" >WITH-FUT</a></span></span> <span class="locative-args">&amp;BODY BODY</span></span></p>
-
-<p>Convenience macro for creating a <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a>.</p>
-
-<p>The <code>future</code> will be resolved with the result of the body form.</p></li>
-</ul>
-<p><a id="x-28SENTO-2EFUTURE-3AWITH-FUT-RESOLVE-20MGL-PAX-3AMACRO-29"></a>
-<a id="SENTO.FUTURE:WITH-FUT-RESOLVE%20MGL-PAX:MACRO"></a></p>
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:WITH-FUT-RESOLVE%20MGL-PAX:MACRO" >WITH-FUT-RESOLVE</a></span></span> <span class="locative-args">&amp;BODY BODY</span></span></p>
-
-<p>Convenience macro for creating a <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a> that must be resolved manually via <code>fresolve</code>.</p>
-
-<p>This allows to spawn threads or other asynchronous operations as part of <code>body</code>.
-However, you have to <code>resolve</code> the future eventually by applying a result on <code>resolve</code>.</p>
-
-<p>Example:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">with-fut-resolve</span></i>
-  <span class="paren2">(<span class="code">bt:make-thread
-   <span class="paren3">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren4">(<span class="code"></span>)</span>
-     <span class="paren4">(<span class="code">fresolve <span class="paren5">(<span class="code">do-some-lengthy-calculation</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre></li>
-</ul>
-<p><a id="x-28SENTO-2EFUTURE-3AMAKE-FUTURE-20FUNCTION-29"></a>
-<a id="SENTO.FUTURE:MAKE-FUTURE%20FUNCTION"></a></p>
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:MAKE-FUTURE%20FUNCTION" >MAKE-FUTURE</a></span></span> <span class="locative-args">EXECUTE-FUN</span></span></p>
-
-<p>Creates a future. <code>execute-fun</code> is the lambda that is executed when the future is created.
-<code>execute-fun</code> takes a parameter which is the <code>execute-fun</code> funtion. <code>execute-fun</code> function
-takes the <code>promise</code> as parameter which is the computed value. Calling <code>execute-fun</code> with the promise
-will fulfill the <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a>.<br/>
-Manually calling <code>execute-fun</code> to fulfill the <code>future</code> is in contrast to just fulfill the <code>future</code> from a return value. The benefit of the <code>execute-fun</code> is flexibility. In  a multi-threaded environment <code>execute-fun</code> could spawn a thread, in which case <code>execute-fun</code> would return immediately but no promise-value can be given at that time. The <code>execute-fun</code> can be called from a thread and provide the promise.</p>
-
-<p>Create a future with:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">make-future <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">execute-fun</span>)</span> 
-               <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">promise <span class="paren6">(<span class="code">delayed-computation</span>)</span></span>)</span></span>)</span>
-                 <span class="paren4">(<span class="code">bt:make-thread <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren6">(<span class="code"></span>)</span>
-                   <span class="paren6">(<span class="code">sleep 0.5</span>)</span>
-                   <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_232.html#IDX618" class="symbol">funcall</a> execute-fun promise</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre></li>
-</ul>
-<p><a id="x-28SENTO-2EFUTURE-3ACOMPLETE-P-20FUNCTION-29"></a>
-<a id="SENTO.FUTURE:COMPLETE-P%20FUNCTION"></a></p>
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:COMPLETE-P%20FUNCTION" >COMPLETE-P</a></span></span> <span class="locative-args">FUTURE</span></span></p>
-
-<p>Is <code>future</code> completed? Returns either <code>t</code> or <code>nil</code>.</p></li>
-</ul>
-<p><a id="x-28SENTO-2EFUTURE-3AFCOMPLETED-20MGL-PAX-3AMACRO-29"></a>
-<a id="SENTO.FUTURE:FCOMPLETED%20MGL-PAX:MACRO"></a></p>
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FCOMPLETED%20MGL-PAX:MACRO" >FCOMPLETED</a></span></span> <span class="locative-args">FUTURE (RESULT) &amp;BODY BODY</span></span></p>
-
-<p>Completion handler on the given <code>future</code>.</p>
-
-<p>If the <code>future</code> is already complete then the <code>body</code> executed immediately.<br/>
-<code>result</code> represents the future result.
-<code>body</code> is executed when future completed.</p>
-
-<p>Example:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">fcompleted <span class="paren2">(<span class="code"><i><span class="symbol">with-fut</span></i>
-              <span class="paren3">(<span class="code">sleep .5</span>)</span>
-              1</span>)</span>
-            <span class="paren2">(<span class="code">result</span>)</span>
-  <span class="paren2">(<span class="code">format t <span class="string">"Future result ~a~%"</span> result</span>)</span></span>)</span></span></code></pre></li>
-</ul>
-<p><a id="x-28SENTO-2EFUTURE-3AFRESULT-20FUNCTION-29"></a>
-<a id="SENTO.FUTURE:FRESULT%20FUNCTION"></a></p>
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FRESULT%20FUNCTION" >FRESULT</a></span></span> <span class="locative-args">FUTURE</span></span></p>
-
-<p>Get the computation result. If not yet available <code>:not-ready</code> is returned.</p></li>
-</ul>
-<p><a id="x-28SENTO-2EFUTURE-3AFMAP-20MGL-PAX-3AMACRO-29"></a>
-<a id="SENTO.FUTURE:FMAP%20MGL-PAX:MACRO"></a></p>
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FMAP%20MGL-PAX:MACRO" >FMAP</a></span></span> <span class="locative-args">FUTURE (RESULT) &amp;BODY BODY</span></span></p>
-
-<p><code>fmap</code> maps a future.</p>
-
-<p><code>future</code> is the future that is mapped.
-<code>result</code> is the result of the future when it completed.
-<code>body</code> is the form that executes when the future is completed. The result of <code>body</code> generates a new future.</p>
-
-<p>Example:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">fmap <span class="paren2">(<span class="code"><i><span class="symbol">with-fut</span></i> 0</span>)</span> <span class="paren2">(<span class="code">result</span>)</span>
-  <span class="paren2">(<span class="code">1+ result</span>)</span></span>)</span></span></code></pre></li>
-</ul>
-<p><a id="x-28SENTO-2EFUTURE-3AFRECOVER-20MGL-PAX-3AMACRO-29"></a>
-<a id="SENTO.FUTURE:FRECOVER%20MGL-PAX:MACRO"></a></p>
-<ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FRECOVER%20MGL-PAX:MACRO" >FRECOVER</a></span></span> <span class="locative-args">FUTURE &amp;REST HANDLER-FORMS</span></span></p>
-
-<p>Catch errors in futures using <code>frecover</code>
-It works similar to <a href="http://www.lispworks.com/documentation/HyperSpec/Body/m_hand_1.htm" title="HANDLER-CASE (MGL-PAX:CLHS MGL-PAX:MACRO)"><code>handler-case</code></a>.</p>
-
-<p>Example:</p>
-
-<pre><code><span class="code"><span class="paren1">(<span class="code">fresult
- <span class="paren2">(<span class="code">frecover
-  <span class="paren3">(<span class="code">-&gt; <span class="paren4">(<span class="code"><i><span class="symbol">with-fut</span></i> 0</span>)</span>
-    <span class="paren4">(<span class="code">fmap <span class="paren5">(<span class="code">value</span>)</span>
-      <span class="paren5">(<span class="code">declare <span class="paren6">(<span class="code">ignore value</span>)</span></span>)</span>
-      <span class="paren5">(<span class="code">error <span class="string">"foo"</span></span>)</span></span>)</span></span>)</span>
-    <span class="paren3">(<span class="code">fmap <span class="paren4">(<span class="code">value</span>)</span>
-      <span class="paren4">(<span class="code">+ value 1</span>)</span></span>)</span></span>)</span></span>)</span>
-  <span class="paren1">(<span class="code">error <span class="paren2">(<span class="code">c</span>)</span> <span class="paren2">(<span class="code">format nil <span class="string">"~a"</span> c</span>)</span></span>)</span>))</span></code></pre></li>
-</ul>
 <p><a id="x-28SENTO-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.AGENT:@AGENT%20MGL-PAX:SECTION"></a></p>
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.AGENT.HASH:@HASH-AGENT%20MGL-PAX:SECTION" title="Hash-table agent">&#8594;</a> <a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION" title="Agent">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FDP%20MGL-PAX:SECTION" title="Message-box dispatched">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.AGENT.HASH:@HASH-AGENT%20MGL-PAX:SECTION" title="Hash-table agent">&#8594;</a> <a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION" title="Agent">&#8634;</a></span></span></p>
 <h3><a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION">2.4 Agent</a></h3>
 <h6>[in package SENTO.AGENT with nicknames AGT]</h6>
 <p><a id="x-28SENTO-2EAGENT-3AAGENT-20CLASS-29"></a>
@@ -1702,7 +1591,8 @@ Specify an <a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACT
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:DISPATCH%20GENERIC-FUNCTION" >DISPATCH</a></span></span> <span class="locative-args">DISPATCHER DISPATCHER-EXEC-FUN</span></span></p>
 
 <p>Dispatches a function (<code>dispatch-exec-fun</code>) to a worker of the dispatcher to execute there.
-<code>dispatch</code> does a <code>ask-s</code> to a <code>dispatcher</code> worker, which means this call will block.</p></li>
+<code>dispatch</code> does a <code>ask-s</code> to a <code>dispatcher</code> worker, which means this call will block.
+The parameter <code>dispatcher-exec-fun</code> if of the form: <code>(list (function &lt;something&gt;))</code></p></li>
 </ul>
 <p><a id="x-28SENTO-2EDISPATCHER-3ADISPATCH-ASYNC-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.DISPATCHER:DISPATCH-ASYNC%20GENERIC-FUNCTION"></a></p>
@@ -1833,7 +1723,7 @@ Otherwise see: <code>act:ask</code>.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION"></a></p>
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8594;</a> <a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8594;</a> <a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">&#8634;</a></span></span></p>
 <h3><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION">2.8 Eventstream</a></h3>
 <h6>[in package SENTO.EVENTSTREAM with nicknames EV]</h6>
 <p><a id="x-28SENTO-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29"></a>
@@ -1964,10 +1854,153 @@ Or if you want to listen to all lists, subscribe with <code>'cons</code>.</p></l
 
 <p>Convenience. Allows to publish to <a href="#SENTO.EVENTSTREAM:EVENTSTREAM%20CLASS" title="SENTO.EVENTSTREAM:EVENTSTREAM CLASS"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
 </ul>
+<p><a id="x-28SENTO-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29"></a>
+<a id="SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION"></a></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8594;</a> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8634;</a></span></span></p>
+<h3><a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION">2.9 Future (delayed-computation)</a></h3>
+<h6>[in package SENTO.FUTURE with nicknames FUTURE]</h6>
+<p><a id="x-28SENTO-2EFUTURE-3AFUTURE-20CLASS-29"></a>
+<a id="SENTO.FUTURE:FUTURE%20CLASS"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FUTURE%20CLASS" >FUTURE</a></span></span></span></p>
+
+<p>The wrapped <a href="https://orthecreedence.github.io/blackbird/" >blackbird</a> <code>promise</code>, here called <code>future</code>.
+Not all features of blackbird's <code>promise</code> are supported.
+This <code>future</code> wrapper changes the terminology. A <code>future</code> is a delayed computation.
+A <code>promise</code> is the fulfillment of the delayed computation.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFUTURE-3AWITH-FUT-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FUTURE:WITH-FUT%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:WITH-FUT%20MGL-PAX:MACRO" >WITH-FUT</a></span></span> <span class="locative-args">&amp;BODY BODY</span></span></p>
+
+<p>Convenience macro for creating a <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a>.</p>
+
+<p>The <code>future</code> will be resolved with the result of the body form.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFUTURE-3AWITH-FUT-RESOLVE-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FUTURE:WITH-FUT-RESOLVE%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:WITH-FUT-RESOLVE%20MGL-PAX:MACRO" >WITH-FUT-RESOLVE</a></span></span> <span class="locative-args">&amp;BODY BODY</span></span></p>
+
+<p>Convenience macro for creating a <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a> that must be resolved manually via <code>fresolve</code>.</p>
+
+<p>This allows to spawn threads or other asynchronous operations as part of <code>body</code>.
+However, you have to <code>resolve</code> the future eventually by applying a result on <code>resolve</code>.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code"><i><span class="symbol">with-fut-resolve</span></i>
+  <span class="paren2">(<span class="code">bt2:make-thread
+   <span class="paren3">(<span class="code"><i><span class="symbol">lambda</span></i> <span class="paren4">(<span class="code"></span>)</span>
+     <span class="paren4">(<span class="code"><i><span class="symbol">let</span></i> <span class="paren5">(<span class="code"><span class="paren6">(<span class="code">result <span class="paren1">(<span class="code">do-some-lengthy-calculation</span>)</span></span>)</span></span>)</span>
+       <span class="paren5">(<span class="code">fresolve result</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre></li>
+</ul>
+<p><a id="x-28SENTO-2EFUTURE-3AMAKE-FUTURE-20FUNCTION-29"></a>
+<a id="SENTO.FUTURE:MAKE-FUTURE%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:MAKE-FUTURE%20FUNCTION" >MAKE-FUTURE</a></span></span> <span class="locative-args">EXECUTE-FUN</span></span></p>
+
+<p>Creates a future. <code>execute-fun</code> is the lambda that is executed when the future is created.
+<code>execute-fun</code> takes a parameter which is the <code>execute-fun</code> funtion. <code>execute-fun</code> function
+takes the <code>promise</code> as parameter which is the computed value. Calling <code>execute-fun</code> with the promise
+will fulfill the <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a>.
+Manually calling <code>execute-fun</code> to fulfill the <code>future</code> is in contrast to just fulfill the <code>future</code> from a return value. The benefit of the <code>execute-fun</code> is flexibility. In  a multi-threaded environment <code>execute-fun</code> could spawn a thread, in which case <code>execute-fun</code> would return immediately but no promise-value can be given at that time. The <code>execute-fun</code> can be called from a thread and provide the promise.</p>
+
+<p>Create a future with:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">make-future <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">execute-fun</span>)</span>
+               <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">promise <span class="paren6">(<span class="code">delayed-computation</span>)</span></span>)</span></span>)</span>
+                 <span class="paren4">(<span class="code">bt2:make-thread <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren6">(<span class="code"></span>)</span>
+                   <span class="paren6">(<span class="code">sleep 0.5</span>)</span>
+                   <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_232.html#IDX618" class="symbol">funcall</a> execute-fun promise</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre></li>
+</ul>
+<p><a id="x-28SENTO-2EFUTURE-3ACOMPLETE-P-20FUNCTION-29"></a>
+<a id="SENTO.FUTURE:COMPLETE-P%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:COMPLETE-P%20FUNCTION" >COMPLETE-P</a></span></span> <span class="locative-args">FUTURE</span></span></p>
+
+<p>Is <code>future</code> completed? Returns either <code>t</code> or <code>nil</code>.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFUTURE-3AFCOMPLETED-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FUTURE:FCOMPLETED%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FCOMPLETED%20MGL-PAX:MACRO" >FCOMPLETED</a></span></span> <span class="locative-args">FUTURE (RESULT) &amp;BODY BODY</span></span></p>
+
+<p>Completion handler on the given <code>future</code>.</p>
+
+<p>If the <code>future</code> is already complete then the <code>body</code> executes immediately.
+<code>result</code> represents the future result.
+<code>body</code> is executed when future completed.
+Returns the future.</p>
+
+<p>Notes on execution context:
+By calling <code>fcompleted</code> a completion function is installed on the <code>future</code>.
+If the <code>future</code>s execute function is not delaying or called by the same thread as the one calling <code>fcompleted</code>,
+then <code>body</code> is called by the callers thread.
+If, however, the <code>future</code> is delaying and doing computation in another thread and later also resolving the <code>future</code> in that thread (this depends on how the <code>future</code> is defined), then the <code>body</code> form is executed by the thread that is resolving the <code>future</code>.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">fcompleted <span class="paren2">(<span class="code"><i><span class="symbol">with-fut</span></i>
+              <span class="paren3">(<span class="code">sleep .5</span>)</span>
+              1</span>)</span>
+            <span class="paren2">(<span class="code">result</span>)</span>
+  <span class="paren2">(<span class="code">format t <span class="string">"Future result ~a~%"</span> result</span>)</span></span>)</span></span></code></pre></li>
+</ul>
+<p><a id="x-28SENTO-2EFUTURE-3AFRESULT-20FUNCTION-29"></a>
+<a id="SENTO.FUTURE:FRESULT%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FRESULT%20FUNCTION" >FRESULT</a></span></span> <span class="locative-args">FUTURE</span></span></p>
+
+<p>Get the computation result. If not yet available <code>:not-ready</code> is returned.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFUTURE-3AFMAP-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FUTURE:FMAP%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FMAP%20MGL-PAX:MACRO" >FMAP</a></span></span> <span class="locative-args">FUTURE (RESULT) &amp;BODY BODY</span></span></p>
+
+<p><code>fmap</code> maps a future.</p>
+
+<p><code>future</code> is the future that is mapped.
+<code>result</code> is the result of the future when it completed.
+<code>body</code> is the form that executes when the future is completed. The result of <code>body</code> generates a new future.</p>
+
+<p>Notes on execution context:
+By calling <code>fmap</code> a mapping function is installed on the <code>future</code>.
+If the <code>future</code>s execute function is not delaying or called by the same thread as the one calling <code>fmap</code>,
+then <code>body</code> is called by the callers thread.
+If, however, the <code>future</code> is delaying and doing computation in another thread and later also resolving the <code>future</code> in that thread (this depends on how the <code>future</code> is defined), then the <code>body</code> form is executed by the thread that is resolving the <code>future</code>.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">fmap <span class="paren2">(<span class="code"><i><span class="symbol">with-fut</span></i> 0</span>)</span> <span class="paren2">(<span class="code">result</span>)</span>
+  <span class="paren2">(<span class="code">1+ result</span>)</span></span>)</span></span></code></pre></li>
+</ul>
+<p><a id="x-28SENTO-2EFUTURE-3AFRECOVER-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FUTURE:FRECOVER%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FRECOVER%20MGL-PAX:MACRO" >FRECOVER</a></span></span> <span class="locative-args">FUTURE &amp;REST HANDLER-FORMS</span></span></p>
+
+<p>Catch errors in futures using <code>frecover</code>
+It works similar to <a href="http://www.lispworks.com/documentation/HyperSpec/Body/m_hand_1.htm" title="HANDLER-CASE (MGL-PAX:CLHS MGL-PAX:MACRO)"><code>handler-case</code></a>.</p>
+
+<p>Example:</p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">fresult
+ <span class="paren2">(<span class="code">frecover
+  <span class="paren3">(<span class="code">-&gt; <span class="paren4">(<span class="code"><i><span class="symbol">with-fut</span></i> 0</span>)</span>
+    <span class="paren4">(<span class="code">fmap <span class="paren5">(<span class="code">value</span>)</span>
+      <span class="paren5">(<span class="code">declare <span class="paren6">(<span class="code">ignore value</span>)</span></span>)</span>
+      <span class="paren5">(<span class="code">error <span class="string">"foo"</span></span>)</span></span>)</span></span>)</span>
+    <span class="paren3">(<span class="code">fmap <span class="paren4">(<span class="code">value</span>)</span>
+      <span class="paren4">(<span class="code">+ value 1</span>)</span></span>)</span></span>)</span></span>)</span>
+  <span class="paren1">(<span class="code">error <span class="paren2">(<span class="code">c</span>)</span> <span class="paren2">(<span class="code">format nil <span class="string">"~a"</span> c</span>)</span></span>)</span>))</span></code></pre></li>
+</ul>
 <p><a id="x-28SENTO-2ETASKS-3A-40TASKS-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.TASKS:@TASKS%20MGL-PAX:SECTION"></a></p>
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8594;</a> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION">2.9 Tasks</a></h3>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8594;</a> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8634;</a></span></span></p>
+<h3><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION">2.10 Tasks</a></h3>
 <h6>[in package SENTO.TASKS with nicknames TASKS]</h6>
 <p><a id="x-28SENTO-2ETASKS-3AWITH-CONTEXT-20MGL-PAX-3AMACRO-29"></a>
 <a id="SENTO.TASKS:WITH-CONTEXT%20MGL-PAX:MACRO"></a></p>
@@ -2057,6 +2090,10 @@ The task is automatically stopped and removed from the context and will not be a
 <code>on-complete-fun</code> is a 1-arity completion handler function. When called the result is delivered.
 The completion handler function parameter may also be a <code>(cons :handler-error condition)</code> construct in case an error happened within the message handling.</p>
 
+<p>Be aware about the execution of the completion function:
+The completion function is, by a very high chance, executed by the thread that executed <code>fun</code> function.
+Only in very rare cases it could be possible that the completion function is executed by the caller of <code>task-async</code>. See <a href="#SENTO.FUTURE:FCOMPLETED%20MGL-PAX:MACRO" title="SENTO.FUTURE:FCOMPLETED MGL-PAX:MACRO"><code>future:fcompleted</code></a> for more info.</p>
+
 <p>Using <code>task-async</code> provides two alternatives:</p>
 
 <ul>
@@ -2134,7 +2171,7 @@ If all workers are busy then the computation of <code>fun</code> is queued.</p>
 <p><a id="x-28SENTO-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">&#8594;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION">2.10 Config</a></h3>
+<h3><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION">2.11 Config</a></h3>
 <h6>[in package SENTO.CONFIG with nicknames CONFIG]</h6>
 <p><a id="x-28SENTO-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29"></a>
 <a id="SENTO.CONFIG:CONFIG-FROM%20FUNCTION"></a></p>
@@ -2191,7 +2228,7 @@ Both <code>config</code> and <code>fallback-config</code> must be plists, or a '
 <p><a id="x-28SENTO-2EWHEEL-TIMER-3A-40SCHEDULER-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION">2.11 Scheduler</a></h3>
+<h3><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION">2.12 Scheduler</a></h3>
 <h6>[in package SENTO.WHEEL-TIMER with nicknames WT]</h6>
 <p><a id="x-28SENTO-2EWHEEL-TIMER-3AWHEEL-TIMER-20CLASS-29"></a>
 <a id="SENTO.WHEEL-TIMER:WHEEL-TIMER%20CLASS"></a></p>

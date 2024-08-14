@@ -127,6 +127,12 @@ If the `future` is already complete then the `body` executes immediately.
 `body` is executed when future completed.
 Returns the future.
 
+Notes on execution context:
+By calling `fcompleted` a completion function is installed on the `future`.
+If the `future`s execute function is not delaying or called by the same thread as the one calling `fcompleted`,
+then `body` is called by the callers thread.
+If, however, the `future` is delaying and doing computation in another thread and later also resolving the `future` in that thread (this depends on how the `future` is defined), then the `body` form is executed by the thread that is resolving the `future`.
+
 Example:
 
 ```
@@ -237,6 +243,13 @@ Example:
 `future` is the future that is mapped.
 `result` is the result of the future when it completed.
 `body` is the form that executes when the future is completed. The result of `body` generates a new future.
+
+Notes on execution context:
+By calling `fmap` a mapping function is installed on the `future`.
+If the `future`s execute function is not delaying or called by the same thread as the one calling `fmap`,
+then `body` is called by the callers thread.
+If, however, the `future` is delaying and doing computation in another thread and later also resolving the `future` in that thread (this depends on how the `future` is defined), then the `body` form is executed by the thread that is resolving the `future`.
+
 
 Example:
 

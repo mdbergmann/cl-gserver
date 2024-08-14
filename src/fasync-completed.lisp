@@ -5,6 +5,12 @@
 
 (in-package :sento.async-future)
 
+#|
+
+UNUSED/EXPERIMENT: See notes on `fcompleted'.
+
+|#
+
 (defmacro fasync-completed (future context dispatcher-id (result) &body body)
   "Asynchronous future completion handler.
 

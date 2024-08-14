@@ -688,6 +688,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 
 ### Version history
 
+**Version 3.3.2 (14.8.2024):** Primarily documentation changes in regards to `future`
+
 **Version 3.3.0 (1.7.2024):** See: [Changelog](https://github.com/mdbergmann/cl-gserver/compare/3.2.1...3.3.0)
 
 **Version 3.2.0 (13.2.2024):** Message-box queue changes. SBCL now uses a separate fast CAS based queue coming as a contrib package. The other impls use a faster queue by default but still with locking. New benchmarks.

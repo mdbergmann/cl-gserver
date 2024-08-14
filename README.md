@@ -682,8 +682,6 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 
 - the return value of 'receive' function has always been a bit of an obstacle. So now it is ignored for `tell` and `ask`. In both cases a `reply` function can be used to reply to a sender. `reply` implicitly uses `*sender*` but can be overriden (see 'long running and asynchronous operations in receive'). The 'receive' function return value is still relevant for `ask-s`, but now it doesn't need to be a `cons`. Whatever is returned is received by `ask-s`.
 
-- the lparallel dependency was removed to reduce dependencies. However, the cons-queue of lparallel is very fast (used for unbounded message queue) so an additional 'sento-high-speed-queue' asdf system has been added to bring back the lparallel cons-queue if performance is critical. It brings an additional 10%-30% boost.
-
 - 'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.
 
 ### Version history

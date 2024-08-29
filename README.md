@@ -12,8 +12,6 @@ Sento features:
 - EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages. This is similar to an event-bus.
 - Tasks: a simple API for concurrency.
 
-### Intro
-
 (Please also checkout the API [documentation](https://mdbergmann.github.io/cl-gserver/index.html) for further information)
 (for migrations from Sento v2, please check below migration guide)
 
@@ -22,6 +20,8 @@ Sento features:
 - [Chipi automation tool](https://github.com/mdbergmann/chipi): Actors used for foundational primitives like 'items' and 'persistences'.
 - [KNX-conn](https://github.com/mdbergmann/knx-conn): Used for asynchronous reading/writing from/to KNX bus
 - [Hunchentoot taskmanager](https://github.com/mdbergmann/cl-tbnl-gserver-tmgr): High throughput Hunchentoot task manager
+
+### Intro
 
 #### Creating an actor-system
 

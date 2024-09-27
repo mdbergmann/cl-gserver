@@ -508,12 +508,14 @@
     (unwind-protect
          (let* ((actor (actor-of sys
                                  :receive (lambda (msg)
-                                            (declare (ignore msg)))
+                                            (declare (ignore msg))
+                                            (sleep 0.05))
                                  :queue-size 1))
                 (tells
                   (loop :repeat 10
                         :collect (ignore-errors
                                   (tell actor "run")))))
+           (format t "tells: ~a~%" tells)
            (is (= 1 (length (filter (lambda (x) (if x x)) tells))))
            (is (= 9 (length (filter #'null tells)))))
       (ac:shutdown sys))))

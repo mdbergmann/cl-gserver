@@ -216,7 +216,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
 (defun handle-message-internal (actor-cell message)
   "A `:stop` message will response with `:stopping` and the user handlers are not called.
 Otherwise the result is `:resume` to resume user message handling."
-  (log:debug "~a: internal handle-message: ~a" (name actor-cell) message)
+  (log:trace "~a: internal handle-message: ~a" (name actor-cell) message)
   (case message
     (:stop (progn
              (stop actor-cell)
@@ -226,7 +226,7 @@ Otherwise the result is `:resume` to resume user message handling."
 (defun handle-message-user (actor-cell message withreply-p)
   "The user defined message handler.
 Effectively this calls the `handle-call` or `handle-cast` functions."
-  (log:debug "~a: user handle message: ~a" (name actor-cell) message)
+  (log:trace "~a: user handle message: ~a" (name actor-cell) message)
   (if withreply-p
       (handle-call actor-cell message)
       (handle-cast actor-cell message)))

@@ -10,3 +10,4 @@
 *.fas
 *.64yfasl
 /.idea/
+/systems*

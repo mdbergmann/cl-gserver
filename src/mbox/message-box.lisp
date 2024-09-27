@@ -140,7 +140,7 @@ this kind of queue because each message-box (and with that each actor) requires 
   (with-slots (queue) msgbox
     (let ((item (queue:popq queue)))
       (when item
-        (log:debug "~a: got item: ~a" (name msgbox) item)
+        (log:trace "~a: got item: ~a" (name msgbox) item)
         (process-queue-item msgbox item)
         (incf (slot-value msgbox 'processed-messages))))))
 
@@ -220,7 +220,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
   (let ((push-item (make-message-item/bt
                     :message message
                     :handler-fun-args handler-fun-args)))
-    (log:debug "~a: pushing item to queue: ~a" (name msgbox) push-item)
+    (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
     (queue:pushq queue push-item)
     t))
 
@@ -280,7 +280,7 @@ The `handler-fun-args' is part of the message item."
   "Handles the popped message. Means: applies the function in `handler-fun-args` on the message."
   (with-slots (name lock should-run) msgbox
     (with-slots (message cancelled-p handler-fun-args handler-result) popped-item
-      (log:debug "~a: popped message: ~a" name popped-item)
+      (log:trace "~a: popped message: ~a" name popped-item)
       (unless (and should-run (not cancelled-p))
         (log:warn "~a: item got cancelled or message-box stopped: ~a" name popped-item)
         (return-from handle-popped-item))

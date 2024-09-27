@@ -46,6 +46,7 @@
                  (:file "actor")
                  (:file "agent")
                  (:file "eventstream")
+                 (:file "fsm")
                  (:file "tasks")
                  (:file "router")
                  (:file "stash")
@@ -70,10 +71,10 @@
                 :components
                 ((:file "all-test")
                  (:file "miscutils-test")
+                 (:file "timeutils-test")
                  (:file "atomic-test")
                  (:file "config-test")
                  (:file "wheel-timer-test")
-                 (:file "timeutils-test")
                  (:file "bounded-queue-test")
                  (:file "actor-cell-test")
                  (:file "actor-mp-test")
@@ -81,6 +82,7 @@
                  (:file "hash-agent-test")
                  (:file "array-agent-test")
                  (:file "actor-test")
+                 (:file "fsm-test")
                  (:file "router-test")
                  (:file "stash-test")
                  (:file "tasks-test")
@@ -120,36 +122,6 @@
 
 #|
 
-TODOs:
-
-OK - *self*, *state*, *sender* should be in act package
-OK - add !, ? as functions.
-OK - shutdown sys should be in actor-system to be symetric.
-  ==> stays as is. shutdown method is in asys but is ac protocol.
-OK - rename utils package
-NO - compose actor of actor-cell
-  ==> core functionality that shouldn't be really used is prrovided by ACT-CELL, like (STOP, NAME, STATE, RUNNING-P). Instead the AC provided functionality should be used.
-OK - add 'reply' macro for responding in side receive, with sender
-OK - move cons-list from lparallel
-  ==> using jpl-queues and con-squeue as a separate system.
-OK - write new readme with new features
-OK - migration guide
-OK - potential problem with reply after async operation.
-
-Sento 3 changes:
-
-OK - no implicit sending to *sender* on 'ask'. Must be done explicitly using 'tell'.
-OK - removed required 'cons' return on 'receive' function.
-OK - removed 'self' and 'state' in 'receive function. Now exists *self* and *state*.
-OK - added reply
-OK - cons-queue as separate 'high-speed' system
-
-Sento 3.1 todos:
-
-OK - check COUNTER-MP-UNBOUNDED and BOUNDED tests for LW 8
-OK - create documentation MGL-PAX
-OK - tag version
-OK - upload
 
 |#
 

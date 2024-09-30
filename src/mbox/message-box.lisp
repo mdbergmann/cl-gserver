@@ -266,11 +266,15 @@ The `dispatcher` is kind of like a thread pool."))
 It knows the message-box of the origin actor and acts on it.
 It pops the message from the message-boxes queue and applies the function in `handler-fun-args` on it.
 The `handler-fun-args' is part of the message item."
-  (with-slots (name queue should-run) msgbox
-    (log:trace "~a: popping message..." name)
-    (let ((popped-item (popq queue)))
-      (when should-run
-        (handle-popped-item popped-item msgbox)))))
+  (with-slots (name lock queue should-run) msgbox
+    (bt2:acquire-lock lock :wait t)
+    (unwind-protect
+         (progn
+           (log:trace "~a: popping message..." name)
+           (let ((popped-item (popq queue)))
+             (when should-run
+               (handle-popped-item popped-item msgbox))))
+      (bt2:release-lock lock))))
 
 (defun handle-popped-item (popped-item msgbox)
   "Handles the popped message. Means: applies the function in `handler-fun-args` on the message."
@@ -280,13 +284,9 @@ The `handler-fun-args' is part of the message item."
       (unless (and should-run (not cancelled-p))
         (log:warn "~a: item got cancelled or message-box stopped: ~a" name popped-item)
         (return-from handle-popped-item))
-      ;; protect the actor from concurrent state changes on the shared dispatcher
-      (bt2:acquire-lock lock :wait t)
-      (unwind-protect
-           (when (and should-run (not cancelled-p))
-             (setf handler-result (call-handler-fun handler-fun-args message))
-             handler-result)
-        (bt2:release-lock lock)))))
+      (when (and should-run (not cancelled-p))
+        (setf handler-result (call-handler-fun handler-fun-args message))
+        handler-result))))
 
 (defmethod submit ((self message-box/dp) message withreply-p time-out handler-fun-args)
   "Submitting a message on a multi-threaded `dispatcher` is different as submitting on a single threaded message-box. On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads. On the `dispatcher` this is not the case. The order cannot be guaranteed when messages are processed by different `dispatcher` threads. However, we still guarantee a 'single-threadedness' regarding the state of the actor. This is achieved here by protecting the `handler-fun-args` execution with a lock.

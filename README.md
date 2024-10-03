@@ -8,6 +8,7 @@ Sento features:
 
 - Actors with `ask` (`?`) and `tell` (`!`) operations. `ask` can be asynchronous or synchronous.
 - Agents: Agents are a specialization of Actors for wrapping state with a standardized interface of `init`, `get` and `set`. There are also specialized Agents for Common Lisps array and hash-map data structures.
+- FSM (Finite-State-Machine). A ready fsm framework.
 - Router: Router offers a similar interface as Actor with `ask` and `tell` but collects multiple Actors for load-balancing.
 - EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages. This is similar to an event-bus.
 - Tasks: a simple API for concurrency.
@@ -495,6 +496,94 @@ For example could a facade for the counter above look like this:
 
 Alternatively, one can wrap an agent inside a class and provide methods for simplified access to it.
 
+### Finite State Machine (FSM)
+
+The Finite State Machine (FSM) model is a computational framework designed to model and manage systems that transition between various states based on inputs or events. This structured approach facilitates the handling of complex logic through defined state transitions and events.
+
+#### Creating an FSM
+
+To create an FSM, use the `make-fsm` function, which initializes an actor with state management capabilities.
+
+(Additional API documentation can be found [here](https://mdbergmann.github.io/cl-gserver/index.html##SENTO.FSM:@FSM%20MGL-PAX:SECTION).)
+
+1. **actor-context**: Specifies where the FSM is created, which can be an actor, an actor-context, or an actor-system.
+2. **name**: A string that names the FSM.
+3. **start-with**: A cons cell representing the initial state and associated data.
+4. **event-handling**: A function structured using FSM macros to define the FSM's behavior upon receiving events.
+
+#### Example: Traffic Light Controller FSM with Timeouts
+
+This FSM simulates a traffic light controller and includes comprehensive state and transition handling, including timeouts.
+
+```elisp
+(defun make-traffic-light-fsm (actor-context)
+  (make-fsm
+   actor-context
+   :name "traffic-light-fsm"
+   :start-with '(red . ())
+   :event-handling (lambda ()
+
+                     ;; Define behavior in each state using when-state
+                     (when-state ('red :timeout-s 10)
+                       (on-event ('timer) :state-timeout
+                         (goto-state 'green))
+                       (on-event ('manual-override)
+                         (stay-on-state '(:manual-override-engaged))
+                         (log:info "Manual override activated")))
+
+                     (when-state ('green :timeout-s 15)
+                       (on-event ('timer) :state-timeout
+                         (goto-state 'yellow)))
+
+                     (when-state ('yellow :timeout-s 5)
+                       (on-event ('emergency-stop)
+                         (goto-state 'red)
+                         (log:info "Emergency stop activated"))
+                       (on-event ('timer) :state-timeout
+                         (goto-state 'red)))
+
+                     ;; Handle state transitions
+                     (on-transition ('(red . green))
+                       (log:info "Transition from red to green"))
+
+                     (on-transition ('(green . yellow))
+                       (log:info "Transition from green to yellow"))
+
+                     (on-transition ('(yellow . red))
+                       (log:info "Transition from yellow to red"))
+
+                     ;; Stay on current state but update data
+                     (on-event ('maintenance-check)
+                       (stay-on-state '(:maintenance-required))
+                       (log:info "Maintenance required"))
+
+                     ;; Handle unhandled events with specific and general catch
+                     (when-unhandled ('unexpected-event)
+                       (log:warn "Unexpected specific event caught"))
+
+                     (when-unhandled (t :test #'typep)
+                       (log:warn "Unhandled event caught: ~A" *received-event*)))))
+```
+
+#### Example Breakdown
+
+- **actor-context**: Passed argument where the FSM operates.
+- **name**: The FSM is named "traffic-light-fsm".
+- **start-with**: The FSM begins in the 'red' state.
+- **event-handling**: Utilizes various macros:
+  - `when-state`: Defines actions specific to each state and handles timeouts.
+  - `on-event ('timer)`: Transitions the FSM to the next state on timer events; handles timeouts with `:state-timeout`.
+  - `goto-state`: Transitions the FSM to a new state, optionally updating data and logging.
+  - `stay-on-state ('maintenance-check)`: Remains in the current state while updating state data.
+  - `on-transition`: Logs state transitions.
+  - General `when-unhandled` using `typep`: Catches all other unhandled events and logs them using the dynamic variable `*received-event*` for context.
+
+#### Running the FSM
+
+After setup, the FSM processes events, transitioning as defined. This setup ensures responsive and structured event-driven state management.
+
+Incorporating timeout controls and a comprehensive fallback for unhandled events, this FSM elegantly manages complex state logic with powerful macro functionalities.
+
 ### Router
 
 A `Router` is a facade over a set of actors. Routers are either created with a set of actors using the default constructor `router:make-router` or actors can be added later.
@@ -685,6 +774,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 - 'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.
 
 ### Version history
+
+**Version 3.3.3 (1.10.2024):** Bug fix for actor with dispatcher mailbox where the order of processing messages wasn't honoured.
 
 **Version 3.3.2 (14.8.2024):** Primarily documentation changes in regards to `future`
 

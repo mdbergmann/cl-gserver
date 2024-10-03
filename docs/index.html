@@ -58,18 +58,19 @@
 <li><a href="#SENTO.AGENT.HASH:@HASH-AGENT%20MGL-PAX:SECTION" title="Hash-table agent">2.4.1 Hash-table agent</a></li>
 <li><a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION" title="Array/Vector agent">2.4.2 Array/Vector agent</a></li>
 </ul></li>
-<li><a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">2.5 Stashing</a></li>
-<li><a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">2.6 Dispatcher</a>
+<li><a href="#SENTO.FSM:@FSM%20MGL-PAX:SECTION" title="Finite state machine">2.5 Finite state machine</a></li>
+<li><a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">2.6 Stashing</a></li>
+<li><a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">2.7 Dispatcher</a>
 
 <ul>
-<li><a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">2.6.1 Shared dispatcher</a></li>
+<li><a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">2.7.1 Shared dispatcher</a></li>
 </ul></li>
-<li><a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">2.7 Router</a></li>
-<li><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">2.8 Eventstream</a></li>
-<li><a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">2.9 Future (delayed-computation)</a></li>
-<li><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">2.10 Tasks</a></li>
-<li><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">2.11 Config</a></li>
-<li><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">2.12 Scheduler</a></li>
+<li><a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">2.8 Router</a></li>
+<li><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">2.9 Eventstream</a></li>
+<li><a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">2.10 Future (delayed-computation)</a></li>
+<li><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">2.11 Tasks</a></li>
+<li><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">2.12 Config</a></li>
+<li><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">2.13 Scheduler</a></li>
 </ul></li>
 </ul>
 <h6>[in package SENTO.DOCS]</h6>
@@ -88,7 +89,6 @@
 <li>EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages. This is similar to an event-bus.</li>
 <li>Tasks: a simple API for concurrency.</li>
 </ul>
-<h3>Intro</h3>
 <p>(Please also checkout the API <a href="https://mdbergmann.github.io/cl-gserver/index.html" >documentation</a> for further information)
 (for migrations from Sento v2, please check below migration guide)</p>
 <h3>Projects using Sento (for example usage):</h3>
@@ -97,6 +97,7 @@
 <li><a href="https://github.com/mdbergmann/knx-conn" >KNX-conn</a>: Used for asynchronous reading/writing from/to KNX bus</li>
 <li><a href="https://github.com/mdbergmann/cl-tbnl-gserver-tmgr" >Hunchentoot taskmanager</a>: High throughput Hunchentoot task manager</li>
 </ul>
+<h3>Intro</h3>
 <h4>Creating an actor-system</h4>
 <p>The first thing you wanna do is to create an actor system.
 In simple terms, an actor system is a container where all actors live in. So at any time the actor system knows which actors exist.</p>
@@ -378,6 +379,82 @@ This parameter represents the current state of the agent.</p>
 <span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> decrement <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">agent-update <span class="special">*counter-agent*</span> #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_63.html#IDX104" class="symbol">1-</a></span>)</span></span>)</span>
 <span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> counter-value <span class="paren2">(<span class="code"></span>)</span> <span class="paren2">(<span class="code">agent-get <span class="special">*counter-agent*</span> #'<a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_168.html#IDX488" class="symbol">identity</a></span>)</span></span>)</span></span></code></pre>
 <p>Alternatively, one can wrap an agent inside a class and provide methods for simplified access to it.</p>
+<h3>Finite State Machine (FSM)</h3>
+<p>The Finite State Machine (FSM) model is a computational framework designed to model and manage systems that transition between various states based on inputs or events. This structured approach facilitates the handling of complex logic through defined state transitions and events.</p>
+<h4>Creating an FSM</h4>
+<p>To create an FSM, use the <code>make-fsm</code> function, which initializes an actor with state management capabilities.</p>
+<p>(Additional API documentation can be found <a href="https://mdbergmann.github.io/cl-gserver/index.html##SENTO.FSM:@FSM%20MGL-PAX:SECTION" >here</a>.)</p>
+<ol>
+<li><strong>actor-context</strong>: Specifies where the FSM is created, which can be an actor, an actor-context, or an actor-system.</li>
+<li><strong>name</strong>: A string that names the FSM.</li>
+<li><strong>start-with</strong>: A cons cell representing the initial state and associated data.</li>
+<li><strong>event-handling</strong>: A function structured using FSM macros to define the FSM's behavior upon receiving events.</li>
+</ol>
+<h4>Example: Traffic Light Controller FSM with Timeouts</h4>
+<p>This FSM simulates a traffic light controller and includes comprehensive state and transition handling, including timeouts.</p>
+<pre><code><span class="code"><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_167.html#IDX483" class="symbol"><i><span class="symbol">defun</span></i></a> make-traffic-light-fsm <span class="paren2">(<span class="code">actor-context</span>)</span>
+  <span class="paren2">(<span class="code">make-fsm
+   actor-context
+   <span class="keyword">:name</span> <span class="string">"traffic-light-fsm"</span>
+   <span class="keyword">:start-with</span> '<span class="paren3">(<span class="code">red . <span class="paren4">(<span class="code"></span>)</span></span>)</span>
+   <span class="keyword">:event-handling</span> <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren4">(<span class="code"></span>)</span>
+
+                     <span class="comment">;; Define behavior in each state using when-state
+</span>                     <span class="paren4">(<span class="code">when-state <span class="paren5">(<span class="code">'red <span class="keyword">:timeout-s</span> 10</span>)</span>
+                       <span class="paren5">(<span class="code">on-event <span class="paren6">(<span class="code">'timer</span>)</span> <span class="keyword">:state-timeout</span>
+                         <span class="paren6">(<span class="code">goto-state 'green</span>)</span></span>)</span>
+                       <span class="paren5">(<span class="code">on-event <span class="paren6">(<span class="code">'manual-override</span>)</span>
+                         <span class="paren6">(<span class="code">stay-on-state '<span class="paren1">(<span class="code"><span class="keyword">:manual-override-engaged</span></span>)</span></span>)</span>
+                         <span class="paren6">(<span class="code">log:info <span class="string">"Manual override activated"</span></span>)</span></span>)</span></span>)</span>
+
+                     <span class="paren4">(<span class="code">when-state <span class="paren5">(<span class="code">'green <span class="keyword">:timeout-s</span> 15</span>)</span>
+                       <span class="paren5">(<span class="code">on-event <span class="paren6">(<span class="code">'timer</span>)</span> <span class="keyword">:state-timeout</span>
+                         <span class="paren6">(<span class="code">goto-state 'yellow</span>)</span></span>)</span></span>)</span>
+
+                     <span class="paren4">(<span class="code">when-state <span class="paren5">(<span class="code">'yellow <span class="keyword">:timeout-s</span> 5</span>)</span>
+                       <span class="paren5">(<span class="code">on-event <span class="paren6">(<span class="code">'emergency-stop</span>)</span>
+                         <span class="paren6">(<span class="code">goto-state 'red</span>)</span>
+                         <span class="paren6">(<span class="code">log:info <span class="string">"Emergency stop activated"</span></span>)</span></span>)</span>
+                       <span class="paren5">(<span class="code">on-event <span class="paren6">(<span class="code">'timer</span>)</span> <span class="keyword">:state-timeout</span>
+                         <span class="paren6">(<span class="code">goto-state 'red</span>)</span></span>)</span></span>)</span>
+
+                     <span class="comment">;; Handle state transitions
+</span>                     <span class="paren4">(<span class="code">on-transition <span class="paren5">(<span class="code">'<span class="paren6">(<span class="code">red . green</span>)</span></span>)</span>
+                       <span class="paren5">(<span class="code">log:info <span class="string">"Transition from red to green"</span></span>)</span></span>)</span>
+
+                     <span class="paren4">(<span class="code">on-transition <span class="paren5">(<span class="code">'<span class="paren6">(<span class="code">green . yellow</span>)</span></span>)</span>
+                       <span class="paren5">(<span class="code">log:info <span class="string">"Transition from green to yellow"</span></span>)</span></span>)</span>
+
+                     <span class="paren4">(<span class="code">on-transition <span class="paren5">(<span class="code">'<span class="paren6">(<span class="code">yellow . red</span>)</span></span>)</span>
+                       <span class="paren5">(<span class="code">log:info <span class="string">"Transition from yellow to red"</span></span>)</span></span>)</span>
+
+                     <span class="comment">;; Stay on current state but update data
+</span>                     <span class="paren4">(<span class="code">on-event <span class="paren5">(<span class="code">'maintenance-check</span>)</span>
+                       <span class="paren5">(<span class="code">stay-on-state '<span class="paren6">(<span class="code"><span class="keyword">:maintenance-required</span></span>)</span></span>)</span>
+                       <span class="paren5">(<span class="code">log:info <span class="string">"Maintenance required"</span></span>)</span></span>)</span>
+
+                     <span class="comment">;; Handle unhandled events with specific and general catch
+</span>                     <span class="paren4">(<span class="code">when-unhandled <span class="paren5">(<span class="code">'unexpected-event</span>)</span>
+                       <span class="paren5">(<span class="code">log:warn <span class="string">"Unexpected specific event caught"</span></span>)</span></span>)</span>
+
+                     <span class="paren4">(<span class="code">when-unhandled <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a> <span class="keyword">:test</span> #'typep</span>)</span>
+                       <span class="paren5">(<span class="code">log:warn <span class="string">"Unhandled event caught: ~A"</span> <span class="special">*received-event*</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+<h4>Example Breakdown</h4>
+<ul>
+<li><strong>actor-context</strong>: Passed argument where the FSM operates.</li>
+<li><strong>name</strong>: The FSM is named &quot;traffic-light-fsm&quot;.</li>
+<li><strong>start-with</strong>: The FSM begins in the 'red' state.</li>
+<li><strong>event-handling</strong>: Utilizes various macros:</li>
+<li><code>when-state</code>: Defines actions specific to each state and handles timeouts.</li>
+<li><code>on-event ('timer)</code>: Transitions the FSM to the next state on timer events; handles timeouts with <code>:state-timeout</code>.</li>
+<li><code>goto-state</code>: Transitions the FSM to a new state, optionally updating data and logging.</li>
+<li><code>stay-on-state ('maintenance-check)</code>: Remains in the current state while updating state data.</li>
+<li><code>on-transition</code>: Logs state transitions.</li>
+<li>General <code>when-unhandled</code> using <code>typep</code>: Catches all other unhandled events and logs them using the dynamic variable <code>*received-event*</code> for context.</li>
+</ul>
+<h4>Running the FSM</h4>
+<p>After setup, the FSM processes events, transitioning as defined. This setup ensures responsive and structured event-driven state management.</p>
+<p>Incorporating timeout controls and a comprehensive fallback for unhandled events, this FSM elegantly manages complex state logic with powerful macro functionalities.</p>
 <h3>Router</h3>
 <p>A <code>Router</code> is a facade over a set of actors. Routers are either created with a set of actors using the default constructor <code>router:make-router</code> or actors can be added later.</p>
 <p>Routers implement part of the actor protocol, so it allows to use <code>tell</code>, <code>ask-s</code> or <code>ask</code> which it forwards to a 'routee' (one of the actors of a router) by passing all of the given parameters. The routee is chosen by applying a <code>strategy</code>. The built-in default strategy a routee is chosen randomly.</p>
@@ -494,10 +571,11 @@ Maybe something can be tweaked?</p>
 <li><p>the receive function is now 1-arity. It only takes the a message parameter.
 Previous 'self' and 'state' parameters are now accessible via <code>*self*</code> and <code>*state*</code>. The same applies to <code>become</code> function.</p></li>
 <li><p>the return value of 'receive' function has always been a bit of an obstacle. So now it is ignored for <code>tell</code> and <code>ask</code>. In both cases a <code>reply</code> function can be used to reply to a sender. <code>reply</code> implicitly uses <code>*sender*</code> but can be overriden (see 'long running and asynchronous operations in receive'). The 'receive' function return value is still relevant for <code>ask-s</code>, but now it doesn't need to be a <code>cons</code>. Whatever is returned is received by <code>ask-s</code>.</p></li>
-<li><p>the lparallel dependency was removed to reduce dependencies. However, the cons-queue of lparallel is very fast (used for unbounded message queue) so an additional 'sento-high-speed-queue' asdf system has been added to bring back the lparallel cons-queue if performance is critical. It brings an additional 10%-30% boost.</p></li>
 <li><p>'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.</p></li>
 </ul>
 <h3>Version history</h3>
+<p><strong>Version 3.3.3 (1.10.2024):</strong> Bug fix for actor with dispatcher mailbox where the order of processing messages wasn't honoured.</p>
+<p><strong>Version 3.3.2 (14.8.2024):</strong> Primarily documentation changes in regards to <code>future</code></p>
 <p><strong>Version 3.3.0 (1.7.2024):</strong> See: <a href="https://github.com/mdbergmann/cl-gserver/compare/3.2.1...3.3.0" >Changelog</a></p>
 <p><strong>Version 3.2.0 (13.2.2024):</strong> Message-box queue changes. SBCL now uses a separate fast CAS based queue coming as a contrib package. The other impls use a faster queue by default but still with locking. New benchmarks.</p>
 <p><strong>Version 3.1.0 (14.1.2024):</strong> Added scheduler facility to actor-system that allows to schedule functions one or recurring. See API documentation for more info.</p>
@@ -646,35 +724,35 @@ See <a href="#SENTO.WHEEL-TIMER:WHEEL-TIMER%20CLASS" title="SENTO.WHEEL-TIMER:WH
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AACTOR-OF-20-28METHOD-20NIL-20-28SENTO-2EACTOR-SYSTEM-3AACTOR-SYSTEM-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >ACTOR-OF</a></span></span> <span class="locative-args">(SYSTEM <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >SENTO.ACTOR-CONTEXT:ACTOR-OF</a></span></span> <span class="locative-args">(SYSTEM <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
 
 <p>See <code>ac:actor-of</code></p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28SENTO-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29" >FIND-ACTORS</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>) PATH</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29" >SENTO.ACTOR-CONTEXT:FIND-ACTORS</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>) PATH</span></span></p>
 
 <p>See <code>ac:find-actors</code></p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AALL-ACTORS-20-28METHOD-20NIL-20-28SENTO-2EACTOR-SYSTEM-3AACTOR-SYSTEM-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >ALL-ACTORS</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >SENTO.ACTOR-CONTEXT:ALL-ACTORS</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
 
 <p>See <code>ac:all-actors</code></p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3ASTOP-20-28METHOD-20NIL-20-28SENTO-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:STOP%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:STOP%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29" >STOP</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>) ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:STOP%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29" >SENTO.ACTOR-CONTEXT:STOP</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>) ACTOR</span></span></p>
 
 <p>See <code>ac:stop</code></p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3ASHUTDOWN-20-28METHOD-20NIL-20-28SENTO-2EACTOR-SYSTEM-3AACTOR-SYSTEM-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:SHUTDOWN%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:SHUTDOWN%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >SHUTDOWN</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:SHUTDOWN%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >SENTO.ACTOR-CONTEXT:SHUTDOWN</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
 
 <p>See <code>ac:shutdown</code></p></li>
 </ul>
@@ -958,7 +1036,7 @@ This function should be called from within the behavior receive function.</p></l
 
 <p>This is the <code>actor-context</code> every actor is composed of.
 When the actor is created from scratch it has no <code>actor-context</code>.
-When created through the <code>actor-context</code>s, or system's <a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20GENERIC-FUNCTION" title="SENTO.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION"><code>actor-of</code></a> function an <code>actor-context</code> will be set.</p></li>
+When created through the <code>actor-context</code>s, or system's <code>actor-of</code> function an <code>actor-context</code> will be set.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-3APATH-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.ACTOR:PATH%20GENERIC-FUNCTION"></a></p>
@@ -1016,49 +1094,49 @@ This generic function is more meant to create specialized actors by providing di
 <p><a id="x-28SENTO-2EEVENTSTREAM-3ASUBSCRIBE-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-20SENTO-2EACTOR-3AACTOR-29-29-29"></a>
 <a id="SENTO.EVENTSTREAM:SUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:SUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29" >SUBSCRIBE</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) (SUBSCRIBER <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:SUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29" >SENTO.EVENTSTREAM:SUBSCRIBE</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) (SUBSCRIBER <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>)</span></span></p>
 
 <p>Convenience. Allows to subscribe to <a href="#SENTO.EVENTSTREAM:EVENTSTREAM%20CLASS" title="SENTO.EVENTSTREAM:EVENTSTREAM CLASS"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EEVENTSTREAM-3AUNSUBSCRIBE-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-20SENTO-2EACTOR-3AACTOR-29-29-29"></a>
 <a id="SENTO.EVENTSTREAM:UNSUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:UNSUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29" >UNSUBSCRIBE</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) (UNSUBSCRIBER <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:UNSUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29" >SENTO.EVENTSTREAM:UNSUBSCRIBE</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) (UNSUBSCRIBER <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>)</span></span></p>
 
 <p>Convenience. Allows to unsubscribe to <a href="#SENTO.EVENTSTREAM:EVENTSTREAM%20CLASS" title="SENTO.EVENTSTREAM:EVENTSTREAM CLASS"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EEVENTSTREAM-3APUBLISH-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-20T-29-29-29"></a>
 <a id="SENTO.EVENTSTREAM:PUBLISH%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:PUBLISH%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29" >PUBLISH</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) MESSAGE</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:PUBLISH%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29" >SENTO.EVENTSTREAM:PUBLISH</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) MESSAGE</span></span></p>
 
 <p>Convenience. Allows to publish to <a href="#SENTO.EVENTSTREAM:EVENTSTREAM%20CLASS" title="SENTO.EVENTSTREAM:EVENTSTREAM CLASS"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-20T-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29" >FIND-ACTORS</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>) PATH</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29" >SENTO.ACTOR-CONTEXT:FIND-ACTORS</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>) PATH</span></span></p>
 
 <p><a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a> protocol implementation.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AALL-ACTORS-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >ALL-ACTORS</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >SENTO.ACTOR-CONTEXT:ALL-ACTORS</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
 
 <p><a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a> protocol implementation.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AACTOR-OF-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >ACTOR-OF</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >SENTO.ACTOR-CONTEXT:ACTOR-OF</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
 
 <p><a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a> protocol implementation</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3ASYSTEM-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:SYSTEM%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:SYSTEM%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >SYSTEM</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:SYSTEM%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >SENTO.ACTOR-CONTEXT:SYSTEM</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
 
 <p>Retrieves the <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>asys:actor-system</code></a> from actor.</p></li>
 </ul>
@@ -1407,7 +1485,7 @@ Returns <code>T</code> if entry existed, <code>NIL</code> otherwise.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EAGENT-2EARRAY-3A-40ARRAY-AGENT-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION"></a></p>
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.AGENT.HASH:@HASH-AGENT%20MGL-PAX:SECTION" title="Hash-table agent">&#8592;</a> <a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION" title="Agent">&#8593;</a> <a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">&#8594;</a> <a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION" title="Array/Vector agent">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.AGENT.HASH:@HASH-AGENT%20MGL-PAX:SECTION" title="Hash-table agent">&#8592;</a> <a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION" title="Agent">&#8593;</a> <a href="#SENTO.FSM:@FSM%20MGL-PAX:SECTION" title="Finite state machine">&#8594;</a> <a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION" title="Array/Vector agent">&#8634;</a></span></span></p>
 <h4><a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION">2.4.2 Array/Vector agent</a></h4>
 <h6>[in package SENTO.AGENT.ARRAY with nicknames AGTARRAY]</h6>
 <p><a id="x-28SENTO-2EAGENT-2EARRAY-3AMAKE-ARRAY-AGENT-20FUNCTION-29"></a>
@@ -1505,10 +1583,342 @@ Use this to get notified of error when using the update functions of the agent.<
 
 <p>The result of <code>agent-doarray</code> is <code>T</code>.</p></li>
 </ul>
+<p><a id="x-28SENTO-2EFSM-3A-40FSM-20MGL-PAX-3ASECTION-29"></a>
+<a id="SENTO.FSM:@FSM%20MGL-PAX:SECTION"></a></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION" title="Array/Vector agent">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">&#8594;</a> <a href="#SENTO.FSM:@FSM%20MGL-PAX:SECTION" title="Finite state machine">&#8634;</a></span></span></p>
+<h3><a href="#SENTO.FSM:@FSM%20MGL-PAX:SECTION">2.5 Finite state machine</a></h3>
+<h6>[in package SENTO.FSM with nicknames FSM]</h6>
+<p><a id="x-28SENTO-2EFSM-3AFSM-20CLASS-29"></a>
+<a id="SENTO.FSM:FSM%20CLASS"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.FSM:FSM%20CLASS" >FSM</a></span></span> <span class="locative-args"><a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS">ACTOR</a></span></span></p>
+
+<p><a href="#SENTO.FSM:FSM%20CLASS" title="SENTO.FSM:FSM CLASS"><code>FSM</code></a> Class</p>
+
+<p>The <a href="#SENTO.FSM:FSM%20CLASS" title="SENTO.FSM:FSM CLASS"><code>FSM</code></a> class represents a Finite State Machine, a mathematical model of computation that transitions between a finite number of states in response to external inputs.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3AMAKE-FSM-20FUNCTION-29"></a>
+<a id="SENTO.FSM:MAKE-FSM%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FSM:MAKE-FSM%20FUNCTION" >MAKE-FSM</a></span></span> <span class="locative-args">ACTOR-CONTEXT &amp;KEY NAME START-WITH EVENT-HANDLING (TYPE '<a href="#SENTO.FSM:FSM%20CLASS" title="SENTO.FSM:FSM CLASS"><code>FSM</code></a>) (DISPATCHER-ID <code>:SHARED</code>)</span></span></p>
+
+<p><a href="#SENTO.FSM:MAKE-FSM%20FUNCTION" title="SENTO.FSM:MAKE-FSM FUNCTION"><code>make-fsm</code></a> Function</p>
+
+<p>Creates a finite state machine (<a href="#SENTO.FSM:FSM%20CLASS" title="SENTO.FSM:FSM CLASS"><code>FSM</code></a>) within the given <code>actor-context</code>.</p>
+
+<p><strong>Parameters</strong></p>
+
+<ul>
+<li><p><code>actor-context</code>: Can be an actor, an actor-context (class), or an actor-system in which this <code>FSM</code> is created.</p></li>
+<li><p><code>name</code>: A string representing the name of the <code>FSM</code>. Must be a string.</p></li>
+<li><p><code>start-with</code>: A cons cell where the car is the initial state and the cdr is the initial data for the <code>FSM</code>. Must be a cons.</p></li>
+<li><p><code>event-handling</code>: An optional function for handling events. It can be <code>nil</code> if not provided. Must be either a function or <code>nil</code>. If omitted, the <code>FSM</code> will effectively do nothing. The function body should be constructed using the provided <code>FSM</code>-related macros such as <a href="#SENTO.FSM:ON-EVENT%20MGL-PAX:MACRO" title="SENTO.FSM:ON-EVENT MGL-PAX:MACRO"><code>on-event</code></a> and <a href="#SENTO.FSM:ON-TRANSITION%20MGL-PAX:MACRO" title="SENTO.FSM:ON-TRANSITION MGL-PAX:MACRO"><code>on-transition</code></a>.</p></li>
+<li><p><code>type</code>: The type of actor to create. Defaults to <code>'fsm</code>.</p></li>
+<li><p><code>dispatcher-id</code>: Identifies the dispatcher for the <code>FSM</code>. Defaults to <code>:shared</code>.</p></li>
+</ul>
+
+<p><strong>Description</strong></p>
+
+<p>The <a href="#SENTO.FSM:MAKE-FSM%20FUNCTION" title="SENTO.FSM:MAKE-FSM FUNCTION"><code>make-fsm</code></a> function initializes an <code>FSM</code> actor with a specified initial state and associated data. The <code>FSM</code>'s behavior is defined by the <code>event-handling</code> function, which processes events if provided. This function should utilize the provided macros like <code>on-event</code> and <code>on-transition</code> to structure its body, enabling robust event handling and state transition management. Without this function, the <code>FSM</code> will not perform any actions.</p>
+
+<p>This function configures the <code>FSM</code> within the given <code>actor-context</code>, ensuring it is properly set up according to the parameters specified through the <a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20GENERIC-FUNCTION" title="SENTO.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION"><code>ac:actor-of</code></a> function.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3AWHEN-STATE-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FSM:WHEN-STATE%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FSM:WHEN-STATE%20MGL-PAX:MACRO" >WHEN-STATE</a></span></span> <span class="locative-args">(STATE &amp;KEY (TEST '#'<a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_eq.htm" title="EQ (MGL-PAX:CLHS FUNCTION)"><code>EQ</code></a>) TIMEOUT-S) &amp;BODY BODY</span></span></p>
+
+<p><code>when-state</code> Macro</p>
+
+<p>The <code>when-state</code> macro is used to conditionally execute a body of code when a defined condition on the <a href="#SENTO.FSM:FSM%20CLASS" title="SENTO.FSM:FSM CLASS"><code>FSM</code></a>'s (Finite State Machine) current state is met, with support for custom predicates and timeout management for nested <a href="#SENTO.FSM:ON-EVENT%20MGL-PAX:MACRO" title="SENTO.FSM:ON-EVENT MGL-PAX:MACRO"><code>on-event</code></a> macros.</p>
+
+<p><strong>Parameters</strong></p>
+
+<ul>
+<li><p><code>state</code>: An arbitrary value or structure that represents the state to be checked against the <code>FSM</code>'s current state. The usage and type should align with the <code>:test</code> function.</p></li>
+<li><p><code>:test</code>: A predicate function used to evaluate if the <code>FSM</code>'s current state matches the <code>state</code> argument. The default is <code>#'eq</code>, but can be customized with other functions or lambdas.</p></li>
+<li><p><code>:timeout-s</code>: An optional timeout in seconds that is applied to <code>on-event</code> macro calls tagged with <code>:state-timeout</code> within the body.</p></li>
+<li><p><code>body</code>: One or more forms, typically including <code>on-event</code> macro definitions, executed if the state condition is satisfied.</p></li>
+</ul>
+
+<p><strong>Description</strong></p>
+
+<p><code>when-state</code> enables dynamic state-based programming within <code>FSM</code>s, allowing for flexible condition evaluation with customizable predicate functions. It also manages execution timeouts for actions specified within nested <code>on-event</code> calls. The <code>:timeout-s</code> parameter, when used with the <code>:state-timeout</code> tag, ensures operations are constrained to a specified period.</p>
+
+<p><strong>Usage Example</strong></p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">when-state <span class="paren2">(<span class="code">'active <span class="keyword">:test</span> #'eq <span class="keyword">:timeout-s</span> 10</span>)</span>
+  <span class="paren2">(<span class="code">on-event <span class="paren3">(<span class="code">'start</span>)</span> <span class="keyword">:state-timeout</span>
+    <span class="paren3">(<span class="code">start-activity</span>)</span></span>)</span>
+  <span class="paren2">(<span class="code">on-event <span class="paren3">(<span class="code">'stop</span>)</span>
+    <span class="paren3">(<span class="code">stop-activity</span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>In this example:
+- <code>start-activity</code> is executed if the current <code>FSM</code> state is exactly <code>'active</code>, using <code>:test #'eq</code>, within the 10-second window specified by <code>:timeout-s</code> and tagged with <code>:state-timeout</code>.
+- <code>stop-activity</code> runs upon receiving a <code>stop</code> event, without timeout constraints.</p>
+
+<p><strong>Notes</strong></p>
+
+<ul>
+<li><p>Adjust the <code>:test</code> predicate to suit the structure and type of your <code>state</code> input as needed.</p></li>
+<li><p><code>:timeout-s</code> specifies a duration within which tagged events should occur, integrating with the <code>on-event</code> macro.</p></li>
+<li><p>Ensure that each <code>on-event</code> is properly enclosed in parentheses, reflecting its syntax.</p></li>
+</ul>
+
+<p>Use the appropriate predicate function to match the <code>state</code> argument's format, ensuring meaningful and effective <code>FSM</code> operations.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3AON-EVENT-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FSM:ON-EVENT%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FSM:ON-EVENT%20MGL-PAX:MACRO" >ON-EVENT</a></span></span> <span class="locative-args">(EVENT &amp;KEY (TEST '#'<a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_eq.htm" title="EQ (MGL-PAX:CLHS FUNCTION)"><code>EQ</code></a>)) &amp;BODY BODY</span></span></p>
+
+<p><code>on-event</code> Macro</p>
+
+<p>The <code>on-event</code> macro defines actions to be executed when specific events occur within an <a href="#SENTO.FSM:FSM%20CLASS" title="SENTO.FSM:FSM CLASS"><code>FSM</code></a> (Finite State Machine). It is often used within the <a href="#SENTO.FSM:WHEN-STATE%20MGL-PAX:MACRO" title="SENTO.FSM:WHEN-STATE MGL-PAX:MACRO"><code>when-state</code></a> macro to enable conditional execution based on state and optional timeout constraints.</p>
+
+<p><strong>Parameters</strong></p>
+
+<ul>
+<li><p><code>event</code>: The event name or identifier to be monitored. This argument specifies which event should trigger the execution of the provided body.</p></li>
+<li><p><code>:state-timeout</code>: A tag indicating that the execution of this event's actions is subject to the <code>:timeout-s</code> specified in a surrounding <code>when-state</code> macro.</p></li>
+<li><p><code>body</code>: One or more expressions representing the actions to be executed when the specified event occurs.</p></li>
+</ul>
+
+<p><strong>Description</strong></p>
+
+<p>The <code>on-event</code> macro facilitates event-driven actions within <code>FSM</code>s. When used within a <code>when-state</code> block and tagged with <code>:state-timeout</code>, it ensures that the actions are executed within a specified time period after the event occurs, contingent on the current state of the <code>FSM</code>.</p>
+
+<p><strong>Usage Example</strong></p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">when-state <span class="paren2">(<span class="code">'active <span class="keyword">:test</span> #'eq <span class="keyword">:timeout-s</span> 10</span>)</span>
+  <span class="paren2">(<span class="code">on-event 'start <span class="keyword">:state-timeout</span>
+    <span class="paren3">(<span class="code">start-activity</span>)</span></span>)</span>
+  <span class="paren2">(<span class="code">on-event 'stop
+    <span class="paren3">(<span class="code">stop-activity</span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>In this example:
+- The <code>start-activity</code> action is executed when the <code>start</code> event occurs, provided the <code>FSM</code> is in the <code>active</code> state within the 10-second timeout duration.
+- The <code>stop-activity</code> is triggered by a <code>stop</code> event without timeout constraints.</p>
+
+<p><strong>Notes</strong></p>
+
+<ul>
+<li><p><code>:state-timeout</code> indicates that the timeout from <code>when-state</code> should apply to this event's execution.</p></li>
+<li><p>Ensure the event detection mechanism within your <code>FSM</code> can recognize and handle the specified <code>event</code> argument.</p></li>
+</ul>
+
+<p>Use <code>on-event</code> macros within <code>when-state</code> to manage event responses systematically and within time constraints defined for specific states. Adjust the actions and logic as necessary for your <code>FSM</code>'s behavior.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3AGOTO-STATE-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FSM:GOTO-STATE%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FSM:GOTO-STATE%20MGL-PAX:MACRO" >GOTO-STATE</a></span></span> <span class="locative-args">NEXT-STATE &amp;OPTIONAL (DATA <code>NIL</code>)</span></span></p>
+
+<p><code>goto-state</code> Macro</p>
+
+<p>The <code>goto-state</code> macro is used to transition the <a href="#SENTO.FSM:FSM%20CLASS" title="SENTO.FSM:FSM CLASS"><code>FSM</code></a> (Finite State Machine) to a specified state, with optional data setting for the state model. This macro simplifies state management by providing a direct mechanism to switch states and update state-specific data.</p>
+
+<p><strong>Parameters</strong></p>
+
+<ul>
+<li><p><code>state</code>: The target state to which the <code>FSM</code> should transition. This can be a symbol or any other datatype representing the state, consistent with the <code>FSM</code>'s state representation.</p></li>
+<li><p><code>data</code>: An optional parameter to set the data associated with the new state. This allows for updating the state model with relevant information during the transition.</p></li>
+</ul>
+
+<p><strong>Description</strong></p>
+
+<p>The <code>goto-state</code> macro facilitates explicit state transitions and optionally updates the state model's data. It is typically invoked in response to specific conditions or events, allowing dynamic integration with other <code>FSM</code> constructs like <a href="#SENTO.FSM:WHEN-STATE%20MGL-PAX:MACRO" title="SENTO.FSM:WHEN-STATE MGL-PAX:MACRO"><code>when-state</code></a> or <a href="#SENTO.FSM:ON-EVENT%20MGL-PAX:MACRO" title="SENTO.FSM:ON-EVENT MGL-PAX:MACRO"><code>on-event</code></a>.</p>
+
+<p><strong>Usage Example</strong></p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">when-state <span class="paren2">(<span class="code">'idle <span class="keyword">:test</span> #'eq <span class="keyword">:timeout-s</span> 5</span>)</span>
+  <span class="paren2">(<span class="code">on-event <span class="paren3">(<span class="code">'start</span>)</span>
+    <span class="paren3">(<span class="code">goto-state 'active '<span class="paren4">(<span class="code"><span class="string">"Session ID: 123"</span></span>)</span></span>)</span>
+    <span class="paren3">(<span class="code">perform-initialization</span>)</span></span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code">when-state <span class="paren2">(<span class="code">'active <span class="keyword">:test</span> #'eq</span>)</span>
+  <span class="paren2">(<span class="code">on-event <span class="paren3">(<span class="code">'stop</span>)</span>
+    <span class="paren3">(<span class="code">goto-state 'idle '<span class="paren4">(<span class="code"><span class="string">"Clean exit"</span></span>)</span></span>)</span>
+    <span class="paren3">(<span class="code">perform-cleanup</span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>In this example:
+- The <code>FSM</code> transitions to the <code>active</code> state with associated data <code>&quot;Session ID: 123&quot;</code> upon receiving a <code>start</code> event while in the <code>idle</code> state, executing <code>perform-initialization</code>.
+- It transitions back to the <code>idle</code> state with data <code>&quot;Clean exit&quot;</code> when the <code>stop</code> event occurs while the <code>FSM</code> is in the <code>active</code> state, executing <code>perform-cleanup</code>.</p>
+
+<p><strong>Notes</strong></p>
+
+<ul>
+<li><p>Ensure that <code>state</code> is valid within the <code>FSM</code>'s state space and that the transition complies with the <code>FSM</code>'s logic and rules.</p></li>
+<li><p>The <code>data</code> parameter is optional, but when used, should be structured appropriately to fit the state model's requirements.</p></li>
+</ul>
+
+<p>The <code>goto-state</code> macro, with its optional <code>data</code> capability, enhances flexibility and precision in managing <code>FSM</code> state transitions and data updates. Adjust the usage examples and structure to align with your <code>FSM</code>'s specific needs and design.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3ASTAY-ON-STATE-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FSM:STAY-ON-STATE%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FSM:STAY-ON-STATE%20MGL-PAX:MACRO" >STAY-ON-STATE</a></span></span> <span class="locative-args">&amp;OPTIONAL (DATA <code>NIL</code>)</span></span></p>
+
+<p><code>stay-on-state</code> Macro</p>
+
+<p>The <code>stay-on-state</code> macro is used to maintain the <a href="#SENTO.FSM:FSM%20CLASS" title="SENTO.FSM:FSM CLASS"><code>FSM</code></a> (Finite State Machine) in its current state, with an option to update the state's associated data. This is useful for situations where the state needs to persist while its data is updated.</p>
+
+<p><strong>Parameters</strong></p>
+
+<ul>
+<li><code>data</code>: An optional parameter to update the data related to the current state. This allows for modifying the state model with new information without changing the state itself.</li>
+</ul>
+
+<p><strong>Description</strong></p>
+
+<p>The <code>stay-on-state</code> macro provides a way to remain in the current state of an <code>FSM</code> while updating any associated data. It can be used in reaction to specific events or conditions, maintaining state continuity while making data adjustments.</p>
+
+<p><strong>Usage Example</strong></p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">when-state <span class="paren2">(<span class="code">'processing <span class="keyword">:test</span> #'eq</span>)</span>
+  <span class="paren2">(<span class="code">on-event <span class="paren3">(<span class="code">'update</span>)</span>
+    <span class="paren3">(<span class="code">stay-on-state '<span class="paren4">(<span class="code"><span class="string">"Progress: 50%"</span></span>)</span></span>)</span>
+    <span class="paren3">(<span class="code">log-update</span>)</span></span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code">when-state <span class="paren2">(<span class="code">'processing <span class="keyword">:test</span> #'eq</span>)</span>
+  <span class="paren2">(<span class="code">on-event <span class="paren3">(<span class="code">'complete</span>)</span>
+    <span class="paren3">(<span class="code">goto-state 'completed '<span class="paren4">(<span class="code"><span class="string">"Finished successfully"</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>In this example:
+- The <code>stay-on-state</code> macro is used to remain in the <code>processing</code> state while updating the progress data to <code>&quot;Progress: 50%&quot;</code> upon an <code>update</code> event.
+- Transition to the <code>completed</code> state occurs when the <code>complete</code> event is triggered, updating the state and its data.</p>
+
+<p><strong>Notes</strong></p>
+
+<ul>
+<li><p>The <code>data</code> parameter is optional but should be structured to fit the requirements of the state model.</p></li>
+<li><p>Use this macro to ensure state persistence with updated data when necessary.</p></li>
+</ul>
+
+<p>Integrate the <code>stay-on-state</code> macro into your <code>FSM</code> to handle cases where the state should remain unchanged but its data requires updates. Adjust examples as needed to fit your <code>FSM</code> system.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3AWHEN-UNHANDLED-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FSM:WHEN-UNHANDLED%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FSM:WHEN-UNHANDLED%20MGL-PAX:MACRO" >WHEN-UNHANDLED</a></span></span> <span class="locative-args">(EVENT &amp;KEY (TEST '#'<a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_eq.htm" title="EQ (MGL-PAX:CLHS FUNCTION)"><code>EQ</code></a>)) &amp;BODY BODY</span></span></p>
+
+<p><code>when-unhandled</code> Macro</p>
+
+<p>The <code>when-unhandled</code> macro defines actions to be executed when an event has not been handled by any prior <a href="#SENTO.FSM:STAY-ON-STATE%20MGL-PAX:MACRO" title="SENTO.FSM:STAY-ON-STATE MGL-PAX:MACRO"><code>stay-on-state</code></a> or <a href="#SENTO.FSM:GOTO-STATE%20MGL-PAX:MACRO" title="SENTO.FSM:GOTO-STATE MGL-PAX:MACRO"><code>goto-state</code></a> operations within an <a href="#SENTO.FSM:FSM%20CLASS" title="SENTO.FSM:FSM CLASS"><code>FSM</code></a> (Finite State Machine).</p>
+
+<p><strong>Parameters</strong></p>
+
+<ul>
+<li><p><code>event</code>: The event that should trigger the body if it remains unhandled by other mechanisms in the <code>FSM</code>.</p></li>
+<li><p><code>:test</code>: A key parameter specifying the function used to compare the received event with the specified event. Defaults to <code>#'eq</code>, allowing for custom comparison logic.</p></li>
+<li><p><code>body</code>: One or more expressions to execute when the specified event is unhandled by <code>stay-on-state</code> or <code>goto-state</code> actions.</p></li>
+</ul>
+
+<p><strong>Description</strong></p>
+
+<p>The <code>when-unhandled</code> macro is designed to catch events that have not been processed by <code>stay-on-state</code> or <code>goto-state</code>. It provides a fallback mechanism that ensures specific actions are taken for such unhandled events, using a specified test function to determine event equivalency.</p>
+
+<p><strong>Usage Example</strong></p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">when-unhandled <span class="paren2">(<span class="code">'start <span class="keyword">:test</span> #'eq</span>)</span>
+  <span class="paren2">(<span class="code">log:error <span class="string">"Start event was unhandled"</span></span>)</span>
+  <span class="paren2">(<span class="code">notify-admin</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code">when-unhandled <span class="paren2">(<span class="code">'disconnect <span class="keyword">:test</span> #'eq</span>)</span>
+  <span class="paren2">(<span class="code">log:warn <span class="string">"Unhandled disconnect event"</span></span>)</span>
+  <span class="paren2">(<span class="code">attempt-reconnect</span>)</span></span>)</span></span></code></pre>
+
+<p>In these examples:
+- The first block logs an error and notifies an admin if the <code>start</code> event remains unhandled, using the default <code>#'eq</code> function for testing.
+- The second block logs a warning and attempts to reconnect for an unhandled <code>disconnect</code> event, also using <code>#'eq</code>.</p>
+
+<p><strong>Notes</strong></p>
+
+<ul>
+<li><p>Utilize the <code>test</code> parameter to customize how events are determined as equivalent when necessary.</p></li>
+<li><p><code>when-unhandled</code> is essential for capturing and managing scenarios where standard state transitions do not account for all event possibilities.</p></li>
+<li><p>Is it possible to use <code>goto-state</code> in <code>body</code>.</p></li>
+</ul>
+
+<p>Integrate the <code>when-unhandled</code> macro to ensure your <code>FSM</code> handles any unexpected or default cases robustly and flexibly. Adjust the body actions and events as needed for your specific requirements and <code>FSM</code> design.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3AON-TRANSITION-20MGL-PAX-3AMACRO-29"></a>
+<a id="SENTO.FSM:ON-TRANSITION%20MGL-PAX:MACRO"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FSM:ON-TRANSITION%20MGL-PAX:MACRO" >ON-TRANSITION</a></span></span> <span class="locative-args">(TRANSITION &amp;KEY (TEST '#'<a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_eq.htm" title="EQ (MGL-PAX:CLHS FUNCTION)"><code>EQ</code></a>)) &amp;BODY BODY</span></span></p>
+
+<p><code>on-transition</code> Macro</p>
+
+<p>The <code>on-transition</code> macro defines actions to be executed when a specific state transition occurs within an <a href="#SENTO.FSM:FSM%20CLASS" title="SENTO.FSM:FSM CLASS"><code>FSM</code></a> (Finite State Machine). It uses customizable test functions to determine when a transition has taken place.</p>
+
+<p><strong>Parameters</strong></p>
+
+<ul>
+<li><p><code>transition</code>: A cons cell or similar paired structure representing the transition, with the car as the starting state and the cdr as the destination state.</p></li>
+<li><p><code>:test</code>: A key parameter specifying the function used to compare states. Defaults to <code>#'eq</code>, allowing for custom comparison logic if needed.</p></li>
+<li><p><code>body</code>: One or more expressions that are executed when the specified transition is detected.</p></li>
+</ul>
+
+<p><strong>Description</strong></p>
+
+<p>The <code>on-transition</code> macro provides a mechanism for executing specific actions when the <code>FSM</code> undergoes a particular state transition, as identified by changes in the state model from a starting to an ending state. This macro depends on events being handled by a state transition (<a href="#SENTO.FSM:GOTO-STATE%20MGL-PAX:MACRO" title="SENTO.FSM:GOTO-STATE MGL-PAX:MACRO"><code>goto-state</code></a>), and uses test functions to match state values.</p>
+
+<p><strong>Usage Example</strong></p>
+
+<pre><code><span class="code"><span class="paren1">(<span class="code">on-transition <span class="paren2">(<span class="code"><span class="paren3">(<span class="code">'idle . 'active</span>)</span> <span class="keyword">:test</span> #'eq</span>)</span>
+  <span class="paren2">(<span class="code">log:info <span class="string">"Transitioned from idle to active"</span></span>)</span>
+  <span class="paren2">(<span class="code">initialize-resources</span>)</span></span>)</span>
+
+<span class="paren1">(<span class="code">on-transition <span class="paren2">(<span class="code"><span class="paren3">(<span class="code">'active . 'completed</span>)</span> <span class="keyword">:test</span> #'eq</span>)</span>
+  <span class="paren2">(<span class="code">log:info <span class="string">"Transitioned from active to completed"</span></span>)</span>
+  <span class="paren2">(<span class="code">cleanup-resources</span>)</span></span>)</span></span></code></pre>
+
+<p>In these examples:
+- The first block logs the transition from <code>idle</code> to <code>active</code> and performs resource initialization when this transition occurs.
+- The second block logs the transition from <code>active</code> to <code>completed</code> and performs cleanup.</p>
+
+<p><strong>Notes</strong></p>
+
+<ul>
+<li><p><code>:test</code>: Customize the comparison logic to fit the <code>FSM</code>'s state representations, especially if using complex or non-standard states.</p></li>
+<li><p>The macro relies on transitions being marked by the handling of events through <code>goto-state</code>.</p></li>
+</ul>
+
+<p>Utilize the <code>on-transition</code> macro to effectively manage and isolate logic specific to state transitions, ensuring that your <code>FSM</code> operates smoothly and predictably through defined state changes. Adjust the body of transitions to align with the goals and behavior of your <code>FSM</code> system.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3A-2ARECEIVED-EVENT-2A-20VARIABLE-29"></a>
+<a id="SENTO.FSM:*RECEIVED-EVENT*%20VARIABLE"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.FSM:*RECEIVED-EVENT*%20VARIABLE" >*RECEIVED-EVENT*</a></span></span> <span class="locative-args">NIL</span></span></p>
+
+<p>Dynamically binds the received event (message).</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3A-2AEVENT-DATA-2A-20VARIABLE-29"></a>
+<a id="SENTO.FSM:*EVENT-DATA*%20VARIABLE"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.FSM:*EVENT-DATA*%20VARIABLE" >*EVENT-DATA*</a></span></span> <span class="locative-args">NIL</span></span></p>
+
+<p>Dynamically binds event data when msg/event was sent with data (`cons')</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3A-2ASTATE-DATA-2A-20VARIABLE-29"></a>
+<a id="SENTO.FSM:*STATE-DATA*%20VARIABLE"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.FSM:*STATE-DATA*%20VARIABLE" >*STATE-DATA*</a></span></span> <span class="locative-args">NIL</span></span></p>
+
+<p>Dynamically binds the current state data.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EFSM-3A-2ANEXT-STATE-DATA-2A-20VARIABLE-29"></a>
+<a id="SENTO.FSM:*NEXT-STATE-DATA*%20VARIABLE"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.FSM:*NEXT-STATE-DATA*%20VARIABLE" >*NEXT-STATE-DATA*</a></span></span> <span class="locative-args">NIL</span></span></p>
+
+<p>Dynamically binds the next state data (<code>on-transition').
+Effectively same as</code><em>event-data</em>' but should be used in different context.</p></li>
+</ul>
 <p><a id="x-28SENTO-2ESTASH-3A-40STASHING-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.STASH:@STASHING%20MGL-PAX:SECTION"></a></p>
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.AGENT.ARRAY:@ARRAY-AGENT%20MGL-PAX:SECTION" title="Array/Vector agent">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8594;</a> <a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION">2.5 Stashing</a></h3>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.FSM:@FSM%20MGL-PAX:SECTION" title="Finite state machine">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8594;</a> <a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">&#8634;</a></span></span></p>
+<h3><a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION">2.6 Stashing</a></h3>
 <h6>[in package SENTO.STASH with nicknames STASH]</h6>
 <p><a id="x-28SENTO-2ESTASH-3ASTASHING-20CLASS-29"></a>
 <a id="SENTO.STASH:STASHING%20CLASS"></a></p>
@@ -1558,14 +1968,14 @@ Resubmitting means they are added to the end of the queue like any ordinary mess
 <p><a id="x-28SENTO-2EDISPATCHER-3A-40DISPATCHER-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.STASH:@STASHING%20MGL-PAX:SECTION" title="Stashing">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">&#8594;</a> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION">2.6 Dispatcher</a></h3>
+<h3><a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION">2.7 Dispatcher</a></h3>
 <h6>[in package SENTO.DISPATCHER with nicknames DISP]</h6>
 <p><a id="x-28SENTO-2EDISPATCHER-3ADISPATCHER-BASE-20CLASS-29"></a>
 <a id="SENTO.DISPATCHER:DISPATCHER-BASE%20CLASS"></a></p>
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:DISPATCHER-BASE%20CLASS" >DISPATCHER-BASE</a></span></span></span></p>
 
-<p>A <code>dispatcher</code> contains a pool of <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>actors</code></a> that operate as workers where work is dispatched to.
+<p>A <code>dispatcher</code> contains a pool of <code>actors</code> that operate as workers where work is dispatched to.
 However, the workers are created in the given <a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a>.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EDISPATCHER-3AIDENTIFIER-20-28MGL-PAX-3AREADER-20SENTO-2EDISPATCHER-3ADISPATCHER-BASE-29-29"></a>
@@ -1621,9 +2031,9 @@ Only use the defined interface here to talk to them.</p></li>
 <p><a id="x-28SENTO-2EDISPATCHER-3ADISPATCH-WORKER-20CLASS-29"></a>
 <a id="SENTO.DISPATCHER:DISPATCH-WORKER%20CLASS"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:DISPATCH-WORKER%20CLASS" >DISPATCH-WORKER</a></span></span> <span class="locative-args"><a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS">ACTOR</a></span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:DISPATCH-WORKER%20CLASS" >DISPATCH-WORKER</a></span></span> <span class="locative-args"><a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS">SENTO.ACTOR:ACTOR</a></span></span></p>
 
-<p>Specialized <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>actor</code></a> used as <code>worker</code> is the message <code>dispatcher</code>.</p></li>
+<p>Specialized <code>actor</code> used as <code>worker</code> is the message <code>dispatcher</code>.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EDISPATCHER-3AMAKE-DISPATCHER-WORKER-20FUNCTION-29"></a>
 <a id="SENTO.DISPATCHER:MAKE-DISPATCHER-WORKER%20FUNCTION"></a></p>
@@ -1637,7 +2047,7 @@ Only use the defined interface here to talk to them.</p></li>
 <p><a id="x-28SENTO-2EDISPATCHER-3A-40SHARED-DISPATCHER-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8592;</a> <a href="#SENTO.DISPATCHER:@DISPATCHER%20MGL-PAX:SECTION" title="Dispatcher">&#8593;</a> <a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">&#8594;</a> <a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">&#8634;</a></span></span></p>
-<h4><a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION">2.6.1 Shared dispatcher</a></h4>
+<h4><a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION">2.7.1 Shared dispatcher</a></h4>
 <p><a id="x-28SENTO-2EDISPATCHER-3ASHARED-DISPATCHER-20CLASS-29"></a>
 <a id="SENTO.DISPATCHER:SHARED-DISPATCHER%20CLASS"></a></p>
 <ul>
@@ -1652,7 +2062,7 @@ The default strategy of choosing a worker is <code>:random</code>.</p>
 <p><a id="x-28SENTO-2EROUTER-3A-40ROUTER-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.DISPATCHER:@SHARED-DISPATCHER%20MGL-PAX:SECTION" title="Shared dispatcher">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">&#8594;</a> <a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION">2.7 Router</a></h3>
+<h3><a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION">2.8 Router</a></h3>
 <h6>[in package SENTO.ROUTER with nicknames ROUTER]</h6>
 <p><a id="x-28SENTO-2EROUTER-3AROUTER-20CLASS-29"></a>
 <a id="SENTO.ROUTER:ROUTER%20CLASS"></a></p>
@@ -1724,7 +2134,7 @@ Otherwise see: <code>act:ask</code>.</p></li>
 <p><a id="x-28SENTO-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.ROUTER:@ROUTER%20MGL-PAX:SECTION" title="Router">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8594;</a> <a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION">2.8 Eventstream</a></h3>
+<h3><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION">2.9 Eventstream</a></h3>
 <h6>[in package SENTO.EVENTSTREAM with nicknames EV]</h6>
 <p><a id="x-28SENTO-2EEVENTSTREAM-3AEVENTSTREAM-20CLASS-29"></a>
 <a id="SENTO.EVENTSTREAM:EVENTSTREAM%20CLASS"></a></p>
@@ -1857,7 +2267,7 @@ Or if you want to listen to all lists, subscribe with <code>'cons</code>.</p></l
 <p><a id="x-28SENTO-2EFUTURE-3A-40FUTURE-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8594;</a> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION">2.9 Future (delayed-computation)</a></h3>
+<h3><a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION">2.10 Future (delayed-computation)</a></h3>
 <h6>[in package SENTO.FUTURE with nicknames FUTURE]</h6>
 <p><a id="x-28SENTO-2EFUTURE-3AFUTURE-20CLASS-29"></a>
 <a id="SENTO.FUTURE:FUTURE%20CLASS"></a></p>
@@ -2000,7 +2410,7 @@ It works similar to <a href="http://www.lispworks.com/documentation/HyperSpec/Bo
 <p><a id="x-28SENTO-2ETASKS-3A-40TASKS-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.TASKS:@TASKS%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8594;</a> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION">2.10 Tasks</a></h3>
+<h3><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION">2.11 Tasks</a></h3>
 <h6>[in package SENTO.TASKS with nicknames TASKS]</h6>
 <p><a id="x-28SENTO-2ETASKS-3AWITH-CONTEXT-20MGL-PAX-3AMACRO-29"></a>
 <a id="SENTO.TASKS:WITH-CONTEXT%20MGL-PAX:MACRO"></a></p>
@@ -2171,7 +2581,7 @@ If all workers are busy then the computation of <code>fun</code> is queued.</p>
 <p><a id="x-28SENTO-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">&#8594;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION">2.11 Config</a></h3>
+<h3><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION">2.12 Config</a></h3>
 <h6>[in package SENTO.CONFIG with nicknames CONFIG]</h6>
 <p><a id="x-28SENTO-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29"></a>
 <a id="SENTO.CONFIG:CONFIG-FROM%20FUNCTION"></a></p>
@@ -2228,7 +2638,7 @@ Both <code>config</code> and <code>fallback-config</code> must be plists, or a '
 <p><a id="x-28SENTO-2EWHEEL-TIMER-3A-40SCHEDULER-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION">2.12 Scheduler</a></h3>
+<h3><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION">2.13 Scheduler</a></h3>
 <h6>[in package SENTO.WHEEL-TIMER with nicknames WT]</h6>
 <p><a id="x-28SENTO-2EWHEEL-TIMER-3AWHEEL-TIMER-20CLASS-29"></a>
 <a id="SENTO.WHEEL-TIMER:WHEEL-TIMER%20CLASS"></a></p>

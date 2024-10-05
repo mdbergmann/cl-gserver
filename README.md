@@ -506,6 +506,7 @@ The Finite State Machine (FSM) model is a computational framework designed to mo
 To create an FSM, use the `make-fsm` function, which initializes an actor with state management capabilities.
 
 (Additional API documentation can be found [here](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.FSM:@FSM%20MGL-PAX:SECTION).)
+(The API is quite stable, but since this is a new feature minor changes are possible.)
 
 1. **actor-context**: Specifies where the FSM is created, which can be an actor, an actor-context, or an actor-system.
 2. **name**: A string that names the FSM.

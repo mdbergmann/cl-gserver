@@ -12,6 +12,7 @@ Sento features:
 - Router: Router offers a similar interface as Actor with `ask` and `tell` but collects multiple Actors for load-balancing.
 - EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages. This is similar to an event-bus.
 - Tasks: a simple API for concurrency.
+- Futures library
 
 (Please also checkout the API [documentation](https://mdbergmann.github.io/cl-gserver/index.html) for further information)
 (for migrations from Sento v2, please check below migration guide)
@@ -504,7 +505,7 @@ The Finite State Machine (FSM) model is a computational framework designed to mo
 
 To create an FSM, use the `make-fsm` function, which initializes an actor with state management capabilities.
 
-(Additional API documentation can be found [here](https://mdbergmann.github.io/cl-gserver/index.html##SENTO.FSM:@FSM%20MGL-PAX:SECTION).)
+(Additional API documentation can be found [here](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.FSM:@FSM%20MGL-PAX:SECTION).)
 
 1. **actor-context**: Specifies where the FSM is created, which can be an actor, an actor-context, or an actor-system.
 2. **name**: A string that names the FSM.

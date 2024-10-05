@@ -776,6 +776,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 
 ### Version history
 
+**Version 3.4.0 (5.10.2024):** Finalized finite-state-machine (FSM) and documentation.
+
 **Version 3.3.3 (1.10.2024):** Bug fix for actor with dispatcher mailbox where the order of processing messages wasn't honoured.
 
 **Version 3.3.2 (14.8.2024):** Primarily documentation changes in regards to `future`

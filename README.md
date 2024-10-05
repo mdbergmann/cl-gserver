@@ -586,6 +586,8 @@ After setup, the FSM processes events, transitioning as defined. This setup ensu
 
 Incorporating timeout controls and a comprehensive fallback for unhandled events, this FSM elegantly manages complex state logic with powerful macro functionalities.
 
+For more examples have a look at the [tests](tests/fsm-test.lisp).
+
 ### Router
 
 A `Router` is a facade over a set of actors. Routers are either created with a set of actors using the default constructor `router:make-router` or actors can be added later.

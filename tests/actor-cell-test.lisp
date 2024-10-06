@@ -208,7 +208,9 @@
                                 (sleep 0.3)
                                 "receive-return")
                               0)
-    (let ((now (get-internal-real-time)))
+    (let ((start (timeutils:get-current-millis)))
       (cast cut :wait)  ;; send message that waits a bit but is async
       (stop cut t)  ;; stop has to wait until stopped
+      ;; TODO: check elapsed time
+      ;; on a dispatcher messagebox stop with wait does nothing.
       (is-false (bt2:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread))))))

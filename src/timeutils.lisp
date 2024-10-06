@@ -7,7 +7,8 @@
            #:ask-timeout
            #:with-waitfor
            #:cause
-           #:make-timer))
+           #:make-timer
+           #:get-current-millis))
 
 (in-package :sento.timeutils)
 
@@ -55,3 +56,9 @@ This blocks the calling thread."
                     (sleep delay)
                     (funcall run-fun))
                   :name (string (gensym "timer-"))))
+
+(defun get-current-millis ()
+  (let ((now (get-internal-real-time)))
+    (if (> internal-time-units-per-second 1000)
+        (truncate (/ now 1000))
+        now)))

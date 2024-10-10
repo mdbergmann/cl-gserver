@@ -348,7 +348,7 @@ Note that `ask-s` uses the calling thread for the timeout checks.
 
 #### Long running and asynchronous operations in `receive`
 
-Be careful with doing long running computations in the `receive` function message handler, because it will block message processing. It is advised to use a third-party thread-pool or a library like *lparallel* to do the computations with, and return early from the `receive` message handler.
+Be careful with doing long running computations in the `receive` function message handler, because it will block message processing. It is advised to use a separate thread, third-party thread-pool, a library like *lparallel*, or the provided 'Tasks' API using a dedicated dispatcher to do the computations with, and return early from the `receive` message handler.
 
 The computation result can be 'awaited' for in an asynchronous manner and a response to `*sender*` can be sent manually (via `reply`). The sender of the original message is set to the dynamic variable `*sender*`.
 

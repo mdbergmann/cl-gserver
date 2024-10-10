@@ -237,7 +237,13 @@ ping
 
 To stop the ping-pong one just has to send `(! *ping* :stop)` to one of them.
 
-`:stop` will completely stop the actors message processing, and the actor will not be useable anymore.
+##### Stopping actors
+
+Sending the:
+- `:stop` message will completely stop the actors message processing. No new messages will be accepted, but all messages in the queue are still processed.
+- `:terminate` message will also stop the actor from accepting more messages but it will also discard any queued messages. Only the one that is currently being processed will be allowed to finish.
+
+It is also possible to call `act-cell:stop` method on the actor. It has the same effect as sending `:terminate`.
 
 ##### Synchronous ask
 

@@ -149,6 +149,26 @@
       (act-cell:stop cut)
       (is-true (await-cond 0.5 stopped-msg-received)))))
 
+(test watch--notify-about-stopped--using-terminate-message
+  "Tests the notification of the `:stopped' lifecycle event of the actor."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg)))
+                               0
+                               t)
+    ;; we need an actor as watcher that is not the 'child' of the to be watched actor.
+    (let* ((stopped-msg-received nil)
+           (watcher (actor-of (ac:system (act:context cut))
+                              :receive (lambda (msg)
+                                         (case (car msg)
+                                           (:stopped
+                                            (progn
+                                              (assert (eq cut (cdr msg)))
+                                              (setf stopped-msg-received t))))))))
+      (watch cut watcher)
+      (is (= 1 (length (watchers cut))))
+      (tell cut :terminate)
+      (is-true (await-cond 0.5 stopped-msg-received)))))
+
 (test stop-actor--stopping-parent-stops-also-child
   "Tests that stopping a parent actor also the children are stopped."
   (with-fixture actor-fixture ((lambda (msg)

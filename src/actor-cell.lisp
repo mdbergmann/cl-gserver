@@ -103,17 +103,22 @@ State of the cell can be changed via `setf`ing `*state*` variable."))
 State of the cell can be changed via `setf`ing `*state*` variable."))
 
 (defgeneric stop (actor-cell &optional wait)
-  (:documentation "Stops the actor-cells message processing gracefully.
-This is not an immediate stop.
-There are two ways to stop an actor (cell).
+  (:documentation "Stops the actor-cells message processing.
+There are the following ways to stop an actor (cell).
 
 1. by calling this function.
-It is not an immediate stop. The actor will finish the current message processing.
-`wait`: waits until the cell is stopped.
+The actor will finish processing the current message.
+All queued messages will be discarded.
+No new messages will be accepted.
+`wait`: waits until the cell is stopped (only applied to `:pinned` dispatcher).
 
-2. by sending `:stop` to the actor (cell).
+2. by sending `:terminate` to actor.
+This is effectively the same as calling `stop` method.
+
+3. by sending `:stop` to the actor (cell).
 This won't allow to wait when the actor is stopped, even not with `ask-s`.
-The `:stop` message (symbol) is normally processed by the actors message processing."))
+The `:stop` message (symbol) is normally processed by the actors message processing.
+The actor will not accept more messages."))
 
 ;; ---------------------------------
 ;; Impl
@@ -170,6 +175,10 @@ In case no messge-box is configured this function respnds with `:no-message-hand
   (log:debug "~a: submitting message: ~a, withreply-p: ~a, sender: ~a, timeout: ~a"
              (name actor-cell) message withreply-p sender time-out)
 
+  (when (eq message :terminate)
+    (stop actor-cell)
+    (return-from submit-message :terminated))
+  
   (with-slots (internal-state msgbox) actor-cell
     (unless (actor-cell-state-running internal-state)
       (return-from submit-message :stopped))

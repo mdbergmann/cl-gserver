@@ -16,8 +16,9 @@
 
 (log:config :warn)
 
+(defclass test-cell (actor-cell) ())
+
 (def-fixture cell-fixture (call-fun cast-fun state)
-  (defclass test-cell (actor-cell) ())
   (defmethod handle-call ((cell test-cell) message)
     (funcall call-fun message))
   (defmethod handle-cast ((cell test-cell) message)
@@ -169,15 +170,34 @@
     (with-fixture cell-fixture (nil
                                 (lambda (message)
                                   (push message received)
-                                  (sleep .5)
+                                  (sleep .2)
                                   nil)
                                 0)
-      (sleep 0.2)  ;; give the cell some time to start before sending the first message
       (cast cut :first)
       (cast cut :second)
+      (sleep 0.1) ;; make a small sleep to get at least the first message processed
       (stop cut)
       (cast cut :third)
-      (sleep 1.0)
+      (sleep .5)
+      (is (equalp '(:first) received))
+      ))
+  )
+
+(test stopping-cell--using-terminate-message
+  "Stopping using `:terminate` message behaves the same as using `stop' method."
+  (let ((received nil))
+    (with-fixture cell-fixture (nil
+                                (lambda (message)
+                                  (push message received)
+                                  (sleep .2)
+                                  nil)
+                                0)
+      (cast cut :first)
+      (cast cut :second)
+      (sleep 0.1) ;; make a small sleep to get at least the first message processed
+      (cast cut :terminate)
+      (cast cut :third)
+      (sleep .5)
       (is (equalp '(:first) received))
       ))
   )
@@ -188,12 +208,12 @@
     (with-fixture cell-fixture (nil
                                 (lambda (message)
                                   (push message received)
-                                  (sleep .5)
+                                  (sleep .2)
                                   nil)
                                 0)
-      (sleep 0.2)  ;; give the cell some time to start before sending the first message
       (cast cut :first)
       (cast cut :second)
+      (sleep 0.1) ;; make a small sleep to get at least the first message processed
       (stop cut t)
       (cast cut :third)
       (is (equalp '(:first) received))
@@ -209,6 +229,7 @@
                                 "receive-return")
                               0)
     (let ((start (timeutils:get-current-millis)))
+      (declare (ignore start))
       (cast cut :wait)  ;; send message that waits a bit but is async
       (stop cut t)  ;; stop has to wait until stopped
       ;; TODO: check elapsed time

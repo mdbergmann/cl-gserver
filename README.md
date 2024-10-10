@@ -741,21 +741,19 @@ Hardware specs (x86-64):
 
 **All**
 
-Version 3.2.0 of Sento uses the sbcl `sb-concurrent:queue` whcih is very fast and works using CAS (compare-and-swap) where as the other implementations use a still fast double stack queue protected by locking.
-
 The benchmark was created by having 8 threads throwing each 125k (1M altogether) messages at 1 actor. The timing was taken for when the actor did finish processing those 1M messages. The messages were sent by either all `tell`, `ask-s`, or `ask` to an actor whose message-box worked using a single thread (`:pinned`) or a dispatched message queue (`:shared` / `dispatched`) with 8 workers.
 
 Of course a `tell` is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow.
 
-**SBCL (v2.4.1)**
+**SBCL (v2.4.9)**
 
-SBCL is very fast, but this tests uses SBCLs own queue implementation based on CAS instead of locking.
+SBCL is very fast, but problematic in the synchronous ask case using :shared dispatcher.
 
 **LispWorks (8.0.1)**
 
 LispWorks is fast overall. Not as fast as SBCL. But it seems the GC is more robust, in particular on the `dispatched - ask`.
 
-**CCL (v1.12)**
+**CCL (v1.13)**
 
 Unfortunately CCL doesn't work natively on M1 Apple CPU.
 
@@ -763,7 +761,7 @@ Unfortunately CCL doesn't work natively on M1 Apple CPU.
 
 The pleasant surprise was ABCL. While not being the fastest it is very robust.
 
-**Clasp 2.5.0**
+**Clasp 2.6.0**
 
 Very slow. Used default settings, as also for the other tests.
 Maybe something can be tweaked?

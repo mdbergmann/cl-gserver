@@ -76,6 +76,7 @@
                  (:file "config-test")
                  (:file "wheel-timer-test")
                  (:file "bounded-queue-test")
+                 (:file "unbounded-queue-test")
                  (:file "actor-cell-test")
                  (:file "actor-mp-test")
                  (:file "agent-test")

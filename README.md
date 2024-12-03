@@ -81,7 +81,7 @@ The `:receive` key argument to `actor-of` is a function which implements the mes
 
 The return value of 'receive' function is only used when using the synchronous `ask-s` function to 'ask' the actor. Using `ask` (equivalent: `?`) the return value is ignored. If an answer should be provided to an asking actor, or if replying is part of an interface contract, then `reply` should be used.
 
-Store the actor to a variable `*answerer*` by just doing `(defparameter *answerer* *)` in the repl where `*` resembled the last result (the actor instance in our case). We can evaluate this in repl and see:
+Store the actor to a variable `*answerer*` by just doing `(defparameter *answerer* *)` in the repl where `*` resembled the last result (the actor instance in our case). By evaluating the variable (`*answerer*`) we can see the printed object:
 
 ```
 #<ACTOR path: /user/answerer, cell: #<ACTOR answerer, running: T, state: NIL, message-box: #<SENTO.MESSAGEB:MESSAGE-BOX/DP mesgb-1356, processed messages: 1, max-queue-size: 0, queue: #<SENTO.QUEUE:QUEUE-UNBOUNDED 82701A6D13>>>>

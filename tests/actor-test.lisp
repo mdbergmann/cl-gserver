@@ -539,3 +539,15 @@
            (is (= 1 (length (filter (lambda (x) (if x x)) tells))))
            (is (= 9 (length (filter #'null tells)))))
       (ac:shutdown sys))))
+
+
+(test dont-break-on-non-error-signals
+  "Test contructor and attach a msgbox manually."
+  (let ((cut (make-actor (lambda (msg)
+                           (declare (ignore msg))
+                           (warn "Received a message!")
+                           (values :result)))))
+    (setf (act-cell:msgbox cut)
+          (make-instance 'mesgb:message-box/bt))
+    (is (eql :result (ask-s cut "hello")))
+    (ask-s cut :stop)))

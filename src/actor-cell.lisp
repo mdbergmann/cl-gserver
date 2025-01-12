@@ -171,7 +171,7 @@ If a `sender' is specified the result will be sent to the sender."
 In case of `withreply-p`, the `response` is filled because submitting to the message-box is synchronous.
 Otherwise submitting is asynchronous and `response` is just `t`.
 In case the actor-cell was stopped it will respond with just `:stopped`.
-In case no messge-box is configured this function respnds with `:no-message-handling`."
+In case no message-box is configured this function responds with `:no-message-handling`."
   (log:debug "~a: submitting message: ~a, withreply-p: ~a, sender: ~a, timeout: ~a"
              (name actor-cell) message withreply-p sender time-out)
 
@@ -216,7 +216,7 @@ In case no messge-box is configured this function respnds with `:no-message-hand
                  (setf state *state*)
                  handle-result)))
             (t internal-handle-result)))
-      (t (c)
+      (serious-condition (c)
         (log:error "~a: error condition was raised: ~%~a~%"
                    (name actor-cell)
                    c)

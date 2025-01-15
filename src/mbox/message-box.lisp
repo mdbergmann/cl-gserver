@@ -350,6 +350,7 @@ Returns the handler-result if `withreply-p' is eq to `T', otherwise the return i
                processed-messages
                dispatcher) self
     (incf processed-messages)
+    
     (let ((push-item (make-message-item/dp
                       :message message
                       :handler-fun-args handler-fun-args
@@ -359,7 +360,6 @@ Returns the handler-result if `withreply-p' is eq to `T', otherwise the return i
       (log:debug "~a: enqueuing... withreply-p: ~a, time-out: ~a, message: ~a"
                  (name self) withreply-p time-out message)
       (pushq queue push-item)
-      ;; (ensure-thread-is-running self)
 
       (if withreply-p
           (dispatch/reply self push-item dispatcher dispatcher-fun-args time-out)

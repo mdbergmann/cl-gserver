@@ -59,4 +59,4 @@ jobs:
     - name: load code and run tests
       shell: bash
       run: |
-        ros -e '(handler-bind (#+asdf3.2(asdf:bad-SYSTEM-NAME (function MUFFLE-WARNING))) (handler-case (ql:quickload :sento/tests) (error (a) (format t "caught error ~s~%~a~%" a a) (uiop:quit 1))))' -e "(unless (5am:run! 'senti.tests:test-suite) (uiop:quit 1))"
+        ros -e '(handler-bind (#+asdf3.2(asdf:bad-SYSTEM-NAME (function MUFFLE-WARNING))) (handler-case (ql:quickload :sento/tests) (error (a) (format t "caught error ~s~%~a~%" a a) (uiop:quit 1))))' -e "(unless (5am:run! 'sento.tests:test-suite) (uiop:quit 1))"

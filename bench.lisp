@@ -92,7 +92,8 @@
                       (wait-if-queue-larger-than 10000 wait-if-queue-larger-than-given-p)
                       (duration 10)
                       (num-iterations 60)
-                      (load-threads 8))
+                      (load-threads 8)
+                      (time-out nil))
   
   (log:config :warn)
 
@@ -124,7 +125,8 @@
                 :async-ask-p  async-ask-p 
                 :num-shared-workers num-shared-workers
                 :queue-size queue-size
-                :wait-if-queue-larger-than wait-if-queue-larger-than))
+                :wait-if-queue-larger-than wait-if-queue-larger-than
+                :time-out time-out))
   (force-output)
   
   (with-timing (num-iterations
@@ -255,33 +257,72 @@
 
 
 (defun run-all (&key
-                (num-iterations 10)
-                (duration 10))
+                (num-iterations 60)
+                (duration 10)
+                (queue-size 100)
+                (time-out 3)
+                &aux (started-at (get-internal-real-time)))
   (run-benchmark :num-iterations num-iterations
-                 :duration duration)
+                 :duration duration
+                 :with-reply-p nil
+                 :async-ask-p nil)
 
-  (format t "Running ~A:~%" '(run-benchmark :with-reply-p t :async-ask-p nil))
   (run-benchmark :num-iterations num-iterations
                  :duration duration
-                 :with-reply-p t :async-ask-p nil)
+                 :with-reply-p t
+                 :async-ask-p nil)
   
-  (format t "Running ~A:~%" '(run-benchmark :with-reply-p t :async-ask-p t))
   (run-benchmark :num-iterations num-iterations
                  :duration duration
-                 :with-reply-p t :async-ask-p t)
+                 :with-reply-p t
+                 :async-ask-p t)
+
   
-  (format t "Running ~A:~%" '(run-benchmark :queue-size 100))
-  (run-benchmark :num-iterations num-iterations
-                 :duration duration
-                 :queue-size 100)
+  (format t "With queue size limited to ~A:~2%"
+          queue-size)
   
-  (format t "Running ~A:~%" '(run-benchmark :with-reply-p t :async-ask-p nil :queue-size 100))
   (run-benchmark :num-iterations num-iterations
                  :duration duration
-                 :with-reply-p t :async-ask-p nil :queue-size 100)
+                 :with-reply-p nil
+                 :async-ask-p nil
+                 :queue-size queue-size)
   
-  (format t "Running ~A:~%" '(run-benchmark :with-reply-p t :async-ask-p t :queue-size 100))
   (run-benchmark :num-iterations num-iterations
                  :duration duration
-                 :with-reply-p t :async-ask-p t :queue-size 100))
+                 :with-reply-p t
+                 :async-ask-p nil
+                 :queue-size queue-size)
+  
+  (run-benchmark :num-iterations num-iterations
+                 :duration duration
+                 :with-reply-p t
+                 :async-ask-p t
+                 :queue-size queue-size)
+
+  
+  (format t "With time-out ~A:~2%"
+          time-out)
+  
+  (run-benchmark :num-iterations num-iterations
+                 :duration duration
+                 :with-reply-p nil
+                 :async-ask-p nil
+                 ;; This should not make sense for with-reply-p = nil
+                 :time-out time-out)
+
+  (run-benchmark :num-iterations num-iterations
+                 :duration duration
+                 :with-reply-p t
+                 :async-ask-p nil
+                 :time-out time-out)
+  
+  (run-benchmark :num-iterations num-iterations
+                 :duration duration
+                 :with-reply-p t
+                 :async-ask-p t
+                 :time-out time-out)
+
+  (format t "All tests are performed in ~,2f seconds.~%"
+          (/ (- (get-internal-real-time) started-at)
+             internal-time-units-per-second)))
 

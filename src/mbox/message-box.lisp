@@ -113,18 +113,41 @@ This is used to break the environment possibly captured as closure at 'submit' s
 (defclass message-box/bt (message-box-base)
   ((queue-thread :initform nil
                  :documentation
-                 "The thread that pops queue items."))
+                 "The thread that pops queue items.")
+   (thread-is-running-p :initform nil
+                        :type boolean
+                        :documentation
+                        "Will be set to NIL if processing loop will be broken because of an error or a restart invocation."))
   (:documentation
    "Bordeaux-Threads based message-box with a single thread operating on a message queue.
 This is used when the actor is created using a `:pinned` dispatcher type.
 There is a limit on the maximum number of actors/agents that can be created with
 this kind of queue because each message-box (and with that each actor) requires exactly one thread."))
 
+
+(declaim (ftype (function (message-box/bt &key (:thread-name (or null string)))
+                          (values &optional))
+                start-thread))
+
+(defun start-thread (msgbox &key thread-name)
+  (with-slots (name queue-thread thread-is-running-p)
+      msgbox
+    (flet ((run-processing-loop ()
+             (setf thread-is-running-p t)
+             (unwind-protect
+                  (message-processing-loop msgbox)
+               (setf thread-is-running-p
+                     nil))))
+      (setf queue-thread
+            (bt2:make-thread #'run-processing-loop
+                             :name (or thread-name
+                                       (mkstr "message-thread-" name))))))
+  (values))
+
+
 (defmethod initialize-instance :after ((self message-box/bt) &key)
-  (with-slots (name queue-thread) self
-    (setf queue-thread (bt2:make-thread
-                        (lambda () (message-processing-loop self))
-                        :name  (mkstr "message-thread-" name))))
+  (start-thread self)
+  
   (when (next-method-p)
     (call-next-method)))
 
@@ -179,6 +202,24 @@ This function sets the result as `handler-result' in `item'. The return of this 
               (bt2:condition-notify withreply-cvar)))
           (handler-fun)))))
 
+
+(declaim (ftype (function (message-box/bt)
+                          (values &optional))
+                ensure-thread-is-running))
+
+(defun ensure-thread-is-running (msgbox)
+  (with-slots (queue-thread thread-is-running-p should-run)
+      msgbox
+    (when (and (not thread-is-running-p)
+               should-run)
+      ;; Just to be sure that thread is not alive:
+      (unless (bt2:thread-alive-p queue-thread)
+        (let ((thread-name (bt2:thread-name queue-thread)))
+          (log:warn "Restarting thread" thread-name)
+          (start-thread msgbox
+                        :thread-name thread-name))))
+    (values)))
+
 (defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun-args)
   "The `handler-fun-args` argument must contain a handler function as first list item.
 It will be apply'ed with the rest of the args when the message was 'popped' from queue."
@@ -200,15 +241,21 @@ It will be apply'ed with the rest of the args when the message was 'popped' from
                      :time-out time-out
                      :handler-fun-args handler-fun-args
                      :handler-result 'no-result)))
-    (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
+    
     (bt2:with-lock-held (withreply-lock)
       (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
       (queue:pushq queue push-item)
+      (ensure-thread-is-running msgbox)
 
-      (if time-out
-          (wait-and-probe-for-msg-handler-result msgbox push-item)
-          (bt2:condition-wait withreply-cvar withreply-lock)))
-
+      (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
+      
+      (unless (bt2:condition-wait withreply-cvar withreply-lock
+                                  :timeout time-out)
+        (log:warn "~a: time-out elapsed but result not available yet!" (name msgbox))
+        (setf (slot-value push-item 'cancelled-p) t)
+        (error 'ask-timeout
+               :wait-time time-out)))
+    
     (with-slots (handler-result) push-item
       (log:trace "~a: withreply: result should be available: ~a" (name msgbox) handler-result)
       handler-result)))
@@ -222,6 +269,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
                     :handler-fun-args handler-fun-args)))
     (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
     (queue:pushq queue push-item)
+    (ensure-thread-is-running msgbox)
     t))
 
 (defmethod stop ((self message-box/bt) &optional (wait nil))
@@ -301,6 +349,7 @@ Returns the handler-result if `withreply-p' is eq to `T', otherwise the return i
                processed-messages
                dispatcher) self
     (incf processed-messages)
+    
     (let ((push-item (make-message-item/dp
                       :message message
                       :handler-fun-args handler-fun-args

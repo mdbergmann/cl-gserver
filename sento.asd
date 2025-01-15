@@ -65,6 +65,7 @@
   :author "Manfred Bergmann"
   :depends-on ("sento"
                "fiveam"
+               "serapeum"
                "lparallel"
                "cl-mock")
   :components ((:module "tests"
@@ -95,7 +96,9 @@
                  (:file "actor-system-test")
                  (:file "actor-tree-test")
                  (:file "spawn-in-receive-test")
-                 )))
+                 (:file "test-utils")
+                 (:file "message-box-test"
+                     :depends-on ("test-utils")))))
   :description "Test system for sento"
   :perform (test-op (op c) (symbol-call :fiveam :run!
                                         (uiop:find-symbol* '#:test-suite

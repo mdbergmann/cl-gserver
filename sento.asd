@@ -94,6 +94,7 @@
                  (:file "actor-system-test")
                  (:file "actor-tree-test")
                  (:file "spawn-in-receive-test")
+                 (:file "message-box-test")
                  )))
   :description "Test system for sento"
   :perform (test-op (op c) (symbol-call :fiveam :run!

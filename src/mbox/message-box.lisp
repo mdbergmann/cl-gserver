@@ -113,18 +113,37 @@ This is used to break the environment possibly captured as closure at 'submit' s
 (defclass message-box/bt (message-box-base)
   ((queue-thread :initform nil
                  :documentation
-                 "The thread that pops queue items."))
+                 "The thread that pops queue items.")
+   (thread-lock :initform (bt2:make-lock)
+                :documentation
+                "A lock which should be taken when queue-thread slot is set."))
   (:documentation
    "Bordeaux-Threads based message-box with a single thread operating on a message queue.
 This is used when the actor is created using a `:pinned` dispatcher type.
 There is a limit on the maximum number of actors/agents that can be created with
 this kind of queue because each message-box (and with that each actor) requires exactly one thread."))
 
+
+(declaim (ftype (function (message-box/bt &key (:thread-name (or null string)))
+                          (values &optional))
+                start-thread))
+
+(defun start-thread (msgbox &key thread-name)
+  (with-slots (name queue-thread)
+      msgbox
+    (flet ((run-processing-loop ()
+             (message-processing-loop msgbox)))
+      (setf queue-thread
+            (bt2:make-thread
+             #'run-processing-loop
+             :name (or thread-name
+                       (mkstr "message-thread-" name))))))
+  (values))
+
+
 (defmethod initialize-instance :after ((self message-box/bt) &key)
-  (with-slots (name queue-thread) self
-    (setf queue-thread (bt2:make-thread
-                        (lambda () (message-processing-loop self))
-                        :name  (mkstr "message-thread-" name))))
+  (start-thread self)
+  
   (when (next-method-p)
     (call-next-method)))
 
@@ -179,6 +198,23 @@ This function sets the result as `handler-result' in `item'. The return of this 
               (bt2:condition-notify withreply-cvar)))
           (handler-fun)))))
 
+
+(declaim (ftype (function (message-box/bt)
+                          (values &optional))
+                ensure-thread-is-running))
+
+(defun ensure-thread-is-running (msgbox)
+  (with-slots (queue-thread thread-lock)
+      msgbox
+    (bt2:with-lock-held (thread-lock)
+      (unless (bt2:thread-alive-p queue-thread)
+        (log:trace "Restarting thread ~A"
+                   (bt2:thread-name queue-thread))
+        (start-thread msgbox
+                      :thread-name (bt2:thread-name queue-thread)))
+      (values))))
+ 
+
 (defmethod submit ((self message-box/bt) message withreply-p time-out handler-fun-args)
   "The `handler-fun-args` argument must contain a handler function as first list item.
 It will be apply'ed with the rest of the args when the message was 'popped' from queue."
@@ -200,14 +236,26 @@ It will be apply'ed with the rest of the args when the message was 'popped' from
                      :time-out time-out
                      :handler-fun-args handler-fun-args
                      :handler-result 'no-result)))
-    (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
-    (bt2:with-lock-held (withreply-lock)
-      (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
-      (queue:pushq queue push-item)
+    (cond
+      (time-out
+       (bt2:with-lock-held (withreply-lock)
+         (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
+         (queue:pushq queue push-item)
+         (ensure-thread-is-running msgbox))
 
-      (if time-out
-          (wait-and-probe-for-msg-handler-result msgbox push-item)
-          (bt2:condition-wait withreply-cvar withreply-lock)))
+       ;; It is important to leave lock withreply-lock
+       ;; before we will wait for result. Otherwisee handler-fun
+       ;; will not be able to do it's job:
+       (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
+       (wait-and-probe-for-msg-handler-result msgbox push-item))
+      (t
+       (bt2:with-lock-held (withreply-lock)
+         (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
+         (queue:pushq queue push-item)
+         (ensure-thread-is-running msgbox)
+
+         (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
+         (bt2:condition-wait withreply-cvar withreply-lock))))
 
     (with-slots (handler-result) push-item
       (log:trace "~a: withreply: result should be available: ~a" (name msgbox) handler-result)
@@ -310,6 +358,7 @@ Returns the handler-result if `withreply-p' is eq to `T', otherwise the return i
       (log:debug "~a: enqueuing... withreply-p: ~a, time-out: ~a, message: ~a"
                  (name self) withreply-p time-out message)
       (pushq queue push-item)
+      (ensure-thread-is-running self)
 
       (if withreply-p
           (dispatch/reply self push-item dispatcher dispatcher-fun-args time-out)

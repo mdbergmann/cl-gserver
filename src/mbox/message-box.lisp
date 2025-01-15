@@ -241,7 +241,8 @@ It will be apply'ed with the rest of the args when the message was 'popped' from
        (bt2:with-lock-held (withreply-lock)
          (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
          (queue:pushq queue push-item)
-         (ensure-thread-is-running msgbox))
+         ;; (ensure-thread-is-running msgbox)
+         )
 
        ;; It is important to leave lock withreply-lock
        ;; before we will wait for result. Otherwisee handler-fun
@@ -252,7 +253,7 @@ It will be apply'ed with the rest of the args when the message was 'popped' from
        (bt2:with-lock-held (withreply-lock)
          (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
          (queue:pushq queue push-item)
-         (ensure-thread-is-running msgbox)
+         ;; (ensure-thread-is-running msgbox)
 
          (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
          (bt2:condition-wait withreply-cvar withreply-lock))))
@@ -358,7 +359,7 @@ Returns the handler-result if `withreply-p' is eq to `T', otherwise the return i
       (log:debug "~a: enqueuing... withreply-p: ~a, time-out: ~a, message: ~a"
                  (name self) withreply-p time-out message)
       (pushq queue push-item)
-      (ensure-thread-is-running self)
+      ;; (ensure-thread-is-running self)
 
       (if withreply-p
           (dispatch/reply self push-item dispatcher dispatcher-fun-args time-out)

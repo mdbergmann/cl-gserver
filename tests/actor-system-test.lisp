@@ -81,8 +81,8 @@
            (is (equal (asys::%get-dispatcher-config (asys::config system))
                       '(:shared (:workers 4 :strategy :random))))
            (is (equal (asys::%get-timeout-timer-config (asys::config system))
-                      '(:resolution 500
-                        :max-size 1000)))
+                      '(:resolution 100
+                        :max-size 500)))
            (is (equal (asys::%get-eventstream-config (asys::config system))
                       '(:dispatcher-id :shared)))
            (let ((dispatchers (dispatchers system)))

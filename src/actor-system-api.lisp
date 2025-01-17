@@ -16,7 +16,7 @@
   '(:dispatchers
     (:shared (:workers 4 :strategy :random))
     :timeout-timer
-    (:resolution 500 :max-size 1000)
+    (:resolution 100 :max-size 500)
     :eventstream
     (:dispatcher-id :shared)
     :scheduler

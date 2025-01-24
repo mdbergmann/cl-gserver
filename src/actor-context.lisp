@@ -45,7 +45,8 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
 
 (defun %message-box-for-dispatcher-id (context dispatcher-id queue-size)
   (case dispatcher-id
-    (:pinned (make-instance 'mesgb:message-box/bt))
+    (:pinned (make-instance 'mesgb:message-box/bt
+                            :max-queue-size queue-size))
     (otherwise (let ((dispatcher (%get-shared-dispatcher (system context) dispatcher-id)))
                  (unless dispatcher
                    (error (format nil "No such dispatcher identifier '~a' exists!" dispatcher-id)))

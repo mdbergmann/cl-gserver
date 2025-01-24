@@ -40,6 +40,12 @@ than the 'queue' implementation of lparallel.
   (not (or (queue-head queue)
            (queue-tail queue))))
 
+(defun size (queue)
+  (let ((head (queue-head queue))
+        (tail (queue-tail queue)))
+    (+ (length head)
+       (length tail))))
+
 
 #|
 queue implementation from lparallel.
@@ -104,3 +110,9 @@ Copyright (c) 2011-2012, James M. Lawrence. All rights reserved.
 (defmethod emptyq-p ((self queue-unbounded))
   (with-slots (queue) self
     (emptyp queue)))
+
+
+(defmethod queued-count ((self queue-unbounded))
+  (with-slots (queue lock) self
+    (bt2:with-lock-held (lock)
+      (size queue))))

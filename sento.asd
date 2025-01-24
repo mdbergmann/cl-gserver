@@ -111,6 +111,19 @@
                "mgl-pax/full")
   :components ((:file "documentation")))
 
+
+;; --------------------------------
+;; benchmark
+;; --------------------------------
+
+(defsystem "sento/bench"
+  :author "Manfred Bergmann"
+  :description "Benchmark for Sento"
+  :depends-on ("sento"
+               "trivial-benchmark"
+               "trivial-garbage")
+  :components ((:file "bench")))
+
 ;; load system
 ;; (asdf:load-system "sento")
 ;;

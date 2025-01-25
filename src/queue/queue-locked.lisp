@@ -116,9 +116,4 @@ Copyright (c) 2011-2012, James M. Lawrence. All rights reserved.
     (emptyp queue)))
 
 (defmethod queued-count ((self queue-unbounded))
-  (with-slots (queue lock) self
-    (bt2:with-lock-held (lock)
-      (size queue))))
-
-(defmethod queued-count-approx ((self queue-unbounded))
   (slot-value self 'fill-count))

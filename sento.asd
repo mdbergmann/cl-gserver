@@ -121,6 +121,7 @@
   :author "Manfred Bergmann"
   :description "Benchmark for Sento"
   :depends-on ("sento"
+               "serapeum"
                "trivial-benchmark"
                "trivial-garbage")
   :components ((:file "bench")))

@@ -75,7 +75,7 @@
                       (num-shared-workers 8)
                       ;; When queue-size is given, then Actor will be created
                       ;; with bound-queue. Otherwise, queue will be unbound.
-                      ;; To prevent unbound-queue grow, set wait-if-queue-large-than
+                      ;; To prevent unbound-queue grow, set wait-if-queue-larger-than
                       ;; argument to some value.
                       (queue-size nil queue-size-given-p)
                       ;; When actor's goes abover this value,
@@ -89,7 +89,7 @@
                       ;; when queue-size is 0 and no other way
                       ;; to keep generators from filling all the memory
                       ;; with messages.
-                      (wait-if-queue-large-than 10000 wait-if-queue-large-than-given-p)
+                      (wait-if-queue-larger-than 10000 wait-if-queue-larger-than-given-p)
                       (duration 10)
                       (num-iterations 60)
                       (load-threads 8))
@@ -100,16 +100,16 @@
 
   ;; Leave only one default
   (when (and queue-size-given-p
-             (not wait-if-queue-large-than-given-p))
-    (setf wait-if-queue-large-than nil))
+             (not wait-if-queue-larger-than-given-p))
+    (setf wait-if-queue-larger-than nil))
 
   (when (and (not queue-size-given-p)
-             wait-if-queue-large-than-given-p)
+             wait-if-queue-larger-than-given-p)
     (setf queue-size nil))
 
   (when (and queue-size
              (not (zerop queue-size))
-             wait-if-queue-large-than)
+             wait-if-queue-larger-than)
     (error "Argument WAIT-IF-QUEUE-LARGE-THAN does not makes sense when QUEUE-SIZE is not zero."))
   
   (when (and async-ask-p
@@ -124,7 +124,7 @@
                 :async-ask-p  async-ask-p 
                 :num-shared-workers num-shared-workers
                 :queue-size queue-size
-                :wait-if-queue-large-than wait-if-queue-large-than))
+                :wait-if-queue-larger-than wait-if-queue-larger-than))
   (force-output)
   
   (with-timing (num-iterations
@@ -141,12 +141,12 @@
                                    :dispatcher dispatcher
                                    :queue-size queue-size)))
           (flet ((sender ()
-                   (loop with check-every = 1000
-                         for iteration upfrom 0
-                         while (< (get-internal-real-time)
+                   (loop :with check-every = 1000
+                         :for iteration :upfrom 0
+                         :while (< (get-internal-real-time)
                                   stop-at)
-                         do (cond
-                              ((and wait-if-queue-large-than
+                         :do (cond
+                              ((and wait-if-queue-larger-than
                                     ;; Calling queue-size function
                                     ;; requires lock acquisition which hits performance
                                     ;; and makes message generation up to 10 times slower
@@ -156,7 +156,7 @@
                                     (zerop
                                      (mod iteration
                                           check-every))
-                                    (< wait-if-queue-large-than
+                                    (< wait-if-queue-larger-than
                                        (actor-queue-size actor)))
                                (sleep (random 0.1)))
                               (t
@@ -174,17 +174,17 @@
             (unwind-protect
                  (progn
                    (let ((threads
-                           (loop for thread-id from 1 upto load-threads
-                                 for thread-name = (format nil "thread-~a" thread-id)
-                                 collect (bt2:make-thread #'sender
-                                                          :name thread-name))))
+                           (loop :for thread-id :from 1 :upto load-threads
+                                 :for thread-name := (format nil "thread-~a" thread-id)
+                                 :collect (bt2:make-thread #'sender
+                                                           :name thread-name))))
                      
                      (unwind-protect (mapc #'bt2:join-thread threads)
                        ;; If user will interrupt execution while we are waiting for threads,
                        ;; we need to clean rest threads:
-                       (loop for thread in threads
-                             when (bt2:thread-alive-p thread)
-                               do (bt2:destroy-thread thread))))
+                       (loop :for thread :in threads
+                             :when (bt2:thread-alive-p thread)
+                               :do (bt2:destroy-thread thread))))
                     
                    ;; Wait while receiver will process all messages in the queue
                    (miscutils:assert-cond

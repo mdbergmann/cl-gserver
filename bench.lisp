@@ -1,4 +1,4 @@
-(uiop:define-package #:sento/bench
+(uiop:define-package #:sento.bench
   (:use #:cl)
   (:import-from #:org.shirakumo.trivial-benchmark
                 #:*default-samplers*
@@ -11,7 +11,7 @@
                 #:with-gensyms)
   (:import-from #:sento.queue
                 #:queue-full-error))
-(in-package #:sento/bench)
+(in-package #:sento.bench)
 
 
 (defun actor-queue-size (a)
@@ -22,10 +22,10 @@
 
 
 (defun total-queues-size (system)
-  (+ (loop for actor in (sento.actor-system::%all-actors system :user)
-           summing (actor-queue-size actor))
-     (loop for actor in (sento.actor-system::%all-actors system :internal)
-           summing (actor-queue-size actor))))
+  (+ (loop :for actor :in (sento.actor-system::%all-actors system :user)
+           :summing (actor-queue-size actor))
+     (loop :for actor :in (sento.actor-system::%all-actors system :internal)
+           :summing (actor-queue-size actor))))
 
 
 (defvar-unbound *num-processed-messages*

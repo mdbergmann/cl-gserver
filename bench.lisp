@@ -201,61 +201,6 @@
                          counter))
               (ac:shutdown system))))))))
 
-
-;; (defun runner-lp ()
-;;   (setf *msgbox* (make-instance 'sento.messageb::message-box-lsr))
-;;   (setf lparallel:*kernel* (lparallel:make-kernel +threads+))
-;;   (setf *counter* 0)
-
-;;   (unwind-protect
-;;        (time
-;;         (let ((chan (lparallel:make-channel)))
-;;           (dotimes (n (max-loop))
-;;             (lparallel:submit-task chan #'msg-submit))
-;;           (dotimes (n (max-loop))
-;;             (lparallel:receive-result chan))))
-;;     (format t "Counter: ~a~%" *counter*)
-;;     (lparallel:end-kernel)
-;;     (sento.messageb::stop *msgbox*)))
-
-;; (defun runner-lp2 ()
-;;   (setf *msgbox* (make-instance 'sento.messageb::message-box-lsr))
-;;   (setf lparallel:*kernel* (lparallel:make-kernel +threads+))
-;;   (setf *counter* 0)
-
-;;   (unwind-protect
-;;        (time
-;;         (progn
-;;           (map nil #'lparallel:force
-;;                (mapcar (lambda (x)
-;;                          (lparallel:future
-;;                            (dotimes (n *per-thread*)
-;;                              (msg-submit))))
-;;                        (mapcar (lambda (n) (format nil "thread-~a" n))
-;;                                (loop for n from 1 to +threads+ collect n))))
-;;           (format t "Counter: ~a~%" *counter*)
-;;           (assert-cond (lambda () (= *counter* (max-loop))) 5)))
-;;     (format t "Counter: ~a~%" *counter*)
-;;     (lparallel:end-kernel)
-;;     (sento.messageb::stop *msgbox*)))
-
-;; (defun runner-lp3 ()
-;;   (setf *msgbox* (make-instance 'sento.messageb::message-box-lsr))
-;;   (setf lparallel:*kernel* (lparallel:make-kernel +threads+))
-;;   (setf *counter* 0)
-
-;;   (unwind-protect
-;;        (time
-;;         (lparallel:pmap nil (lambda (per-thread)
-;;                               (dotimes (n per-thread)
-;;                                 (msg-submit)))
-;;                         :parts 1
-;;                         (loop repeat +threads+ collect *per-thread*)))
-;;     (format t "Counter: ~a~%" *counter*)
-;;     (lparallel:end-kernel)
-;;     (sento.messageb::stop *msgbox*)))
-
-
 (defun run-all (&key
                 (num-iterations 60)
                 (duration 10)
@@ -325,4 +270,62 @@
   (format t "All tests are performed in ~,2f seconds.~%"
           (/ (- (get-internal-real-time) started-at)
              internal-time-units-per-second)))
+
+
+;; ----------------------------------
+;; old runner stuff
+;; ----------------------------------
+
+;; (defun runner-lp ()
+;;   (setf *msgbox* (make-instance 'sento.messageb::message-box-lsr))
+;;   (setf lparallel:*kernel* (lparallel:make-kernel +threads+))
+;;   (setf *counter* 0)
+
+;;   (unwind-protect
+;;        (time
+;;         (let ((chan (lparallel:make-channel)))
+;;           (dotimes (n (max-loop))
+;;             (lparallel:submit-task chan #'msg-submit))
+;;           (dotimes (n (max-loop))
+;;             (lparallel:receive-result chan))))
+;;     (format t "Counter: ~a~%" *counter*)
+;;     (lparallel:end-kernel)
+;;     (sento.messageb::stop *msgbox*)))
+
+;; (defun runner-lp2 ()
+;;   (setf *msgbox* (make-instance 'sento.messageb::message-box-lsr))
+;;   (setf lparallel:*kernel* (lparallel:make-kernel +threads+))
+;;   (setf *counter* 0)
+
+;;   (unwind-protect
+;;        (time
+;;         (progn
+;;           (map nil #'lparallel:force
+;;                (mapcar (lambda (x)
+;;                          (lparallel:future
+;;                            (dotimes (n *per-thread*)
+;;                              (msg-submit))))
+;;                        (mapcar (lambda (n) (format nil "thread-~a" n))
+;;                                (loop for n from 1 to +threads+ collect n))))
+;;           (format t "Counter: ~a~%" *counter*)
+;;           (assert-cond (lambda () (= *counter* (max-loop))) 5)))
+;;     (format t "Counter: ~a~%" *counter*)
+;;     (lparallel:end-kernel)
+;;     (sento.messageb::stop *msgbox*)))
+
+;; (defun runner-lp3 ()
+;;   (setf *msgbox* (make-instance 'sento.messageb::message-box-lsr))
+;;   (setf lparallel:*kernel* (lparallel:make-kernel +threads+))
+;;   (setf *counter* 0)
+
+;;   (unwind-protect
+;;        (time
+;;         (lparallel:pmap nil (lambda (per-thread)
+;;                               (dotimes (n per-thread)
+;;                                 (msg-submit)))
+;;                         :parts 1
+;;                         (loop repeat +threads+ collect *per-thread*)))
+;;     (format t "Counter: ~a~%" *counter*)
+;;     (lparallel:end-kernel)
+;;     (sento.messageb::stop *msgbox*)))
 

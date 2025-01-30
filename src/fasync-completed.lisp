@@ -14,9 +14,9 @@ UNUSED/EXPERIMENT: See notes on `fcompleted'.
 (defmacro fasync-completed (future context dispatcher-id (result) &body body)
   "Asynchronous future completion handler.
 
-This work essentially the same as `future:fcompleted` except that the completion function executes in a different execution context.
+This works essentially the same as `future:fcompleted` except that the completion function executes in a different execution context.
 The 'execution-context' is a dispatcher (`disp:dispatcher`) registered in `asys:actor-system`.
-It is here identified using `dispatcher-id` (the defailt dispatcher identifier is `:shared`).
+It is here identified using `dispatcher-id` (the default dispatcher identifier is `:shared`).
 The additional parameter `context` can be the actor-system itself, an `ac:actor-context` or an `act:actor` instance.
 
 If the completion handler should execute on the caller thread, then `future:fcompleted` should be used.

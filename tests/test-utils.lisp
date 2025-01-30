@@ -28,6 +28,35 @@
 
 
 (defmacro parametrized-test (name ((&rest parameter-names) &rest parameter-tuples) &body body)
+  "Generates a separate tests for each parameter combination.
+
+   - NAME is the prefix for all tests in the group. The rest of each test name consists of parameters and values.
+   - PARAMETER-NAMES should be a list of symbolic names of variables to be bound during BODY execution.
+   - PARAMETER-TUPLES should be a list of lists of values to be bound to variables given in PARAMETER-NAMES.
+
+   Example:
+
+   (parametrized-test bt-box-test
+       ((withreply-p timeout)
+        (nil         nil)
+        (t           1)
+        (t           nil))
+
+     (do-something with-reply-p timeout))
+
+   This form will be expanded to the code which will remove all 5AM tests starting with BT-BOX-TEST-
+   and then will create 3 tests like this one:
+
+
+   (test |BT-BOX-TEST-[WITHREPLY-P=T TIMEOUT=1]|
+      (let ((withreply-p t) (timeout 1))
+        (do-something with-reply-p timeout)))
+
+   As you can see, this test binds WITHREPLY-P and TIMEOUT variables to a values given in the second row of PARAMETER-TUPLES.
+
+   Name of each test will include parameter variables for this test. This way it will be easy to tell which parameter combination
+   fails.
+"
   (multiple-value-bind (forms decls docstring)
       (parse-body body :documentation t :whole name)
     (let* ((docstring (or docstring ""))

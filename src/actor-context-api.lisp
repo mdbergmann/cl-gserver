@@ -23,7 +23,7 @@
   (:documentation "Interface for creating an actor.
 
 **!!! Attention:** this factory function wraps the `act:make-actor` functionality to something more simple to use. 
-Using this function there is no need to use both `act:make-actor`.
+Using this function there is no need to use `act:make-actor`.
 
 `context` is either an `asys:actor-system`, an `ac:actor-context`, or an `act:actor` (any type of actor).
 The new actor is created in the given context.
@@ -43,6 +43,8 @@ This function allows to unsubsribe from event-stream or such.
 Additional options:
 
 - `:queue-size` limits the message-box's size. By default, it is unbounded.
+- `:mbox-type` specify a custom message-box type similar as can be done is dispatcher config.
+  It must be a subtype of `mesgb:message-box/dp`.
 "))
 
 (defgeneric find-actors (context path &key test key)

@@ -67,6 +67,14 @@
       (is (not (eq cut (act:context actor))))
       (is (not (null (ac:system (act:context actor))))))))
 
+(defclass my-mbox-type (mesgb:message-box/dp) ())
+(test actor-of--shared--custom-mbox-type
+  (with-fixture test-system ()
+    (let* ((cut (make-actor-context system))
+           (actor (actor-of cut :receive (lambda ())
+                                :mbox-type 'sento.actor-context-test::my-mbox-type)))
+      (is (typep (act-cell:msgbox actor) 'my-mbox-type)))))
+
 (test actor-of--pinned
   "Tests creating a new actor in the context with pinned dispatcher"
   (with-fixture test-system ()
@@ -93,6 +101,42 @@
              (is (typep (act-cell:msgbox actor) 'mesgb:message-box/dp))
              (is (eq :foo (slot-value (mesgb::dispatcher (act-cell:msgbox actor)) 'disp::identifier)))
              ))
+      (ac:shutdown system))))
+
+(test actor-of--custom-dispatcher-with-custom-mbox-type
+  "Tests creating an actor with a custom shared dispatcher."
+  (let ((system))
+    (unwind-protect
+         (progn
+           (setf system (asys:make-actor-system '(:dispatchers
+                                                  (:foo
+                                                   (:workers 0
+                                                    :mbox-type sento.actor-context-test::my-mbox-type)))))
+           (let* ((cut (make-actor-context system))
+                  (actor (actor-of cut :receive (lambda ()) :dispatcher :foo)))
+             (is (not (null actor)))
+             (is (typep (act-cell:msgbox actor) 'my-mbox-type))
+             (is (eq :foo (slot-value (mesgb::dispatcher (act-cell:msgbox actor)) 'disp::identifier)))
+             ))
+      (ac:shutdown system))))
+
+(test actor-of--err-custom-dispatcher--unknown-mbox-type
+  "Tests creating an actor with a custom shared dispatcher."
+  (let ((system))
+    (unwind-protect
+         (progn
+           (setf system (asys:make-actor-system '(:dispatchers
+                                                  (:foo
+                                                   (:mbox-type foombox)))))
+           (let ((cut (make-actor-context system)))
+             (handler-case
+                 (progn
+                   (actor-of cut :receive (lambda ()) :dispatcher :foo)
+                   (fail()))
+               (error (c)
+                 (format t "cond: ~a" c)
+                 (is (str:containsp "FOOMBOX"
+                                    (format nil "~a" c)))))))
       (ac:shutdown system))))
 
 (test actor-of--err-unknown-dispatcher

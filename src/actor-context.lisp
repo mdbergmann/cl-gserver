@@ -27,6 +27,12 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
 (defun %get-shared-dispatcher (system identifier)
   (getf (asys:dispatchers system) identifier))
 
+(defun %get-dispatcher-config (config dispatcher-id)
+  (let* ((disp-config (config:retrieve-section config :dispatchers))
+         (dispatcher-keys (config:retrieve-keys disp-config)))
+    (when (find dispatcher-id dispatcher-keys)
+      (config:retrieve-section disp-config dispatcher-id))))
+
 (defun %add-actor (context actor)
   (let ((atomic-actors (slot-value context 'actors)))
     (atomic:atomic-swap atomic-actors (lambda (old-actors)
@@ -43,16 +49,23 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
                                                     (act-cell:name actor))))
                                      old-actors)))))
 
-(defun %message-box-for-dispatcher-id (context dispatcher-id queue-size)
+(defun %message-box-for-dispatcher-id (context dispatcher-id queue-size mbox-type)
   (case dispatcher-id
     (:pinned (make-instance 'mesgb:message-box/bt
                             :max-queue-size queue-size))
-    (otherwise (let ((dispatcher (%get-shared-dispatcher (system context) dispatcher-id)))
+    (otherwise (let* ((asys (system context))
+                      (sys-config (asys:config asys))
+                      (disp-config (%get-dispatcher-config sys-config dispatcher-id))
+                      (dispatcher (%get-shared-dispatcher asys dispatcher-id)))
                  (unless dispatcher
                    (error (format nil "No such dispatcher identifier '~a' exists!" dispatcher-id)))
-                 (make-instance 'mesgb:message-box/dp
-                                :dispatcher dispatcher
-                                :max-queue-size queue-size)))))
+                 ;; if dispatcher exists, the config does, too.
+                 (let ((eff-mbox-type (if mbox-type
+                                          mbox-type
+                                          (getf disp-config :mbox-type 'mesgb:message-box/dp))))
+                   (make-instance eff-mbox-type
+                                  :dispatcher dispatcher
+                                  :max-queue-size queue-size))))))
 
 (defun %find-actor-by-name (context name)
   (find-if (lambda (a)
@@ -75,19 +88,19 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
       (log:error "Actor with name '~a' already exists!" actor-name)
       (error (make-condition 'actor-name-exists :name actor-name)))))
 
-(defun %create-actor (context create-fun dispatcher-id queue-size)
+(defun %create-actor (context create-fun dispatcher-id queue-size mbox-type)
   (let ((actor (funcall create-fun)))
     (when actor
       (%verify-actor context actor)
       (act::finalize-initialization actor
-       (%message-box-for-dispatcher-id context dispatcher-id queue-size)
+       (%message-box-for-dispatcher-id context dispatcher-id queue-size mbox-type)
        (make-actor-context (system context)
                            (miscutils:mkstr (id context) "/" (act-cell:name actor)))))
     actor))
 
-(defun %actor-of (context create-fun &key (dispatcher :shared) (queue-size 0))
+(defun %actor-of (context create-fun &key (dispatcher :shared) (queue-size 0) mbox-type)
   "See `ac:actor-of`"
-  (let ((created (%create-actor context create-fun dispatcher queue-size)))
+  (let ((created (%create-actor context create-fun dispatcher queue-size mbox-type)))
     (when created
       (act:watch created context)
       (%add-actor context created))))
@@ -122,19 +135,22 @@ An `act:actor` contains an `actor-context`."
   "See `ac:actor-of`."
   (check-type receive function "a function!")
 
-  (alexandria:remove-from-plistf rest
-                                 :queue-size
-                                 :dispatcher)
-  (%actor-of context
-             (lambda () (apply #'act:make-actor receive
-                               :init init
-                               :destroy destroy
-                               :state state
-                               :type type
-                               :name name
-                               rest))
-             :dispatcher dispatcher
-             :queue-size queue-size))
+  (let ((mbox-type (getf rest :mbox-type)))
+    (alexandria:remove-from-plistf rest
+                                   :queue-size
+                                   :dispatcher
+                                   :mbox-type)
+    (%actor-of context
+               (lambda () (apply #'act:make-actor receive
+                            :init init
+                            :destroy destroy
+                            :state state
+                            :type type
+                            :name name
+                            rest))
+               :dispatcher dispatcher
+               :queue-size queue-size
+               :mbox-type mbox-type)))
 
 
 ;; test 2-arity function with 'path' and 'act-cell-name' (default)

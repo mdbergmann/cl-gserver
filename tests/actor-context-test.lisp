@@ -104,7 +104,6 @@
       (ac:shutdown system))))
 
 (test actor-of--custom-dispatcher-with-custom-mbox-type
-  "Tests creating an actor with a custom shared dispatcher."
   (let ((system))
     (unwind-protect
          (progn

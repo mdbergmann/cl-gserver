@@ -100,6 +100,9 @@ This is used to break the environment possibly captured as closure at 'submit' s
 ;; ------------- Bordeaux ----------------
 ;; ----------------------------------------
 
+(defvar *thread-destroy-waittime-s* 5.0
+  "Default wait time until we destroy the thread.")
+
 (defstruct message-item/bt
   (message nil)
   (withreply-p nil :type boolean)
@@ -275,11 +278,23 @@ The submitting code has to await the side-effect and possibly handle a timeout."
 (defmethod stop ((self message-box/bt) &optional (wait nil))
   (when (next-method-p)
     (call-next-method))
-  (with-slots (should-run queue-thread) self
+  (with-slots (should-run queue-thread name) self
     (setf should-run nil)
     (submit self :trigger-ending-the-processing-loop nil nil nil)
-    (when wait
-      (bt2:join-thread queue-thread))))
+
+    (let ((observer (bt2:make-thread
+                     (lambda ()
+                       (timeutils:wait-cond
+                        (lambda ()
+                          (not (bt2:thread-alive-p queue-thread)))
+                        0.05 *thread-destroy-waittime-s*)
+                       (when (bt2:thread-alive-p queue-thread)
+                         (log:warn "Thread on mesgb '~a' won't stop after ~a seconds. Forcing stop!"
+                                   name *thread-destroy-waittime-s*)
+                         (bt2:destroy-thread queue-thread)))
+                     :name "msgb-thread-stop-observer")))
+      (when wait
+        (bt2:join-thread observer)))))
 
 ;; ----------------------------------------
 ;; ------------- dispatcher msgbox---------

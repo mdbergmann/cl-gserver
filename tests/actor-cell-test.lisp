@@ -29,7 +29,10 @@
     (setf (msgbox cut) (make-instance 'mesgb:message-box/bt))
     (unwind-protect
          (&body)
-      (stop cut))))
+      (progn
+        (stop cut)
+        (setf mesgb::*thread-destroy-waittime-s* 3.0) ;; restore orig
+        ))))
 
 (test get-cell-name-and-state
   "Just retrieves the name of the cell"
@@ -230,8 +233,46 @@
                               0)
     (let ((start (timeutils:get-current-millis)))
       (declare (ignore start))
-      (cast cut :wait)  ;; send message that waits a bit but is async
+      (cast cut :foo)  ;; send message that waits a bit but is async
       (stop cut t)  ;; stop has to wait until stopped
       ;; TODO: check elapsed time
       ;; on a dispatcher messagebox stop with wait does nothing.
       (is-false (bt2:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread))))))
+
+(test stop--with-wait--destroy-thread
+  "Tests `stop` function of the cell on a message-box thread that is blocked and can't join."
+  (with-fixture cell-fixture (nil
+                              (lambda (message)
+                                (declare (ignore message))
+                                (sleep 20))
+                              0)
+    (setf mesgb::*thread-destroy-waittime-s* 1.0)  ;; wait 1 second until thread is destroyed
+    (is-true (await-cond 1.0
+               (bt2:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread))))
+    (let ((start (timeutils:get-current-millis))
+          (stop nil))
+      (cast cut :foo)
+      (stop cut t)
+      (setf stop (timeutils:get-current-millis))
+      (is-true (await-cond 0.5
+                   (not (bt2:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread)))))
+      (is (<= (- stop start) 1500)))))
+
+(test stop--without-wait--destroy-thread
+  "Tests `stop` function of the cell on a message-box thread that is blocked and can't join."
+  (with-fixture cell-fixture (nil
+                              (lambda (message)
+                                (declare (ignore message))
+                                (sleep 20))
+                              0)
+    (setf mesgb::*thread-destroy-waittime-s* 1.0)  ;; wait 1 second until thread is destroyed
+    (is-true (await-cond 1.0
+               (bt2:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread))))
+    (let ((start (timeutils:get-current-millis))
+          (stop nil))
+      (cast cut :foo)
+      (stop cut nil)
+      (is-true (await-cond 1.5
+                   (not (bt2:thread-alive-p (slot-value (msgbox cut) 'mesgb::queue-thread)))))
+      (setf stop (timeutils:get-current-millis))
+      (is (<= (- stop start) 1500)))))

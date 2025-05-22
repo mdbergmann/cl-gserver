@@ -47,7 +47,7 @@
      (t           nil))
   
   "Simulates a situation when error has happened during message processing, and ABORT restart was invoked.
-   Usually this kill a thread, but here we ensure that by the thread is resurrected when we submit a
+   Usually this kill a thread, but here we ensure that the thread is resurrected when we submit a
    subsequent message."
 
   (flet ((kill-by-restart-invoke (msg)

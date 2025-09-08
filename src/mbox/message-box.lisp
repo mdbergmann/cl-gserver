@@ -49,7 +49,7 @@ Don't make it too small. A queue size of 1000 might be a good choice."))
             (t (make-instance 'queue-bounded :max-items max-queue-size))))))
 
 (defmethod print-object ((obj message-box-base) stream)
-  (print-unreadable-object (obj stream :type t)
+  (print-unreadable-object (obj stream :type stream)
     (with-slots (name processed-messages max-queue-size queue) obj
       (format stream "~a, processed messages: ~a, max-queue-size: ~a, queue: ~a"
               name
@@ -106,9 +106,9 @@ This is used to break the environment possibly captured as closure at 'submit' s
 (defstruct message-item/bt
   (message nil)
   (withreply-p nil :type boolean)
-  (withreply-lock nil)
-  (withreply-cvar nil)
-  (time-out nil)
+  (withreply-lock nil :type (or null bt2:lock))
+  (withreply-cvar nil :type (or null bt2:condition-variable))
+  (time-out nil :type (or null number))
   (cancelled-p nil :type boolean)
   (handler-fun-args nil :type list)
   (handler-result 'no-result))
@@ -156,15 +156,18 @@ this kind of queue because each message-box (and with that each actor) requires 
 
 (defun message-processing-loop (msgbox)
   "The message processing loop."
+  (declare (type message-box/bt msgbox))
   (loop
     :while (slot-value msgbox 'should-run)
     :do (pop-queue-and-process msgbox)))
 
 (defun pop-queue-and-process (msgbox)
   "This blocks until a new queue item arrived."
+  (declare (type message-box/bt msgbox))
   (log:trace "~a: trying to pop from queue..." (name msgbox))
   (with-slots (queue) msgbox
     (let ((item (queue:popq queue)))
+      (declare (type message-item/bt item))
       (when item
         (log:trace "~a: got item: ~a" (name msgbox) item)
         (process-queue-item msgbox item)
@@ -175,6 +178,9 @@ this kind of queue because each message-box (and with that each actor) requires 
 message is 'interrupted' when the message was 'cancelled'.
 This should happen in conjunction with the outer time-out in `submit/reply'.
 This function sets the result as `handler-result' in `item'. The return of this function is not relevant."
+  (declare
+   (type message-box/bt msgbox)
+   (type message-item/bt item))
   (with-slots (message
                handler-fun-args
                handler-result
@@ -234,6 +240,10 @@ It will be apply'ed with the rest of the args when the message was 'popped' from
 
 (defun submit/reply (msgbox queue message time-out handler-fun-args)
   "This function has to provide a result and so it has to wait until the queue thread has processed the message. Processing of the queue item is done in `process-queue-item'."
+  (declare
+   (type message-box/bt msgbox)
+   (type (or null number) time-out)
+   (type list handler-fun-args))
   (let* ((withreply-lock (bt2:make-lock))
          (withreply-cvar (bt2:make-condition-variable))
          (push-item (make-message-item/bt
@@ -244,7 +254,7 @@ It will be apply'ed with the rest of the args when the message was 'popped' from
                      :time-out time-out
                      :handler-fun-args handler-fun-args
                      :handler-result 'no-result)))
-    
+    (declare (type message-item/bt push-item))    
     (bt2:with-lock-held (withreply-lock)
       (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
       (queue:pushq queue push-item)
@@ -302,7 +312,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
 
 (defstruct message-item/dp
   (message nil)
-  (time-out nil)
+  (time-out nil :type (or null number))
   (cancelled-p nil :type boolean)
   (handler-fun-args nil :type list)
   (handler-result 'no-result))
@@ -341,6 +351,9 @@ The `handler-fun-args' is part of the message item."
 
 (defun handle-popped-item (popped-item msgbox)
   "Handles the popped message. Means: applies the function in `handler-fun-args` on the message."
+  (declare
+   (type message-item/dp popped-item)
+   (type message-box/dp msgbox))
   (with-slots (name lock should-run) msgbox
     (with-slots (message cancelled-p handler-fun-args handler-result) popped-item
       (log:trace "~a: popped message: ~a" name popped-item)

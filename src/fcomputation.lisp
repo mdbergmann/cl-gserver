@@ -148,7 +148,7 @@ Example:
 (defun fawait (fut &key timeout (sleep-time 0.1))
   "Wait for the future `FUT` to be ready. Returns `VALUES` with `result' of the future and `FUT'.
 If the future is not ready after `TIMEOUT` seconds the `result' is `NIL'.
-The `SLEEP-TIME` parameter specifies the time to sleep between checks of the future.
+The `SLEEP-TIME` parameter specifies the time to sleep between checks of the future completion.
 The wait is based on attempts. To be accurate in terms of `TIMEOUT` the `SLEEP-TIME` should be a divisor of `TIMEOUT`.
 Disclaimer: naive implementation. There may be better solutions."
   (assert (and timeout (>= timeout 0)) (timeout) "Timeout must be greater or equal to 0")

@@ -50,22 +50,39 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
                                      old-actors)))))
 
 (defun %message-box-for-dispatcher-id (context dispatcher-id queue-size mbox-type)
-  (case dispatcher-id
-    (:pinned (make-instance 'mesgb:message-box/bt
-                            :max-queue-size queue-size))
-    (otherwise (let* ((asys (system context))
-                      (sys-config (asys:config asys))
-                      (disp-config (%get-dispatcher-config sys-config dispatcher-id))
-                      (dispatcher (%get-shared-dispatcher asys dispatcher-id)))
-                 (unless dispatcher
-                   (error (format nil "No such dispatcher identifier '~a' exists!" dispatcher-id)))
-                 ;; if dispatcher exists, the config does, too.
-                 (let ((eff-mbox-type (if mbox-type
-                                          mbox-type
-                                          (getf disp-config :mbox-type 'mesgb:message-box/dp))))
-                   (make-instance eff-mbox-type
-                                  :dispatcher dispatcher
-                                  :max-queue-size queue-size))))))
+  (let* ((asys (system context))
+         (sys-config (asys:config asys))
+         (disp-config (%get-dispatcher-config sys-config dispatcher-id))
+         (default-mbox-type (case dispatcher-id
+                              (:pinned 'mesgb:message-box/bt)
+                              (otherwise
+                               'mesgb:message-box/dp)))
+         (eff-mbox-type (if mbox-type
+                            mbox-type
+                            (getf disp-config :mbox-type
+                                  default-mbox-type))))
+    (case dispatcher-id
+      (:pinned
+       (etypecase eff-mbox-type
+         (function
+          (funcall eff-mbox-type :max-queue-size queue-size))
+         (symbol
+          (make-instance eff-mbox-type
+                         :max-queue-size queue-size))))
+      (otherwise
+       (let ((dispatcher (%get-shared-dispatcher asys dispatcher-id)))
+         (unless dispatcher
+           (error (format nil "No such dispatcher identifier '~a' exists!" dispatcher-id)))
+         ;; if dispatcher exists, the config does, too.
+         (etypecase eff-mbox-type
+           (function
+            (funcall eff-mbox-type
+                     :dispatcher dispatcher
+                     :max-queue-size queue-size))
+           (symbol
+            (make-instance eff-mbox-type
+                           :dispatcher dispatcher
+                           :max-queue-size queue-size))))))))
 
 (defun %find-actor-by-name (context name)
   (find-if (lambda (a)

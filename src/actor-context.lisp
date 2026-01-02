@@ -65,7 +65,9 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
       (:pinned
        (etypecase eff-mbox-type
          (function
-          (funcall eff-mbox-type :max-queue-size queue-size))
+          (let ((result (funcall eff-mbox-type :max-queue-size queue-size)))
+            (check-type result mesgb::message-box-base)
+            result))
          (symbol
           (make-instance eff-mbox-type
                          :max-queue-size queue-size))))
@@ -76,9 +78,11 @@ The `actor-system` and the `actor` itself are composed of an `actor-context`."))
          ;; if dispatcher exists, the config does, too.
          (etypecase eff-mbox-type
            (function
-            (funcall eff-mbox-type
-                     :dispatcher dispatcher
-                     :max-queue-size queue-size))
+            (let ((result (funcall eff-mbox-type
+                                   :dispatcher dispatcher
+                                   :max-queue-size queue-size)))
+              (check-type result mesgb::message-box-base)
+              result))
            (symbol
             (make-instance eff-mbox-type
                            :dispatcher dispatcher

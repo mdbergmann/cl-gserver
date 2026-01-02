@@ -67,7 +67,12 @@
       (is (not (eq cut (act:context actor))))
       (is (not (null (ac:system (act:context actor))))))))
 
+
 (defclass my-mbox-type (mesgb:message-box/dp) ())
+
+(defclass my-bt-mbox-type (mesgb:message-box/bt) ())
+
+
 (test actor-of--shared--custom-mbox-type
   (with-fixture test-system ()
     (let* ((cut (make-actor-context system))
@@ -118,6 +123,57 @@
              (is (eq :foo (slot-value (mesgb::dispatcher (act-cell:msgbox actor)) 'disp::identifier)))
              ))
       (ac:shutdown system))))
+
+
+(test actor-of--custom-dispatcher-with-mbox-made-by-func
+  (let ((system))
+    (unwind-protect
+         (progn
+           (setf system (asys:make-actor-system `(:dispatchers
+                                                  (:foo
+                                                   (:workers 0
+                                                    :mbox-type ,(lambda (&key dispatcher max-queue-size &allow-other-keys)
+                                                                  (make-instance 'my-mbox-type
+                                                                                 :dispatcher dispatcher
+                                                                                 :max-queue-size max-queue-size)))))))
+           (let* ((cut (make-actor-context system))
+                  (actor (actor-of cut :receive (lambda ())
+                                       :dispatcher :foo)))
+             (is (not (null actor)))
+             (is (typep (act-cell:msgbox actor) 'my-mbox-type))
+             (is (eq :foo (slot-value (mesgb::dispatcher (act-cell:msgbox actor)) 'disp::identifier)))))
+      (ac:shutdown system))))
+
+
+(test actor-of--pinned-dispatcher-with-custom-mbox-type
+  (let ((system))
+    (unwind-protect
+         (progn
+           (setf system (asys:make-actor-system))
+           (let* ((cut (make-actor-context system))
+                  (actor (actor-of cut :receive (lambda ())
+                                       :dispatcher :pinned
+                                       :mbox-type 'my-bt-mbox-type)))
+             (is (not (null actor)))
+             (is (typep (act-cell:msgbox actor) 'my-bt-mbox-type))))
+      (ac:shutdown system))))
+
+
+(test actor-of--pinned-dispatcher-with-mbox-made-by-func
+  (let ((system))
+    (unwind-protect
+         (progn
+           (setf system (asys:make-actor-system))
+           (let* ((cut (make-actor-context system))
+                  (actor (actor-of cut :receive (lambda ())
+                                       :dispatcher :pinned
+                                       :mbox-type (lambda (&key max-queue-size &allow-other-keys)
+                                                    (make-instance 'my-bt-mbox-type
+                                                                   :max-queue-size max-queue-size)))))
+             (is (not (null actor)))
+             (is (typep (act-cell:msgbox actor) 'my-bt-mbox-type))))
+      (ac:shutdown system))))
+
 
 (test actor-of--err-custom-dispatcher--unknown-mbox-type
   "Tests creating an actor with a custom shared dispatcher."

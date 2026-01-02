@@ -43,7 +43,7 @@ This function allows to unsubsribe from event-stream or such.
 Additional options:
 
 - `:queue-size` limits the message-box's size. By default, it is unbounded.
-- `:mbox-type` specify a custom message-box type similar as can be done is dispatcher config.
+- `:mbox-type` specify a custom message-box type similar as can be done is dispatcher config. It also could be a function which accept a `:max-queue-size` argument for `:pinned` dispatcher or `:max-queue-size` and `:dispatcher` arguments for other types of dispatchers.
   It must be a subtype of `mesgb:message-box/dp`.
 "))
 

@@ -14,7 +14,6 @@
            #:transport-start
            #:transport-stop
            #:transport-send
-           #:%transport-message-handler
            ;; conditions
            #:transport-error
            #:connection-refused-error

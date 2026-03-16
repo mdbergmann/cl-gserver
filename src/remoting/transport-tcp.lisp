@@ -11,7 +11,6 @@
                 #:transport-start
                 #:transport-stop
                 #:transport-send
-                #:%transport-message-handler
                 #:transport-error
                 #:connection-refused-error
                 #:connection-timeout-error
@@ -269,7 +268,7 @@
                             :while (and frame (transport-running-p transport))
                             :do (handler-case
                                     (let ((envelope (%deserialize-envelope frame)))
-                                      (let ((handler (%transport-message-handler transport)))
+                                      (let ((handler (rtrans::%transport-message-handler transport)))
                                         (when handler
                                           (funcall handler envelope))))
                                   (error (c)
@@ -330,7 +329,7 @@
 (defmethod transport-start ((transport tcp-transport) message-handler-fn)
   (when (transport-running-p transport)
     (error "Transport is already running."))
-  (setf (%transport-message-handler transport) message-handler-fn)
+  (setf (rtrans::%transport-message-handler transport) message-handler-fn)
   (setf (transport-running-p transport) t)
   (let ((socket (socket-listen (transport-host transport)
                                        (transport-port transport)

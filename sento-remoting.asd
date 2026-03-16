@@ -4,6 +4,7 @@
   :license "Apache-2"
   :description "Remoting extension for Sento actor framework. Enables actors to communicate across the network over TLS 1.3."
   :depends-on ("sento"
+               "bordeaux-threads"
                "flexi-streams"
                "pure-tls"
                "usocket"
@@ -18,7 +19,9 @@
                    (:file "serialization")
                    (:file "envelope")
                    (:file "tls")
-                   (:file "tls-pure"))))))
+                   (:file "tls-pure")
+                   (:file "transport")
+                   (:file "transport-tcp"))))))
   :in-order-to ((test-op (test-op "sento-remoting/tests"))))
 
 (defsystem "sento-remoting/tests"
@@ -36,7 +39,8 @@
                    (:file "conditions-test")
                    (:file "serialization-test")
                    (:file "envelope-test")
-                   (:file "tls-test"))))))
+                   (:file "tls-test")
+                   (:file "transport-test"))))))
   :description "Test system for sento-remoting"
   :perform (test-op (op c) (symbol-call :fiveam :run!
                                         (uiop:find-symbol* '#:remoting-test-suite

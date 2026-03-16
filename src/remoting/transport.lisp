@@ -1,6 +1,9 @@
 (defpackage :sento.remoting.transport
   (:use :cl)
   (:nicknames :rtrans)
+  (:import-from :sento.remoting
+                #:remoting-error
+                #:remoting-error-message)
   (:export #:transport
            #:transport-host
            #:transport-port
@@ -30,7 +33,7 @@
 ;; conditions
 ;; ---------------------------------
 
-(define-condition transport-error (rem:remoting-error)
+(define-condition transport-error (remoting-error)
   ()
   (:documentation "Base condition for transport-related errors."))
 
@@ -62,7 +65,7 @@
   ()
   (:report (lambda (c stream)
              (format stream "Connection closed by remote side: ~a"
-                     (rem:remoting-error-message c))))
+                     (remoting-error-message c))))
   (:documentation "Signaled when an established connection is unexpectedly closed by the remote side."))
 
 (define-condition send-failed-error (transport-error)
@@ -71,7 +74,7 @@
              :initform nil
              :documentation "The envelope that failed to send."))
   (:report (lambda (c stream)
-             (format stream "Send failed: ~a" (rem:remoting-error-message c))))
+             (format stream "Send failed: ~a" (remoting-error-message c))))
   (:documentation "Signaled when sending an envelope fails after connection was established."))
 
 ;; ---------------------------------

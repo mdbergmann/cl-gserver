@@ -1,8 +1,35 @@
 (defpackage :sento.remoting.transport-test
   (:use :cl :fiveam)
+  (:import-from :sento.remoting.transport
+                #:transport-start
+                #:transport-stop
+                #:transport-send
+                #:transport-running-p
+                #:connection-refused-error
+                #:send-failed-error)
   (:import-from :sento.remoting.transport-tcp
                 #:tcp-transport
-                #:tcp-transport-actual-port))
+                #:tcp-transport-actual-port)
+  (:import-from :sento.remoting.envelope
+                #:make-envelope
+                #:envelope-target-path
+                #:envelope-sender-path
+                #:envelope-message
+                #:envelope-message-type)
+  (:import-from :sento.remoting.tls
+                #:make-tls-config
+                #:tls-error)
+  (:import-from :sento.remoting.serialization
+                #:sexp-serializer
+                #:serialize
+                #:deserialize)
+  (:import-from :bordeaux-threads-2
+                #:make-lock
+                #:with-lock-held
+                #:make-thread
+                #:join-thread)
+  (:import-from :miscutils
+                #:await-cond))
 
 (in-package :sento.remoting.transport-test)
 
@@ -28,7 +55,7 @@
 
 (defun %make-tls-config ()
   "Create a TLS config for tests using the test certificates."
-  (rtls:make-tls-config
+  (make-tls-config
    :provider :pure-tls
    :certificate (%cert-path "server-cert.pem")
    :private-key (%cert-path "server-key.pem")
@@ -38,11 +65,11 @@
 (defun %make-test-envelope (&key (target "/user/foo") (sender "/user/bar")
                                   (message-text "hello") (message-type :tell))
   "Create a test envelope with a serialized message."
-  (let ((serializer (make-instance 'rseri:sexp-serializer)))
-    (renv:make-envelope
+  (let ((serializer (make-instance 'sexp-serializer)))
+    (make-envelope
      :target-path target
      :sender-path sender
-     :message (rseri:serialize serializer message-text)
+     :message (serialize serializer message-text)
      :message-type message-type)))
 
 (defmacro %with-transport-pair ((&key (tls t)) &body body)
@@ -50,7 +77,7 @@
 Binds: server-transport, server-port, client-transport."
   (let ((config-form (if tls '(%make-tls-config) nil)))
     `(let* ((received-envelopes nil)
-            (received-lock (bt2:make-lock :name "received-lock"))
+            (received-lock (make-lock :name "received-lock"))
             (server-transport (make-instance 'tcp-transport
                                              :host "127.0.0.1"
                                              :port 0
@@ -60,19 +87,19 @@ Binds: server-transport, server-port, client-transport."
                                              :port 0
                                              :tls-config ,config-form)))
        (declare (ignorable received-lock))
-       (rtrans:transport-start
+       (transport-start
         server-transport
         (lambda (envelope)
-          (bt2:with-lock-held (received-lock)
+          (with-lock-held (received-lock)
             (push envelope received-envelopes))))
        (let ((server-port (tcp-transport-actual-port server-transport)))
          (declare (ignorable server-port))
          ;; Start client transport too (it needs to be running for sends)
-         (rtrans:transport-start client-transport (lambda (env) (declare (ignore env))))
+         (transport-start client-transport (lambda (env) (declare (ignore env))))
          (unwind-protect
               (progn ,@body)
-           (rtrans:transport-stop client-transport)
-           (rtrans:transport-stop server-transport))))))
+           (transport-stop client-transport)
+           (transport-stop server-transport))))))
 
 ;; ---------------------------------
 ;; lifecycle tests
@@ -83,26 +110,26 @@ Binds: server-transport, server-port, client-transport."
   (let ((transport (make-instance 'tcp-transport
                                   :host "127.0.0.1"
                                   :port 0)))
-    (is-false (rtrans:transport-running-p transport))
-    (rtrans:transport-start transport (lambda (env) (declare (ignore env))))
-    (is-true (rtrans:transport-running-p transport))
+    (is-false (transport-running-p transport))
+    (transport-start transport (lambda (env) (declare (ignore env))))
+    (is-true (transport-running-p transport))
     (is-true (> (tcp-transport-actual-port transport) 0))
-    (rtrans:transport-stop transport)
-    (is-false (rtrans:transport-running-p transport))))
+    (transport-stop transport)
+    (is-false (transport-running-p transport))))
 
 (test transport--stop-closes-pending-connections
   "Tests that stopping transport closes all active connections."
   (%with-transport-pair (:tls nil)
     (let ((envelope (%make-test-envelope)))
       ;; Send to establish a connection
-      (rtrans:transport-send client-transport "127.0.0.1" server-port envelope)
+      (transport-send client-transport "127.0.0.1" server-port envelope)
       (sleep 0.1)
       ;; Stop should close everything without errors
-      (rtrans:transport-stop client-transport)
-      (rtrans:transport-stop server-transport)
+      (transport-stop client-transport)
+      (transport-stop server-transport)
       ;; Transports stopped — verify not running
-      (is-false (rtrans:transport-running-p client-transport))
-      (is-false (rtrans:transport-running-p server-transport)))))
+      (is-false (transport-running-p client-transport))
+      (is-false (transport-running-p server-transport)))))
 
 ;; ---------------------------------
 ;; framing tests
@@ -112,27 +139,27 @@ Binds: server-transport, server-port, client-transport."
   "Tests sending an envelope between two transports on loopback (no TLS)."
   (%with-transport-pair (:tls nil)
     (let ((envelope (%make-test-envelope :message-text "test-message")))
-      (rtrans:transport-send client-transport "127.0.0.1" server-port envelope)
-      (is-true (miscutils:await-cond 1.0
-                 (bt2:with-lock-held (received-lock)
+      (transport-send client-transport "127.0.0.1" server-port envelope)
+      (is-true (await-cond 1.0
+                 (with-lock-held (received-lock)
                    (= 1 (length received-envelopes)))))
       (let ((received (first received-envelopes)))
-        (is (string= "/user/foo" (renv:envelope-target-path received)))
-        (is (string= "/user/bar" (renv:envelope-sender-path received)))
-        (is (eq :tell (renv:envelope-message-type received)))))))
+        (is (string= "/user/foo" (envelope-target-path received)))
+        (is (string= "/user/bar" (envelope-sender-path received)))
+        (is (eq :tell (envelope-message-type received)))))))
 
 (test transport--large-message
   "Tests sending a large message (> 64KB) through the transport."
   (%with-transport-pair (:tls nil)
     (let* ((large-text (make-string 100000 :initial-element #\x))
            (envelope (%make-test-envelope :message-text large-text)))
-      (rtrans:transport-send client-transport "127.0.0.1" server-port envelope)
-      (is-true (miscutils:await-cond 2.0
-                 (bt2:with-lock-held (received-lock)
+      (transport-send client-transport "127.0.0.1" server-port envelope)
+      (is-true (await-cond 2.0
+                 (with-lock-held (received-lock)
                    (= 1 (length received-envelopes)))))
       (let* ((received (first received-envelopes))
-             (serializer (make-instance 'rseri:sexp-serializer))
-             (decoded (rseri:deserialize serializer (renv:envelope-message received))))
+             (serializer (make-instance 'sexp-serializer))
+             (decoded (deserialize serializer (envelope-message received))))
         (is (= 100000 (length decoded)))))))
 
 ;; ---------------------------------
@@ -144,56 +171,56 @@ Binds: server-transport, server-port, client-transport."
   (%with-transport-pair (:tls nil)
     (let ((env1 (%make-test-envelope :message-text "first"))
           (env2 (%make-test-envelope :message-text "second")))
-      (rtrans:transport-send client-transport "127.0.0.1" server-port env1)
-      (rtrans:transport-send client-transport "127.0.0.1" server-port env2)
-      (is-true (miscutils:await-cond 1.0
-                 (bt2:with-lock-held (received-lock)
+      (transport-send client-transport "127.0.0.1" server-port env1)
+      (transport-send client-transport "127.0.0.1" server-port env2)
+      (is-true (await-cond 1.0
+                 (with-lock-held (received-lock)
                    (= 2 (length received-envelopes))))))))
 
 (test transport--connection-failure-reconnect
   "Tests that after a connection failure, the next send reconnects."
   (let* ((received-envelopes nil)
-         (received-lock (bt2:make-lock :name "received-lock"))
+         (received-lock (make-lock :name "received-lock"))
          (server1 (make-instance 'tcp-transport :host "127.0.0.1" :port 0))
          (client (make-instance 'tcp-transport :host "127.0.0.1" :port 0)))
-    (rtrans:transport-start server1
+    (transport-start server1
                             (lambda (env)
-                              (bt2:with-lock-held (received-lock)
+                              (with-lock-held (received-lock)
                                 (push env received-envelopes))))
     (let ((port1 (tcp-transport-actual-port server1)))
-      (rtrans:transport-start client (lambda (env) (declare (ignore env))))
+      (transport-start client (lambda (env) (declare (ignore env))))
       (unwind-protect
            (progn
              ;; Send first message
-             (rtrans:transport-send client "127.0.0.1" port1
+             (transport-send client "127.0.0.1" port1
                                     (%make-test-envelope :message-text "msg1"))
-             (is-true (miscutils:await-cond 1.0
-                        (bt2:with-lock-held (received-lock)
+             (is-true (await-cond 1.0
+                        (with-lock-held (received-lock)
                           (= 1 (length received-envelopes)))))
              ;; Stop server1 — simulates connection failure
-             (rtrans:transport-stop server1)
+             (transport-stop server1)
              (sleep 0.2)
              ;; Start a new server on the same port
              (let ((server2 (make-instance 'tcp-transport :host "127.0.0.1" :port port1)))
-               (rtrans:transport-start server2
+               (transport-start server2
                                        (lambda (env)
-                                         (bt2:with-lock-held (received-lock)
+                                         (with-lock-held (received-lock)
                                            (push env received-envelopes))))
                (unwind-protect
                     (progn
                       ;; The first send may fail (broken connection) — that's expected
                       (handler-case
-                          (rtrans:transport-send client "127.0.0.1" port1
+                          (transport-send client "127.0.0.1" port1
                                                 (%make-test-envelope :message-text "msg2"))
-                        (rtrans:send-failed-error () nil))
+                        (send-failed-error () nil))
                       ;; Second send should reconnect
-                      (rtrans:transport-send client "127.0.0.1" port1
+                      (transport-send client "127.0.0.1" port1
                                              (%make-test-envelope :message-text "msg3"))
-                      (is-true (miscutils:await-cond 1.0
-                                 (bt2:with-lock-held (received-lock)
+                      (is-true (await-cond 1.0
+                                 (with-lock-held (received-lock)
                                    (>= (length received-envelopes) 2)))))
-                 (rtrans:transport-stop server2))))
-        (rtrans:transport-stop client)))))
+                 (transport-stop server2))))
+        (transport-stop client)))))
 
 ;; ---------------------------------
 ;; concurrent sends
@@ -205,17 +232,17 @@ Binds: server-transport, server-port, client-transport."
     (let ((threads nil)
           (count 10))
       (dotimes (i count)
-        (push (bt2:make-thread
+        (push (make-thread
                (lambda ()
-                 (rtrans:transport-send client-transport "127.0.0.1" server-port
+                 (transport-send client-transport "127.0.0.1" server-port
                                         (%make-test-envelope
                                          :message-text (format nil "msg-~a" i))))
                :name (format nil "sender-~a" i))
               threads))
       (dolist (thread threads)
-        (bt2:join-thread thread))
-      (is-true (miscutils:await-cond 2.0
-                 (bt2:with-lock-held (received-lock)
+        (join-thread thread))
+      (is-true (await-cond 2.0
+                 (with-lock-held (received-lock)
                    (= count (length received-envelopes))))))))
 
 ;; ---------------------------------
@@ -225,23 +252,23 @@ Binds: server-transport, server-port, client-transport."
 (test transport--connection-refused-signals-condition
   "Tests that connecting to a non-listening port signals connection-refused-error."
   (let ((transport (make-instance 'tcp-transport :host "127.0.0.1" :port 0)))
-    (rtrans:transport-start transport (lambda (env) (declare (ignore env))))
+    (transport-start transport (lambda (env) (declare (ignore env))))
     (unwind-protect
-         (signals rtrans:connection-refused-error
-           (rtrans:transport-send transport "127.0.0.1" 1
+         (signals connection-refused-error
+           (transport-send transport "127.0.0.1" 1
                                   (%make-test-envelope)))
-      (rtrans:transport-stop transport))))
+      (transport-stop transport))))
 
 (test transport--tls-handshake-failure-propagated
   "Tests that a TLS handshake failure is propagated as tls-handshake-error."
-  (let* ((server-config (rtls:make-tls-config
+  (let* ((server-config (make-tls-config
                          :provider :pure-tls
                          :certificate (%cert-path "server-cert.pem")
                          :private-key (%cert-path "server-key.pem")
                          :ca-certificate (%cert-path "ca-cert.pem")
                          :peer-verify nil))
          ;; Client has no CA cert and verifies — should fail
-         (client-config (rtls:make-tls-config
+         (client-config (make-tls-config
                          :provider :pure-tls
                          :certificate nil
                          :private-key nil
@@ -253,15 +280,15 @@ Binds: server-transport, server-port, client-transport."
          (client (make-instance 'tcp-transport
                                 :host "127.0.0.1" :port 0
                                 :tls-config client-config)))
-    (rtrans:transport-start server (lambda (env) (declare (ignore env))))
-    (rtrans:transport-start client (lambda (env) (declare (ignore env))))
+    (transport-start server (lambda (env) (declare (ignore env))))
+    (transport-start client (lambda (env) (declare (ignore env))))
     (let ((port (tcp-transport-actual-port server)))
       (unwind-protect
-           (signals rtls:tls-error
-             (rtrans:transport-send client "127.0.0.1" port
+           (signals tls-error
+             (transport-send client "127.0.0.1" port
                                     (%make-test-envelope)))
-        (rtrans:transport-stop client)
-        (rtrans:transport-stop server)))))
+        (transport-stop client)
+        (transport-stop server)))))
 
 ;; ---------------------------------
 ;; TLS transport test
@@ -271,10 +298,10 @@ Binds: server-transport, server-port, client-transport."
   "Tests sending an envelope between two transports over TLS on loopback."
   (%with-transport-pair (:tls t)
     (let ((envelope (%make-test-envelope :message-text "tls-hello")))
-      (rtrans:transport-send client-transport "127.0.0.1" server-port envelope)
-      (is-true (miscutils:await-cond 2.0
-                 (bt2:with-lock-held (received-lock)
+      (transport-send client-transport "127.0.0.1" server-port envelope)
+      (is-true (await-cond 2.0
+                 (with-lock-held (received-lock)
                    (= 1 (length received-envelopes)))))
       (let ((received (first received-envelopes)))
-        (is (string= "/user/foo" (renv:envelope-target-path received)))
-        (is (eq :tell (renv:envelope-message-type received)))))))
+        (is (string= "/user/foo" (envelope-target-path received)))
+        (is (eq :tell (envelope-message-type received)))))))

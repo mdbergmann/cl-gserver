@@ -134,7 +134,7 @@ Alternatively to the `ask` function one can equally use the `?` function designa
 (defgeneric become (new-behavior)
   (:documentation
    "Changes the receive of the actor to the given `new-behavior` function.
-The `new-behavior` function must accept 3 parameters: the actor instance, the message and the current state.
+The `new-behavior` function must accept 0 parameter: the message.
 This function should be called from within the behavior receive function."))
 
 (defgeneric unbecome ()

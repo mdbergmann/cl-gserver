@@ -90,6 +90,7 @@ dispatchers. This additional dispatcher can be utilized for `tasks`. Be aware th
 `fun` must be a 0-arity function.
 
 A normal response from the actor is passed back as the response value.
+Beware that a `cons' return is returned as `(values car cdr)`.
 If the timeout elapsed the response is: `(values :handler-error miscutils:ask-timeout)`.
 
 Example:

@@ -111,6 +111,7 @@ systems/               — vendored dependencies
 - Test naming: `<what>--<variant>` with double dashes separating clauses:
   `ask-s--shared--timeout`, `actor-of--from-existing-actor-context`.
 - Assertions: `(is ...)` for predicates, `(is-true ...)` / `(is-false ...)` for booleans.
+- Test both **happy paths** and **error/failure cases** (invalid input, signaled conditions, timeouts, etc.).
 
 ### Fixtures
 

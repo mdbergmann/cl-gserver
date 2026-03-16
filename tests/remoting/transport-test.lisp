@@ -86,14 +86,12 @@ Binds: server-transport, server-port, client-transport."
                                              :host "127.0.0.1"
                                              :port 0
                                              :tls-config ,config-form)))
-       (declare (ignorable received-lock))
        (transport-start
         server-transport
         (lambda (envelope)
           (with-lock-held (received-lock)
             (push envelope received-envelopes))))
        (let ((server-port (tcp-transport-actual-port server-transport)))
-         (declare (ignorable server-port))
          ;; Start client transport too (it needs to be running for sends)
          (transport-start client-transport (lambda (env) (declare (ignore env))))
          (unwind-protect

@@ -22,15 +22,10 @@
   (merge-pathnames filename (%certs-dir)))
 
 ;; ---------------------------------
-;; fixture: TLS loopback
+;; fixture: TLS server on loopback
 ;; ---------------------------------
 
-(def-fixture tls-loopback (&key (server-peer-verify nil)
-                                (server-ca t)
-                                (client-peer-verify nil)
-                                (client-certificate nil)
-                                (client-private-key nil)
-                                (client-ca t))
+(def-fixture tls-server (&key (peer-verify nil) (ca t))
   (let* ((provider (make-instance 'pure-tls-provider))
          (listen-socket (usocket:socket-listen "127.0.0.1" 0
                                                :reuse-address t
@@ -49,39 +44,38 @@
                           (rtls:tls-wrap provider (usocket:socket-stream accepted)
                                          :certificate (%cert-path "server-cert.pem")
                                          :private-key (%cert-path "server-key.pem")
-                                         :ca-certificate (when server-ca
+                                         :ca-certificate (when ca
                                                            (%cert-path "ca-cert.pem"))
-                                         :peer-verify server-peer-verify
+                                         :peer-verify peer-verify
                                          :role :server)))
                 (error (c) (setf server-error c))))
             :name "tls-test-server")))
+    (declare (ignorable server-tls-stream server-error))
     (sleep 0.1)
     (unwind-protect
-         (let* ((client-socket (usocket:socket-connect
-                                "127.0.0.1" port
-                                :element-type '(unsigned-byte 8)))
-                (client-tls-stream nil))
-           (unwind-protect
-                (progn
-                  (setf client-tls-stream
-                        (rtls:tls-wrap provider (usocket:socket-stream client-socket)
-                                       :hostname "localhost"
-                                       :certificate (when client-certificate
-                                                      (%cert-path client-certificate))
-                                       :private-key (when client-private-key
-                                                      (%cert-path client-private-key))
-                                       :ca-certificate (when client-ca
-                                                         (%cert-path "ca-cert.pem"))
-                                       :peer-verify client-peer-verify
-                                       :role :client))
-                  (&body))
-             (when client-tls-stream
-               (rtls:tls-unwrap provider client-tls-stream))
-             (when server-tls-stream
-               (rtls:tls-unwrap provider server-tls-stream))
-             (usocket:socket-close client-socket)))
+         (&body)
       (bt2:join-thread server-thread)
+      (when server-tls-stream
+        (rtls:tls-unwrap provider server-tls-stream))
       (usocket:socket-close listen-socket))))
+
+(defun %client-connect (provider port &key (peer-verify nil) (ca t)
+                                           certificate private-key)
+  "Connect a TLS client to the server. Returns (values tls-stream socket)."
+  (let* ((socket (usocket:socket-connect
+                  "127.0.0.1" port
+                  :element-type '(unsigned-byte 8)))
+         (tls-stream (rtls:tls-wrap provider (usocket:socket-stream socket)
+                                    :hostname "localhost"
+                                    :certificate (when certificate
+                                                   (%cert-path certificate))
+                                    :private-key (when private-key
+                                                   (%cert-path private-key))
+                                    :ca-certificate (when ca
+                                                      (%cert-path "ca-cert.pem"))
+                                    :peer-verify peer-verify
+                                    :role :client)))
+    (values tls-stream socket)))
 
 ;; ---------------------------------
 ;; protocol tests
@@ -132,72 +126,59 @@
 
 (test pure-tls--server-wrap-and-client-connect
   "Tests TLS server wrap and client connect on loopback."
-  (with-fixture tls-loopback ()
-    (is-true (not (null client-tls-stream)))
-    (write-byte 42 client-tls-stream)
-    (force-output client-tls-stream)
-    (bt2:join-thread server-thread)
-    (is (null server-error)
-        "Server should not have errored: ~a" server-error)
-    (is-true (not (null server-tls-stream)))
-    (when server-tls-stream
-      (let ((byte (read-byte server-tls-stream)))
-        (is (= 42 byte))))))
+  (with-fixture tls-server ()
+    (multiple-value-bind (client-tls-stream client-socket)
+        (%client-connect provider port)
+      (unwind-protect
+           (progn
+             (is-true (not (null client-tls-stream)))
+             (write-byte 42 client-tls-stream)
+             (force-output client-tls-stream)
+             (bt2:join-thread server-thread)
+             (is (null server-error)
+                 "Server should not have errored: ~a" server-error)
+             (is-true (not (null server-tls-stream)))
+             (when server-tls-stream
+               (is (= 42 (read-byte server-tls-stream)))))
+        (rtls:tls-unwrap provider client-tls-stream)
+        (usocket:socket-close client-socket)))))
 
 (test pure-tls--mtls-client-presents-cert
   "Tests mTLS: client presents certificate, server verifies."
-  (with-fixture tls-loopback (:server-peer-verify t
-                               :client-certificate "client-cert.pem"
-                               :client-private-key "client-key.pem")
-    (is-true (not (null client-tls-stream)))
-    (write-byte 99 client-tls-stream)
-    (force-output client-tls-stream)
-    (bt2:join-thread server-thread)
-    (is (null server-error)
-        "Server should not have errored: ~a" server-error)
-    (is-true (not (null server-tls-stream)))
-    (when server-tls-stream
-      (let ((byte (read-byte server-tls-stream)))
-        (is (= 99 byte))))))
+  (with-fixture tls-server (:peer-verify t)
+    (multiple-value-bind (client-tls-stream client-socket)
+        (%client-connect provider port
+                         :certificate "client-cert.pem"
+                         :private-key "client-key.pem")
+      (unwind-protect
+           (progn
+             (is-true (not (null client-tls-stream)))
+             (write-byte 99 client-tls-stream)
+             (force-output client-tls-stream)
+             (bt2:join-thread server-thread)
+             (is (null server-error)
+                 "Server should not have errored: ~a" server-error)
+             (is-true (not (null server-tls-stream)))
+             (when server-tls-stream
+               (is (= 99 (read-byte server-tls-stream)))))
+        (rtls:tls-unwrap provider client-tls-stream)
+        (usocket:socket-close client-socket)))))
 
 (test pure-tls--invalid-cert-signals-tls-certificate-error
   "Tests that an invalid/untrusted certificate signals tls-certificate-error."
-  (let* ((provider (make-instance 'pure-tls-provider))
-         (listen-socket (usocket:socket-listen "127.0.0.1" 0
-                                               :reuse-address t
-                                               :element-type '(unsigned-byte 8)))
-         (port (usocket:get-local-port listen-socket))
-         (server-thread nil))
-    (unwind-protect
-         (progn
-           (setf server-thread
-                 (bt2:make-thread
-                  (lambda ()
-                    (handler-case
-                        (let ((client-socket (usocket:socket-accept
-                                              listen-socket
-                                              :element-type '(unsigned-byte 8))))
-                          (rtls:tls-wrap provider (usocket:socket-stream client-socket)
-                                         :certificate (%cert-path "server-cert.pem")
-                                         :private-key (%cert-path "server-key.pem")
-                                         :peer-verify nil
-                                         :role :server))
-                      (error () nil)))
-                  :name "tls-test-server-invalid"))
-           (sleep 0.1)
+  (with-fixture tls-server (:ca nil)
+    (let ((client-socket (usocket:socket-connect
+                          "127.0.0.1" port
+                          :element-type '(unsigned-byte 8))))
+      (unwind-protect
            ;; Client tries to verify server cert without the CA — should fail
-           (let ((client-socket (usocket:socket-connect
-                                 "127.0.0.1" port
-                                 :element-type '(unsigned-byte 8))))
-             (unwind-protect
-                  (signals rtls:tls-certificate-error
-                    (rtls:tls-wrap provider (usocket:socket-stream client-socket)
-                                   :hostname "localhost"
-                                   :peer-verify t
-                                   :role :client))
-               (usocket:socket-close client-socket)))
-           (bt2:join-thread server-thread))
-      (usocket:socket-close listen-socket))))
+           (signals rtls:tls-certificate-error
+             (rtls:tls-wrap provider (usocket:socket-stream client-socket)
+                            :hostname "localhost"
+                            :peer-verify t
+                            :ca-certificate nil
+                            :role :client))
+        (usocket:socket-close client-socket)))))
 
 (test pure-tls--tls-unwrap-closes-stream
   "Tests that tls-unwrap gracefully closes a TLS stream."

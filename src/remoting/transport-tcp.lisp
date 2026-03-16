@@ -74,6 +74,9 @@
    (reader-threads :initform nil
                    :accessor %reader-threads
                    :documentation "List of active reader threads.")
+   (accepted-sockets :initform nil
+                     :accessor %accepted-sockets
+                     :documentation "List of accepted client sockets (for cleanup on stop).")
    (actual-port :initform nil
                 :accessor tcp-transport-actual-port
                 :documentation "Actual port after bind (useful when port=0)."))
@@ -286,6 +289,7 @@
                    (log:debug "Error cleaning up reader connection: ~a" c)))))
            :name "tcp-transport-reader")))
     (push thread (%reader-threads transport))
+    (push socket (%accepted-sockets transport))
     thread))
 
 ;; ---------------------------------
@@ -358,6 +362,11 @@
                (thread-alive-p (%listener-thread transport)))
       (join-thread (%listener-thread transport)))
     (setf (%listener-thread transport) nil)
+    ;; Close accepted sockets to unblock reader threads
+    (dolist (socket (%accepted-sockets transport))
+      (handler-case (socket-close socket)
+        (error () nil)))
+    (setf (%accepted-sockets transport) nil)
     ;; Wait for reader threads
     (dolist (thread (%reader-threads transport))
       (when (thread-alive-p thread)

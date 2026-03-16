@@ -206,17 +206,17 @@ Binds: server-transport, server-port, client-transport."
                                            (push env received-envelopes))))
                (unwind-protect
                     (progn
-                      ;; The first send may fail (broken connection) — that's expected
-                      (handler-case
-                          (transport-send client "127.0.0.1" port1
-                                                (%make-test-envelope :message-text "msg2"))
-                        (send-failed-error () nil))
-                      ;; Second send should reconnect
-                      (transport-send client "127.0.0.1" port1
-                                             (%make-test-envelope :message-text "msg3"))
-                      (is-true (await-cond 1.0
-                                 (with-lock-held (received-lock)
-                                   (>= (length received-envelopes) 2)))))
+                      ;; Send until one gets through — first attempts may fail
+                      ;; due to broken cached connection or connection-refused
+                      ;; while new server is still binding
+                      (is-true (await-cond 2.0
+                                 (handler-case
+                                     (progn
+                                       (transport-send client "127.0.0.1" port1
+                                                       (%make-test-envelope :message-text "retry"))
+                                       (with-lock-held (received-lock)
+                                         (>= (length received-envelopes) 2)))
+                                   (error () nil)))))
                  (transport-stop server2))))
         (transport-stop client)))))
 

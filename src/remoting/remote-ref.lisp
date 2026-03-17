@@ -198,10 +198,6 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
                    :max-queue-size max-queue-size
                    :dispatcher dispatcher)))
 
-;; ---------------------------------
-;; helper: derive sender path
-;; ---------------------------------
-
 (defvar *local-sender-path* "/__local__"
   "Sender-path used for ask-s/ask response routing.")
 

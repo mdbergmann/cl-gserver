@@ -186,8 +186,7 @@ SYSTEM is the local actor-system (required).
 TRANSPORT is the transport to use for sending.
 SERIALIZER is the serializer for message encoding.
 MAX-QUEUE-SIZE limits the sender actor's queue (nil or 0 = unbounded).
-DISPATCHER is the dispatcher identifier for the sender actor (default :shared).
-  In Phase 5, enable-remoting will register a dedicated :remoting dispatcher."
+DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
   (multiple-value-bind (host port path) (%parse-remote-uri uri)
     (make-instance 'remote-actor-ref
                    :remote-host host
@@ -204,8 +203,7 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared).
 ;; ---------------------------------
 
 (defun %local-sender-path (ref)
-  "Construct a local sender-path for ask-s/ask response routing.
-In Phase 5 this will use the system's remoting address. For now, uses a synthetic path."
+  "Construct a local sender-path for ask-s/ask response routing."
   (declare (ignore ref))
   "/__local__")
 

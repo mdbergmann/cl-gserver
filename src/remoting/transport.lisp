@@ -10,6 +10,7 @@
            #:transport-tls-config
            #:transport-tls-provider
            #:transport-running-p
+           #:transport-message-handler
            ;; protocol
            #:transport-start
            #:transport-stop
@@ -98,7 +99,7 @@
                  :initform nil
                  :documentation "TLS provider instance for this transport.")
    (message-handler :initarg :message-handler
-                    :accessor %transport-message-handler
+                    :accessor transport-message-handler
                     :initform nil
                     :documentation "Function called with (envelope) for inbound messages.")
    (running-p :initform nil

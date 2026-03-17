@@ -213,11 +213,9 @@ If SENDER is a local actor, returns its path.
 If SENDER is a remote-actor-ref, returns its sento:// URI.
 Otherwise returns nil."
   (declare (ignore ref))
-  (cond
-    ((typep sender 'remote-actor-ref)
-     (act:path sender))
-    ((typep sender 'act:actor)
-     (act:path sender))
+  (typecase sender
+    (remote-actor-ref (act:path sender))
+    (act:actor (act:path sender))
     (t nil)))
 
 ;; ---------------------------------

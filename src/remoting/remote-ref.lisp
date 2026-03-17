@@ -7,6 +7,7 @@
   (:import-from :sento.remoting.envelope
                 #:make-envelope
                 #:envelope-target-path
+                #:envelope-sender-path
                 #:envelope-message
                 #:envelope-correlation-id)
   (:import-from :sento.remoting.serialization
@@ -302,7 +303,8 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
 Match by correlation-id and resolve pending ask."
   (let ((corr-id (envelope-correlation-id envelope)))
     (unless corr-id
-      (log:warn "Received response envelope without correlation-id, ignoring.")
+      (log:warn "Response envelope without correlation-id from ~a, ignoring."
+                 (envelope-sender-path envelope))
       (return-from %handle-response))
     (let ((entry (with-lock-held ((%pending-asks-lock ref))
                    (gethash corr-id (pending-asks ref)))))

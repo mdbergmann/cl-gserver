@@ -39,8 +39,8 @@ systems/               — vendored dependencies
 ### Naming
 
 - **kebab-case** everywhere: functions, variables, classes, slots.
-- **Private/internal functions:** prefix with `%` (e.g. `%add-actor`, `%merge-config`).
-- **Special/dynamic variables:** `*earmuffs*` (e.g. `*self*`, `*state*`, `*sender*`).
+- **Private/internal functions:** prefix with `%` (e.g. `%add-actor`, `%merge-config`). Never export `%`-prefixed symbols — if it needs to be public, drop the `%`.
+- **Special/dynamic variables:** `*earmuffs*` (e.g. `*self*`, `*state*`, `*sender*`). All `defvar`/`defparameter` must use earmuffs — never use `%` prefix for variables.
 - **Classes:** descriptive kebab-case (`actor-cell`, `shared-dispatcher`, `message-box/bt`).
 
 ### Packages
@@ -48,6 +48,7 @@ systems/               — vendored dependencies
 - Full hierarchical names with dots: `:sento.actor`, `:sento.actor-context`.
 - Short nicknames for convenience: `:act`, `:ac`, `:asys`, `:agt`, `:disp`, `:ev`.
 - Explicit `:use :cl` only. No `:use` of project packages — use `:import-from` or qualified names.
+- **Prefer `:import-from` over package-qualified names.** If a symbol is used in a file, import it in the `defpackage` and use it unqualified. Do not mix qualified (`pkg:sym`) and unqualified access to the same package.
 - Exports use `#:symbol` notation.
 - Use `eval-when (:compile-toplevel)` with `shadowing-import` to resolve symbol conflicts between packages.
 
@@ -88,6 +89,13 @@ systems/               — vendored dependencies
 - `alexandria:with-gensyms` in macros for hygiene.
 - `(declare (ignore ...))` always explicit — no unused variable warnings.
 - No trailing whitespace. No tabs.
+- Prefer `typecase` over `cond`/`typep` for type dispatch.
+- Don't create trivial wrapper functions used only once — inline the expression.
+- Don't add comments referencing future plans or phases. Code describes what it does now.
+- Log warnings must include enough context for troubleshooting (identifiers, paths, IDs).
+- Use the system's wheel-timer (`wt:schedule-once` on `asys::timeout-timer`) for timeouts instead of spawning threads.
+- Create actors via `ac:actor-of` with dispatchers for scalability. Avoid standalone `message-box/bt` which consumes a dedicated thread per actor.
+- Stop actors created via `ac:actor-of` with `ac:stop`, not `act-cell:stop`.
 
 ## Tests
 
@@ -115,7 +123,7 @@ systems/               — vendored dependencies
 
 ### Fixtures
 
-- Use `def-fixture` for reusable setup/teardown:
+- Use FiveAM's `def-fixture`/`with-fixture` for reusable setup/teardown — not custom macros:
   ```lisp
   (def-fixture test-system ()
     (let ((cut (make-actor-system)))

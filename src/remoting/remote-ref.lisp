@@ -32,7 +32,7 @@
            #:invalid-remote-uri-error
            ;; response handling
            #:%handle-response
-           #:%stop-sender-actor))
+           #:stop-sender-actor))
 
 (in-package :sento.remoting.remote-ref)
 
@@ -74,39 +74,37 @@ Returns (values host port path) or signals invalid-remote-uri-error."
       (error 'invalid-remote-uri-error
              :uri uri
              :message "URI must be in format sento://host:port/path"))
-    (let ((host (subseq rest 0 colon-pos))
-          (port-str (subseq rest (1+ colon-pos) first-slash-pos))
-          (path (subseq rest first-slash-pos)))
+    (let* ((host (subseq rest 0 colon-pos))
+           (port-str (subseq rest (1+ colon-pos) first-slash-pos))
+           (path (subseq rest first-slash-pos))
+           (port (handler-case (parse-integer port-str)
+                   (error ()
+                     (error 'invalid-remote-uri-error
+                            :uri uri
+                            :message (format nil "Invalid port: ~a" port-str))))))
       (when (string= host "")
         (error 'invalid-remote-uri-error
                :uri uri
                :message "Host must not be empty"))
-      (let ((port (handler-case (parse-integer port-str)
-                    (error ()
-                      (error 'invalid-remote-uri-error
-                             :uri uri
-                             :message (format nil "Invalid port: ~a" port-str))))))
-        (when (or (<= port 0) (> port 65535))
-          (error 'invalid-remote-uri-error
-                 :uri uri
-                 :message (format nil "Port out of range: ~a" port)))
-        (when (string= path "")
-          (error 'invalid-remote-uri-error
-                 :uri uri
-                 :message "Path must not be empty"))
-        (values host port path)))))
+      (when (or (<= port 0) (> port 65535))
+        (error 'invalid-remote-uri-error
+               :uri uri
+               :message (format nil "Port out of range: ~a" port)))
+      (values host port path))))
 
 ;; ---------------------------------
 ;; correlation ID generation
 ;; ---------------------------------
 
-(defvar %corr-id-counter 0)
-(defvar %corr-id-lock (make-lock :name "corr-id-lock"))
+(defvar *corr-id-counter* 0)
+(defvar *corr-id-lock* (make-lock :name "corr-id-lock"))
+(defvar *local-sender-path* "/__local__"
+  "Sender-path used for ask-s/ask response routing.")
 
 (defun %make-correlation-id ()
   "Generate a unique correlation ID string."
-  (with-lock-held (%corr-id-lock)
-    (format nil "corr-~a-~a" (incf %corr-id-counter) (get-internal-real-time))))
+  (with-lock-held (*corr-id-lock*)
+    (format nil "corr-~a-~a" (incf *corr-id-counter*) (get-internal-real-time))))
 
 ;; ---------------------------------
 ;; remote-actor-ref
@@ -198,9 +196,6 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
                    :max-queue-size max-queue-size
                    :dispatcher dispatcher)))
 
-(defvar *local-sender-path* "/__local__"
-  "Sender-path used for ask-s/ask response routing.")
-
 ;; ---------------------------------
 ;; tell — queued via internal sender actor
 ;; ---------------------------------
@@ -243,15 +238,15 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
     (bt2:with-lock-held (lock)
       (bt2:condition-wait cvar lock :timeout time-out))
     ;; Retrieve and clean up
-    (let ((entry (with-lock-held ((%pending-asks-lock ref))
-                   (prog1 (gethash corr-id (pending-asks ref))
-                     (remhash corr-id (pending-asks ref))))))
-      (let ((result (fourth entry)))
-        (if (eq result :no-result)
-            (cons :handler-error
-                  (make-condition 'timeutils:ask-timeout
-                                  :wait-time time-out))
-            result)))))
+    (let* ((entry (with-lock-held ((%pending-asks-lock ref))
+                    (prog1 (gethash corr-id (pending-asks ref))
+                      (remhash corr-id (pending-asks ref)))))
+           (result (fourth entry)))
+      (if (eq result :no-result)
+          (cons :handler-error
+                (make-condition 'timeutils:ask-timeout
+                                :wait-time time-out))
+          result))))
 
 ;; ---------------------------------
 ;; ask — direct send, returns future
@@ -304,27 +299,21 @@ After TIME-OUT seconds, if the correlation-id is still pending, resolve with err
 (defun %handle-response (ref envelope)
   "Called by inbound handler when a response envelope arrives.
 Match by correlation-id and resolve pending ask."
-  (let* ((corr-id (envelope-correlation-id envelope))
-         (entry (when corr-id
-                  (with-lock-held ((%pending-asks-lock ref))
-                    (gethash corr-id (pending-asks ref))))))
-    (when entry
-      (case (first entry)
-        (:ask-s
-         ;; Signal the waiting condvar
-         (let ((lock (second entry))
-               (cvar (third entry))
-               (result (deserialize (serializer ref) (envelope-message envelope))))
+  (let ((corr-id (envelope-correlation-id envelope)))
+    (unless corr-id (return-from %handle-response))
+    (let ((entry (with-lock-held ((%pending-asks-lock ref))
+                   (gethash corr-id (pending-asks ref)))))
+      (unless entry (return-from %handle-response))
+      (let ((result (deserialize (serializer ref) (envelope-message envelope))))
+        (case (first entry)
+          (:ask-s
            (setf (fourth entry) result)
-           (bt2:with-lock-held (lock)
-             (bt2:condition-notify cvar))))
-        (:ask
-         ;; Resolve the future
-         (let ((resolve-fn (second entry))
-               (result (deserialize (serializer ref) (envelope-message envelope))))
+           (bt2:with-lock-held ((second entry))
+             (bt2:condition-notify (third entry))))
+          (:ask
            (with-lock-held ((%pending-asks-lock ref))
              (remhash corr-id (pending-asks ref)))
-           (funcall resolve-fn result)))))))
+           (funcall (second entry) result)))))))
 
 ;; ---------------------------------
 ;; path
@@ -341,6 +330,6 @@ Match by correlation-id and resolve pending ask."
 ;; cleanup
 ;; ---------------------------------
 
-(defun %stop-sender-actor (ref)
+(defun stop-sender-actor (ref)
   "Stop the internal sender actor."
   (act-cell:stop (sender-actor ref) t))

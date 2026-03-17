@@ -9,7 +9,7 @@
                 #:sender-actor
                 #:invalid-remote-uri-error
                 #:%handle-response
-                #:%stop-sender-actor)
+                #:stop-sender-actor)
   (:import-from :sento.remoting.transport
                 #:transport-start
                 #:transport-stop

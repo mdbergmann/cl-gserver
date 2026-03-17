@@ -21,7 +21,8 @@
                    (:file "tls")
                    (:file "tls-pure")
                    (:file "transport")
-                   (:file "transport-tcp"))))))
+                   (:file "transport-tcp")
+                   (:file "remote-ref"))))))
   :in-order-to ((test-op (test-op "sento-remoting/tests"))))
 
 (defsystem "sento-remoting/tests"
@@ -40,7 +41,8 @@
                    (:file "serialization-test")
                    (:file "envelope-test")
                    (:file "tls-test")
-                   (:file "transport-test"))))))
+                   (:file "transport-test")
+                   (:file "remote-ref-test"))))))
   :description "Test system for sento-remoting"
   :perform (test-op (op c) (symbol-call :fiveam :run!
                                         (uiop:find-symbol* '#:remoting-test-suite

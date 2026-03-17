@@ -24,9 +24,27 @@
 - **22 tests, 68 checks, all passing**
 - Note: TLS conditions defined in `tls.lisp` alongside the TLS package (consistent with phase 1 pattern). On macOS, `pure-tls:*use-macos-keychain*` is bound to `nil` during wrap operations so that pure Lisp verification is used with custom CA certificates instead of the macOS Security.framework system trust store.
 
+### Phase 3: Transport Layer (done)
+- `src/remoting/transport.lisp` — `sento.remoting.transport` package (`:rtrans`), transport conditions (`transport-error`, `connection-refused-error`, `connection-timeout-error`, `connection-closed-error`, `send-failed-error`), abstract `transport` base class, protocol generics (`transport-start`, `transport-stop`, `transport-send`)
+- `src/remoting/transport-tcp.lisp` — `sento.remoting.transport-tcp` package (`:rtrans-tcp`), `tcp-transport` implementation with 4-byte big-endian length-prefixed framing, TLS support, connection pooling (lazy reconnect), per-connection reader threads, accepted socket tracking for clean shutdown
+- `tests/remoting/transport-test.lisp` — 10 tests (start/stop lifecycle, stop closes connections, send envelope loopback, large message >64KB, connection reuse, connection failure reconnect, concurrent sends, connection-refused condition, TLS handshake failure propagation, send over TLS)
+- `sento-remoting.asd` — added `bordeaux-threads` dependency; added `transport`, `transport-tcp` modules and `transport-test`
+- **32 tests, 89 checks, all passing**
+- Note: `usocket:connection-refused-error`, `usocket:timeout-error`, `usocket:socket-error` remain package-qualified in `transport-tcp.lisp` to avoid conflicts with identically-named transport conditions. `%transport-message-handler` is internal (not exported), accessed via `rtrans::` from the tcp-transport subclass.
+
+### Phase 4: Remote Actor Reference (done)
+- `src/remoting/remote-ref.lisp` — `sento.remoting.remote-ref` package (`:rref`), conditions (`remote-actor-error`, `invalid-remote-uri-error`), `remote-actor-ref` class with internal sender actor for queued `tell`, direct send for `ask-s`/`ask`, correlation-id based response matching, URI parsing (`sento://host:port/path`), `%handle-response` for inbound response routing
+- `tests/remoting/remote-ref-test.lisp` — 11 tests (URI parsing valid/invalid, tell enqueues non-blocking, tell message-type correct, tell transport error logged not signaled, ask-s direct send with response, ask-s timeout returns handler-error, ask-s transport error signals immediately, ask returns future resolved via correlation-id, ask timeout resolves future with error, path returns full URI)
+- `sento-remoting.asd` — added `remote-ref` module and `remote-ref-test`
+- **43 tests, 120 checks, all passing**
+- Note: `make-remote-ref` takes explicit `transport` and `serializer` arguments (will be simplified in Phase 5 when remoting context provides these). `ask-s`/`ask` use `"/__local__"` as sender-path placeholder; Phase 5 will replace this with the local system's `sento://` address. Correlation IDs use a thread-safe counter + timestamp (no external UUID library needed). The `%handle-response` function is exported for Phase 5 integration — the inbound handler will call it to resolve pending asks by correlation-id.
+
+## TODO (post-phase)
+
+- **Max message size:** Currently `tcp-transport` framing has no size limit (4-byte header allows ~4GB). Add a configurable `:max-message-length` to the remoting config (passed through to `tcp-transport`). Check in `%read-frame` (reject before allocating) and `%write-frame` (reject before sending). Sensible default: 16MB.
+
 ## Next
 
-### Phase 3: Transport Layer
-- `src/remoting/transport.lisp` — transport protocol (abstract base class + generics)
-- `src/remoting/transport-tcp.lisp` — TCP transport implementation with TLS, framing, connection pooling
-- `tests/remoting/transport-test.lisp` — 10 tests
+### Phase 5: Remoting Integration (End-to-End)
+- `src/remoting/remoting.lisp` — actor-system integration, config, lifecycle, inbound message routing
+- `tests/remoting/remoting-test.lisp` — full integration tests with two actor-systems communicating

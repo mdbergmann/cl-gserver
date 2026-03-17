@@ -208,8 +208,7 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
   "/__local__")
 
 (defun %derive-sender-path (sender)
-  "Derive the sender-path for an envelope.
-Returns the sender's path, or nil if sender is nil."
+  "Derive the sender-path for an envelope from SENDER."
   (when sender (act:path sender)))
 
 ;; ---------------------------------

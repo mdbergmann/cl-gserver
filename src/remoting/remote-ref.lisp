@@ -197,17 +197,23 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
                    :max-queue-size max-queue-size
                    :dispatcher dispatcher)))
 
+(defun %make-ref-envelope (ref message &key sender-path message-type correlation-id)
+  "Create an envelope for sending via this remote-ref."
+  (make-envelope :target-path (target-path ref)
+                 :sender-path sender-path
+                 :message (serialize (serializer ref) message)
+                 :message-type message-type
+                 :correlation-id correlation-id))
+
 ;; ---------------------------------
 ;; tell — queued via internal sender actor
 ;; ---------------------------------
 
 (defmethod act:tell ((ref remote-actor-ref) message &optional sender)
-  (let ((envelope (make-envelope
-                   :target-path (target-path ref)
-                   :sender-path (when sender (act:path sender))
-                   :message (serialize (serializer ref) message)
-                   :message-type :tell)))
-    (act:tell (sender-actor ref) envelope)))
+  (act:tell (sender-actor ref)
+            (%make-ref-envelope ref message
+                                :sender-path (when sender (act:path sender))
+                                :message-type :tell)))
 
 ;; ---------------------------------
 ;; ask-s — direct send, blocks on condvar
@@ -215,12 +221,10 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
 
 (defmethod act:ask-s ((ref remote-actor-ref) message &key time-out)
   (let* ((corr-id (%make-correlation-id))
-         (envelope (make-envelope
-                    :target-path (target-path ref)
-                    :sender-path *local-sender-path*
-                    :message (serialize (serializer ref) message)
-                    :message-type :ask-s
-                    :correlation-id corr-id))
+         (envelope (%make-ref-envelope ref message
+                                       :sender-path *local-sender-path*
+                                       :message-type :ask-s
+                                       :correlation-id corr-id))
          (lock (make-lock :name "ask-s-lock"))
          (cvar (make-condition-variable :name "ask-s-cvar")))
     ;; Register pending ask before sending
@@ -255,12 +259,10 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
 
 (defmethod act:ask ((ref remote-actor-ref) message &key time-out)
   (let* ((corr-id (%make-correlation-id))
-         (envelope (make-envelope
-                    :target-path (target-path ref)
-                    :sender-path *local-sender-path*
-                    :message (serialize (serializer ref) message)
-                    :message-type :ask
-                    :correlation-id corr-id)))
+         (envelope (%make-ref-envelope ref message
+                                       :sender-path *local-sender-path*
+                                       :message-type :ask
+                                       :correlation-id corr-id)))
     (future:make-future
      (lambda (resolve-fn)
        ;; Register future for correlation-id

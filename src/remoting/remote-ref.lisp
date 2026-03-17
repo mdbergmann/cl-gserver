@@ -214,7 +214,6 @@ If SENDER is a remote-actor-ref, returns its sento:// URI.
 Otherwise returns nil."
   (declare (ignore ref))
   (cond
-    ((null sender) nil)
     ((typep sender 'remote-actor-ref)
      (act:path sender))
     ((typep sender 'act:actor)

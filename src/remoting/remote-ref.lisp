@@ -129,7 +129,7 @@ Returns (values host port path) or signals invalid-remote-uri-error."
                :reader serializer
                :documentation "The serializer for message encoding/decoding.")
    (sender-actor :reader sender-actor
-                 :documentation "Internal pinned actor that queues and sends tell messages.")
+                 :documentation "Internal actor that queues and sends tell messages via dispatcher.")
    (pending-asks :initform (make-hash-table :test 'equal)
                  :reader pending-asks
                  :documentation "Hash-table: correlation-id -> condvar (ask-s) or future (ask).")
@@ -152,38 +152,42 @@ Returns (values host port path) or signals invalid-remote-uri-error."
 ;; sender actor setup
 ;; ---------------------------------
 
-(defun %make-sender-actor (ref &key max-queue-size)
-  "Create the internal sender actor for queued tell messages."
-  (let* ((receive-fn (lambda (envelope)
-                       (handler-case
-                           (transport-send (transport ref)
-                                           (remote-host ref)
-                                           (remote-port ref)
-                                           envelope)
-                         (transport-error (c)
-                           (log:warn "Remote tell send failed for ~a: ~a"
-                                     (renv:envelope-target-path envelope) c)))))
-         (actor (act:make-actor receive-fn
-                                :name (string (gensym "remote-sender-")))))
-    (setf (act-cell:msgbox actor)
-          (make-instance 'mesgb:message-box/bt
-                         :name (string (gensym "remote-sender-mb-"))
-                         :max-queue-size (or max-queue-size 0)))
-    actor))
+(defun %make-sender-actor (ref system &key dispatcher max-queue-size)
+  "Create the internal sender actor for queued tell messages.
+Uses the actor-system's dispatcher infrastructure for scalability."
+  (let ((receive-fn (lambda (envelope)
+                      (handler-case
+                          (transport-send (transport ref)
+                                          (remote-host ref)
+                                          (remote-port ref)
+                                          envelope)
+                        (transport-error (c)
+                          (log:warn "Remote tell send failed for ~a: ~a"
+                                    (renv:envelope-target-path envelope) c))))))
+    (ac:actor-of system
+                 :receive receive-fn
+                 :name (string (gensym "remote-sender-"))
+                 :dispatcher (or dispatcher :shared)
+                 :queue-size (or max-queue-size 0))))
 
-(defmethod initialize-instance :after ((ref remote-actor-ref) &key max-queue-size)
-  (setf (slot-value ref 'sender-actor) (%make-sender-actor ref :max-queue-size max-queue-size)))
+(defmethod initialize-instance :after ((ref remote-actor-ref) &key dispatcher max-queue-size)
+  (setf (slot-value ref 'sender-actor)
+        (%make-sender-actor ref (system ref)
+                            :dispatcher dispatcher
+                            :max-queue-size max-queue-size)))
 
 ;; ---------------------------------
 ;; factory
 ;; ---------------------------------
 
-(defun make-remote-ref (system uri transport serializer &key max-queue-size)
+(defun make-remote-ref (system uri transport serializer &key max-queue-size dispatcher)
   "Create a remote-actor-ref from a sento:// URI.
-SYSTEM is the local actor-system.
+SYSTEM is the local actor-system (required).
 TRANSPORT is the transport to use for sending.
 SERIALIZER is the serializer for message encoding.
-MAX-QUEUE-SIZE limits the sender actor's queue (nil or 0 = unbounded)."
+MAX-QUEUE-SIZE limits the sender actor's queue (nil or 0 = unbounded).
+DISPATCHER is the dispatcher identifier for the sender actor (default :shared).
+  In Phase 5, enable-remoting will register a dedicated :remoting dispatcher."
   (multiple-value-bind (host port path) (%parse-remote-uri uri)
     (make-instance 'remote-actor-ref
                    :remote-host host
@@ -192,7 +196,8 @@ MAX-QUEUE-SIZE limits the sender actor's queue (nil or 0 = unbounded)."
                    :transport transport
                    :serializer serializer
                    :system system
-                   :max-queue-size max-queue-size)))
+                   :max-queue-size max-queue-size
+                   :dispatcher dispatcher)))
 
 ;; ---------------------------------
 ;; helper: derive sender path

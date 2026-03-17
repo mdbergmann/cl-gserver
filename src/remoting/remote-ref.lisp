@@ -235,8 +235,8 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
           (remhash corr-id (pending-asks ref)))
         (error c)))
     ;; Block until response or timeout
-    (bt2:with-lock-held (lock)
-      (bt2:condition-wait cvar lock :timeout time-out))
+    (with-lock-held (lock)
+      (condition-wait cvar lock :timeout time-out))
     ;; Retrieve and clean up
     (let* ((entry (with-lock-held ((%pending-asks-lock ref))
                     (prog1 (gethash corr-id (pending-asks ref))
@@ -308,8 +308,8 @@ Match by correlation-id and resolve pending ask."
         (case (first entry)
           (:ask-s
            (setf (fourth entry) result)
-           (bt2:with-lock-held ((second entry))
-             (bt2:condition-notify (third entry))))
+           (with-lock-held ((second entry))
+             (condition-notify (third entry))))
           (:ask
            (with-lock-held ((%pending-asks-lock ref))
              (remhash corr-id (pending-asks ref)))

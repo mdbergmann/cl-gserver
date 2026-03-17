@@ -20,8 +20,7 @@
                 #:with-lock-held
                 #:make-condition-variable
                 #:condition-wait
-                #:condition-notify
-                #:make-thread)
+                #:condition-notify)
   (:export #:remote-actor-ref
            #:make-remote-ref
            #:remote-host
@@ -280,11 +279,11 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
 ;; ---------------------------------
 
 (defun %schedule-ask-timeout (ref corr-id resolve-fn time-out)
-  "Schedule a timeout for an ask operation.
-After TIME-OUT seconds, if the correlation-id is still pending, resolve with error."
-  (make-thread
+  "Schedule a timeout for an ask operation using the system's timeout timer."
+  (wt:schedule-once
+   (asys::timeout-timer (system ref))
+   time-out
    (lambda ()
-     (sleep time-out)
      (let ((entry (with-lock-held ((%pending-asks-lock ref))
                     (prog1 (gethash corr-id (pending-asks ref))
                       (remhash corr-id (pending-asks ref))))))
@@ -292,8 +291,7 @@ After TIME-OUT seconds, if the correlation-id is still pending, resolve with err
          (funcall resolve-fn
                   (cons :handler-error
                         (make-condition 'timeutils:ask-timeout
-                                        :wait-time time-out))))))
-   :name "remote-ask-timeout"))
+                                        :wait-time time-out))))))))
 
 ;; ---------------------------------
 ;; response handling (inbound)

@@ -202,10 +202,8 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
 ;; helper: derive sender path
 ;; ---------------------------------
 
-(defun %local-sender-path (ref)
-  "Construct a local sender-path for ask-s/ask response routing."
-  (declare (ignore ref))
-  "/__local__")
+(defvar *local-sender-path* "/__local__"
+  "Sender-path used for ask-s/ask response routing.")
 
 ;; ---------------------------------
 ;; tell — queued via internal sender actor
@@ -227,7 +225,7 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
   (let* ((corr-id (%make-correlation-id))
          (envelope (make-envelope
                     :target-path (target-path ref)
-                    :sender-path (%local-sender-path ref)
+                    :sender-path *local-sender-path*
                     :message (serialize (serializer ref) message)
                     :message-type :ask-s
                     :correlation-id corr-id))
@@ -267,7 +265,7 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
   (let* ((corr-id (%make-correlation-id))
          (envelope (make-envelope
                     :target-path (target-path ref)
-                    :sender-path (%local-sender-path ref)
+                    :sender-path *local-sender-path*
                     :message (serialize (serializer ref) message)
                     :message-type :ask
                     :correlation-id corr-id)))

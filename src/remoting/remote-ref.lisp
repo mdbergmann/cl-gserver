@@ -6,6 +6,7 @@
                 #:remoting-error-message)
   (:import-from :sento.remoting.envelope
                 #:make-envelope
+                #:envelope-target-path
                 #:envelope-message
                 #:envelope-correlation-id)
   (:import-from :sento.remoting.serialization
@@ -161,7 +162,7 @@ Uses the actor-system's dispatcher infrastructure for scalability."
                                           envelope)
                         (transport-error (c)
                           (log:warn "Remote tell send failed for ~a: ~a"
-                                    (renv:envelope-target-path envelope) c))))))
+                                    (envelope-target-path envelope) c))))))
     (ac:actor-of system
                  :receive receive-fn
                  :name (string (gensym "remote-sender-"))

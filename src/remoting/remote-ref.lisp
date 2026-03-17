@@ -207,16 +207,10 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
   (declare (ignore ref))
   "/__local__")
 
-(defun %derive-sender-path (sender ref)
+(defun %derive-sender-path (sender)
   "Derive the sender-path for an envelope.
-If SENDER is a local actor, returns its path.
-If SENDER is a remote-actor-ref, returns its sento:// URI.
-Otherwise returns nil."
-  (declare (ignore ref))
-  (typecase sender
-    (remote-actor-ref (act:path sender))
-    (act:actor (act:path sender))
-    (t nil)))
+Returns the sender's path, or nil if sender is nil."
+  (when sender (act:path sender)))
 
 ;; ---------------------------------
 ;; tell — queued via internal sender actor
@@ -225,7 +219,7 @@ Otherwise returns nil."
 (defmethod act:tell ((ref remote-actor-ref) message &optional sender)
   (let ((envelope (make-envelope
                    :target-path (target-path ref)
-                   :sender-path (%derive-sender-path sender ref)
+                   :sender-path (%derive-sender-path sender)
                    :message (serialize (serializer ref) message)
                    :message-type :tell)))
     (act:tell (sender-actor ref) envelope)))

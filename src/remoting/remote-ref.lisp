@@ -301,7 +301,9 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
   "Called by inbound handler when a response envelope arrives.
 Match by correlation-id and resolve pending ask."
   (let ((corr-id (envelope-correlation-id envelope)))
-    (unless corr-id (return-from %handle-response))
+    (unless corr-id
+      (log:warn "Received response envelope without correlation-id, ignoring.")
+      (return-from %handle-response))
     (let ((entry (with-lock-held ((%pending-asks-lock ref))
                    (gethash corr-id (pending-asks ref)))))
       (unless entry (return-from %handle-response))

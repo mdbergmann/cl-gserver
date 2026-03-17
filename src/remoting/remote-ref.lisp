@@ -308,7 +308,10 @@ Match by correlation-id and resolve pending ask."
       (return-from %handle-response))
     (let ((entry (with-lock-held ((%pending-asks-lock ref))
                    (gethash corr-id (pending-asks ref)))))
-      (unless entry (return-from %handle-response))
+      (unless entry
+        (log:warn "No pending ask for correlation-id ~a from ~a, ignoring."
+                  corr-id (envelope-sender-path envelope))
+        (return-from %handle-response))
       (let ((result (deserialize (serializer ref) (envelope-message envelope))))
         (case (first entry)
           (:ask-s
@@ -337,4 +340,4 @@ Match by correlation-id and resolve pending ask."
 
 (defun stop-sender-actor (ref)
   "Stop the internal sender actor."
-  (act-cell:stop (sender-actor ref) t))
+  (ac:stop (system ref) (sender-actor ref) :wait t))

@@ -16,7 +16,8 @@
                 #:transport-send
                 #:transport-running-p
                 #:connection-refused-error
-                #:send-failed-error)
+                #:send-failed-error
+                #:transport-message-handler)
   (:import-from :sento.remoting.transport-tcp
                 #:tcp-transport
                 #:tcp-transport-actual-port)
@@ -231,7 +232,7 @@
                                   client-transport
                                   serializer)))
         ;; Wire the client's inbound handler to route responses to the ref
-        (setf (rtrans::%transport-message-handler client-transport)
+        (setf (transport-message-handler client-transport)
               (lambda (envelope)
                 (%handle-response ref envelope)))
         (let ((result (act:ask-s ref "world" :time-out 2)))
@@ -282,7 +283,7 @@
                                   (format nil "sento://127.0.0.1:~a/user/echo" server-port)
                                   client-transport
                                   serializer)))
-        (setf (rtrans::%transport-message-handler client-transport)
+        (setf (transport-message-handler client-transport)
               (lambda (envelope)
                 (%handle-response ref envelope)))
         (let ((fut (act:ask ref "test")))

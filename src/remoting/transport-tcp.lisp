@@ -275,21 +275,28 @@ Signals message-too-large-error if the declared length exceeds MAX-LENGTH."
 ;; ---------------------------------
 
 (defun %start-reader-thread (transport stream socket)
-  "Start a reader thread that reads frames from STREAM and dispatches envelopes."
+  "Start a reader thread that reads frames from STREAM and dispatches envelopes.
+Uses wait-for-input with a timeout so the thread can check running-p
+and exit cleanly when the transport is stopped."
   (let ((thread
           (make-thread
            (lambda ()
              (unwind-protect
                   (handler-case
-                      (loop :for frame = (%read-frame stream (transport-max-message-length transport))
-                            :while (and frame (transport-running-p transport))
-                            :do (handler-case
-                                    (let ((envelope (%deserialize-envelope frame)))
-                                      (let ((handler (transport-message-handler transport)))
-                                        (when handler
-                                          (funcall handler envelope))))
-                                  (error (c)
-                                    (log:warn "Error processing inbound frame: ~a" c))))
+                      (loop :while (transport-running-p transport)
+                            :do (let ((ready (wait-for-input socket
+                                                             :timeout 0.5 :ready-only t)))
+                                  (when (and ready (transport-running-p transport))
+                                    (let ((frame (%read-frame stream
+                                                              (transport-max-message-length transport))))
+                                      (unless frame (return))
+                                      (handler-case
+                                          (let ((envelope (%deserialize-envelope frame)))
+                                            (let ((handler (transport-message-handler transport)))
+                                              (when handler
+                                                (funcall handler envelope))))
+                                        (error (c)
+                                          (log:warn "Error processing inbound frame: ~a" c)))))))
                     (end-of-file ()
                       (log:debug "Reader: connection closed (EOF)."))
                     (error (c)

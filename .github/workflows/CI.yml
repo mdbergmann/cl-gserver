@@ -64,4 +64,4 @@ jobs:
     - name: load and run remoting tests
       shell: bash
       run: |
-        ros -e '(handler-bind (#+asdf3.2(asdf:bad-SYSTEM-NAME (function MUFFLE-WARNING))) (handler-case (ql:quickload :sento-remoting/tests) (error (a) (format t "caught error ~s~%~a~%" a a) (uiop:quit 1))))' -e "(unless (5am:run! 'sento.remoting.tests:remoting-test-suite) (uiop:quit 1))"
+        ros -e '(asdf:initialize-source-registry (list :source-registry (list :tree (merge-pathnames "systems/" (uiop:getcwd))) :inherit-configuration))' -e '(handler-bind (#+asdf3.2(asdf:bad-SYSTEM-NAME (function MUFFLE-WARNING))) (handler-case (ql:quickload :sento-remoting/tests) (error (a) (format t "caught error ~s~%~a~%" a a) (uiop:quit 1))))' -e "(unless (5am:run! 'sento.remoting.tests:remoting-test-suite) (uiop:quit 1))"

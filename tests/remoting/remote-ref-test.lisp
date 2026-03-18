@@ -8,7 +8,6 @@
                 #:target-path
                 #:sender-actor
                 #:invalid-remote-uri-error
-                #:%handle-response
                 #:stop-sender-actor)
   (:import-from :sento.remoting.transport
                 #:transport-start
@@ -212,7 +211,6 @@
                                        "sento://127.0.0.1:1/user/unreachable"
                                        client-transport
                                        serializer)))
-             (declare (ignore ref))
              ;; tell to a non-existent port should NOT signal — just log
              (finishes (act:tell ref "message"))
              ;; Give the sender actor time to process
@@ -234,7 +232,7 @@
         ;; Wire the client's inbound handler to route responses to the ref
         (setf (transport-message-handler client-transport)
               (lambda (envelope)
-                (%handle-response ref envelope)))
+                (rref:handle-response ref envelope)))
         (let ((result (act:ask-s ref "world" :time-out 2)))
           (is (string= "echo:world" result)))))))
 
@@ -266,7 +264,6 @@
                                        "sento://127.0.0.1:1/user/unreachable"
                                        client-transport
                                        serializer)))
-             (declare (ignore ref))
              (signals connection-refused-error
                (act:ask-s ref "hello" :time-out 2)))
         (transport-stop client-transport)))))
@@ -285,7 +282,7 @@
                                   serializer)))
         (setf (transport-message-handler client-transport)
               (lambda (envelope)
-                (%handle-response ref envelope)))
+                (rref:handle-response ref envelope)))
         (let ((fut (act:ask ref "test")))
           (is (typep fut 'future:future))
           (is-true (await-cond 2.0 (future:complete-p fut)))

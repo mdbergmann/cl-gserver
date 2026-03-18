@@ -31,8 +31,14 @@
            ;; conditions
            #:remote-actor-error
            #:invalid-remote-uri-error
+           #:local-sender-path
            ;; response handling
-           #:%handle-response
+           #:handle-response
+           #:pending-asks
+           #:pending-asks-lock
+           ;; URI parsing
+           #:parse-remote-uri
+           ;; lifecycle
            #:stop-sender-actor))
 
 (in-package :sento.remoting.remote-ref)
@@ -59,7 +65,7 @@
 ;; URI parsing
 ;; ---------------------------------
 
-(defun %parse-remote-uri (uri)
+(defun parse-remote-uri (uri)
   "Parse a sento://host:port/path URI.
 Returns (values host port path) or signals invalid-remote-uri-error."
   (unless (and (stringp uri)
@@ -133,11 +139,17 @@ Returns (values host port path) or signals invalid-remote-uri-error."
                  :reader pending-asks
                  :documentation "Hash-table: correlation-id -> condvar (ask-s) or future (ask).")
    (pending-asks-lock :initform (make-lock :name "pending-asks-lock")
-                      :reader %pending-asks-lock
+                      :reader pending-asks-lock
                       :documentation "Lock for thread-safe access to pending-asks.")
    (system :initarg :system
            :reader system
-           :documentation "The actor-system this remote ref belongs to."))
+           :documentation "The actor-system this remote ref belongs to.")
+   (local-sender-path :initarg :local-sender-path
+                      :initform *local-sender-path*
+                      :reader local-sender-path
+                      :documentation "The sender-path used for ask-s/ask envelopes.
+When remoting is enabled, this is set to the local system's sento:// address
+for response routing."))
   (:documentation "Proxy for a remote actor. Implements tell/ask-s/ask but sends over the network."))
 
 (defmethod print-object ((obj remote-actor-ref) stream)
@@ -179,23 +191,27 @@ Uses the actor-system's dispatcher infrastructure for scalability."
 ;; factory
 ;; ---------------------------------
 
-(defun make-remote-ref (system uri transport serializer &key max-queue-size dispatcher)
+(defun make-remote-ref (system uri transport serializer
+                        &key max-queue-size dispatcher local-sender-path)
   "Create a remote-actor-ref from a sento:// URI.
 SYSTEM is the local actor-system (required).
 TRANSPORT is the transport to use for sending.
 SERIALIZER is the serializer for message encoding.
 MAX-QUEUE-SIZE limits the sender actor's queue (nil or 0 = unbounded).
-DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
-  (multiple-value-bind (host port path) (%parse-remote-uri uri)
-    (make-instance 'remote-actor-ref
-                   :remote-host host
-                   :remote-port port
-                   :target-path path
-                   :transport transport
-                   :serializer serializer
-                   :system system
-                   :max-queue-size max-queue-size
-                   :dispatcher dispatcher)))
+DISPATCHER is the dispatcher identifier for the sender actor (default :shared).
+LOCAL-SENDER-PATH overrides the sender-path used in ask-s/ask envelopes."
+  (multiple-value-bind (host port path) (parse-remote-uri uri)
+    (apply #'make-instance 'remote-actor-ref
+           :remote-host host
+           :remote-port port
+           :target-path path
+           :transport transport
+           :serializer serializer
+           :system system
+           :max-queue-size max-queue-size
+           :dispatcher dispatcher
+           (when local-sender-path
+             (list :local-sender-path local-sender-path)))))
 
 (defun %make-ref-envelope (ref message &key sender-path message-type correlation-id)
   "Create an envelope for sending via this remote-ref."
@@ -222,13 +238,13 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
 (defmethod act:ask-s ((ref remote-actor-ref) message &key time-out)
   (let* ((corr-id (%make-correlation-id))
          (envelope (%make-ref-envelope ref message
-                                       :sender-path *local-sender-path*
+                                       :sender-path (local-sender-path ref)
                                        :message-type :ask-s
                                        :correlation-id corr-id))
          (lock (make-lock :name "ask-s-lock"))
          (cvar (make-condition-variable :name "ask-s-cvar")))
     ;; Register pending ask before sending
-    (with-lock-held ((%pending-asks-lock ref))
+    (with-lock-held ((pending-asks-lock ref))
       (setf (gethash corr-id (pending-asks ref))
             (list :ask-s lock cvar :no-result)))
     ;; Send on caller's thread — transport errors propagate directly
@@ -236,14 +252,14 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
         (transport-send (transport ref) (remote-host ref) (remote-port ref) envelope)
       (error (c)
         ;; Clean up pending entry on send failure
-        (with-lock-held ((%pending-asks-lock ref))
+        (with-lock-held ((pending-asks-lock ref))
           (remhash corr-id (pending-asks ref)))
         (error c)))
     ;; Block until response or timeout
     (with-lock-held (lock)
       (condition-wait cvar lock :timeout time-out))
     ;; Retrieve and clean up
-    (let* ((entry (with-lock-held ((%pending-asks-lock ref))
+    (let* ((entry (with-lock-held ((pending-asks-lock ref))
                     (prog1 (gethash corr-id (pending-asks ref))
                       (remhash corr-id (pending-asks ref)))))
            (result (fourth entry)))
@@ -260,13 +276,13 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
 (defmethod act:ask ((ref remote-actor-ref) message &key time-out)
   (let* ((corr-id (%make-correlation-id))
          (envelope (%make-ref-envelope ref message
-                                       :sender-path *local-sender-path*
+                                       :sender-path (local-sender-path ref)
                                        :message-type :ask
                                        :correlation-id corr-id)))
     (future:make-future
      (lambda (resolve-fn)
        ;; Register future for correlation-id
-       (with-lock-held ((%pending-asks-lock ref))
+       (with-lock-held ((pending-asks-lock ref))
          (setf (gethash corr-id (pending-asks ref))
                (list :ask resolve-fn)))
        ;; Send on caller's thread — transport errors propagate directly
@@ -285,7 +301,7 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
    (asys::timeout-timer (system ref))
    time-out
    (lambda ()
-     (let ((entry (with-lock-held ((%pending-asks-lock ref))
+     (let ((entry (with-lock-held ((pending-asks-lock ref))
                     (prog1 (gethash corr-id (pending-asks ref))
                       (remhash corr-id (pending-asks ref))))))
        (when entry
@@ -298,20 +314,20 @@ DISPATCHER is the dispatcher identifier for the sender actor (default :shared)."
 ;; response handling (inbound)
 ;; ---------------------------------
 
-(defun %handle-response (ref envelope)
+(defun handle-response (ref envelope)
   "Called by inbound handler when a response envelope arrives.
 Match by correlation-id and resolve pending ask."
   (let ((corr-id (envelope-correlation-id envelope)))
     (unless corr-id
       (log:warn "Response envelope without correlation-id from ~a, ignoring."
                  (envelope-sender-path envelope))
-      (return-from %handle-response))
-    (let ((entry (with-lock-held ((%pending-asks-lock ref))
+      (return-from handle-response))
+    (let ((entry (with-lock-held ((pending-asks-lock ref))
                    (gethash corr-id (pending-asks ref)))))
       (unless entry
         (log:warn "No pending ask for correlation-id ~a from ~a, ignoring."
                   corr-id (envelope-sender-path envelope))
-        (return-from %handle-response))
+        (return-from handle-response))
       (let ((result (deserialize (serializer ref) (envelope-message envelope))))
         (case (first entry)
           (:ask-s
@@ -319,7 +335,7 @@ Match by correlation-id and resolve pending ask."
            (with-lock-held ((second entry))
              (condition-notify (third entry))))
           (:ask
-           (with-lock-held ((%pending-asks-lock ref))
+           (with-lock-held ((pending-asks-lock ref))
              (remhash corr-id (pending-asks ref)))
            (funcall (second entry) result)))))))
 

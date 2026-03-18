@@ -3,6 +3,8 @@
   (:nicknames :rem)
   (:export #:enable-remoting
            #:disable-remoting
+           #:remoting-enabled-p
+           #:remoting-port
            #:make-remote-ref
            ;; conditions
            #:remoting-error

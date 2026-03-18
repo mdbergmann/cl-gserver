@@ -15,8 +15,12 @@
            #:transport-start
            #:transport-stop
            #:transport-send
+           #:transport-max-message-length
            ;; conditions
            #:transport-error
+           #:message-too-large-error
+           #:message-too-large-size
+           #:message-too-large-max
            #:connection-refused-error
            #:connection-refused-host
            #:connection-refused-port
@@ -36,6 +40,18 @@
 (define-condition transport-error (remoting-error)
   ()
   (:documentation "Base condition for transport-related errors."))
+
+(define-condition message-too-large-error (transport-error)
+  ((size :initarg :size
+         :reader message-too-large-size
+         :documentation "The actual message size in bytes.")
+   (max :initarg :max
+        :reader message-too-large-max
+        :documentation "The maximum allowed size in bytes."))
+  (:report (lambda (c stream)
+             (format stream "Message too large: ~a bytes (max ~a)"
+                     (message-too-large-size c) (message-too-large-max c))))
+  (:documentation "Signaled when a message exceeds the configured maximum size."))
 
 (define-condition connection-refused-error (transport-error)
   ((host :initarg :host
@@ -102,6 +118,10 @@
                     :accessor transport-message-handler
                     :initform nil
                     :documentation "Function called with (envelope) for inbound messages.")
+   (max-message-length :initarg :max-message-length
+                       :reader transport-max-message-length
+                       :initform (* 2 1024 1024)
+                       :documentation "Maximum message size in bytes. Default 2MB.")
    (running-p :initform nil
               :accessor transport-running-p
               :documentation "Whether this transport is currently running."))

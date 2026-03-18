@@ -48,7 +48,8 @@
                 #:socket-accept
                 #:socket-close
                 #:socket-stream
-                #:get-local-port)
+                #:get-local-port
+                #:wait-for-input)
   (:import-from :flexi-streams
                 #:string-to-octets
                 #:octets-to-string)
@@ -310,22 +311,27 @@ Signals message-too-large-error if the declared length exceeds MAX-LENGTH."
 ;; ---------------------------------
 
 (defun %accept-loop (transport)
-  "Accept loop: accept connections, wrap with TLS, start reader threads."
+  "Accept loop: accept connections, wrap with TLS, start reader threads.
+Uses wait-for-input with a timeout so the loop can check running-p
+and exit cleanly when the transport is stopped."
   (loop :while (transport-running-p transport)
         :do (handler-case
-                (let ((client-socket
-                        (socket-accept (%listener-socket transport)
-                                               :element-type '(unsigned-byte 8))))
-                  (when client-socket
-                    (handler-case
-                        (let ((stream (%wrap-server-stream
-                                       transport
-                                       (socket-stream client-socket))))
-                          (%start-reader-thread transport stream client-socket))
-                      (error (c)
-                        (log:warn "Error wrapping accepted connection with TLS: ~a" c)
-                        (handler-case (socket-close client-socket)
-                          (error () nil))))))
+                (let ((ready (wait-for-input (%listener-socket transport)
+                                             :timeout 0.5 :ready-only t)))
+                  (when (and ready (transport-running-p transport))
+                    (let ((client-socket
+                            (socket-accept (%listener-socket transport)
+                                                   :element-type '(unsigned-byte 8))))
+                      (when client-socket
+                        (handler-case
+                            (let ((stream (%wrap-server-stream
+                                           transport
+                                           (socket-stream client-socket))))
+                              (%start-reader-thread transport stream client-socket))
+                          (error (c)
+                            (log:warn "Error wrapping accepted connection with TLS: ~a" c)
+                            (handler-case (socket-close client-socket)
+                              (error () nil))))))))
               (usocket:socket-error ()
                 ;; Listener socket closed during shutdown
                 (return))

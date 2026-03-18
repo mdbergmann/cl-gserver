@@ -13,6 +13,9 @@
                 #:remote-port
                 #:target-path
                 #:stop-sender-actor)
+  (:import-from :sento.remoting.transport
+                #:transport-max-message-length
+                #:message-too-large-error)
   (:import-from :miscutils
                 #:await-cond))
 
@@ -85,6 +88,21 @@
   "Tests that disable-remoting is a no-op when remoting is not enabled."
   (with-fixture single-system ()
     (is (null (disable-remoting system)))))
+
+(test enable-remoting--passes-max-message-length
+  "Tests that max-message-length is passed through to the transport."
+  (with-fixture single-system ()
+    (let ((ctx (enable-remoting system :host "127.0.0.1" :port 0
+                                       :max-message-length (* 8 1024 1024))))
+      (is (= (* 8 1024 1024)
+             (transport-max-message-length (rem::ctx-transport ctx)))))))
+
+(test enable-remoting--default-max-message-length
+  "Tests that the default max-message-length is 2MB when not specified."
+  (with-fixture single-system ()
+    (let ((ctx (enable-remoting system :host "127.0.0.1" :port 0)))
+      (is (= (* 2 1024 1024)
+             (transport-max-message-length (rem::ctx-transport ctx)))))))
 
 ;; ---------------------------------
 ;; make-remote-ref tests

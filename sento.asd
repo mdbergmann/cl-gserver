@@ -112,6 +112,7 @@
   :author "Manfred Bergmann"
   :description "Documentation for sento"
   :depends-on ("sento"
+               "sento-remoting"
                "mgl-pax/full")
   :components ((:file "documentation")))
 

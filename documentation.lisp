@@ -248,6 +248,105 @@
   (wt:schedule-recurring function)
   (wt:cancel function))
 
+;; ---------------------------------
+;; Remoting
+;; ---------------------------------
+
+(in-package :rem)
+(pax:defsection @remoting (:title "Remoting")
+  "Remoting enables actor-systems to communicate over the network.
+Use `enable-remoting` to start a TCP listener, then `make-remote-ref`
+to create proxies for actors on remote systems. Remote refs support
+`tell`, `ask-s`, and `ask` with the same interface as local actors."
+  (rem:enable-remoting function)
+  (rem:disable-remoting function)
+  (rem:remoting-enabled-p function)
+  (rem:remoting-port function)
+  (rem:make-remote-ref function)
+  (rem:remoting-error condition)
+
+  (rref::@remote-ref pax:section)
+  (rseri::@serialization pax:section)
+  (renv::@envelope pax:section)
+  (rtrans::@transport pax:section)
+  (rtrans-tcp::@transport-tcp pax:section)
+  (rtls::@tls pax:section))
+
+(in-package :rref)
+(pax:defsection @remote-ref (:title "Remote Actor Reference")
+  (rref:remote-actor-ref class)
+  (rref:make-remote-ref function)
+  (rref:remote-host (pax:reader remote-actor-ref))
+  (rref:remote-port (pax:reader remote-actor-ref))
+  (rref:target-path (pax:reader remote-actor-ref))
+  (rref:local-sender-path (pax:reader remote-actor-ref))
+  (rref:parse-remote-uri function)
+  (rref:handle-response function)
+  (rref:stop-sender-actor function)
+  (act:tell (method () (rref:remote-actor-ref t)))
+  (act:ask-s (method () (rref:remote-actor-ref t)))
+  (act:ask (method () (rref:remote-actor-ref t)))
+  (act:path (method () (rref:remote-actor-ref)))
+  (rref:remote-actor-error condition)
+  (rref:invalid-remote-uri-error condition))
+
+(in-package :rseri)
+(pax:defsection @serialization (:title "Serialization")
+  (rseri:serialize generic-function)
+  (rseri:deserialize generic-function)
+  (rseri:sexp-serializer class)
+  (rseri:serialization-error condition)
+  (rseri:deserialization-error condition))
+
+(in-package :renv)
+(pax:defsection @envelope (:title "Envelope")
+  (renv:envelope structure)
+  (renv:make-envelope function)
+  (renv:envelope-target-path function)
+  (renv:envelope-sender-path function)
+  (renv:envelope-message function)
+  (renv:envelope-message-type function)
+  (renv:envelope-correlation-id function)
+  (renv:envelope-for-reply function)
+  (renv:error-envelope structure)
+  (renv:make-error-envelope function))
+
+(in-package :rtrans)
+(pax:defsection @transport (:title "Transport")
+  (rtrans:transport class)
+  (rtrans:transport-host (pax:reader transport))
+  (rtrans:transport-port (pax:reader transport))
+  (rtrans:transport-max-message-length (pax:reader transport))
+  (rtrans:transport-start generic-function)
+  (rtrans:transport-stop generic-function)
+  (rtrans:transport-send generic-function)
+  (rtrans:transport-error condition)
+  (rtrans:message-too-large-error condition)
+  (rtrans:connection-refused-error condition)
+  (rtrans:connection-timeout-error condition)
+  (rtrans:connection-closed-error condition)
+  (rtrans:send-failed-error condition))
+
+(in-package :rtrans-tcp)
+(pax:defsection @transport-tcp (:title "TCP Transport")
+  (rtrans-tcp:tcp-transport class)
+  (rtrans-tcp:tcp-transport-actual-port (pax:accessor tcp-transport)))
+
+(in-package :rtls)
+(pax:defsection @tls (:title "TLS")
+  (rtls:tls-config structure)
+  (rtls:make-tls-config function)
+  (rtls:tls-wrap generic-function)
+  (rtls:tls-unwrap generic-function)
+  (rtls:tls-error condition)
+  (rtls:tls-handshake-error condition)
+  (rtls:tls-certificate-error condition)
+  (rtls:tls-peer-verify-error condition))
+
+;; ---------------------------------
+;; Top-level documentation
+;; ---------------------------------
+
 (defpackage :sento.docs)
 (in-package :sento.docs)
 
@@ -267,6 +366,7 @@
   (future::@future pax:section)
   ;;(async-future::@async-future pax:section)
   (tasks::@tasks pax:section)
+  (rem::@remoting pax:section)
   (config::@config pax:section)
   (wt::@scheduler pax:section))
 

@@ -714,6 +714,78 @@ Be also aware that the `:shared` dispatcher should not run long running operatio
 
 See the API [documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.TASKS:WITH-CONTEXT%20MGL-PAX:MACRO) for more details.
 
+### Remoting
+
+Remoting enables actor-systems to communicate over the network. Actors on one system can send messages to actors on another system using `tell`, `ask-s`, and `ask` — the same interface as local actors.
+
+Remoting is a separate ASDF system: `sento-remoting`.
+
+#### Quick start
+
+```elisp
+;; Load the remoting system
+(asdf:load-system "sento-remoting")
+
+;; Create two actor-systems (typically on different machines)
+(defvar *system-a* (asys:make-actor-system))
+(defvar *system-b* (asys:make-actor-system))
+
+;; Enable remoting on both
+(rem:enable-remoting *system-a* :host "127.0.0.1" :port 10000)
+(rem:enable-remoting *system-b* :host "127.0.0.1" :port 10001)
+
+;; Create an actor on system B
+(ac:actor-of *system-b*
+             :name "greeter"
+             :receive (lambda (msg)
+                        (format nil "Hello, ~a!" msg)))
+
+;; From system A, create a remote reference and talk to it
+(defvar *remote-greeter*
+  (rem:make-remote-ref *system-a* "sento://127.0.0.1:10001/user/greeter"))
+
+;; tell (fire and forget)
+(act:tell *remote-greeter* "World")
+
+;; ask-s (synchronous, blocks for response)
+(act:ask-s *remote-greeter* "World" :time-out 3)
+;; => "Hello, World!"
+
+;; ask (asynchronous, returns a future)
+(act:ask *remote-greeter* "World" :time-out 3)
+;; => #<FUTURE ...>
+
+;; Cleanup
+(rem:disable-remoting *system-a*)
+(rem:disable-remoting *system-b*)
+(ac:shutdown *system-a*)
+(ac:shutdown *system-b*)
+```
+
+#### Remote actor URIs
+
+Remote actors are addressed with `sento://host:port/path` URIs where the path matches the actor's path in the target system (e.g. `/user/greeter` or `/user/parent/child`).
+
+#### TLS encryption
+
+```elisp
+(rem:enable-remoting *system*
+  :host "0.0.0.0" :port 4711
+  :tls-config (rtls:make-tls-config
+               :provider :pure-tls
+               :certificate #P"server-cert.pem"
+               :private-key #P"server-key.pem"
+               :ca-certificate #P"ca-cert.pem"
+               :peer-verify t))
+```
+
+#### Options
+
+- `:hostname` — advertised hostname for response routing (defaults to `:host`). Use this when binding to `"0.0.0.0"` but needing a specific reachable address.
+- `:max-message-length` — maximum message size in bytes (default 2MB).
+
+See the API [documentation](https://mdbergmann.github.io/cl-gserver/index.html) for the full remoting API.
+
 ### Immutability
 
 Some words on immutability. Actor states don't need to be immutable data structures. Sento does _not_ make copies of the actor states. The user is responsible for the actor state and to motate the actor state only within 'receive' function.

@@ -5,7 +5,9 @@
                 #:transport-stop
                 #:transport-send
                 #:transport-running-p
+                #:transport-max-message-length
                 #:connection-refused-error
+                #:message-too-large-error
                 #:send-failed-error)
   (:import-from :sento.remoting.transport-tcp
                 #:tcp-transport
@@ -303,3 +305,72 @@ Binds: server-transport, server-port, client-transport."
       (let ((received (first received-envelopes)))
         (is (string= "/user/foo" (envelope-target-path received)))
         (is (eq :tell (envelope-message-type received)))))))
+
+;; ---------------------------------
+;; max message size tests
+;; ---------------------------------
+
+(test transport--default-max-message-length
+  "Tests that the default max-message-length is 2MB."
+  (let ((transport (make-instance 'tcp-transport :host "127.0.0.1" :port 0)))
+    (is (= (* 2 1024 1024) (transport-max-message-length transport)))))
+
+(test transport--custom-max-message-length
+  "Tests that max-message-length can be configured."
+  (let ((transport (make-instance 'tcp-transport
+                                  :host "127.0.0.1" :port 0
+                                  :max-message-length (* 8 1024 1024))))
+    (is (= (* 8 1024 1024) (transport-max-message-length transport)))))
+
+(test transport--send-rejects-oversized-message
+  "Tests that sending a message larger than max-message-length signals message-too-large-error."
+  (let* ((received-envelopes nil)
+         (received-lock (make-lock :name "received-lock"))
+         (server (make-instance 'tcp-transport :host "127.0.0.1" :port 0))
+         (client (make-instance 'tcp-transport
+                                :host "127.0.0.1" :port 0
+                                :max-message-length 1024)))
+    (transport-start server
+                     (lambda (env)
+                       (with-lock-held (received-lock)
+                         (push env received-envelopes))))
+    (let ((port (tcp-transport-actual-port server)))
+      (transport-start client (lambda (env) (declare (ignore env))))
+      (unwind-protect
+           (let ((big-envelope (%make-test-envelope
+                                :message-text (make-string 2000 :initial-element #\x))))
+             (signals message-too-large-error
+               (transport-send client "127.0.0.1" port big-envelope)))
+        (transport-stop client)
+        (transport-stop server)))))
+
+(test transport--receive-rejects-oversized-message
+  "Tests that receiving a message larger than max-message-length drops the connection."
+  (let* ((received-envelopes nil)
+         (received-lock (make-lock :name "received-lock"))
+         ;; Server has a small limit
+         (server (make-instance 'tcp-transport
+                                :host "127.0.0.1" :port 0
+                                :max-message-length 1024))
+         ;; Client has a large limit so it can send
+         (client (make-instance 'tcp-transport
+                                :host "127.0.0.1" :port 0
+                                :max-message-length (* 1024 1024))))
+    (transport-start server
+                     (lambda (env)
+                       (with-lock-held (received-lock)
+                         (push env received-envelopes))))
+    (let ((port (tcp-transport-actual-port server)))
+      (transport-start client (lambda (env) (declare (ignore env))))
+      (unwind-protect
+           (progn
+             ;; Send a message that exceeds the server's limit
+             (let ((big-envelope (%make-test-envelope
+                                  :message-text (make-string 2000 :initial-element #\x))))
+               (finishes (transport-send client "127.0.0.1" port big-envelope)))
+             ;; Server should NOT have received it
+             (sleep 0.5)
+             (with-lock-held (received-lock)
+               (is (= 0 (length received-envelopes)))))
+        (transport-stop client)
+        (transport-stop server)))))

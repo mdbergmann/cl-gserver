@@ -8,11 +8,13 @@
                 #:transport-tls-config
                 #:transport-tls-provider
                 #:transport-running-p
+                #:transport-max-message-length
                 #:transport-message-handler
                 #:transport-start
                 #:transport-stop
                 #:transport-send
                 #:transport-error
+                #:message-too-large-error
                 #:connection-refused-error
                 #:connection-timeout-error
                 #:send-failed-error)
@@ -87,9 +89,14 @@
 ;; framing: 4-byte big-endian length prefix
 ;; ---------------------------------
 
-(defun %write-frame (stream payload)
-  "Write a length-prefixed frame: 4-byte big-endian length + payload bytes."
+(defun %write-frame (stream payload max-length)
+  "Write a length-prefixed frame: 4-byte big-endian length + payload bytes.
+Signals message-too-large-error if payload exceeds MAX-LENGTH."
   (let ((len (length payload)))
+    (when (> len max-length)
+      (error 'message-too-large-error
+             :size len :max max-length
+             :message (format nil "Outbound message ~a bytes exceeds max ~a" len max-length)))
     (write-byte (ldb (byte 8 24) len) stream)
     (write-byte (ldb (byte 8 16) len) stream)
     (write-byte (ldb (byte 8  8) len) stream)
@@ -97,8 +104,9 @@
     (write-sequence payload stream)
     (force-output stream)))
 
-(defun %read-frame (stream)
-  "Read a length-prefixed frame. Returns payload byte vector, or NIL on EOF."
+(defun %read-frame (stream max-length)
+  "Read a length-prefixed frame. Returns payload byte vector, or NIL on EOF.
+Signals message-too-large-error if the declared length exceeds MAX-LENGTH."
   (let ((b3 (read-byte stream nil nil)))
     (unless b3 (return-from %read-frame nil))
     (let ((b2 (read-byte stream nil nil))
@@ -106,15 +114,19 @@
           (b0 (read-byte stream nil nil)))
       (unless (and b2 b1 b0)
         (return-from %read-frame nil))
-      (let* ((len (logior (ash b3 24) (ash b2 16) (ash b1 8) b0))
-             (buf (make-array len :element-type '(unsigned-byte 8))))
-        (let ((pos 0))
-          (loop :while (< pos len)
-                :do (let ((n (read-sequence buf stream :start pos :end len)))
-                      (when (= n pos)
-                        (return-from %read-frame nil))
-                      (setf pos n))))
-        buf))))
+      (let ((len (logior (ash b3 24) (ash b2 16) (ash b1 8) b0)))
+        (when (> len max-length)
+          (error 'message-too-large-error
+                 :size len :max max-length
+                 :message (format nil "Inbound message ~a bytes exceeds max ~a" len max-length)))
+        (let ((buf (make-array len :element-type '(unsigned-byte 8))))
+          (let ((pos 0))
+            (loop :while (< pos len)
+                  :do (let ((n (read-sequence buf stream :start pos :end len)))
+                        (when (= n pos)
+                          (return-from %read-frame nil))
+                        (setf pos n))))
+          buf)))))
 
 ;; ---------------------------------
 ;; envelope serialization (to/from bytes)
@@ -268,7 +280,7 @@
            (lambda ()
              (unwind-protect
                   (handler-case
-                      (loop :for frame = (%read-frame stream)
+                      (loop :for frame = (%read-frame stream (transport-max-message-length transport))
                             :while (and frame (transport-running-p transport))
                             :do (handler-case
                                     (let ((envelope (%deserialize-envelope frame)))
@@ -389,7 +401,7 @@
                     (error c)))))
     (handler-case
         (let ((frame (%serialize-envelope envelope)))
-          (%write-frame stream frame))
+          (%write-frame stream frame (transport-max-message-length transport)))
       (error (c)
         ;; Remove broken connection so next attempt reconnects
         (%remove-connection transport target-host target-port)

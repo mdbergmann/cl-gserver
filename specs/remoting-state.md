@@ -39,9 +39,11 @@
 - **43 tests, 120 checks, all passing**
 - Note: `make-remote-ref` takes explicit `transport` and `serializer` arguments (simplified in Phase 5 via remoting context). `local-sender-path` slot defaults to `"/__local__"`, overridden by Phase 5 to `sento://host:port/__responses__`. Correlation IDs use a thread-safe counter + timestamp (no external UUID library needed). `handle-response`, `pending-asks`, `pending-asks-lock`, and `parse-remote-uri` are public API used by Phase 5 for response routing.
 
-## TODO (post-phase)
-
-- **Max message size:** Currently `tcp-transport` framing has no size limit (4-byte header allows ~4GB). Add a configurable `:max-message-length` to the remoting config (passed through to `tcp-transport`). Check in `%read-frame` (reject before allocating) and `%write-frame` (reject before sending). Sensible default: 16MB.
+### Max Message Size (done)
+- `src/remoting/transport.lisp` — added `max-message-length` slot to `transport` base class (default 2MB), `message-too-large-error` condition with `size` and `max` slots
+- `src/remoting/transport-tcp.lisp` — `%read-frame` rejects before allocating, `%write-frame` rejects before sending
+- `tests/remoting/transport-test.lisp` — 4 tests (default 2MB, custom config, send rejects oversized, receive rejects oversized)
+- **59 tests, 160 checks, all passing**
 
 ### Phase 5: Remoting Integration (End-to-End) (done)
 - `src/remoting/remoting.lisp` — `sento.remoting` package implementation: `remoting-context` class, `enable-remoting`/`disable-remoting`/`remoting-enabled-p`/`remoting-port` lifecycle API, `make-remote-ref` convenience factory, inbound message routing (`%handle-inbound-tell`, `%handle-inbound-ask`), correlation-id based response routing (`%route-response`). Imports symbols via `eval-when shadowing-import` from `bt2`, `renv`, `rseri`, `rtrans`, `rtrans-tcp`, `rref`, `act`, `ac`, `str` for unqualified use.

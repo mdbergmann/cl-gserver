@@ -37,14 +37,16 @@
 - `tests/remoting/remote-ref-test.lisp` — 11 tests (URI parsing valid/invalid, tell enqueues non-blocking, tell message-type correct, tell transport error logged not signaled, ask-s direct send with response, ask-s timeout returns handler-error, ask-s transport error signals immediately, ask returns future resolved via correlation-id, ask timeout resolves future with error, path returns full URI)
 - `sento-remoting.asd` — added `remote-ref` module and `remote-ref-test`
 - **43 tests, 120 checks, all passing**
-- Note: `make-remote-ref` takes explicit `transport` and `serializer` arguments (will be simplified in Phase 5 when remoting context provides these). `ask-s`/`ask` use `"/__local__"` as sender-path placeholder; Phase 5 will replace this with the local system's `sento://` address. Correlation IDs use a thread-safe counter + timestamp (no external UUID library needed). The `%handle-response` function is exported for Phase 5 integration — the inbound handler will call it to resolve pending asks by correlation-id.
+- Note: `make-remote-ref` takes explicit `transport` and `serializer` arguments (simplified in Phase 5 via remoting context). `local-sender-path` slot defaults to `"/__local__"`, overridden by Phase 5 to `sento://host:port/__responses__`. Correlation IDs use a thread-safe counter + timestamp (no external UUID library needed). `handle-response`, `pending-asks`, `pending-asks-lock`, and `parse-remote-uri` are public API used by Phase 5 for response routing.
 
 ## TODO (post-phase)
 
 - **Max message size:** Currently `tcp-transport` framing has no size limit (4-byte header allows ~4GB). Add a configurable `:max-message-length` to the remoting config (passed through to `tcp-transport`). Check in `%read-frame` (reject before allocating) and `%write-frame` (reject before sending). Sensible default: 16MB.
 
-## Next
-
-### Phase 5: Remoting Integration (End-to-End)
-- `src/remoting/remoting.lisp` — actor-system integration, config, lifecycle, inbound message routing
-- `tests/remoting/remoting-test.lisp` — full integration tests with two actor-systems communicating
+### Phase 5: Remoting Integration (End-to-End) (done)
+- `src/remoting/remoting.lisp` — `sento.remoting` package implementation: `remoting-context` class, `enable-remoting`/`disable-remoting`/`remoting-enabled-p`/`remoting-port` lifecycle API, `make-remote-ref` convenience factory, inbound message routing (`%handle-inbound-tell`, `%handle-inbound-ask`), correlation-id based response routing (`%route-response`). Imports symbols via `eval-when shadowing-import` from `bt2`, `renv`, `rseri`, `rtrans`, `rtrans-tcp`, `rref`, `act`, `ac`, `str` for unqualified use.
+- `src/remoting/remote-ref.lisp` — added `local-sender-path` slot to `remote-actor-ref` (defaults to `"/__local__"`, overridden by remoting context to `sento://host:port/__responses__` for response routing). Made `handle-response`, `pending-asks`, `pending-asks-lock`, `parse-remote-uri` public (renamed from `%`-prefixed).
+- `tests/remoting/remoting-test.lisp` — 14 integration tests: enable/disable lifecycle (4 tests), make-remote-ref via context (2 tests), tell remote-to-local including complex messages, multiple messages, nested actor paths, non-existent actor (4 tests), ask-s remote-to-local including complex results and timeout (3 tests), ask remote-to-local with future resolution and timeout (2 tests), bidirectional communication between two systems (1 test)
+- `sento-remoting.asd` — added `remoting` module and `remoting-test`
+- **55 tests, 155 checks, all passing**
+- Note: Response routing uses sender-path with format `sento://host:port/__responses__`. The receiving system parses the sender-path URI via `parse-remote-uri` to determine where to send ask-s/ask responses via `transport-send`. The remoting context stores a global mapping (`*system-remoting*`) from actor-system to remoting-context, keyed by identity. Remote-refs created via `rem:make-remote-ref` are registered with the context for correlation-id based response lookup.

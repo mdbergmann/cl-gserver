@@ -61,7 +61,15 @@ jobs:
       run: |
         ros -e '(handler-bind (#+asdf3.2(asdf:bad-SYSTEM-NAME (function MUFFLE-WARNING))) (handler-case (ql:quickload :sento/tests) (error (a) (format t "caught error ~s~%~a~%" a a) (uiop:quit 1))))' -e "(unless (5am:run! 'sento.tests:test-suite) (uiop:quit 1))"
 
+    - name: fetch remoting dependencies not in quicklisp
+      shell: bash
+      run: |
+        mkdir -p ~/ql-local
+        git clone --depth 1 https://github.com/atgreen/precise-time.git ~/ql-local/precise-time
+        git clone --depth 1 https://github.com/atgreen/cl-cancel.git ~/ql-local/cl-cancel
+        git clone --depth 1 https://github.com/atgreen/pure-tls.git ~/ql-local/pure-tls
+
     - name: load and run remoting tests
       shell: bash
       run: |
-        ros -e '(asdf:initialize-source-registry (list :source-registry (list :tree (merge-pathnames "systems/" (uiop:getcwd))) :inherit-configuration))' -e '(handler-bind (#+asdf3.2(asdf:bad-SYSTEM-NAME (function MUFFLE-WARNING))) (handler-case (ql:quickload :sento-remoting/tests) (error (a) (format t "caught error ~s~%~a~%" a a) (uiop:quit 1))))' -e "(unless (5am:run! 'sento.remoting.tests:remoting-test-suite) (uiop:quit 1))"
+        ros -e '(asdf:initialize-source-registry (list :source-registry (list :tree #P"~/ql-local/") :inherit-configuration))' -e '(handler-bind (#+asdf3.2(asdf:bad-SYSTEM-NAME (function MUFFLE-WARNING))) (handler-case (ql:quickload :sento-remoting/tests) (error (a) (format t "caught error ~s~%~a~%" a a) (uiop:quit 1))))' -e "(unless (5am:run! 'sento.remoting.tests:remoting-test-suite) (uiop:quit 1))"

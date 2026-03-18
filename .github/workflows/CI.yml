@@ -65,7 +65,7 @@ jobs:
       shell: bash
       run: |
         mkdir -p ~/ql-local
-        git clone --depth 1 https://github.com/atgreen/precise-time.git ~/ql-local/precise-time
+        git clone --depth 1 https://github.com/Shinmera/precise-time.git ~/ql-local/precise-time
         git clone --depth 1 https://github.com/atgreen/cl-cancel.git ~/ql-local/cl-cancel
         git clone --depth 1 https://github.com/atgreen/pure-tls.git ~/ql-local/pure-tls
 

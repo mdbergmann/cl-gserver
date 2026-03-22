@@ -738,7 +738,9 @@ Remoting is a separate ASDF system: `sento-remoting`.
 (ac:actor-of *system-b*
              :name "greeter"
              :receive (lambda (msg)
-                        (format nil "Hello, ~a!" msg)))
+                        (let ((resp (format nil "Hello, ~a!" msg)))
+                            (if act:*sender* 
+                                (act:reply resp) resp))))
 
 ;; From system A, create a remote reference and talk to it
 (defvar *remote-greeter*

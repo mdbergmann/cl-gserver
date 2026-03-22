@@ -170,7 +170,7 @@
 ;; ---------------------------------
 
 (defun enable-remoting (system &key (host "0.0.0.0") (port 0) (hostname nil)
-                                    tls-config max-message-length)
+                                    tls-config max-message-length serializer)
   "Enable remoting on an actor-system.
 Starts a TCP transport listener for inbound messages and allows creating remote-refs.
 
@@ -178,11 +178,13 @@ HOST is the interface to bind to (default \"0.0.0.0\").
 PORT is the listen port (default 0 for auto-assign).
 HOSTNAME is the advertised hostname for response routing (defaults to HOST).
 TLS-CONFIG is an optional `rtls:tls-config` for TLS encryption.
-MAX-MESSAGE-LENGTH limits the maximum message size in bytes (default 2MB)."
+MAX-MESSAGE-LENGTH limits the maximum message size in bytes (default 2MB).
+SERIALIZER is a custom serializer instance (default `sexp-serializer`).
+Must implement `rseri:serialize` and `rseri:deserialize`."
   (when (%get-remoting-context system)
     (error 'remoting-error :message "Remoting is already enabled on this system."))
   (let* ((effective-hostname (or hostname host))
-         (serializer (make-instance 'sexp-serializer))
+         (serializer (or serializer (make-instance 'sexp-serializer)))
          (transport (apply #'make-instance 'tcp-transport
                            :host host
                            :port port

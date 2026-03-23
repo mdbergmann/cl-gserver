@@ -225,11 +225,11 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
 ;; -------------------------------
 
 (defun reply (msg &optional (sender *sender*))
-  "Replies to a sender. Sender must exist.
+  "Replies to a sender. If SENDER is NIL MSG is returned for ask-s to work.
 Use this from within receive function to reply to a sender."
   (if sender
       (tell sender msg *self*)
-      (log:warn "Reply used without sender!")))
+      msg))
 
 ;; -------------------------------
 ;; eventstream protocol impl

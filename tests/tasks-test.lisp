@@ -16,9 +16,9 @@
     (unwind-protect
          (let ((initial-system-actors (ac:all-actors system)))
            (&body)
-           (await-cond 0.5
-             (= (length (ac:all-actors system))
-                (length initial-system-actors))))
+           (is-true (await-cond 0.5
+                      (= (length (ac:all-actors system))
+                         (length initial-system-actors)))))
       (ac:shutdown system))))
 
 (def-suite tasks-tests
@@ -137,6 +137,24 @@
       (is (= 30 (reduce #'+
                         (task-async-stream (lambda (x) (* x 2))
                                            '(1 2 3 4 5))))))))
+
+(test task-async--on-complete-fun--cleans-up-task
+  "The on-complete-fun branch of `task-async` must stop the task even though the
+completion handler runs from a worker thread where `*task-context*` is unbound."
+  (with-fixture system-fixture ()
+    (with-context (system)
+      (let ((initial-count (length (ac:all-actors system)))
+            (success-result)
+            (error-result))
+        (task-async (lambda () (+ 1 2))
+                    :on-complete-fun (lambda (r) (setf success-result r)))
+        (task-async (lambda () (error "boom"))
+                    :on-complete-fun (lambda (r) (setf error-result r)))
+        (is-true (await-cond 0.5 (and success-result error-result)))
+        (is (= 3 success-result))
+        (is (eq :handler-error (car error-result)))
+        (is-true (await-cond 0.5
+                   (= initial-count (length (ac:all-actors system)))))))))
 
 (test task-async-stream--cleans-up-tasks
   "Regression for issue #118: task actors must not accumulate after `task-async-stream`,

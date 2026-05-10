@@ -170,15 +170,17 @@ Example:
               :on-complete-fun #'my-task-completion))
 ```
 "
-  (let ((task (make-task *task-context* *task-dispatcher*)))
+  (let ((context *task-context*)
+        (task (make-task *task-context* *task-dispatcher*)))
     (if on-complete-fun
         (progn
           (future:fcompleted (act:ask task (cons :exec fun))
               (result)
-            (funcall on-complete-fun result)
-            (ac:stop *task-context* task))
+            (unwind-protect
+                 (funcall on-complete-fun result)
+              (ac:stop context task)))
           task)
-        (progn 
+        (progn
           (act:tell task (cons :exec fun))
           task))))
 

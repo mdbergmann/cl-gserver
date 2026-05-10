@@ -856,6 +856,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 
 ### Version history
 
+**Version 3.4.3 (10.05.2026):** Clean up leaking Tasks
+
 **Version 3.4.2 (25.05.2025):** Forcefully stop actor threads on shutdown based on timeout.
 
 **Version 3.4.1 (30.01.2025):** More resiliancy in message-box (respawn thread if it was killed).

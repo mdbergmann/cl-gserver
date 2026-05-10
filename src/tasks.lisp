@@ -186,12 +186,12 @@ Example:
   "`task-await` waits (by blocking) until a result has been generated for a previous `task-async` by passing the `task` result of `task-async` to `task-await`.
 Specify `time-out` in seconds. If `task-await` times out a `(cons :handler-error 'ask-timeout)` will be returned.
 `task-await` also stops the `task` that is the result of `task-async`, so it is of no further use."
-  (let ((task-state (act-cell:state task)))
-    (if task-state
-        task-state
-        (unwind-protect
-             (act:ask-s task :get :time-out time-out)
-          (ac:stop *task-context* task)))))
+  (unwind-protect
+       (let ((task-state (act-cell:state task)))
+         (if task-state
+             task-state
+             (act:ask-s task :get :time-out time-out)))
+    (ac:stop *task-context* task)))
 
 (defun task-shutdown (task)
   "`task-shutdown` shuts down a task in order to clean up resources."

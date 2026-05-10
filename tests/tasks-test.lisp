@@ -138,6 +138,18 @@
                         (task-async-stream (lambda (x) (* x 2))
                                            '(1 2 3 4 5))))))))
 
+(test task-async-stream--cleans-up-tasks
+  "Regression for issue #118: task actors must not accumulate after `task-async-stream`,
+also when the task body completes before `task-await` is invoked."
+  (with-fixture system-fixture ()
+    (with-context (system)
+      (let ((initial-count (length (ac:all-actors system))))
+        (dotimes (i 3)
+          (is (equal '(2 3 4 5 6)
+                     (task-async-stream #'1+ '(1 2 3 4 5)))))
+        (is-true (await-cond 0.5
+                   (= initial-count (length (ac:all-actors system)))))))))
+
 (test task-async-stream--with-err-results
   "Tests for task-async-stream where computations contains errors."
   (with-fixture system-fixture ()

@@ -1,0 +1,29 @@
+# .pipeline.yml — AI pipeline config for Sento (cl-gserver).
+#
+# The ai-pipeline repo stays language-agnostic; everything SBCL-specific lives
+# in this repo: the agent image (.pipeline/Dockerfile) and the test runner
+# (.pipeline/run-tests.lisp). Build the image once with .pipeline/build-image.sh
+# (it needs ai-pipeline's base image — see that repo's bin/build-images.sh).
+
+# Repo-specific SBCL + ocicl image, built FROM ai-pipeline-agent:latest.
+# Keep this tag in sync with .pipeline/build-image.sh.
+image: cl-gserver-agent:latest
+
+# Test stage. Runs in /workspace with --network none; deps resolve offline from
+# the vendored systems/ via CL_SOURCE_REGISTRY (set in the image). The script
+# loads sento/tests and runs the FiveAM suite, exiting non-zero on any failure.
+test_cmd: sbcl --script .pipeline/run-tests.lisp
+
+# Sonnet for review/fix/implement; analyze defaults to opus on its own.
+model: sonnet
+
+# Let the AI stages compile/load to verify their own edits, and add deps via
+# ocicl. The container + the network wall stay the hard boundary; these only
+# widen Claude Code's soft allowlist (the binaries already exist in the image).
+extra_allowed_tools: "Bash(sbcl:*),Bash(ocicl:*)"
+
+# Only needed if an edit stage runs `ocicl install <system>` to add a new
+# dependency (the vendored systems/ already covers the current build, so the
+# test stage stays fully offline). ocicl pulls OCI artifacts from ghcr.io; blob
+# downloads are served from the githubusercontent CDN.
+egress_allowlist: "ghcr.io, pkg-containers.githubusercontent.com"

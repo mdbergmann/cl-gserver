@@ -15,12 +15,17 @@ image: cl-gserver-agent:latest
 test_cmd: sbcl --script .pipeline/run-tests.lisp
 
 # Sonnet for review/fix/implement; analyze defaults to opus on its own.
+analyze_model: opus
 model: sonnet
+
+fix_max_turns: 100
+implement_max_turns: 100
+analyze_max_turns: 100
 
 # Let the AI stages compile/load to verify their own edits, and add deps via
 # ocicl. The container + the network wall stay the hard boundary; these only
 # widen Claude Code's soft allowlist (the binaries already exist in the image).
-extra_allowed_tools: "Bash(sbcl:*),Bash(ocicl:*)"
+extra_allowed_tools: "Bash(sbcl:*),Bash(ocicl:*),Bash(sed:*),Bash(mkdir:*),Bash(awk:*),Bash(cp:*),Bash(mv:*),Bash(tail:*)"
 
 # Only needed if an edit stage runs `ocicl install <system>` to add a new
 # dependency (the vendored systems/ already covers the current build, so the

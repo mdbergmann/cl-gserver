@@ -524,20 +524,30 @@
 
 (test actor-of--limit-queue-size
   "Tests that actor's queue size can be limited."
-  (let ((sys (asys:make-actor-system)))
+  (let ((sys (asys:make-actor-system))
+        (started-p nil)
+        (release-p nil))
     (unwind-protect
-         (let* ((actor (actor-of sys
-                                 :receive (lambda (msg)
-                                            (declare (ignore msg))
-                                            (sleep 0.05))
-                                 :queue-size 1))
-                (tells
-                  (loop :repeat 10
-                        :collect (ignore-errors
-                                  (tell actor "run")))))
-           (format t "tells: ~a~%" tells)
-           (is (= 1 (length (filter (lambda (x) (if x x)) tells))))
-           (is (= 9 (length (filter #'null tells)))))
+         (let ((actor (actor-of sys
+                                :receive (lambda (msg)
+                                           (declare (ignore msg))
+                                           (setf started-p t)
+                                           (await-cond 10.0 release-p))
+                                :queue-size 1)))
+           ;; Park the actor's worker inside receive so it holds the
+           ;; msgbox lock for the duration of the loop below. While the
+           ;; lock is held no message can be popped from the bounded
+           ;; queue, so exactly one tell can fit and the other nine
+           ;; deterministically fail with queue-full-error.
+           (tell actor :block)
+           (is-true (await-cond 1.0 started-p))
+           (let ((tells (loop :repeat 10
+                              :collect (ignore-errors
+                                        (tell actor "run")))))
+             (format t "tells: ~a~%" tells)
+             (is (= 1 (length (filter (lambda (x) (if x x)) tells))))
+             (is (= 9 (length (filter #'null tells)))))
+           (setf release-p t))
       (ac:shutdown sys))))
 
 

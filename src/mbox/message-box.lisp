@@ -96,6 +96,18 @@ This is used to break the environment possibly captured as closure at 'submit' s
           (args (cdr handler-fun-args)))
       (apply fun (cons message args)))))
 
+(defun %submit-stop-trigger (msgbox)
+  "Submits the stop-trigger message that wakes the processing loop so it
+notices `should-run' has been cleared. With a bounded queue the queue may
+already be full, in which case the trigger is unnecessary: the queued items
+will be popped and drive the same re-check. A `queue-full-error' here is
+therefore safely ignored so that stopping never fails because of a full queue."
+  (handler-case
+      (submit msgbox :trigger-ending-the-processing-loop nil nil nil)
+    (queue-full-error ()
+      (log:debug "~a: queue full on stop-trigger; relying on queued items to drain"
+                 (name msgbox)))))
+
 ;; ----------------------------------------
 ;; ------------- Bordeaux ----------------
 ;; ----------------------------------------
@@ -290,7 +302,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
     (call-next-method))
   (with-slots (should-run queue-thread name) self
     (setf should-run nil)
-    (submit self :trigger-ending-the-processing-loop nil nil nil)
+    (%submit-stop-trigger self)
 
     (let ((observer (bt2:make-thread
                      (lambda ()
@@ -425,4 +437,4 @@ The `wait` flag has no consequence for the `dispatcher` message-box."
   (when (next-method-p)
     (call-next-method))
   (setf (slot-value self 'should-run) nil)
-  (submit self :trigger-ending-the-processing-loop nil nil nil))
+  (%submit-stop-trigger self))

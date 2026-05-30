@@ -1,0 +1,11 @@
+{
+  "summary": "Single test (actor-of--limit-queue-size) has two failing assertions on slower Lisps. Root cause is a timing race between the test loop's 10 tells and the dispatcher worker popping the first item from the bounded queue; a longer (sleep ...) in receive does not fix it. The deterministic fix is to park the worker inside receive on a sentinel :block message so it holds the msgbox lock for the duration of the 10-tell loop, then release after the assertions. The report's wording 'two tests' refers to the two failing (is ...) checks within the one test, not two separate test definitions.",
+  "affected_areas": [
+    "tests/actor-test.lisp (only the actor-of--limit-queue-size test)"
+  ],
+  "risks": [
+    "If the actor's receive is invoked under a different locking discipline in some future msgbox type, the assumption that holding receive blocks pops would break — but for the current dp (default) and bt msgboxes, dispatcher-exec-fun and pop-queue-and-process both serialize pop and handle.",
+    "await-cond polls at 50ms; the test will take ~50–100ms longer than before but remains well under a second.",
+    "Cross-thread visibility of the started-p / release-p flags relies on bt2-supported memory semantics; this is the same pattern used elsewhere in this file (e.g. tests/actor-test.lisp lines 101, 150) and is acceptable for these test polling helpers."
+  ]
+}

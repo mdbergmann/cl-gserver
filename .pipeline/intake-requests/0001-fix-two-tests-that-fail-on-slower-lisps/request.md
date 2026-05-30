@@ -1,7 +1,7 @@
 ---
 id: 0001-fix-two-tests-that-fail-on-slower-lisps
 type: change
-status: ready
+status: implementing
 title: Fix two tests that fail on slower Lisps
 ---
 

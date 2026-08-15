@@ -131,19 +131,19 @@ Be aware though that this is a resource intensive wait based on a waiting thread
 The result can be of different types.
 Normal result: the last expression of `handle-call` (or `receive` in `act:actor`) implementation.
 Error result: `(cons :handler-error <condition>)'
-In case of time-out the error condition is a bt2:timeout."
-  (when message
-    (let ((result (submit-message actor-cell message t nil time-out)))
-      (log:debug "~a: message process result: ~a" (name actor-cell) result)
-      result)))
+In case of time-out the error condition is a bt2:timeout.
+`message' can be any object, including `nil'."
+  (let ((result (submit-message actor-cell message t nil time-out)))
+    (log:debug "~a: message process result: ~a" (name actor-cell) result)
+    result))
 
 (defun cast (actor-cell message &optional sender)
   "Sends a message to a actor-cell asynchronously. There is no result.
-If a `sender' is specified the result will be sent to the sender."
-  (when message
-    (let ((result (submit-message actor-cell message nil sender nil)))
-      (log:debug "~a: message process result: ~a" (name actor-cell) result)
-      result)))
+If a `sender' is specified the result will be sent to the sender.
+`message' can be any object, including `nil'."
+  (let ((result (submit-message actor-cell message nil sender nil)))
+    (log:debug "~a: message process result: ~a" (name actor-cell) result)
+    result))
 
 (defun running-p (actor-cell)
   "Returns true if this server is running. `nil` otherwise."

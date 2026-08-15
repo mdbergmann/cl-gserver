@@ -234,6 +234,29 @@
       (is-true (await-cond 1.0 (complete-p future)))
       (is (= 5 (fresult future))))))
 
+(test ask--reply-with-nil
+  "Tests that a NIL reply completes the ask future. NIL is a valid message."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (let* ((actor (actor-of cut
+                            :receive (lambda (msg)
+                                       (declare (ignore msg))
+                                       (reply nil))))
+           (future (ask actor :whatever)))
+      (is-true (await-cond 1.0 (complete-p future)))
+      (is (null (fresult future))))))
+
+(test tell--nil-message
+  "Tests that NIL is a valid message and gets delivered."
+  (let ((received :nothing))
+    (with-fixture actor-fixture ((lambda (msg)
+                                   (setf received (list :got msg)))
+                                 0
+                                 nil)
+      (tell cut nil)
+      (is-true (await-cond 1.0 (equal '(:got nil) received))))))
+
 (test ask-s--shared--timeout
   "Tests for ask-s timeout."
   (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))

@@ -98,10 +98,7 @@ Now, when sending a message using 'ask' pattern to the above actor like so:
 we'll get a 'future' as result, because `?`/`ask` is asynchronous.
 
 ```plain
-#<FUTURE promise: #<BLACKBIRD-BASE:PROMISE
-finished: NIL
-errored: NIL
-forward: NIL 80100E8B7B>>
+#<FUTURE state: PENDING, result: NIL>
 ```
 
 We can check for a 'future' result. By now the answer from the `*answerer*` (via `reply`) should be available:

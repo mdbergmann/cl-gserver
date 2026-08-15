@@ -853,6 +853,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 
 ### Version history
 
+**Version 3.4.4 (15.08.2026):** Fixed lost ask-future completions: NIL replies were silently dropped by `tell`/`cast`. New self-contained, thread-safe future implementation; blackbird dependency removed. `fresult` now returns NIL for empty-result completions instead of `:not-ready`.
+
 **Version 3.4.3 (10.05.2026):** Clean up leaking Tasks
 
 **Version 3.4.2 (25.05.2025):** Forcefully stop actor threads on shutdown based on timeout.

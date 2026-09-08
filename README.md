@@ -346,6 +346,16 @@ A timeout set to 2 seconds occurred. Cause:
 #<BORDEAUX-THREADS:TIMEOUT #x302002FAB73D> 
 ```
 
+`ask-s` returns the same `handler-error` form when the message handler unwinds without producing a result, for example when an `abort` restart is chosen in the debugger while the message is being handled. The condition is then a `mesgb:handler-unwound-error`, which carries the message via `mesgb:message`:
+
+```elisp
+(act:ask-s *unwinding-actor* "Foo")
+```
+
+```
+(:HANDLER-ERROR . #<SENTO.MESSAGEB:HANDLER-UNWOUND-ERROR #x3020031A2B3D>)
+```
+
 Note that `ask-s` uses the calling thread for the timeout checks.  
 `ask` uses a wheel timer to handle timeouts. The default resolution for `ask` timeouts is 500ms with a maximum size of wheel slots (registered timeouts) of 1000. What this means is that you can have timeouts of a multiple of 500ms and 1000 `ask` operations with timeouts. This default can be tweaked when creating an actor-system, see API [documentation](https://mdbergmann.github.io/cl-gserver/index.html#SENTO.ACTOR-SYSTEM:*DEFAULT-CONFIG*%20VARIABLE) for more details.
 
@@ -852,6 +862,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 - 'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.
 
 ### Version history
+
+**Version 3.4.5 (08.09.2026):** Fixed `ask-s` replies leaking the internal `no-result` sentinel on spurious condition-variable wakeups in the pinned message-box; this also affected `ask-s` without timeout on shared-dispatcher actors. Message handlers that unwind without a result now yield a `handler-error` with the new `mesgb:handler-unwound-error` condition. Remote `ask-s` no longer reports a false timeout on a spurious wakeup and no longer waits for the full timeout when the response arrives before the wait starts. Removed the AI pipeline files.
 
 **Version 3.4.4 (15.08.2026):** Fixed lost ask-future completions: NIL replies were silently dropped by `tell`/`cast`. New self-contained, thread-safe future implementation; blackbird dependency removed. `fresult` now returns NIL for empty-result completions instead of `:not-ready`.
 

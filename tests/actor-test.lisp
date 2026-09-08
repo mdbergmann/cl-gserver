@@ -272,6 +272,64 @@
       (is (typep (cdr result) 'ask-timeout))
       (is (eq :stopped (ask-s actor :stop))))))
 
+(test ask-s--handler-unwound--returns-handler-error
+  "When the receive function unwinds without a result, like when an `abort'
+restart is chosen while debugging, `ask-s' returns a `handler-error' with a
+`handler-unwound-error' condition right away, not after a time-out, and the
+actor keeps working afterwards. Checked for the shared (dispatcher worker) and
+the pinned message-box, each with and without a time-out."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (dolist (dispatcher '(:shared :pinned))
+      (dolist (time-out '(nil 2))
+        (let* ((actor (actor-of cut
+                                :dispatcher dispatcher
+                                :receive (lambda (msg)
+                                           (if (eq msg :unwind)
+                                               (handler-bind ((error #'abort))
+                                                 (error "Unwind!"))
+                                               msg))))
+               (start (get-internal-real-time))
+               (result (ask-s actor :unwind :time-out time-out))
+               (elapsed (/ (- (get-internal-real-time) start)
+                           internal-time-units-per-second))
+               (variant (format nil "dispatcher: ~a, time-out: ~a"
+                                dispatcher time-out)))
+          (is (eq :handler-error (car result)) "~a" variant)
+          (is (typep (cdr result) 'mesgb:handler-unwound-error) "~a" variant)
+          (is (eq :unwind (mesgb:message (cdr result))) "~a" variant)
+          (is (< elapsed 1) "~a took ~a seconds" variant elapsed)
+          (is (eq :works (ask-s actor :works :time-out time-out)) "~a" variant))))))
+
+(test ask-s--shared--no-time-out--relayed-handler-error-preserved
+  "A handler may legitimately return a value shaped exactly like
+`(cons :handler-error <handler-unwound-error>)', for example by relaying the
+raw result of a nested `ask-s' to an actor whose own handler unwound. A
+`:shared', no-time-out `ask-s' must hand that value back untouched instead of
+mistaking it for its own worker unwinding, which would discard the original
+condition and fabricate a new one naming the relaying actor's own message."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (let* ((unwinding-actor (actor-of cut
+                              :dispatcher :pinned
+                              :receive (lambda (msg)
+                                         (declare (ignore msg))
+                                         (handler-bind ((error #'abort))
+                                           (error "Unwind!")))))
+           (relaying-actor (actor-of cut
+                             :dispatcher :shared
+                             :receive (lambda (msg)
+                                        (if (eq msg :relay)
+                                            (ask-s unwinding-actor :ping)
+                                            msg))))
+           (result (ask-s relaying-actor :relay)))
+      (is (eq :handler-error (car result)))
+      (is (typep (cdr result) 'mesgb:handler-unwound-error))
+      (is (eq :ping (mesgb:message (cdr result))))
+      (is (eq :works (ask-s relaying-actor :works))))))
+
 (test ask-s--shared--timeout-in-dispatcher
   "Tests for ask-s timeout."
   (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))

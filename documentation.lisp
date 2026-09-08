@@ -66,7 +66,9 @@
 
 (pax:defsection @message-box/bt (:title "Message-box threaded")
   (mesgb:message-box/bt class)
-  (mesgb:submit (method () (mesgb:message-box/bt t t t t))))
+  (mesgb:submit (method () (mesgb:message-box/bt t t t t)))
+  (mesgb:handler-unwound-error condition)
+  (mesgb:message (pax:reader mesgb:handler-unwound-error)))
 
 (pax:defsection @message-box/dp (:title "Message-box dispatched")
   (mesgb:message-box/dp class)

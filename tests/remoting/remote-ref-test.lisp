@@ -9,7 +9,12 @@
                 #:sender-actor
                 #:invalid-remote-uri-error
                 #:stop-sender-actor)
+  (:import-from :cl-mock
+                #:with-mocks
+                #:answer
+                #:call-previous)
   (:import-from :sento.remoting.transport
+                #:transport
                 #:transport-start
                 #:transport-stop
                 #:transport-send
@@ -36,7 +41,9 @@
                 #:make-lock
                 #:with-lock-held
                 #:make-thread
-                #:join-thread)
+                #:join-thread
+                #:current-thread
+                #:condition-wait)
   (:import-from :miscutils
                 #:await-cond))
 
@@ -267,6 +274,92 @@
              (signals connection-refused-error
                (act:ask-s ref "hello" :time-out 2)))
         (transport-stop client-transport)))))
+
+(defclass replying-transport (transport)
+  ((ref :initform nil
+        :accessor replying-transport-ref
+        :documentation "The remote-ref whose `handle-response' receives the replies.")
+   (serializer :initarg :serializer
+               :reader replying-transport-serializer
+               :documentation "Serializer used for the reply messages.")
+   (delay :initarg :delay
+          :initform nil
+          :reader replying-transport-delay
+          :documentation "Seconds to wait on a separate thread before replying.
+NIL replies synchronously inside `transport-send', before the caller starts waiting."))
+  (:documentation "Test transport without a network: every sent envelope is
+answered with an 'echo:' reply, either synchronously or after a delay."))
+
+(defmethod transport-send ((transport replying-transport) target-host target-port envelope)
+  (declare (ignore target-host target-port))
+  (let* ((serializer (replying-transport-serializer transport))
+         (msg (deserialize serializer (envelope-message envelope)))
+         (reply (envelope-for-reply
+                 envelope
+                 (serialize serializer (format nil "echo:~a" msg))))
+         (delay (replying-transport-delay transport)))
+    (flet ((deliver ()
+             (rref:handle-response (replying-transport-ref transport) reply)))
+      (if delay
+          (make-thread (lambda ()
+                         (sleep delay)
+                         (deliver))
+                       :name "replying-transport")
+          (deliver)))))
+
+(def-fixture spurious-condition-wait (spurious-count)
+  "Makes `condition-wait' return `T' without waiting for the first
+SPURIOUS-COUNT calls made from the test thread, simulating the spurious
+wakeups condition variables are allowed to produce. Other threads reach the
+real function."
+  (let ((test-thread (current-thread))
+        (spurious-left spurious-count))
+    (with-mocks (:recordp nil)
+      (answer condition-wait
+        (if (and (eq test-thread (current-thread))
+                 (plusp spurious-left))
+            (progn
+              (decf spurious-left)
+              t)
+            (call-previous)))
+      (&body))))
+
+(test remote-ref--ask-s--spurious-wakeup-returns-response
+  "A spurious `condition-wait' wakeup must not be reported as a timeout:
+ask-s keeps waiting until the response actually arrives."
+  (with-fixture test-system ()
+    (let* ((serializer (make-instance 'sexp-serializer))
+           (transport (make-instance 'replying-transport
+                                     :serializer serializer
+                                     :delay 0.3))
+           (ref (make-remote-ref system
+                                 "sento://127.0.0.1:1/user/echo"
+                                 transport
+                                 serializer)))
+      (setf (replying-transport-ref transport) ref)
+      (with-fixture spurious-condition-wait (3)
+        (let ((result (act:ask-s ref "world" :time-out 2)))
+          (is (equal "echo:world" result))
+          (is (= 0 spurious-left)))))))
+
+(test remote-ref--ask-s--response-before-wait-returns-immediately
+  "A response that arrives before ask-s starts waiting is picked up right
+away instead of waiting for the full timeout (no lost wakeup)."
+  (with-fixture test-system ()
+    (let* ((serializer (make-instance 'sexp-serializer))
+           (transport (make-instance 'replying-transport
+                                     :serializer serializer))
+           (ref (make-remote-ref system
+                                 "sento://127.0.0.1:1/user/echo"
+                                 transport
+                                 serializer)))
+      (setf (replying-transport-ref transport) ref)
+      (let* ((start (get-internal-real-time))
+             (result (act:ask-s ref "world" :time-out 2))
+             (elapsed (/ (- (get-internal-real-time) start)
+                         internal-time-units-per-second)))
+        (is (equal "echo:world" result))
+        (is (< elapsed 1) "ask-s took ~a seconds" elapsed)))))
 
 ;; ---------------------------------
 ;; ask tests

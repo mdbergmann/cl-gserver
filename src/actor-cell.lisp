@@ -131,7 +131,8 @@ Be aware though that this is a resource intensive wait based on a waiting thread
 The result can be of different types.
 Normal result: the last expression of `handle-call` (or `receive` in `act:actor`) implementation.
 Error result: `(cons :handler-error <condition>)'
-In case of time-out the error condition is a bt2:timeout.
+In case of time-out the error condition is a `timeutils:ask-timeout'.
+If the handler unwound without producing a result it is a `mesgb:handler-unwound-error'.
 `message' can be any object, including `nil'."
   (let ((result (submit-message actor-cell message t nil time-out)))
     (log:debug "~a: message process result: ~a" (name actor-cell) result)
@@ -194,6 +195,9 @@ In case no message-box is configured this function responds with `:no-message-ha
        (list #'act-cell::handle-message actor-cell sender withreply-p))
     (timeutils:ask-timeout (c)
       (log:warn "~a: ask-s timeout: ~a" (name actor-cell) c)
+      (cons :handler-error c))
+    (mesgb:handler-unwound-error (c)
+      (log:warn "~a: message handler unwound: ~a" (name actor-cell) c)
       (cons :handler-error c))))
 
 ;; ------------------------------------------------

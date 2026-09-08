@@ -242,11 +242,14 @@ LOCAL-SENDER-PATH overrides the sender-path used in ask-s/ask envelopes."
                                        :message-type :ask-s
                                        :correlation-id corr-id))
          (lock (make-lock :name "ask-s-lock"))
-         (cvar (make-condition-variable :name "ask-s-cvar")))
+         (cvar (make-condition-variable :name "ask-s-cvar"))
+         (entry (list :ask-s lock cvar :no-result))
+         (deadline (when time-out
+                     (+ (get-internal-real-time)
+                        (* time-out internal-time-units-per-second)))))
     ;; Register pending ask before sending
     (with-lock-held ((pending-asks-lock ref))
-      (setf (gethash corr-id (pending-asks ref))
-            (list :ask-s lock cvar :no-result)))
+      (setf (gethash corr-id (pending-asks ref)) entry))
     ;; Send on caller's thread — transport errors propagate directly
     (handler-case
         (transport-send (transport ref) (remote-host ref) (remote-port ref) envelope)
@@ -255,14 +258,22 @@ LOCAL-SENDER-PATH overrides the sender-path used in ask-s/ask envelopes."
         (with-lock-held ((pending-asks-lock ref))
           (remhash corr-id (pending-asks ref)))
         (error c)))
-    ;; Block until response or timeout
+    ;; Block until the response is stored in `entry' or the deadline passes.
+    ;; The result is checked under `lock' before every wait, so a response
+    ;; that arrived before the wait started is not missed, and a wait that
+    ;; returned without a response (spurious wakeup) is simply repeated.
     (with-lock-held (lock)
-      (condition-wait cvar lock :timeout time-out))
-    ;; Retrieve and clean up
-    (let* ((entry (with-lock-held ((pending-asks-lock ref))
-                    (prog1 (gethash corr-id (pending-asks ref))
-                      (remhash corr-id (pending-asks ref)))))
-           (result (fourth entry)))
+      (loop :while (eq (fourth entry) :no-result)
+            :do (let ((remaining (when deadline
+                                   (/ (- deadline (get-internal-real-time))
+                                      internal-time-units-per-second))))
+                  (when (and remaining (<= remaining 0))
+                    (return))
+                  (condition-wait cvar lock :timeout remaining))))
+    ;; Clean up
+    (with-lock-held ((pending-asks-lock ref))
+      (remhash corr-id (pending-asks ref)))
+    (let ((result (fourth entry)))
       (if (eq result :no-result)
           (cons :handler-error
                 (make-condition 'timeutils:ask-timeout
@@ -331,8 +342,8 @@ Match by correlation-id and resolve pending ask."
       (let ((result (deserialize (serializer ref) (envelope-message envelope))))
         (case (first entry)
           (:ask-s
-           (setf (fourth entry) result)
            (with-lock-held ((second entry))
+             (setf (fourth entry) result)
              (condition-notify (third entry))))
           (:ask
            (with-lock-held ((pending-asks-lock ref))

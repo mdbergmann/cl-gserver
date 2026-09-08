@@ -330,6 +330,46 @@ condition and fabricate a new one naming the relaying actor's own message."
       (is (eq :ping (mesgb:message (cdr result))))
       (is (eq :works (ask-s relaying-actor :works))))))
 
+(test ask-s--shared--no-time-out--concurrent-asks-return-own-results
+  "Concurrent `ask-s' calls without a time-out on a `:shared' actor must each
+receive their own handler result, not one cross-wired from a different
+caller. Each dispatch pops whatever item heads the queue, so a caller's own
+queue item is often still unprocessed when its dispatch returns; treating
+that as an unwound handler produced spurious `handler-error' replies under
+contention, and returning the popped item's result outright handed callers
+each other's replies. Every call sends a distinct value so a swapped-in
+result is detectable instead of coincidentally matching."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (let* ((actor (actor-of cut
+                            :dispatcher :shared
+                            :receive (lambda (msg) (* msg 2))))
+           (bad-results nil)
+           (bad-lock (bt2:make-lock))
+           (threads (loop :for i :from 0 :below 4
+                          :collect
+                          ;; `i' is rebound per thread: `loop' updates a single
+                          ;; binding, so closing over it directly would give
+                          ;; every thread the same value and defeat the point
+                          ;; of sending distinct payloads.
+                          (let ((thread-index i))
+                            (bt2:make-thread
+                             (lambda ()
+                               (loop :for j :from 0 :below 100
+                                     :do (let* ((input (+ (* thread-index 1000) j))
+                                                (expected (* input 2))
+                                                (result (ask-s actor input)))
+                                           (unless (eql expected result)
+                                             (bt2:with-lock-held (bad-lock)
+                                               (push (list :input input :expected expected :got result)
+                                                     bad-results))))))
+                             :name (format nil "concurrent-asker-~a" thread-index))))))
+      (mapc #'bt2:join-thread threads)
+      (is (null bad-results)
+          "~a of 400 concurrent asks returned a wrong result, e.g. ~a"
+          (length bad-results) (first bad-results)))))
+
 (test ask-s--shared--timeout-in-dispatcher
   "Tests for ask-s timeout."
   (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))

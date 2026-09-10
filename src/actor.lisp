@@ -149,76 +149,43 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
 ;; Async handling
 ;; -------------------------------
 
-(defclass async-waitor-actor (actor) ())
+(defclass async-waitor-actor (actor)
+  ()
+  (:documentation
+   "The reply target of an `ask'. It is the `*sender*' the asked actor sees.
+It has no message-box and is never dispatched: a `tell' to it calls its `receive'
+function, which resolves the `ask' future, right on the replying thread."))
 
-(defmacro with-waiting-actor (actor message system time-out &rest body)
-  (alexandria:with-gensyms (msg msgbox waiting-actor)
-    `(let ((,msgbox (if ,system
-                        (make-instance 'mesgb:message-box/dp
-                                       :name (string (gensym "waiter-mb/dp-"))
-                                       :dispatcher
-                                       (getf (asys:dispatchers ,system) :shared))
-                        (make-instance 'mesgb:message-box/bt
-                                       :name (string (gensym "waiter-mb/bt-")))))
-           (,waiting-actor (make-instance
-                            'async-waitor-actor
-                            :receive (lambda (,msg)
-                                        (unwind-protect
-                                             (progn
-                                               (funcall ,@body ,msg)
-                                               (act-cell:stop *self*))
-                                          (act-cell:stop *self*)))
-                            :name (string (gensym "Ask-Waiter-")))))
-       (setf (act-cell:msgbox ,waiting-actor) ,msgbox)
-       (act-cell::submit-message ,actor ,message nil ,waiting-actor ,time-out)
-       ,waiting-actor)))
+(defmethod tell ((self async-waitor-actor) message &optional sender)
+  (declare (ignore sender))
+  (funcall (receive self) message)
+  t)
 
 (defmethod ask ((self actor) message &key (time-out nil))
   (future:make-future
    (lambda (promise-fun)
-     (log:debug "Executing future function...")
      (let* ((context (context self))
-            (system (if context (ac:system context) nil))
-            (timed-out-p nil)
-            (result-received-p nil)
-            (waiting-actor nil))
-       (flet ((handle-timeout (&optional cause)
-                (log:info "Timeout condition: ~a" cause)
-                (setf timed-out-p t)
-                (funcall promise-fun
-                         (cons :handler-error
-                               (make-condition 'timeutils:ask-timeout
-                                               :wait-time time-out
-                                               :cause cause)))
-                (tell waiting-actor :stop))
-              (handle-error (&optional cause)
-                (log:warn "~a" cause)
-                (funcall promise-fun
-                         (cons :handler-error cause))
-                (tell waiting-actor :stop)))
-         (setf waiting-actor
-               (with-waiting-actor self message system time-out
-                 (lambda (result)
-                   (setf result-received-p t)
-                   (log:info "Result: ~a, timed-out:~a" result timed-out-p)
-                   (unless timed-out-p
-                     (funcall promise-fun result)))))
-         (when time-out
-           (when system
-             (handler-case
-                 (wt:schedule-once (asys::timeout-timer system)
-                                   time-out
-                                   (lambda ()
-                                     (unless result-received-p
-                                       (handle-timeout))))
-               (error (c)
-                 (handle-error c))))
-           (unless system
-             (handler-case
-                 (timeutils:with-waitfor (time-out)
-                   (timeutils:wait-cond (lambda () result-received-p) 0.1))
-               (bt2:timeout (c)
-                 (handle-timeout c))))))))))
+            (system (when context (ac:system context)))
+            (waiter (make-instance 'async-waitor-actor
+                                   :receive promise-fun
+                                   :name "ask-waiter")))
+       (act-cell::submit-message self message nil waiter time-out)
+       (when time-out
+         (flet ((timeout-fun ()
+                  (log:debug "~a: ask time-out of ~a seconds elapsed" (name self) time-out)
+                  (funcall promise-fun
+                           (cons :handler-error
+                                 (make-condition 'timeutils:ask-timeout
+                                                 :wait-time time-out)))))
+           ;; The future completes exactly once, so a reply and the time-out
+           ;; may race freely: whichever resolves first wins, the other is ignored.
+           (if system
+               (handler-case
+                   (wt:schedule-once (asys::timeout-timer system) time-out #'timeout-fun)
+                 (error (c)
+                   (log:warn "~a: cannot schedule ask time-out: ~a" (name self) c)
+                   (funcall promise-fun (cons :handler-error c))))
+               (timeutils:make-timer time-out #'timeout-fun))))))))
 
 ;; -------------------------------
 ;; reply

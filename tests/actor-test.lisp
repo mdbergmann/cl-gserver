@@ -465,6 +465,112 @@ result is detectable instead of coincidentally matching."
       (is (eq :handler-error (car (fresult future))))
       (is (typep (cdr (fresult future)) 'ask-timeout)))))
 
+(test ask--pinned--timeout--does-not-block
+  "Tests that `ask' with a time-out on an actor without a system returns at once
+and the future is resolved with `ask-timeout' once the time-out elapsed."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg))
+                                 (sleep 2))
+                               0
+                               nil)
+    (let* ((started (get-internal-real-time))
+           (future (ask cut "foo" :time-out 0.5))
+           (elapsed (/ (- (get-internal-real-time) started)
+                       internal-time-units-per-second)))
+      (is (< elapsed 0.4) "ask blocked for ~a seconds" elapsed)
+      (is-false (complete-p future))
+      (is-true (await-cond 1.0 (complete-p future)))
+      (is (typep (cdr (fresult future)) 'ask-timeout)))))
+
+(test ask--pinned--reply-before-timeout
+  "Tests that a reply arriving before the time-out resolves the future with the
+reply on an actor without a system."
+  (with-fixture actor-fixture ((lambda (msg)
+                                 (declare (ignore msg))
+                                 (reply :fast))
+                               0
+                               nil)
+    (let ((future (ask cut "foo" :time-out 0.5)))
+      (is-true (await-cond 1.0 (complete-p future)))
+      (is (eq :fast (fresult future)))
+      (sleep 0.6)
+      (is (eq :fast (fresult future))))))
+
+(test ask--reply-after-timeout--is-ignored
+  "Tests that a reply arriving after the time-out does not overwrite the
+`ask-timeout' result: the first resolution of the future wins."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (let* ((actor (actor-of cut
+                            :receive (lambda (msg)
+                                       (declare (ignore msg))
+                                       (sleep 0.5)
+                                       (reply :late))))
+           (future (ask actor "foo" :time-out 0.2)))
+      (is-true (await-cond 0.4 (complete-p future)))
+      (is (typep (cdr (fresult future)) 'ask-timeout))
+      (sleep 0.6)
+      (is (typep (cdr (fresult future)) 'ask-timeout)))))
+
+(test ask--timeout--schedule-error--resolves-future
+  "Tests that a failure to schedule the time-out resolves the future with a
+`:handler-error' carrying the condition."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (let ((actor (actor-of cut
+                           :receive (lambda (msg)
+                                      (declare (ignore msg))))))
+      (with-mocks ()
+        (answer (wt:schedule-once _ _ _) (error "no timer"))
+        (let ((future (ask actor "foo" :time-out 0.5)))
+          (is-true (await-cond 0.5 (complete-p future)))
+          (is (eq :handler-error (car (fresult future))))
+          (is (string= "no timer" (format nil "~a" (cdr (fresult future)))))
+          (is (= 1 (length (invocations 'wt:schedule-once)))))))))
+
+(test ask--sender--is-actor-without-message-box
+  "Tests that `*sender*' of an `ask' is an `actor' that has no message-box, so that
+a `reply' resolves the future directly rather than going through a dispatcher."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (let* ((seen-sender nil)
+           (actor (actor-of cut
+                            :receive (lambda (msg)
+                                       (declare (ignore msg))
+                                       (setf seen-sender *sender*)
+                                       (reply :ok))))
+           (future (ask actor "foo")))
+      (is-true (await-cond 1.0 (complete-p future)))
+      (is (eq :ok (fresult future)))
+      (is (typep seen-sender 'actor))
+      (is (null (act-cell:msgbox seen-sender)))
+      (is (eq :no-message-handling (ask-s seen-sender :foo))))))
+
+(test ask--fcompleted--runs-on-replying-thread
+  "Tests that a completion handler installed before the reply runs on the thread
+of the replying actor, since a reply resolves the future directly."
+  (with-fixture actor-fixture ((lambda (msg) (declare (ignore msg)))
+                               0
+                               t)
+    (let* ((replying-thread nil)
+           (completion-thread nil)
+           (actor (actor-of cut
+                            :receive (lambda (msg)
+                                       (declare (ignore msg))
+                                       (sleep 0.2)
+                                       (setf replying-thread (bt2:current-thread))
+                                       (reply :ok))))
+           (future (ask actor "foo")))
+      (fcompleted future (result)
+        (declare (ignore result))
+        (setf completion-thread (bt2:current-thread)))
+      (is-true (await-cond 1.0 completion-thread))
+      (is (eq replying-thread completion-thread))
+      (is (not (eq (bt2:current-thread) completion-thread))))))
+
 (test allow--no-reply-for-ask-s--response
   "Tests to allow `:no-reply' `ask-s'. `ask' and `tell' need explicit 'reply'."
   (with-fixture actor-fixture ((lambda (msg)

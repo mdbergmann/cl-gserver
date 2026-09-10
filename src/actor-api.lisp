@@ -124,10 +124,10 @@ An `:handler-error` with `timeout` condition will be returned if the call timed 
 Specify `timeout` if a message is to be expected after a certain time.
 An `:handler-error` with `timeout` condition will be returned is the call timed out.
 
-An `ask` is similar to a `ask-s` in that the caller gets back a result 
+An `ask` is similar to a `ask-s` in that the caller gets back a result
 but it doesn't have to actively wait for it. Instead a `future` wraps the result.
 However, the internal message handling is based on `tell`.
-How this works is that the message to the target `actor` is not 'sent' using the callers thread but instead an anonymous `actor` is started behind the scenes. This anonymous actor can weit for a response from the target actor. The response then fulfills the future.
+How this works is that the message is sent to the target `actor` with an anonymous reply target as `*sender*`. This reply target has no message-box of its own: a `reply` (or a `tell` to `*sender*`) resolves the future immediately, on the thread of the replying actor. Handlers attached to the future via `fcompleted` or `fmap` therefore run on that thread, so keep them short or hand long work to another actor or a task. In particular, do not call back synchronously into the replying actor (directly or transitively, e.g. via `ask-s`) from such a handler: that thread is still busy running the continuation instead of processing the actor's mailbox, so the call would block forever waiting on its own actor.
 
 Alternatively to the `ask` function one can equally use the `?` function designator."))
 

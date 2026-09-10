@@ -175,3 +175,50 @@ sentinel and the timeout must still be signaled before the busy handler ends."
                (is (= 0 spurious-left))
                (is (< elapsed 0.8) "timeout took ~a seconds" elapsed))))
       (stop box t))))
+
+(def-fixture dp-actor (receive)
+  "An actor on a `:shared' dispatcher, so that `ask-s' goes through the
+dispatcher message-box, with the system shut down afterwards."
+  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 2))))))
+    (unwind-protect
+         (let ((actor (actor-of system :receive receive)))
+           (&body))
+      (ac:shutdown system))))
+
+(test dispatch/reply--spurious-wakeup--with-timeout
+  "The dispatcher message-box waits for a timed `ask-s' on a condition-variable.
+Spurious wakeups before the timeout elapses are neither reported as a result nor
+as a timeout."
+  (with-fixture dp-actor (#'reverse)
+    (with-fixture spurious-condition-wait (3)
+      (let ((result (ask-s actor "The Message" :time-out 1)))
+        (is (string= "egasseM ehT" result))
+        (is (= 0 spurious-left))))))
+
+(test dispatch/reply--spurious-wakeup--timeout-still-fires
+  "With a slow handler, spurious wakeups must not extend a timed `ask-s' on the
+dispatcher message-box beyond its deadline."
+  (with-fixture dp-actor ((lambda (msg) (sleep 1) msg))
+    (with-fixture spurious-condition-wait (3)
+      (let* ((start (get-internal-real-time))
+             (result (ask-s actor "The Message" :time-out 0.2))
+             (elapsed (/ (- (get-internal-real-time) start)
+                         internal-time-units-per-second)))
+        (is (eq :handler-error (car result)))
+        (is (typep (cdr result) 'ask-timeout))
+        (is (= 0 spurious-left))
+        (is (< elapsed 0.8) "timeout took ~a seconds" elapsed)))))
+
+(test dispatch/reply--with-timeout--no-poll-latency
+  "A timed `ask-s' on the dispatcher message-box must return as soon as the
+handler is done. The previous implementation polled the item in 50ms steps, so
+50 calls took at least 2.5 seconds; waiting on the condition-variable finishes
+them in a small fraction of that."
+  (with-fixture dp-actor (#'identity)
+    (let* ((start (get-internal-real-time))
+           (results (loop :for i :from 0 :below 50
+                          :collect (ask-s actor i :time-out 1)))
+           (elapsed (/ (- (get-internal-real-time) start)
+                       internal-time-units-per-second)))
+      (is (equal (loop :for i :from 0 :below 50 :collect i) results))
+      (is (< elapsed 1.0) "50 timed asks took ~a seconds" elapsed))))

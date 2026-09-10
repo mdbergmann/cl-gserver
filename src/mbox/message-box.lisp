@@ -1,9 +1,7 @@
 (defpackage :sento.messageb
   (:use :cl :sento.queue)
   (:import-from #:sento.miscutils
-                #:mkstr
-                #:assert-cond
-                #:await-cond)
+                #:mkstr)
   (:import-from #:timeutils
                 #:ask-timeout)
   (:import-from #:disp
@@ -109,28 +107,31 @@ cancelled, has no result; `nil' is returned rather than the internal sentinel."
   (with-slots (handled-p handler-result) push-item
     (if handled-p handler-result nil)))
 
-(defun wait-and-probe-for-msg-handler-result (msgbox push-item)
-  "Polls until `push-item' is done or its `time-out' elapses.
-Signals `ask-timeout' when the time-out elapses first and `handler-unwound-error'
-when the handler was invoked but produced no result."
-  (with-slots (time-out cancelled-p done-p) push-item
-    (unless (assert-cond (lambda () done-p)
-                         time-out 0.05)
-      (log:warn "~a: time-out elapsed but result not available yet!" (name msgbox))
-      (setf cancelled-p t)
-      (error 'ask-timeout :wait-time time-out))
-    (%check-handler-produced-result msgbox push-item)))
-
 (defun wait-for-msg-handler-result (msgbox push-item)
-  "Blocks until `push-item' reached a terminal state.
-The caller submitted without a time-out, so there is nothing to bound the wait.
+  "Blocks until `push-item' reached a terminal state or its `time-out' elapses.
 Waits on the item's own condition-variable, re-checking `done-p' on every wakeup
-because a wakeup may be spurious. Signals `handler-unwound-error' when the
-handler was invoked but produced no result."
-  (with-slots (lock cvar done-p) push-item
-    (bt2:with-lock-held (lock)
-      (loop :until done-p
-            :do (bt2:condition-wait cvar lock))))
+because a wakeup may be spurious. With a `time-out' the wait is bounded by an
+absolute deadline so that spurious wakeups do not extend it. Without a `time-out'
+there is nothing to bound the wait.
+Signals `ask-timeout' when the deadline passes first, even if the handler completed
+while the lock was being re-acquired, and `handler-unwound-error' when the handler
+was invoked but produced no result."
+  (with-slots (lock cvar done-p cancelled-p time-out) push-item
+    (let ((deadline (when time-out
+                      (+ (get-internal-real-time)
+                         (* time-out internal-time-units-per-second)))))
+      (bt2:with-lock-held (lock)
+        (loop :until done-p
+              :do (if deadline
+                      (let ((remaining (/ (- deadline (get-internal-real-time))
+                                          internal-time-units-per-second)))
+                        (when (or (<= remaining 0)
+                                  (not (bt2:condition-wait cvar lock :timeout remaining)))
+                          (log:warn "~a: time-out elapsed but result not available yet!"
+                                    (name msgbox))
+                          (setf cancelled-p t)
+                          (error 'ask-timeout :wait-time time-out)))
+                      (bt2:condition-wait cvar lock))))))
   (%check-handler-produced-result msgbox push-item))
 
 (defun %finalize-item (item)
@@ -510,29 +511,16 @@ Returns the handler-result if `withreply-p' is eq to `T', otherwise the return i
       (pushq queue push-item)
 
       (if withreply-p
-          (dispatch/reply self push-item dispatcher dispatcher-fun-args time-out)
+          (dispatch/reply self push-item dispatcher dispatcher-fun-args)
           (dispatch/noreply self dispatcher dispatcher-fun-args)))))
 
-(defun dispatch/reply (msgbox push-item dispatcher dispatcher-fun-args time-out)
-  "Used by `ask-s'
-Returns `handler-result'."
-  (if time-out
-      (dispatch/reply/timeout msgbox push-item dispatcher dispatcher-fun-args)
-      (dispatch/reply/no-timeout msgbox push-item dispatcher dispatcher-fun-args)))
-
-(defun dispatch/reply/timeout (msgbox push-item dispatcher dispatcher-fun-args)
-  "Waits for `handler-result' or timeout and returns `handler-result'."
-  (dispatch-async dispatcher dispatcher-fun-args)
-  (wait-and-probe-for-msg-handler-result msgbox push-item)
-  (%dispatched-handler-result push-item))
-
-(defun dispatch/reply/no-timeout (msgbox push-item dispatcher dispatcher-fun-args)
-  "Waits for `handler-result' and returns it.
-Dispatches asynchronously and then waits on `push-item's own state, mirroring
-`dispatch/reply/timeout'. A synchronous `dispatch' cannot be used here: under
-concurrent `ask-s' submits on a `:shared' dispatcher, `dispatch' pops whatever item is at
-the head of the queue, which is not necessarily `push-item', so its return value could
-belong to a different caller's message entirely."
+(defun dispatch/reply (msgbox push-item dispatcher dispatcher-fun-args)
+  "Used by `ask-s'. Waits for `handler-result', or the item's `time-out', and returns it.
+Dispatches asynchronously and then waits on `push-item's own state. A synchronous
+`dispatch' cannot be used here: under concurrent `ask-s' submits on a `:shared'
+dispatcher, `dispatch' pops whatever item is at the head of the queue, which is not
+necessarily `push-item', so its return value could belong to a different caller's
+message entirely."
   (dispatch-async dispatcher dispatcher-fun-args)
   (wait-for-msg-handler-result msgbox push-item)
   (%dispatched-handler-result push-item))

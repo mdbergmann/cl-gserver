@@ -863,6 +863,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 
 ### Version history
 
+**Version 3.4.6 (10.09.2026):** `ask-s` with a timeout on a shared-dispatcher actor no longer polls for the result in 50ms steps but waits on a condition-variable with an absolute deadline, returning as soon as the handler is done.
+
 **Version 3.4.5 (08.09.2026):** Fixed `ask-s` replies leaking the internal `no-result` sentinel on spurious condition-variable wakeups in the pinned message-box; this also affected `ask-s` without timeout on shared-dispatcher actors. Fixed concurrent `ask-s` calls without a timeout on a shared-dispatcher actor returning each other's results: the caller now waits on its own queue item instead of on whichever item the dispatcher happened to pop. Message handlers that unwind without a result now yield a `handler-error` with the new `mesgb:handler-unwound-error` condition. Remote `ask-s` no longer reports a false timeout on a spurious wakeup and no longer waits for the full timeout when the response arrives before the wait starts. Removed the AI pipeline files.
 
 **Version 3.4.4 (15.08.2026):** Fixed lost ask-future completions: NIL replies were silently dropped by `tell`/`cast`. New self-contained, thread-safe future implementation; blackbird dependency removed. `fresult` now returns NIL for empty-result completions instead of `:not-ready`.

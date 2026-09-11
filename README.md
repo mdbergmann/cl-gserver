@@ -391,7 +391,7 @@ For instance, if there is a potentially long running and asynchronous operation 
 
 Notice that for the lengthy operation the sender must be captured because if the lengthy operation is asynchronous 'receive' function is perhaps called for another message where `*sender*` is different. In that case `sender` must be supplied explicitly for `reply`.
 
-See [this test](../tests/spawn-in-receive-test.lisp) for more info.
+See [this test](https://github.com/mdbergmann/cl-gserver/blob/master/tests/spawn-in-receive-test.lisp) for more info.
 
 NOTE: you should not change actor state from within an asynchronously executed operation in `receive`. This is not thread-safe. The pattern for this case it to send a message to `self` and have a message handler case that will change the actor state. This will ensure that actor state is always changed in a thread-safe way.
 
@@ -607,7 +607,7 @@ After setup, the FSM processes events, transitioning as defined. This setup ensu
 
 Incorporating timeout controls and a comprehensive fallback for unhandled events, this FSM elegantly manages complex state logic with powerful macro functionalities.
 
-For more examples have a look at the [tests](tests/fsm-test.lisp).
+For more examples have a look at the [tests](https://github.com/mdbergmann/cl-gserver/blob/master/tests/fsm-test.lisp).
 
 ### Router
 

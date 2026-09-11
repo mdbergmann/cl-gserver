@@ -322,7 +322,7 @@ A timeout set to 2 seconds occurred. Cause:
       <span class="comment">;; do other non async stuff
 </span>      <span class="paren4">(<span class="code">reply <span class="keyword">:my-reply</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
 <p>Notice that for the lengthy operation the sender must be captured because if the lengthy operation is asynchronous 'receive' function is perhaps called for another message where <code>*sender*</code> is different. In that case <code>sender</code> must be supplied explicitly for <code>reply</code>.</p>
-<p>See <a href="../tests/spawn-in-receive-test.lisp" >this test</a> for more info.</p>
+<p>See <a href="https://github.com/mdbergmann/cl-gserver/blob/master/tests/spawn-in-receive-test.lisp" >this test</a> for more info.</p>
 <p>NOTE: you should not change actor state from within an asynchronously executed operation in <code>receive</code>. This is not thread-safe. The pattern for this case it to send a message to <code>self</code> and have a message handler case that will change the actor state. This will ensure that actor state is always changed in a thread-safe way.</p>
 <h4>Changing behavior</h4>
 <p>An actor can change its behavior. The behavior is just a lambda similar as the 'receive' function taking the message as parameter.</p>
@@ -475,7 +475,7 @@ This parameter represents the current state of the agent.</p>
 <h4>Running the FSM</h4>
 <p>After setup, the FSM processes events, transitioning as defined. This setup ensures responsive and structured event-driven state management.</p>
 <p>Incorporating timeout controls and a comprehensive fallback for unhandled events, this FSM elegantly manages complex state logic with powerful macro functionalities.</p>
-<p>For more examples have a look at the <a href="../tests/fsm-test.lisp" >tests</a>.</p>
+<p>For more examples have a look at the <a href="https://github.com/mdbergmann/cl-gserver/blob/master/tests/fsm-test.lisp" >tests</a>.</p>
 <h3>Router</h3>
 <p>A <code>Router</code> is a facade over a set of actors. Routers are either created with a set of actors using the default constructor <code>router:make-router</code> or actors can be added later.</p>
 <p>Routers implement part of the actor protocol, so it allows to use <code>tell</code>, <code>ask-s</code> or <code>ask</code> which it forwards to a 'routee' (one of the actors of a router) by passing all of the given parameters. The routee is chosen by applying a <code>strategy</code>. The built-in default strategy a routee is chosen randomly.</p>

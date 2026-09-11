@@ -69,8 +69,18 @@
 <li><a href="#SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION" title="Eventstream">2.9 Eventstream</a></li>
 <li><a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">2.10 Future (delayed-computation)</a></li>
 <li><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">2.11 Tasks</a></li>
-<li><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">2.12 Config</a></li>
-<li><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">2.13 Scheduler</a></li>
+<li><a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION" title="Remoting">2.12 Remoting</a>
+
+<ul>
+<li><a href="#SENTO.REMOTING.REMOTE-REF:@REMOTE-REF%20MGL-PAX:SECTION" title="Remote Actor Reference">2.12.1 Remote Actor Reference</a></li>
+<li><a href="#SENTO.REMOTING.SERIALIZATION:@SERIALIZATION%20MGL-PAX:SECTION" title="Serialization">2.12.2 Serialization</a></li>
+<li><a href="#SENTO.REMOTING.ENVELOPE:@ENVELOPE%20MGL-PAX:SECTION" title="Envelope">2.12.3 Envelope</a></li>
+<li><a href="#SENTO.REMOTING.TRANSPORT:@TRANSPORT%20MGL-PAX:SECTION" title="Transport">2.12.4 Transport</a></li>
+<li><a href="#SENTO.REMOTING.TRANSPORT-TCP:@TRANSPORT-TCP%20MGL-PAX:SECTION" title="TCP Transport">2.12.5 TCP Transport</a></li>
+<li><a href="#SENTO.REMOTING.TLS:@TLS%20MGL-PAX:SECTION" title="TLS">2.12.6 TLS</a></li>
+</ul></li>
+<li><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">2.13 Config</a></li>
+<li><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">2.14 Scheduler</a></li>
 </ul></li>
 </ul>
 <h6>[in package SENTO.DOCS]</h6>
@@ -85,9 +95,11 @@
 <ul>
 <li>Actors with <code>ask</code> (<code>?</code>) and <code>tell</code> (<code>!</code>) operations. <code>ask</code> can be asynchronous or synchronous.</li>
 <li>Agents: Agents are a specialization of Actors for wrapping state with a standardized interface of <code>init</code>, <code>get</code> and <code>set</code>. There are also specialized Agents for Common Lisps array and hash-map data structures.</li>
+<li>FSM (Finite-State-Machine). A ready fsm framework.</li>
 <li>Router: Router offers a similar interface as Actor with <code>ask</code> and <code>tell</code> but collects multiple Actors for load-balancing.</li>
 <li>EventStream: all Actors and Agents are connected to an EventStream and can subscribe to messages or publish messages. This is similar to an event-bus.</li>
 <li>Tasks: a simple API for concurrency.</li>
+<li>Futures library</li>
 </ul>
 <p>(Please also checkout the API <a href="https://mdbergmann.github.io/cl-gserver/index.html" >documentation</a> for further information)
 (for migrations from Sento v2, please check below migration guide)</p>
@@ -129,16 +141,13 @@ In simple terms, an actor system is a container where all actors live in. So at 
 <p>The <code>:receive</code> key argument to <code>actor-of</code> is a function which implements the message processing behaviour of an actor. The parameter to the 'receive' function is just the received message (msg).</p>
 <p><code>actor-of</code> also allows to specify the initial state, a name, and a custom actor type via key parameters. By default a standard actor of type <code>'actor</code> is created. It is possible to subclass <code>'actor</code> and specify your own. It is further possible to specify an 'after initialization' function, using the <code>:init</code> key, and 'after destroy' function using <code>:destroy</code> keyword. <code>:init</code> can, for example, be used to subscribe to the event-stream for listening to important messages.</p>
 <p>The return value of 'receive' function is only used when using the synchronous <code>ask-s</code> function to 'ask' the actor. Using <code>ask</code> (equivalent: <code>?</code>) the return value is ignored. If an answer should be provided to an asking actor, or if replying is part of an interface contract, then <code>reply</code> should be used.</p>
-<p>The above actor was stored to a variable <code>*answerer*</code>. We can evaluate this in repl and see:</p>
+<p>Store the actor to a variable <code>*answerer*</code> by just doing <code>(defparameter *answerer* *)</code> in the repl where <code>*</code> resembled the last result (the actor instance in our case). By evaluating the variable (<code>*answerer*</code>) we can see the printed object:</p>
 <pre><code><span class="code">#&lt;ACTOR path: /user/answerer, cell: #&lt;ACTOR answerer, running: T, state: NIL, message-box: #&lt;SENTO.MESSAGEB:MESSAGE-BOX/DP mesgb-1356, processed messages: 1, max-queue-size: 0, queue: #&lt;SENTO.QUEUE:QUEUE-UNBOUNDED 82701A6D13&gt;&gt;&gt;&gt;</span></code></pre>
 <p>We'll see the 'path' of the actor. The prefix '/user' means that the actor was created in a user actor context of the actor system. Further we see whether the actor is 'running', its 'state' and the used 'message-box' type, by default it uses an unbounded queue.</p>
 <p>Now, when sending a message using 'ask' pattern to the above actor like so:</p>
 <pre><code><span class="code"><span class="paren1">(<span class="code">? <span class="special">*answerer*</span> <span class="string">"FooBar"</span></span>)</span></span></code></pre>
 <p>we'll get a 'future' as result, because <code>?</code>/<code>ask</code> is asynchronous.</p>
-<pre><code>#&lt;FUTURE promise: #&lt;BLACKBIRD-BASE:PROMISE
-finished: NIL
-errored: NIL
-forward: NIL 80100E8B7B&gt;&gt;</code></pre>
+<pre><code>#&lt;FUTURE state: PENDING, result: NIL&gt;</code></pre>
 <p>We can check for a 'future' result. By now the answer from the <code>*answerer*</code> (via <code>reply</code>) should be available:</p>
 <pre><code>USER&gt; (fresult *)
 "Hello FooBar"</code></pre>
@@ -226,7 +235,11 @@ pong
 ping
 ...</code></pre>
 <p>To stop the ping-pong one just has to send <code>(! *ping* :stop)</code> to one of them.</p>
-<p><code>:stop</code> will completely stop the actors message processing, and the actor will not be useable anymore.</p>
+<h5>Stopping actors</h5>
+<p>Sending the:
+- <code>:stop</code> message will completely stop the actors message processing. No new messages will be accepted, but all messages in the queue are still processed.
+- <code>:terminate</code> message will also stop the actor from accepting more messages but it will also discard any queued messages. Only the one that is currently being processed will be allowed to finish.</p>
+<p>It is also possible to call <code>act-cell:stop</code> method on the actor. It has the same effect as sending <code>:terminate</code>.</p>
 <h5>Synchronous ask</h5>
 <p>At last an example for the synchronous 'ask', <code>ask-s</code>. It is insofar similar to <code>ask</code> that it provides a result to the caller. However, it is not bound to <code>reply</code> as with <code>ask</code>. Here, the return value of the 'receive' function is returned to the caller, and <code>ask-s</code> will block until 'receive' function returns.<br/>
 Beware that <code>ask-s</code> will dead-lock your actor when <code>ask-s</code> is used to call itself.<br/>
@@ -282,14 +295,20 @@ USER&gt; (ask-s *s-asker* 'foo)
 <pre><code><span class="code"><span class="paren1">(<span class="code"><span class="keyword">:HANDLER-ERROR</span> . #&lt;CL-GSERVER.UTILS:ASK-TIMEOUT #x30200319F97D&gt;</span>)</span></span></code></pre>
 <p>This works similar with the <code>ask</code> only that the future will
 be fulfilled with the <code>handler-error</code> <code>cons</code>.</p>
+<p><code>ask-s</code> parks the calling thread until the reply is there. For very short handlers on a machine with idle cores, letting the caller spin on the reply for a moment before it parks can double the <code>ask-s</code> rate:</p>
+<pre><code><span class="code"><span class="paren1">(<span class="code">setf <span class="special">mesgb:*ask-s-spin-iterations*</span> 10000</span>)</span></span></code></pre>
+<p>The default is 0, no spinning. Leave it there when the system has more runnable threads than cores or when handlers take longer than a few microseconds, the spin is then wasted CPU. The variable can also be <code>let</code>-bound around a burst of <code>ask-s</code> calls.</p>
 <p>To get a readable error message of the condition we can do:</p>
 <pre><code><span class="code">CL-USER&gt; <span class="paren1">(<span class="code">format t <span class="string">"~a"</span> <span class="paren2">(<span class="code">cdr *</span>)</span></span>)</span>
 A timeout set to 2 seconds occurred. Cause: 
 #&lt;BORDEAUX-THREADS:TIMEOUT #x302002FAB73D&gt; </span></code></pre>
+<p><code>ask-s</code> returns the same <code>handler-error</code> form when the message handler unwinds without producing a result, for example when an <code>abort</code> restart is chosen in the debugger while the message is being handled. The condition is then a <code>mesgb:handler-unwound-error</code>, which carries the message via <code>mesgb:message</code>:</p>
+<pre><code><span class="code"><span class="paren1">(<span class="code">act:ask-s <span class="special">*unwinding-actor*</span> <span class="string">"Foo"</span></span>)</span></span></code></pre>
+<pre><code><span class="code"><span class="paren1">(<span class="code"><span class="keyword">:HANDLER-ERROR</span> . #&lt;SENTO.MESSAGEB:HANDLER-UNWOUND-ERROR #x3020031A2B3D&gt;</span>)</span></span></code></pre>
 <p>Note that <code>ask-s</code> uses the calling thread for the timeout checks.<br/>
 <code>ask</code> uses a wheel timer to handle timeouts. The default resolution for <code>ask</code> timeouts is 500ms with a maximum size of wheel slots (registered timeouts) of 1000. What this means is that you can have timeouts of a multiple of 500ms and 1000 <code>ask</code> operations with timeouts. This default can be tweaked when creating an actor-system, see API <a href="https://mdbergmann.github.io/cl-gserver/index.html#SENTO.ACTOR-SYSTEM:*DEFAULT-CONFIG*%20VARIABLE" >documentation</a> for more details.</p>
 <h4>Long running and asynchronous operations in <code>receive</code></h4>
-<p>Be careful with doing long running computations in the <code>receive</code> function message handler, because it will block message processing. It is advised to use a third-party thread-pool or a library like <em>lparallel</em> to do the computations with, and return early from the <code>receive</code> message handler.</p>
+<p>Be careful with doing long running computations in the <code>receive</code> function message handler, because it will block message processing. It is advised to use a separate thread, third-party thread-pool, a library like <em>lparallel</em>, or the provided 'Tasks' API using a dedicated dispatcher to do the computations with, and return early from the <code>receive</code> message handler.</p>
 <p>The computation result can be 'awaited' for in an asynchronous manner and a response to <code>*sender*</code> can be sent manually (via <code>reply</code>). The sender of the original message is set to the dynamic variable <code>*sender*</code>.</p>
 <p>Due to an asynchronous callback of a computation running is a separate thread, the <code>*sender*</code> must be copied into a lexical environment because at the time of when the callback is executed the <code>*sender*</code> can have a different value.</p>
 <p>For instance, if there is a potentially long running and asynchronous operation happening in 'receive', the <em>original</em> sender must be captured and the async operation executed in a lexical context, like so (receive function):</p>
@@ -383,7 +402,8 @@ This parameter represents the current state of the agent.</p>
 <p>The Finite State Machine (FSM) model is a computational framework designed to model and manage systems that transition between various states based on inputs or events. This structured approach facilitates the handling of complex logic through defined state transitions and events.</p>
 <h4>Creating an FSM</h4>
 <p>To create an FSM, use the <code>make-fsm</code> function, which initializes an actor with state management capabilities.</p>
-<p>(Additional API documentation can be found <a href="https://mdbergmann.github.io/cl-gserver/index.html##SENTO.FSM:@FSM%20MGL-PAX:SECTION" >here</a>.)</p>
+<p>(Additional API documentation can be found <a href="https://mdbergmann.github.io/cl-gserver/index.html#SENTO.FSM:@FSM%20MGL-PAX:SECTION" >here</a>.)
+(The API is quite stable, but since this is a new feature minor changes are possible.)</p>
 <ol>
 <li><strong>actor-context</strong>: Specifies where the FSM is created, which can be an actor, an actor-context, or an actor-system.</li>
 <li><strong>name</strong>: A string that names the FSM.</li>
@@ -455,6 +475,7 @@ This parameter represents the current state of the agent.</p>
 <h4>Running the FSM</h4>
 <p>After setup, the FSM processes events, transitioning as defined. This setup ensures responsive and structured event-driven state management.</p>
 <p>Incorporating timeout controls and a comprehensive fallback for unhandled events, this FSM elegantly manages complex state logic with powerful macro functionalities.</p>
+<p>For more examples have a look at the <a href="../tests/fsm-test.lisp" >tests</a>.</p>
 <h3>Router</h3>
 <p>A <code>Router</code> is a facade over a set of actors. Routers are either created with a set of actors using the default constructor <code>router:make-router</code> or actors can be added later.</p>
 <p>Routers implement part of the actor protocol, so it allows to use <code>tell</code>, <code>ask-s</code> or <code>ask</code> which it forwards to a 'routee' (one of the actors of a router) by passing all of the given parameters. The routee is chosen by applying a <code>strategy</code>. The built-in default strategy a routee is chosen randomly.</p>
@@ -465,6 +486,9 @@ This parameter represents the current state of the agent.</p>
 <h4>:shared</h4>
 <p>A <code>:shared</code> dispatcher is a facility that is set up in the <code>actor-system</code>. It consists of a configurable pool of 'dispatcher workers' (which are in fact actors). Those dispatcher workers execute the message handling in behalf of the actor and with the actors message handling code. This is protected by a lock so that ever only one dispatcher will run code on an actor. This is to ensure protection from data race conditions of the state data of the actor (or other slots of the actor).</p>
 <p>Using this dispatcher allows to create a large number of actors. The actors as such are generally very cheap.</p>
+<p>Message processing is scheduled per actor, not per message. The first message sent to an idle actor hands the actor's message-box to a worker; messages that arrive while that is pending are only queued. The worker then handles up to <code>throughput</code> queued messages in one run and hands the message-box back to the dispatcher only if messages remain, so a burst of messages costs one dispatch instead of one per message and only one worker at a time works for one actor. <code>throughput</code> is configured per dispatcher, the default is 5:</p>
+<pre><code><span class="code"><span class="paren1">(<span class="code">asys:make-actor-system '<span class="paren2">(<span class="code"><span class="keyword">:dispatchers</span> <span class="paren3">(<span class="code"><span class="keyword">:shared</span> <span class="paren4">(<span class="code"><span class="keyword">:workers</span> 4 <span class="keyword">:throughput</span> 50</span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+<p>A larger value amortizes the dispatch over more messages of a busy actor. A smaller value gives other actors on the same dispatcher a turn sooner, because a busy actor holds a worker for at most <code>throughput</code> messages per run.</p>
 <p><img alt="" src="./docs/disp_shared.png" width="700"/>
 <img alt="" src="disp_shared.png" width="700"/></p>
 <h4>:pinned</h4>
@@ -532,6 +556,65 @@ The concurrency here depends on the number of dispatcher workers.</p>
 <p>As alternative, or in special circumstances, it is possible to setf <code>*task-context*</code> and/or <code>*task-dispatcher*</code> special variables which allows to use <strong>tasks</strong> without <code>with-context</code> macro.</p>
 <p>Be also aware that the <code>:shared</code> dispatcher should not run long running operations as it blocks a message processing thread. Create a custom dispatcher to use for <code>tasks</code> when you plan to operate longer running operations.</p>
 <p>See the API <a href="https://mdbergmann.github.io/cl-gserver/index.html#SENTO.TASKS:WITH-CONTEXT%20MGL-PAX:MACRO" >documentation</a> for more details.</p>
+<h3>Remoting</h3>
+<p>Remoting enables actor-systems to communicate over the network. Actors on one system can send messages to actors on another system using <code>tell</code>, <code>ask-s</code>, and <code>ask</code> — the same interface as local actors.</p>
+<p>Remoting is a separate ASDF system: <code>sento-remoting</code>.</p>
+<h4>Quick start</h4>
+<pre><code><span class="code"><span class="comment">;; Load the remoting system
+</span><span class="paren1">(<span class="code">asdf:load-system <span class="string">"sento-remoting"</span></span>)</span>
+
+<span class="comment">;; Create two actor-systems (typically on different machines)
+</span><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_143.html#IDX430" class="symbol"><i><span class="symbol">defvar</span></i></a> <span class="special">*system-a*</span> <span class="paren2">(<span class="code">asys:make-actor-system</span>)</span></span>)</span>
+<span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_143.html#IDX430" class="symbol"><i><span class="symbol">defvar</span></i></a> <span class="special">*system-b*</span> <span class="paren2">(<span class="code">asys:make-actor-system</span>)</span></span>)</span>
+
+<span class="comment">;; Enable remoting on both
+</span><span class="paren1">(<span class="code">rem:enable-remoting <span class="special">*system-a*</span> <span class="keyword">:host</span> <span class="string">"127.0.0.1"</span> <span class="keyword">:port</span> 10000</span>)</span>
+<span class="paren1">(<span class="code">rem:enable-remoting <span class="special">*system-b*</span> <span class="keyword">:host</span> <span class="string">"127.0.0.1"</span> <span class="keyword">:port</span> 10001</span>)</span>
+
+<span class="comment">;; Create an actor on system B
+</span><span class="paren1">(<span class="code">ac:actor-of <span class="special">*system-b*</span>
+             <span class="keyword">:name</span> <span class="string">"greeter"</span>
+             <span class="keyword">:receive</span> <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">msg</span>)</span>
+                        <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">resp <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_75.html#IDX176" class="symbol">format</a> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_6.html#SEC6" class="symbol">nil</a> <span class="string">"Hello, ~a!"</span> msg</span>)</span></span>)</span></span>)</span>
+                          <span class="paren4">(<span class="code">act:reply resp</span>)</span></span>)</span></span>)</span></span>)</span>
+
+<span class="comment">;; From system A, create a remote reference and talk to it
+</span><span class="paren1">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_143.html#IDX430" class="symbol"><i><span class="symbol">defvar</span></i></a> <span class="special">*remote-greeter*</span>
+  <span class="paren2">(<span class="code">rem:make-remote-ref <span class="special">*system-a*</span> <span class="string">"sento://127.0.0.1:10001/user/greeter"</span></span>)</span></span>)</span>
+
+<span class="comment">;; tell (fire and forget)
+</span><span class="paren1">(<span class="code">act:tell <span class="special">*remote-greeter*</span> <span class="string">"World"</span></span>)</span>
+
+<span class="comment">;; ask-s (synchronous, blocks for response)
+</span><span class="paren1">(<span class="code">act:ask-s <span class="special">*remote-greeter*</span> <span class="string">"World"</span> <span class="keyword">:time-out</span> 3</span>)</span>
+<span class="comment">;; =&gt; "Hello, World!"
+</span>
+<span class="comment">;; ask (asynchronous, returns a future)
+</span><span class="paren1">(<span class="code">act:ask <span class="special">*remote-greeter*</span> <span class="string">"World"</span> <span class="keyword">:time-out</span> 3</span>)</span>
+<span class="comment">;; =&gt; #&lt;FUTURE ...&gt;
+</span>
+<span class="comment">;; Cleanup
+</span><span class="paren1">(<span class="code">rem:disable-remoting <span class="special">*system-a*</span></span>)</span>
+<span class="paren1">(<span class="code">rem:disable-remoting <span class="special">*system-b*</span></span>)</span>
+<span class="paren1">(<span class="code">ac:shutdown <span class="special">*system-a*</span></span>)</span>
+<span class="paren1">(<span class="code">ac:shutdown <span class="special">*system-b*</span></span>)</span></span></code></pre>
+<h4>Remote actor URIs</h4>
+<p>Remote actors are addressed with <code>sento://host:port/path</code> URIs where the path matches the actor's path in the target system (e.g. <code>/user/greeter</code> or <code>/user/parent/child</code>).</p>
+<h4>TLS encryption</h4>
+<pre><code><span class="code"><span class="paren1">(<span class="code">rem:enable-remoting <span class="special">*system*</span>
+  <span class="keyword">:host</span> <span class="string">"0.0.0.0"</span> <span class="keyword">:port</span> 4711
+  <span class="keyword">:tls-config</span> <span class="paren2">(<span class="code">rtls:make-tls-config
+               <span class="keyword">:provider</span> <span class="keyword">:pure-tls</span>
+               <span class="keyword">:certificate</span> #P<span class="string">"server-cert.pem"</span>
+               <span class="keyword">:private-key</span> #P<span class="string">"server-key.pem"</span>
+               <span class="keyword">:ca-certificate</span> #P<span class="string">"ca-cert.pem"</span>
+               <span class="keyword">:peer-verify</span> <a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_266.html#IDX704" class="symbol">t</a></span>)</span></span>)</span></span></code></pre>
+<h4>Options</h4>
+<ul>
+<li><code>:hostname</code> — advertised hostname for response routing (defaults to <code>:host</code>). Use this when binding to <code>&quot;0.0.0.0&quot;</code> but needing a specific reachable address.</li>
+<li><code>:max-message-length</code> — maximum message size in bytes (default 2MB).</li>
+</ul>
+<p>See the API <a href="https://mdbergmann.github.io/cl-gserver/index.html" >documentation</a> for the full remoting API.</p>
 <h3>Immutability</h3>
 <p>Some words on immutability. Actor states don't need to be immutable data structures. Sento does <em>not</em> make copies of the actor states. The user is responsible for the actor state and to motate the actor state only within 'receive' function.</p>
 <h3>Logging</h3>
@@ -539,33 +622,25 @@ The concurrency here depends on the number of dispatcher workers.</p>
 <pre><code><span class="code"><span class="paren1">(<span class="code">log:config '<span class="paren2">(<span class="code">sento</span>)</span> <span class="keyword">:warn</span></span>)</span></span></code></pre>
 <p>This will tell log4cl to do any logging for sento in warn level.</p>
 <h3>Benchmarks</h3>
-<p>Hardware specs (M1)):</p>
+<p>Hardware specs:</p>
 <ul>
-<li>Mac M1 Ultra, 64 GB RAM</li>
+<li>Mac Studio, Apple M3 Ultra (28 cores), 96 GB RAM, macOS 26.6</li>
 </ul>
-<p><img src="./docs/perf-M1Ultra.png" alt="" />
-<img src="perf-M1Ultra.png" alt="" /></p>
-<p>Hardware specs (x86-64):</p>
-<ul>
-<li>iMac Pro (2017), 8 Core Xeon, 32 GB RAM</li>
-</ul>
-<p><img src="./docs/perf-x86_64.png" alt="" />
-<img src="perf-x86_64.png" alt="" /></p>
+<p><img src="./docs/perf-M3Ultra.png" alt="" />
+<img src="perf-M3Ultra.png" alt="" /></p>
 <p><strong>All</strong></p>
-<p>Version 3.2.0 of Sento uses the sbcl <code>sb-concurrent:queue</code> whcih is very fast and works using CAS (compare-and-swap) where as the other implementations use a still fast double stack queue protected by locking.</p>
-<p>The benchmark was created by having 8 threads throwing each 125k (1M altogether) messages at 1 actor. The timing was taken for when the actor did finish processing those 1M messages. The messages were sent by either all <code>tell</code>, <code>ask-s</code>, or <code>ask</code> to an actor whose message-box worked using a single thread (<code>:pinned</code>) or a dispatched message queue (<code>:shared</code> / <code>dispatched</code>) with 8 workers.</p>
-<p>Of course a <code>tell</code> is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow.</p>
-<p><strong>SBCL (v2.4.1)</strong></p>
-<p>SBCL is very fast, but this tests uses SBCLs own queue implementation based on CAS instead of locking.</p>
-<p><strong>LispWorks (8.0.1)</strong></p>
-<p>LispWorks is fast overall. Not as fast as SBCL. But it seems the GC is more robust, in particular on the <code>dispatched - ask</code>.</p>
-<p><strong>CCL (v1.12)</strong></p>
-<p>Unfortunately CCL doesn't work natively on M1 Apple CPU.</p>
-<p><strong>ABCL (1.9)</strong></p>
-<p>The pleasant surprise was ABCL. While not being the fastest it is very robust.</p>
-<p><strong>Clasp 2.5.0</strong></p>
-<p>Very slow. Used default settings, as also for the other tests.
-Maybe something can be tweaked?</p>
+<p>The benchmark was created by having 8 threads throwing each 125k (1M altogether) messages at 1 actor whose receive function only counts. The timing was taken for when the actor did finish processing those 1M messages. The messages were sent by either all <code>tell</code>, <code>ask-s</code>, or <code>ask</code> to an actor whose message-box worked using a single thread (<code>:pinned</code>) or a dispatched message queue (<code>:shared</code>) with 8 workers and the default throughput of 5. Every cell was run 3 times, the graph shows the median. The benchmark is <code>docs/perf-bench.lisp</code>, the raw output of every run is in <code>docs/perf.txt</code>, and the graph is generated from <code>docs/perf-results.json</code> with <code>docs/perf-chart.js</code>. Measured with Sento 3.5.0.</p>
+<p>Of course a <code>tell</code> is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow. <code>ask-s</code> blocks each sender until the reply arrived, so it is bound by the round-trip latency of 8 senders. <code>ask</code> creates a future per message, so it is bound by allocation and GC.</p>
+<p><strong>SBCL (2.6.8)</strong></p>
+<p>SBCL is very fast in all cells and the only implementation that processes more than 1M <code>tell</code> messages per second, also on the shared dispatcher.</p>
+<p><strong>LispWorks (8.1.2)</strong></p>
+<p>LispWorks is the second fastest overall, with a good <code>ask</code> throughput.</p>
+<p><strong>Clamiga (0.9.0)</strong></p>
+<p><a href="https://github.com/mdbergmann/cl-amiga" >Clamiga</a> is a bytecode VM that primarily targets the Amiga, run here as a native macOS host build. It is the surprise of this round: on the <code>:pinned</code> cells it is ahead of ECL and on <code>ask-s</code> it is close to LispWorks.</p>
+<p><strong>ECL (26.5.5)</strong></p>
+<p>ECL is fast on the shared dispatcher relative to its <code>:pinned</code> results; its shared <code>ask-s</code> is the second best of all.</p>
+<p><strong>ABCL (1.9.3-dev)</strong></p>
+<p>ABCL is the slowest on <code>tell</code>, but the most even: all six cells lie between 98k and 164k messages per second, and its <code>ask</code> is as fast as its <code>ask-s</code>.</p>
 <h3>Migration guide for moving from Sento 2 to Sento 3</h3>
 <ul>
 <li><p>the receive function is now 1-arity. It only takes the a message parameter.
@@ -574,6 +649,15 @@ Previous 'self' and 'state' parameters are now accessible via <code>*self*</code
 <li><p>'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.</p></li>
 </ul>
 <h3>Version history</h3>
+<p><strong>Version 3.5.0 (11.09.2026):</strong> Less lock traffic on the message path. Queues only notify their condition-variable when a consumer is actually waiting, and notify after releasing the lock; a dispatcher run takes its whole batch out of the queue under one lock acquisition (new queue generic <code>try-popq-into</code>). The pinned message-box runs handlers without the reply lock held, so a timed <code>ask-s</code> is no longer delayed by its own running handler before it reports the timeout. Item finalization notifies after releasing the item lock on both message-box kinds. Message items are accessed through struct accessors, and <code>tell</code>/<code>ask-s</code> without a sender no longer cons their handler argument list. New <code>mesgb:*ask-s-spin-iterations*</code> (default 0) lets an <code>ask-s</code> caller spin on the reply before parking, which can double the <code>ask-s</code> rate for short handlers on machines with idle cores. Fixed: a message handler that unwound a dispatcher run, for example via an <code>abort</code> restart, left the actor wedged until an unrelated message restarted the worker thread; the worker now restarts itself and the unhandled rest of the batch is requeued. Fixed: on ABCL, loading Sento from cached fasls in a fresh image left <code>make-actor-system</code> failing with a forward-referenced class, because the package imports in <code>actor</code>, <code>actor-system</code>, <code>dispatcher</code> and <code>remoting</code> ran at compile time only; they now also run at load time. On SBCL, under load with 8 senders: <code>tell</code> throughput roughly 1.6x on shared and 2.2x on pinned actors, <code>ask-s</code> about 1.2x on shared and 1.3x on pinned, compared to 3.4.7.</p>
+<p><strong>Version 3.4.7 (10.09.2026):</strong> Shared-dispatcher actors schedule their message-box per burst instead of dispatching every message: a worker handles up to <code>throughput</code> queued messages in one run (new dispatcher config key <code>:throughput</code>, default 5, see <code>disp:*default-throughput*</code>) and only one worker at a time works for one actor. Dispatched functions are submitted straight to the worker's message-box, bypassing the actor message handling layer on the worker. The router no longer copies its routee vector on every <code>tell</code>, <code>ask-s</code> and <code>ask</code>. On SBCL this gives roughly 1.8x <code>tell</code> and <code>ask-s</code> throughput on shared-dispatcher actors under load with the default, more with a larger <code>:throughput</code>.</p>
+<p><strong>Version 3.4.6 (10.09.2026):</strong> <code>ask-s</code> with a timeout on a shared-dispatcher actor no longer polls for the result in 50ms steps but waits on a condition-variable with an absolute deadline, returning as soon as the handler is done.</p>
+<p><strong>Version 3.4.5 (08.09.2026):</strong> Fixed <code>ask-s</code> replies leaking the internal <code>no-result</code> sentinel on spurious condition-variable wakeups in the pinned message-box; this also affected <code>ask-s</code> without timeout on shared-dispatcher actors. Fixed concurrent <code>ask-s</code> calls without a timeout on a shared-dispatcher actor returning each other's results: the caller now waits on its own queue item instead of on whichever item the dispatcher happened to pop. Message handlers that unwind without a result now yield a <code>handler-error</code> with the new <code>mesgb:handler-unwound-error</code> condition. Remote <code>ask-s</code> no longer reports a false timeout on a spurious wakeup and no longer waits for the full timeout when the response arrives before the wait starts. Removed the AI pipeline files.</p>
+<p><strong>Version 3.4.4 (15.08.2026):</strong> Fixed lost ask-future completions: NIL replies were silently dropped by <code>tell</code>/<code>cast</code>. New self-contained, thread-safe future implementation; blackbird dependency removed. <code>fresult</code> now returns NIL for empty-result completions instead of <code>:not-ready</code>.</p>
+<p><strong>Version 3.4.3 (10.05.2026):</strong> Clean up leaking Tasks</p>
+<p><strong>Version 3.4.2 (25.05.2025):</strong> Forcefully stop actor threads on shutdown based on timeout.</p>
+<p><strong>Version 3.4.1 (30.01.2025):</strong> More resiliancy in message-box (respawn thread if it was killed).</p>
+<p><strong>Version 3.4.0 (5.10.2024):</strong> Finalized finite-state-machine (FSM) and documentation.</p>
 <p><strong>Version 3.3.3 (1.10.2024):</strong> Bug fix for actor with dispatcher mailbox where the order of processing messages wasn't honoured.</p>
 <p><strong>Version 3.3.2 (14.8.2024):</strong> Primarily documentation changes in regards to <code>future</code></p>
 <p><strong>Version 3.3.0 (1.7.2024):</strong> See: <a href="https://github.com/mdbergmann/cl-gserver/compare/3.2.1...3.3.0" >Changelog</a></p>
@@ -669,12 +753,42 @@ See <a href="#SENTO.CONFIG:CONFIG-FROM%20FUNCTION" title="SENTO.CONFIG:CONFIG-FR
 <p><a id="x-28SENTO-2EACTOR-SYSTEM-3A-2ADEFAULT-CONFIG-2A-20VARIABLE-29"></a>
 <a id="SENTO.ACTOR-SYSTEM:*DEFAULT-CONFIG*%20VARIABLE"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.ACTOR-SYSTEM:*DEFAULT-CONFIG*%20VARIABLE" >*DEFAULT-CONFIG*</a></span></span> <span class="locative-args">(:DISPATCHERS (:SHARED (:WORKERS 4 :STRATEGY :RANDOM)) :TIMEOUT-TIMER
- (:RESOLUTION 500 :MAX-SIZE 1000) :EVENTSTREAM (:DISPATCHER-ID :SHARED)
- :SCHEDULER (:ENABLED :TRUE :RESOLUTION 100 :MAX-SIZE 500))</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.ACTOR-SYSTEM:*DEFAULT-CONFIG*%20VARIABLE" >*DEFAULT-CONFIG*</a></span></span> <span class="locative-args">(:DISPATCHERS
+ (:SHARED
+  (:WORKERS 4 :STRATEGY :RANDOM :THROUGHPUT 5 :MBOX-TYPE
+   SENTO.MESSAGEB:MESSAGE-BOX/DP))
+ :TIMEOUT-TIMER (:RESOLUTION 100 :MAX-SIZE 500) :EVENTSTREAM
+ (:DISPATCHER-ID :SHARED) :SCHEDULER
+ (:ENABLED :TRUE :RESOLUTION 100 :MAX-SIZE 500))</span></span></p>
 
 <p>The default config used when creating an <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>asys:actor-system</code></a>.
-The actor-system constructor allows to provide custom config options that override the default.</p></li>
+The actor-system constructor allows to provide custom config options that override the defaults.</p>
+
+<p>The constructor provided configuration does not need to specify all parts of the config,
+rather, what is provided is merged with <code>*default-config*</code>.<br/>
+That means e.g. specifying an additional dispatcher, one just has to provide this to the constructor:</p>
+
+<pre><code><span class="code">'<span class="paren1">(<span class="code"><span class="keyword">:dispatchers</span>
+    <span class="paren2">(<span class="code"><span class="keyword">:my-disp</span> <span class="paren3">(<span class="code"><span class="keyword">:workers</span> 4</span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>For all other parameters the defaults will be used, even <code>:workers</code> does not need to be there.
+The defaults, when omitted, are:<br/>
+- workers = 2
+- strategy = :random
+- throughput = 5 (see <a href="#SENTO.DISPATCHER:*DEFAULT-THROUGHPUT*%20VARIABLE" title="SENTO.DISPATCHER:*DEFAULT-THROUGHPUT* VARIABLE"><code>disp:*default-throughput*</code></a>)
+- mbox-type = 'mesgb:message-box/dp'</p>
+
+<p><code>throughput</code> is the number of queued messages a worker handles for one actor in one
+run before it yields the worker to other actors of the same dispatcher.</p>
+
+<p>If you want to just modify parts of the config, i.e. the strategy, then one can do:</p>
+
+<pre><code><span class="code">'<span class="paren1">(<span class="code"><span class="keyword">:dispatchers</span>
+    <span class="paren2">(<span class="code"><span class="keyword">:shared</span> <span class="paren3">(<span class="code"><span class="keyword">:strategy</span> <span class="keyword">:round-robin</span></span>)</span></span>)</span></span>)</span></span></code></pre>
+
+<p>This will just change the strategy to <code>:round-robin</code>.</p>
+
+<p>Note that <code>mbox-type</code> must be a subtype of <a href="#SENTO.MESSAGEB:MESSAGE-BOX%2FDP%20CLASS" title="SENTO.MESSAGEB:MESSAGE-BOX/DP CLASS"><code>mesgb:message-box/dp</code></a>.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-SYSTEM-3AREGISTER-DISPATCHER-20FUNCTION-29"></a>
 <a id="SENTO.ACTOR-SYSTEM:REGISTER-DISPATCHER%20FUNCTION"></a></p>
@@ -724,35 +838,35 @@ See <a href="#SENTO.WHEEL-TIMER:WHEEL-TIMER%20CLASS" title="SENTO.WHEEL-TIMER:WH
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AACTOR-OF-20-28METHOD-20NIL-20-28SENTO-2EACTOR-SYSTEM-3AACTOR-SYSTEM-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >SENTO.ACTOR-CONTEXT:ACTOR-OF</a></span></span> <span class="locative-args">(SYSTEM <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >ACTOR-OF</a></span></span> <span class="locative-args">(SYSTEM <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
 
 <p>See <code>ac:actor-of</code></p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28SENTO-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29" >SENTO.ACTOR-CONTEXT:FIND-ACTORS</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>) PATH</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29" >FIND-ACTORS</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>) PATH</span></span></p>
 
 <p>See <code>ac:find-actors</code></p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AALL-ACTORS-20-28METHOD-20NIL-20-28SENTO-2EACTOR-SYSTEM-3AACTOR-SYSTEM-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >SENTO.ACTOR-CONTEXT:ALL-ACTORS</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >ALL-ACTORS</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
 
 <p>See <code>ac:all-actors</code></p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3ASTOP-20-28METHOD-20NIL-20-28SENTO-2EACTOR-SYSTEM-3AACTOR-SYSTEM-20T-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:STOP%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:STOP%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29" >SENTO.ACTOR-CONTEXT:STOP</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>) ACTOR</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:STOP%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20T%29%29" >STOP</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>) ACTOR</span></span></p>
 
 <p>See <code>ac:stop</code></p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3ASHUTDOWN-20-28METHOD-20NIL-20-28SENTO-2EACTOR-SYSTEM-3AACTOR-SYSTEM-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:SHUTDOWN%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:SHUTDOWN%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >SENTO.ACTOR-CONTEXT:SHUTDOWN</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:SHUTDOWN%20%28METHOD%20NIL%20%28SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%29%29" >SHUTDOWN</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>ACTOR-SYSTEM</code></a>)</span></span></p>
 
 <p>See <code>ac:shutdown</code></p></li>
 </ul>
@@ -858,7 +972,7 @@ Current exists:</p>
 <p>Interface for creating an actor.</p>
 
 <p><strong>!!! Attention:</strong> this factory function wraps the <a href="#SENTO.ACTOR:MAKE-ACTOR%20GENERIC-FUNCTION" title="SENTO.ACTOR:MAKE-ACTOR GENERIC-FUNCTION"><code>act:make-actor</code></a> functionality to something more simple to use. 
-Using this function there is no need to use both <code>act:make-actor</code>.</p>
+Using this function there is no need to use <code>act:make-actor</code>.</p>
 
 <p><code>context</code> is either an <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>asys:actor-system</code></a>, an <a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a>, or an <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>act:actor</code></a> (any type of actor).
 The new actor is created in the given context.</p>
@@ -880,7 +994,9 @@ This function allows to unsubsribe from event-stream or such.</p></li>
 <p>Additional options:</p>
 
 <ul>
-<li><code>:queue-size</code> limits the message-box's size. By default, it is unbounded.</li>
+<li><p><code>:queue-size</code> limits the message-box's size. By default, it is unbounded.</p></li>
+<li><p><code>:mbox-type</code> specify a custom message-box type similar as can be done is dispatcher config. It also could be a function which accept a <code>:max-queue-size</code> argument for <code>:pinned</code> dispatcher or <code>:max-queue-size</code> and <code>:dispatcher</code> arguments for other types of dispatchers.
+  It must be a subtype of <a href="#SENTO.MESSAGEB:MESSAGE-BOX%2FDP%20CLASS" title="SENTO.MESSAGEB:MESSAGE-BOX/DP CLASS"><code>mesgb:message-box/dp</code></a>.</p></li>
 </ul></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AFIND-ACTORS-20GENERIC-FUNCTION-29"></a>
@@ -997,10 +1113,10 @@ An <code>:handler-error</code> with <code>timeout</code> condition will be retur
 Specify <code>timeout</code> if a message is to be expected after a certain time.
 An <code>:handler-error</code> with <code>timeout</code> condition will be returned is the call timed out.</p>
 
-<p>An <code>ask</code> is similar to a <a href="#SENTO.ACTOR:ASK-S%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK-S GENERIC-FUNCTION"><code>ask-s</code></a> in that the caller gets back a result 
+<p>An <code>ask</code> is similar to a <a href="#SENTO.ACTOR:ASK-S%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK-S GENERIC-FUNCTION"><code>ask-s</code></a> in that the caller gets back a result
 but it doesn't have to actively wait for it. Instead a <code>future</code> wraps the result.
 However, the internal message handling is based on <a href="#SENTO.ACTOR:TELL%20GENERIC-FUNCTION" title="SENTO.ACTOR:TELL GENERIC-FUNCTION"><code>tell</code></a>.
-How this works is that the message to the target <code>actor</code> is not 'sent' using the callers thread but instead an anonymous <code>actor</code> is started behind the scenes. This anonymous actor can weit for a response from the target actor. The response then fulfills the future.</p>
+How this works is that the message is sent to the target <code>actor</code> with an anonymous reply target as <code>*sender*</code>. This reply target has no message-box of its own: a <a href="#SENTO.ACTOR:REPLY%20FUNCTION" title="SENTO.ACTOR:REPLY FUNCTION"><code>reply</code></a> (or a <code>tell</code> to <code>*sender*</code>) resolves the future immediately, on the thread of the replying actor. Handlers attached to the future via <code>fcompleted</code> or <code>fmap</code> therefore run on that thread, so keep them short or hand long work to another actor or a task. In particular, do not call back synchronously into the replying actor (directly or transitively, e.g. via <code>ask-s</code>) from such a handler: that thread is still busy running the continuation instead of processing the actor's mailbox, so the call would block forever waiting on its own actor.</p>
 
 <p>Alternatively to the <a href="#SENTO.ACTOR:ASK%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK GENERIC-FUNCTION"><code>ask</code></a> function one can equally use the <code>?</code> function designator.</p></li>
 </ul>
@@ -1009,7 +1125,7 @@ How this works is that the message to the target <code>actor</code> is not 'sent
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:REPLY%20FUNCTION" >REPLY</a></span></span> <span class="locative-args">MSG &amp;OPTIONAL (SENDER <code>*SENDER*</code>)</span></span></p>
 
-<p>Replies to a sender. Sender must exist.
+<p>Replies to a sender. If <code>SENDER</code> is <code>NIL</code> <code>MSG</code> is returned for ask-s to work.
 Use this from within receive function to reply to a sender.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-3ABECOME-20GENERIC-FUNCTION-29"></a>
@@ -1018,7 +1134,7 @@ Use this from within receive function to reply to a sender.</p></li>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR:BECOME%20GENERIC-FUNCTION" >BECOME</a></span></span> <span class="locative-args">NEW-BEHAVIOR</span></span></p>
 
 <p>Changes the receive of the actor to the given <code>new-behavior</code> function.
-The <code>new-behavior</code> function must accept 3 parameters: the actor instance, the message and the current state.
+The <code>new-behavior</code> function must accept 0 parameter: the message.
 This function should be called from within the behavior receive function.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-3AUNBECOME-20GENERIC-FUNCTION-29"></a>
@@ -1036,7 +1152,7 @@ This function should be called from within the behavior receive function.</p></l
 
 <p>This is the <code>actor-context</code> every actor is composed of.
 When the actor is created from scratch it has no <code>actor-context</code>.
-When created through the <code>actor-context</code>s, or system's <code>actor-of</code> function an <code>actor-context</code> will be set.</p></li>
+When created through the <code>actor-context</code>s, or system's <a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20GENERIC-FUNCTION" title="SENTO.ACTOR-CONTEXT:ACTOR-OF GENERIC-FUNCTION"><code>actor-of</code></a> function an <code>actor-context</code> will be set.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-3APATH-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.ACTOR:PATH%20GENERIC-FUNCTION"></a></p>
@@ -1094,49 +1210,49 @@ This generic function is more meant to create specialized actors by providing di
 <p><a id="x-28SENTO-2EEVENTSTREAM-3ASUBSCRIBE-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-20SENTO-2EACTOR-3AACTOR-29-29-29"></a>
 <a id="SENTO.EVENTSTREAM:SUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:SUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29" >SENTO.EVENTSTREAM:SUBSCRIBE</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) (SUBSCRIBER <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:SUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29" >SUBSCRIBE</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) (SUBSCRIBER <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>)</span></span></p>
 
 <p>Convenience. Allows to subscribe to <a href="#SENTO.EVENTSTREAM:EVENTSTREAM%20CLASS" title="SENTO.EVENTSTREAM:EVENTSTREAM CLASS"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EEVENTSTREAM-3AUNSUBSCRIBE-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-20SENTO-2EACTOR-3AACTOR-29-29-29"></a>
 <a id="SENTO.EVENTSTREAM:UNSUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:UNSUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29" >SENTO.EVENTSTREAM:UNSUBSCRIBE</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) (UNSUBSCRIBER <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:UNSUBSCRIBE%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20SENTO.ACTOR:ACTOR%29%29" >UNSUBSCRIBE</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) (UNSUBSCRIBER <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>)</span></span></p>
 
 <p>Convenience. Allows to unsubscribe to <a href="#SENTO.EVENTSTREAM:EVENTSTREAM%20CLASS" title="SENTO.EVENTSTREAM:EVENTSTREAM CLASS"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EEVENTSTREAM-3APUBLISH-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-20T-29-29-29"></a>
 <a id="SENTO.EVENTSTREAM:PUBLISH%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:PUBLISH%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29" >SENTO.EVENTSTREAM:PUBLISH</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) MESSAGE</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.EVENTSTREAM:PUBLISH%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29" >PUBLISH</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>SENTO.ACTOR:ACTOR</code></a>) MESSAGE</span></span></p>
 
 <p>Convenience. Allows to publish to <a href="#SENTO.EVENTSTREAM:EVENTSTREAM%20CLASS" title="SENTO.EVENTSTREAM:EVENTSTREAM CLASS"><code>ev:eventstream</code></a> by just providing the actor.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AFIND-ACTORS-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-20T-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29" >SENTO.ACTOR-CONTEXT:FIND-ACTORS</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>) PATH</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:FIND-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%20T%29%29" >FIND-ACTORS</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>) PATH</span></span></p>
 
 <p><a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a> protocol implementation.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AALL-ACTORS-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >SENTO.ACTOR-CONTEXT:ALL-ACTORS</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ALL-ACTORS%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >ALL-ACTORS</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
 
 <p><a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a> protocol implementation.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3AACTOR-OF-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >SENTO.ACTOR-CONTEXT:ACTOR-OF</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:ACTOR-OF%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >ACTOR-OF</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
 
 <p><a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a> protocol implementation</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CONTEXT-3ASYSTEM-20-28METHOD-20NIL-20-28SENTO-2EACTOR-3AACTOR-29-29-29"></a>
 <a id="SENTO.ACTOR-CONTEXT:SYSTEM%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:SYSTEM%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >SENTO.ACTOR-CONTEXT:SYSTEM</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CONTEXT:SYSTEM%20%28METHOD%20NIL%20%28SENTO.ACTOR:ACTOR%29%29" >SYSTEM</a></span></span> <span class="locative-args">(ACTOR <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>ACTOR</code></a>)</span></span></p>
 
 <p>Retrieves the <a href="#SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM%20CLASS" title="SENTO.ACTOR-SYSTEM:ACTOR-SYSTEM CLASS"><code>asys:actor-system</code></a> from actor.</p></li>
 </ul>
@@ -1215,17 +1331,21 @@ State of the cell can be changed via <a href="http://www.lispworks.com/documenta
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:STOP%20GENERIC-FUNCTION" >STOP</a></span></span> <span class="locative-args">ACTOR-CELL &amp;OPTIONAL WAIT</span></span></p>
 
-<p>Stops the actor-cells message processing gracefully.
-This is not an immediate stop.
-There are two ways to stop an actor (cell).</p>
+<p>Stops the actor-cells message processing.
+There are the following ways to stop an actor (cell).</p>
 
 <ol>
 <li><p>by calling this function.
-It is not an immediate stop. The actor will finish the current message processing.
-<code>wait</code>: waits until the cell is stopped.</p></li>
+The actor will finish processing the current message.
+All queued messages will be discarded.
+No new messages will be accepted.
+<code>wait</code>: waits until the cell is stopped (only applied to <code>:pinned</code> dispatcher).</p></li>
+<li><p>by sending <code>:terminate</code> to actor.
+This is effectively the same as calling <code>stop</code> method.</p></li>
 <li><p>by sending <code>:stop</code> to the actor (cell).
 This won't allow to wait when the actor is stopped, even not with <code>ask-s</code>.
-The <code>:stop</code> message (symbol) is normally processed by the actors message processing.</p></li>
+The <code>:stop</code> message (symbol) is normally processed by the actors message processing.
+The actor will not accept more messages.</p></li>
 </ol></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CELL-3ACALL-20FUNCTION-29"></a>
@@ -1238,8 +1358,10 @@ Specify a timeout in seconds if you require a result within a certain period of 
 Be aware though that this is a resource intensive wait based on a waiting thread.
 The result can be of different types.
 Normal result: the last expression of <a href="#SENTO.ACTOR-CELL:HANDLE-CALL%20GENERIC-FUNCTION" title="SENTO.ACTOR-CELL:HANDLE-CALL GENERIC-FUNCTION"><code>handle-call</code></a> (or <code>receive</code> in <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>act:actor</code></a>) implementation.
-Error result: `(cons :handler-error <condition>)'
-In case of time-out the error condition is a bt2:timeout.</p></li>
+Error result: <code>(cons :handler-error &lt;condition&gt;)'
+In case of time-out the error condition is a</code>timeutils:ask-timeout'.
+If the handler unwound without producing a result it is a <code>mesgb:handler-unwound-error'.
+</code>message' can be any object, including `nil'.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CELL-3ACAST-20FUNCTION-29"></a>
 <a id="SENTO.ACTOR-CELL:CAST%20FUNCTION"></a></p>
@@ -1247,7 +1369,8 @@ In case of time-out the error condition is a bt2:timeout.</p></li>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.ACTOR-CELL:CAST%20FUNCTION" >CAST</a></span></span> <span class="locative-args">ACTOR-CELL MESSAGE &amp;OPTIONAL SENDER</span></span></p>
 
 <p>Sends a message to a actor-cell asynchronously. There is no result.
-If a `sender' is specified the result will be sent to the sender.</p></li>
+If a <code>sender' is specified the result will be sent to the sender.
+</code>message' can be any object, including `nil'.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-CELL-3ARUNNING-P-20FUNCTION-29"></a>
 <a id="SENTO.ACTOR-CELL:RUNNING-P%20FUNCTION"></a></p>
@@ -1291,7 +1414,28 @@ Don't make it too small. A queue size of 1000 might be a good choice.</p></li>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.MESSAGEB:SUBMIT%20GENERIC-FUNCTION" >SUBMIT</a></span></span> <span class="locative-args">MESSAGE-BOX-BASE MESSAGE WITHREPLY-P TIME-OUT HANDLER-FUN-ARGS</span></span></p>
 
 <p>Submit a message to the mailbox to be queued and handled.
-<code>handler-fun-args</code>: list with first element the function designator and rest arguments.</p></li>
+<code>handler-fun-args</code>: list with first element the function designator and rest arguments.
+With <code>withreply-p' the call blocks until the message was handled and returns the handler result.
+Signals</code>ask-timeout' when <code>time-out' (seconds) elapses first, and</code>handler-unwound-error'
+when the handler exited without producing a result.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EMESSAGEB-3A-2AASK-S-SPIN-ITERATIONS-2A-20VARIABLE-29"></a>
+<a id="SENTO.MESSAGEB:*ASK-S-SPIN-ITERATIONS*%20VARIABLE"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.MESSAGEB:*ASK-S-SPIN-ITERATIONS*%20VARIABLE" >*ASK-S-SPIN-ITERATIONS*</a></span></span> <span class="locative-args">0</span></span></p>
+
+<p>How often a synchronous <code>submit', which is what</code>act:ask-s' does, re-reads
+the state of its queued item before it parks the calling thread on a
+condition-variable until the handler is done. 0, the default, parks right away.</p>
+
+<p>Parking and waking a thread costs several microseconds. When the handler
+usually finishes within that time, because it is short and the actor has no
+backlog, a spin of some thousand reads returns with the result before the
+thread is parked, which can double the <code>ask-s' throughput on a machine with
+idle cores. When the reply takes longer than the spin, the spin is wasted CPU
+on top of the park. Do not enable it on systems with more runnable threads
+than cores, where the spinning caller takes CPU from the worker producing its
+reply. Can be</code>let'-bound around a burst of `ask-s' calls.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EMESSAGEB-3ASTOP-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.MESSAGEB:STOP%20GENERIC-FUNCTION"></a></p>
@@ -1331,6 +1475,20 @@ this kind of queue because each message-box (and with that each actor) requires 
 <p>The <code>handler-fun-args</code> argument must contain a handler function as first list item.
 It will be apply'ed with the rest of the args when the message was 'popped' from queue.</p></li>
 </ul>
+<p><a id="x-28SENTO-2EMESSAGEB-3AHANDLER-UNWOUND-ERROR-20CONDITION-29"></a>
+<a id="SENTO.MESSAGEB:HANDLER-UNWOUND-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.MESSAGEB:HANDLER-UNWOUND-ERROR%20CONDITION" >HANDLER-UNWOUND-ERROR</a></span></span> <span class="locative-args"><a href="http://www.lispworks.com/documentation/HyperSpec/Body/e_error.htm" title="ERROR (MGL-PAX:CLHS CONDITION)">ERROR</a></span></span></p>
+
+<p>Signaled by a synchronous <code>submit' when the message handler performed a
+non-local exit (for example an</code>abort' restart was invoked, or the processing thread was
+destroyed) so that no result exists.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EMESSAGEB-3AMESSAGE-20-28MGL-PAX-3AREADER-20SENTO-2EMESSAGEB-3AHANDLER-UNWOUND-ERROR-29-29"></a>
+<a id="SENTO.MESSAGEB:MESSAGE%20%28MGL-PAX:READER%20SENTO.MESSAGEB:HANDLER-UNWOUND-ERROR%29"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#SENTO.MESSAGEB:MESSAGE%20%28MGL-PAX:READER%20SENTO.MESSAGEB:HANDLER-UNWOUND-ERROR%29" >MESSAGE</a></span></span> <span class="locative-args">HANDLER-UNWOUND-ERROR (:MESSAGE)</span></span></li>
+</ul>
 <p><a id="x-28SENTO-2EMESSAGEB-3A-40MESSAGE-BOX-2FDP-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.MESSAGEB:@MESSAGE-BOX%2FDP%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FBT%20MGL-PAX:SECTION" title="Message-box threaded">&#8592;</a> <a href="#SENTO.ACTOR:@ACTOR%20MGL-PAX:SECTION" title="Actor">&#8593;</a> <a href="#SENTO.AGENT:@AGENT%20MGL-PAX:SECTION" title="Agent">&#8594;</a> <a href="#SENTO.MESSAGEB:@MESSAGE-BOX%2FDP%20MGL-PAX:SECTION" title="Message-box dispatched">&#8634;</a></span></span></p>
@@ -1344,7 +1502,13 @@ It will be apply'ed with the rest of the args when the message was 'popped' from
 <p>This message box is a message-box that uses the <code>system</code>s <code>dispatcher</code>.
 This has the advantage that an almost unlimited actors/agents can be created.
 This message-box doesn't 'own' a thread. It uses the <code>dispatcher</code> to handle the message processing.
-The <code>dispatcher</code> is kind of like a thread pool.</p></li>
+The <code>dispatcher</code> is kind of like a thread pool.</p>
+
+<p>Message processing is scheduled per message-box, not per message: the first
+submit on an idle message-box dispatches one run to a worker, further submits
+while that run is pending only enqueue. A run takes up to `throughput' queued
+items out of the queue at once, handles them, and reschedules the message-box
+only when items remain.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EMESSAGEB-3ASUBMIT-20-28METHOD-20NIL-20-28SENTO-2EMESSAGEB-3AMESSAGE-BOX-2FDP-20T-20T-20T-20T-29-29-29"></a>
 <a id="SENTO.MESSAGEB:SUBMIT%20%28METHOD%20NIL%20%28SENTO.MESSAGEB:MESSAGE-BOX%2FDP%20T%20T%20T%20T%29%29"></a></p>
@@ -1357,7 +1521,12 @@ The <code>dispatcher</code> is kind of like a thread pool.</p></li>
 and the handler in a reasonable amount of time, so that the effective time-out applies on the actual
 handling of the message on the dispatcher queue thread.</p>
 
-<p>Returns the handler-result if <code>withreply-p' is eq to``T</code>', otherwise the return is just `<code>T</code>' and is usually ignored.</p></li>
+<p>Returns the handler-result if <code>withreply-p' is eq to``T</code>', otherwise the return is just `<code>T</code>' and is usually ignored.</p>
+
+<p>With <code>withreply-p' the caller waits on the item's own state after scheduling.
+A synchronous</code>dispatch' cannot be used here: under concurrent `ask-s' submits
+a run handles whatever items head the queue, which is not necessarily this
+caller's item, so a run's return value could belong to a different caller.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EAGENT-3A-40AGENT-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.AGENT:@AGENT%20MGL-PAX:SECTION"></a></p>
@@ -1975,7 +2144,7 @@ Resubmitting means they are added to the end of the queue like any ordinary mess
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:DISPATCHER-BASE%20CLASS" >DISPATCHER-BASE</a></span></span></span></p>
 
-<p>A <code>dispatcher</code> contains a pool of <code>actors</code> that operate as workers where work is dispatched to.
+<p>A <code>dispatcher</code> contains a pool of <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>actors</code></a> that operate as workers where work is dispatched to.
 However, the workers are created in the given <a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT CLASS"><code>ac:actor-context</code></a>.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EDISPATCHER-3AIDENTIFIER-20-28MGL-PAX-3AREADER-20SENTO-2EDISPATCHER-3ADISPATCHER-BASE-29-29"></a>
@@ -1984,6 +2153,30 @@ However, the workers are created in the given <a href="#SENTO.ACTOR-CONTEXT:ACTO
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:IDENTIFIER%20%28MGL-PAX:READER%20SENTO.DISPATCHER:DISPATCHER-BASE%29" >IDENTIFIER</a></span></span> <span class="locative-args">DISPATCHER-BASE (:IDENTIFIER = NIL)</span></span></p>
 
 <p>Returns the identifier of the dispatcher.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EDISPATCHER-3ATHROUGHPUT-20GENERIC-FUNCTION-29"></a>
+<a id="SENTO.DISPATCHER:THROUGHPUT%20GENERIC-FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:THROUGHPUT%20GENERIC-FUNCTION" >THROUGHPUT</a></span></span> <span class="locative-args">DISPATCHER</span></span></p>
+
+<p>Returns the number of queued messages a message-box using this dispatcher
+handles in one run on a worker before it yields the worker.
+Also defined on <code>mesgb:message-box/dp', which takes the value from its
+dispatcher unless created with an explicit</code>:throughput'.
+See `<em>default-throughput</em>'.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EDISPATCHER-3A-2ADEFAULT-THROUGHPUT-2A-20VARIABLE-29"></a>
+<a id="SENTO.DISPATCHER:*DEFAULT-THROUGHPUT*%20VARIABLE"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[variable]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:*DEFAULT-THROUGHPUT*%20VARIABLE" >*DEFAULT-THROUGHPUT*</a></span></span> <span class="locative-args">5</span></span></p>
+
+<p>The number of queued messages a <code>mesgb:message-box/dp' handles in one run on
+a dispatcher worker before it yields the worker, unless the dispatcher config
+specifies</code>:throughput'. A larger value amortizes the dispatch over more
+messages of a busy actor; a smaller value gives other actors on the same
+dispatcher a turn sooner. A run of a busy actor holds a worker for at most
+this many messages, so keep it small when handlers take long, or better,
+run such actors on a `:pinned' or a dedicated dispatcher.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EDISPATCHER-3AMAKE-DISPATCHER-20FUNCTION-29"></a>
 <a id="SENTO.DISPATCHER:MAKE-DISPATCHER%20FUNCTION"></a></p>
@@ -2001,7 +2194,7 @@ Specify an <a href="#SENTO.ACTOR-CONTEXT:ACTOR-CONTEXT%20CLASS" title="SENTO.ACT
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:DISPATCH%20GENERIC-FUNCTION" >DISPATCH</a></span></span> <span class="locative-args">DISPATCHER DISPATCHER-EXEC-FUN</span></span></p>
 
 <p>Dispatches a function (<code>dispatch-exec-fun</code>) to a worker of the dispatcher to execute there.
-<code>dispatch</code> does a <code>ask-s</code> to a <code>dispatcher</code> worker, which means this call will block.
+<code>dispatch</code> does a <a href="#SENTO.ACTOR:ASK-S%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK-S GENERIC-FUNCTION"><code>ask-s</code></a> to a <code>dispatcher</code> worker, which means this call will block.
 The parameter <code>dispatcher-exec-fun</code> if of the form: <code>(list (function &lt;something&gt;))</code></p></li>
 </ul>
 <p><a id="x-28SENTO-2EDISPATCHER-3ADISPATCH-ASYNC-20GENERIC-FUNCTION-29"></a>
@@ -2010,7 +2203,11 @@ The parameter <code>dispatcher-exec-fun</code> if of the form: <code>(list (func
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:DISPATCH-ASYNC%20GENERIC-FUNCTION" >DISPATCH-ASYNC</a></span></span> <span class="locative-args">DISPATCHER DISPATCHER-EXEC-FUN</span></span></p>
 
 <p>Dispatches a function to a worker of the dispatcher to execute there.
-<code>dispatch-async</code> does a <code>tell</code> to a <code>dispatcher</code> worker and is asynchronous.</p></li>
+<code>dispatch-async</code> does a <a href="#SENTO.ACTOR:TELL%20GENERIC-FUNCTION" title="SENTO.ACTOR:TELL GENERIC-FUNCTION"><code>tell</code></a> to a <code>dispatcher</code> worker and is asynchronous.
+Returns <code>T' when the function was handed to a worker. Any other value means
+it was not, for example</code>:stopped' when the chosen worker was stopped or
+<code>nil' when the dispatcher has no workers;</code>mesgb:message-box/dp' relies on
+this to know whether a run of its queue is pending.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EDISPATCHER-3ASTOP-20GENERIC-FUNCTION-29"></a>
 <a id="SENTO.DISPATCHER:STOP%20GENERIC-FUNCTION"></a></p>
@@ -2031,9 +2228,16 @@ Only use the defined interface here to talk to them.</p></li>
 <p><a id="x-28SENTO-2EDISPATCHER-3ADISPATCH-WORKER-20CLASS-29"></a>
 <a id="SENTO.DISPATCHER:DISPATCH-WORKER%20CLASS"></a></p>
 <ul>
-<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:DISPATCH-WORKER%20CLASS" >DISPATCH-WORKER</a></span></span> <span class="locative-args"><a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS">SENTO.ACTOR:ACTOR</a></span></span></p>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.DISPATCHER:DISPATCH-WORKER%20CLASS" >DISPATCH-WORKER</a></span></span> <span class="locative-args"><a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS">ACTOR</a></span></span></p>
 
-<p>Specialized <code>actor</code> used as <code>worker</code> is the message <code>dispatcher</code>.</p></li>
+<p>Specialized <a href="#SENTO.ACTOR:ACTOR%20CLASS" title="SENTO.ACTOR:ACTOR CLASS"><code>actor</code></a> used as <code>worker</code> in the message <code>dispatcher</code>.
+The message a worker receives is the dispatched function call as a list:
+the function followed by its arguments.
+<code>tell' and</code>ask-s' on a worker submit that list straight to the worker's
+message-box instead of going through the `act-cell' message handling.
+A worker has no state, no behavior and no sender to bind, so that layer
+would only add per-message overhead on every message of every actor that
+runs on the dispatcher.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EDISPATCHER-3AMAKE-DISPATCHER-WORKER-20FUNCTION-29"></a>
 <a id="SENTO.DISPATCHER:MAKE-DISPATCHER-WORKER%20FUNCTION"></a></p>
@@ -2113,7 +2317,7 @@ Specify your own strategy by providing a function that takes a <a href="http://w
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR:TELL%20%28METHOD%20NIL%20%28SENTO.ROUTER:ROUTER%20T%29%29" >TELL</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ROUTER:ROUTER%20CLASS" title="SENTO.ROUTER:ROUTER CLASS"><code>ROUTER</code></a>) MESSAGE</span></span></p>
 
 <p>Posts the message to one routee. The routee is chosen from the router <code>strategy</code>.
-Otherwise see: <code>act:tell</code>.</p></li>
+Returns <code>nil' when the router has no routees. Otherwise see:</code>act:tell`.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-3AASK-S-20-28METHOD-20NIL-20-28SENTO-2EROUTER-3AROUTER-20T-29-29-29"></a>
 <a id="SENTO.ACTOR:ASK-S%20%28METHOD%20NIL%20%28SENTO.ROUTER:ROUTER%20T%29%29"></a></p>
@@ -2121,7 +2325,7 @@ Otherwise see: <code>act:tell</code>.</p></li>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR:ASK-S%20%28METHOD%20NIL%20%28SENTO.ROUTER:ROUTER%20T%29%29" >ASK-S</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ROUTER:ROUTER%20CLASS" title="SENTO.ROUTER:ROUTER CLASS"><code>ROUTER</code></a>) MESSAGE</span></span></p>
 
 <p>Posts the message to one routee. The routee is chosen from the router <code>strategy</code>.
-Otherwise see: <code>act:ask-s</code>.</p></li>
+Returns <code>nil' when the router has no routees. Otherwise see:</code>act:ask-s`.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EACTOR-3AASK-20-28METHOD-20NIL-20-28SENTO-2EROUTER-3AROUTER-20T-29-29-29"></a>
 <a id="SENTO.ACTOR:ASK%20%28METHOD%20NIL%20%28SENTO.ROUTER:ROUTER%20T%29%29"></a></p>
@@ -2129,7 +2333,7 @@ Otherwise see: <code>act:ask-s</code>.</p></li>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR:ASK%20%28METHOD%20NIL%20%28SENTO.ROUTER:ROUTER%20T%29%29" >ASK</a></span></span> <span class="locative-args">(SELF <a href="#SENTO.ROUTER:ROUTER%20CLASS" title="SENTO.ROUTER:ROUTER CLASS"><code>ROUTER</code></a>) MESSAGE</span></span></p>
 
 <p>Posts the message to one routee. The routee is chosen from the router <code>strategy</code>.
-Otherwise see: <code>act:ask</code>.</p></li>
+Returns <code>nil' when the router has no routees. Otherwise see:</code>act:ask`.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EEVENTSTREAM-3A-40EVENTSTREAM-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.EVENTSTREAM:@EVENTSTREAM%20MGL-PAX:SECTION"></a></p>
@@ -2274,10 +2478,12 @@ Or if you want to listen to all lists, subscribe with <code>'cons</code>.</p></l
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FUTURE%20CLASS" >FUTURE</a></span></span></span></p>
 
-<p>The wrapped <a href="https://orthecreedence.github.io/blackbird/" >blackbird</a> <code>promise</code>, here called <code>future</code>.
-Not all features of blackbird's <code>promise</code> are supported.
-This <code>future</code> wrapper changes the terminology. A <code>future</code> is a delayed computation.
-A <code>promise</code> is the fulfillment of the delayed computation.</p></li>
+<p>A <code>future</code> is a delayed computation that eventually completes with a result or an error.
+Completion handlers can be attached via <a href="#SENTO.FUTURE:FCOMPLETED%20MGL-PAX:MACRO" title="SENTO.FUTURE:FCOMPLETED MGL-PAX:MACRO"><code>fcompleted</code></a>, chained computations via <a href="#SENTO.FUTURE:FMAP%20MGL-PAX:MACRO" title="SENTO.FUTURE:FMAP MGL-PAX:MACRO"><code>fmap</code></a>,
+errors recovered via <a href="#SENTO.FUTURE:FRECOVER%20MGL-PAX:MACRO" title="SENTO.FUTURE:FRECOVER MGL-PAX:MACRO"><code>frecover</code></a>.
+The implementation is thread-safe: a future may be resolved from any thread while
+handlers are attached from other threads. Handlers are never invoked while the
+future's internal lock is held, so handler code may freely operate on futures itself.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EFUTURE-3AWITH-FUT-20MGL-PAX-3AMACRO-29"></a>
 <a id="SENTO.FUTURE:WITH-FUT%20MGL-PAX:MACRO"></a></p>
@@ -2311,26 +2517,29 @@ However, you have to <code>resolve</code> the future eventually by applying a re
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:MAKE-FUTURE%20FUNCTION" >MAKE-FUTURE</a></span></span> <span class="locative-args">EXECUTE-FUN</span></span></p>
 
-<p>Creates a future. <code>execute-fun</code> is the lambda that is executed when the future is created.
-<code>execute-fun</code> takes a parameter which is the <code>execute-fun</code> funtion. <code>execute-fun</code> function
-takes the <code>promise</code> as parameter which is the computed value. Calling <code>execute-fun</code> with the promise
-will fulfill the <a href="#SENTO.FUTURE:FUTURE%20CLASS" title="SENTO.FUTURE:FUTURE CLASS"><code>future</code></a>.
-Manually calling <code>execute-fun</code> to fulfill the <code>future</code> is in contrast to just fulfill the <code>future</code> from a return value. The benefit of the <code>execute-fun</code> is flexibility. In  a multi-threaded environment <code>execute-fun</code> could spawn a thread, in which case <code>execute-fun</code> would return immediately but no promise-value can be given at that time. The <code>execute-fun</code> can be called from a thread and provide the promise.</p>
+<p>Creates a future. <code>execute-fun</code> is the function that is executed immediately when the future is created.
+<code>execute-fun</code> takes a parameter which is the <code>resolve-fun</code> function. Calling <code>resolve-fun</code> with a value
+fulfills the future. Completing the future can happen right within <code>execute-fun</code>, or at any later time,
+from any thread. In a multi-threaded environment <code>execute-fun</code> could spawn a thread, in which case
+<code>execute-fun</code> returns immediately and the future is resolved later from the spawned thread.
+If <code>execute-fun</code> signals an error the future completes as errored with that condition.</p>
 
 <p>Create a future with:</p>
 
-<pre><code><span class="code"><span class="paren1">(<span class="code">make-future <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">execute-fun</span>)</span>
-               <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">promise <span class="paren6">(<span class="code">delayed-computation</span>)</span></span>)</span></span>)</span>
+<pre><code><span class="code"><span class="paren1">(<span class="code">make-future <span class="paren2">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren3">(<span class="code">resolve-fun</span>)</span>
+               <span class="paren3">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_141.html#IDX422" class="symbol"><i><span class="symbol">let</span></i></a> <span class="paren4">(<span class="code"><span class="paren5">(<span class="code">result <span class="paren6">(<span class="code">delayed-computation</span>)</span></span>)</span></span>)</span>
                  <span class="paren4">(<span class="code">bt2:make-thread <span class="paren5">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_330.html#IDX1006" class="symbol"><i><span class="symbol">lambda</span></i></a> <span class="paren6">(<span class="code"></span>)</span>
                    <span class="paren6">(<span class="code">sleep 0.5</span>)</span>
-                   <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_232.html#IDX618" class="symbol">funcall</a> execute-fun promise</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre></li>
+                   <span class="paren6">(<span class="code"><a href="http://www.gnu.org/software/emacs/elisp-manual/html_node/elisp_232.html#IDX618" class="symbol">funcall</a> resolve-fun result</span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span>)</span></span></code></pre></li>
 </ul>
 <p><a id="x-28SENTO-2EFUTURE-3ACOMPLETE-P-20FUNCTION-29"></a>
 <a id="SENTO.FUTURE:COMPLETE-P%20FUNCTION"></a></p>
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:COMPLETE-P%20FUNCTION" >COMPLETE-P</a></span></span> <span class="locative-args">FUTURE</span></span></p>
 
-<p>Is <code>future</code> completed? Returns either <code>t</code> or <code>nil</code>.</p></li>
+<p>Is <code>future</code> completed? Returns either <code>t</code> or <code>nil</code>.
+A future that errored also counts as completed, nothing will happen
+with such a future anymore.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EFUTURE-3AFCOMPLETED-20MGL-PAX-3AMACRO-29"></a>
 <a id="SENTO.FUTURE:FCOMPLETED%20MGL-PAX:MACRO"></a></p>
@@ -2346,9 +2555,9 @@ Returns the future.</p>
 
 <p>Notes on execution context:
 By calling <code>fcompleted</code> a completion function is installed on the <code>future</code>.
-If the <code>future</code>s execute function is not delaying or called by the same thread as the one calling <code>fcompleted</code>,
-then <code>body</code> is called by the callers thread.
-If, however, the <code>future</code> is delaying and doing computation in another thread and later also resolving the <code>future</code> in that thread (this depends on how the <code>future</code> is defined), then the <code>body</code> form is executed by the thread that is resolving the <code>future</code>.</p>
+If the <code>future</code> is already complete at that time, then <code>body</code> is called by the thread calling <code>fcompleted</code>.
+Otherwise <code>body</code> is executed by the thread that resolves the <code>future</code>.
+On an errored future the completion function is not called.</p>
 
 <p>Example:</p>
 
@@ -2363,7 +2572,9 @@ If, however, the <code>future</code> is delaying and doing computation in anothe
 <ul>
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FRESULT%20FUNCTION" >FRESULT</a></span></span> <span class="locative-args">FUTURE</span></span></p>
 
-<p>Get the computation result. If not yet available <code>:not-ready</code> is returned.</p></li>
+<p>Get the computation result. If not yet available <code>:not-ready</code> is returned.
+A future completed with <code>NIL' returns``NIL</code>' (check for completion with `complete-p').
+If the future errored, the condition is returned.</p></li>
 </ul>
 <p><a id="x-28SENTO-2EFUTURE-3AFMAP-20MGL-PAX-3AMACRO-29"></a>
 <a id="SENTO.FUTURE:FMAP%20MGL-PAX:MACRO"></a></p>
@@ -2374,13 +2585,15 @@ If, however, the <code>future</code> is delaying and doing computation in anothe
 
 <p><code>future</code> is the future that is mapped.
 <code>result</code> is the result of the future when it completed.
-<code>body</code> is the form that executes when the future is completed. The result of <code>body</code> generates a new future.</p>
+<code>body</code> is the form that executes when the future is completed. The result of <code>body</code> generates a new future.
+If <code>body</code> results in a <code>future</code> it is 'flattened', i.e. the mapped future completes with the
+inner future's result. Errors, signaled by <code>body</code> or propagated from <code>future</code>, transition the
+mapped future to errored state and can be handled with <a href="#SENTO.FUTURE:FRECOVER%20MGL-PAX:MACRO" title="SENTO.FUTURE:FRECOVER MGL-PAX:MACRO"><code>frecover</code></a>.</p>
 
 <p>Notes on execution context:
 By calling <code>fmap</code> a mapping function is installed on the <code>future</code>.
-If the <code>future</code>s execute function is not delaying or called by the same thread as the one calling <code>fmap</code>,
-then <code>body</code> is called by the callers thread.
-If, however, the <code>future</code> is delaying and doing computation in another thread and later also resolving the <code>future</code> in that thread (this depends on how the <code>future</code> is defined), then the <code>body</code> form is executed by the thread that is resolving the <code>future</code>.</p>
+If the <code>future</code> is already complete at that time, then <code>body</code> is called by the thread calling <code>fmap</code>.
+Otherwise <code>body</code> is executed by the thread that resolves the <code>future</code>.</p>
 
 <p>Example:</p>
 
@@ -2393,7 +2606,11 @@ If, however, the <code>future</code> is delaying and doing computation in anothe
 <li><p><span class=reference-bullet><span class=reference><span class="locative-type">[macro]</span> <span class="reference-object"><a href="#SENTO.FUTURE:FRECOVER%20MGL-PAX:MACRO" >FRECOVER</a></span></span> <span class="locative-args">FUTURE &amp;REST HANDLER-FORMS</span></span></p>
 
 <p>Catch errors in futures using <code>frecover</code>
-It works similar to <a href="http://www.lispworks.com/documentation/HyperSpec/Body/m_hand_1.htm" title="HANDLER-CASE (MGL-PAX:CLHS MGL-PAX:MACRO)"><code>handler-case</code></a>.</p>
+It works similar to <a href="http://www.lispworks.com/documentation/HyperSpec/Body/m_hand_1.htm" title="HANDLER-CASE (MGL-PAX:CLHS MGL-PAX:MACRO)"><code>handler-case</code></a>.
+Returns a new future. If the given <code>future</code> (or a chain of mapped futures) errors,
+the condition is matched against <code>handler-forms</code> (as by <a href="http://www.lispworks.com/documentation/HyperSpec/Body/m_tpcase.htm" title="TYPECASE (MGL-PAX:CLHS MGL-PAX:MACRO)"><code>typecase</code></a>) and the result
+of the matching handler completes the returned future.
+A condition not matching any handler propagates as error to the returned future.</p>
 
 <p>Example:</p>
 
@@ -2409,7 +2626,7 @@ It works similar to <a href="http://www.lispworks.com/documentation/HyperSpec/Bo
 </ul>
 <p><a id="x-28SENTO-2ETASKS-3A-40TASKS-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.TASKS:@TASKS%20MGL-PAX:SECTION"></a></p>
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8594;</a> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8634;</a></span></span></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.FUTURE:@FUTURE%20MGL-PAX:SECTION" title="Future (delayed-computation)">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION" title="Remoting">&#8594;</a> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8634;</a></span></span></p>
 <h3><a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION">2.11 Tasks</a></h3>
 <h6>[in package SENTO.TASKS with nicknames TASKS]</h6>
 <p><a id="x-28SENTO-2ETASKS-3AWITH-CONTEXT-20MGL-PAX-3AMACRO-29"></a>
@@ -2467,7 +2684,8 @@ dispatchers. This additional dispatcher can be utilized for <code>tasks</code>. 
 <code>fun</code> must be a 0-arity function.</p>
 
 <p>A normal response from the actor is passed back as the response value.
-If the timeout elapsed the response is: <code>(values :handler-error miscutils:ask-timeout)</code>.</p>
+Beware that a <code>cons' return is returned as</code>(values car cdr)<code>.
+If the timeout elapsed the response is:</code>(values :handler-error miscutils:ask-timeout)`.</p>
 
 <p>Example:</p>
 
@@ -2578,10 +2796,470 @@ If all workers are busy then the computation of <code>fun</code> is queued.</p>
 
 =&gt; 20 <span class="paren1">(<span class="code">5 bits, #x14, #o24, #b10100</span>)</span></span></code></pre></li>
 </ul>
+<p><a id="x-28SENTO-2EREMOTING-3A-40REMOTING-20MGL-PAX-3ASECTION-29"></a>
+<a id="SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION"></a></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.REMOTING.REMOTE-REF:@REMOTE-REF%20MGL-PAX:SECTION" title="Remote Actor Reference">&#8594;</a> <a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION" title="Remoting">&#8634;</a></span></span></p>
+<h3><a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION">2.12 Remoting</a></h3>
+<h6>[in package SENTO.REMOTING with nicknames REM]</h6>
+<p>Remoting enables actor-systems to communicate over the network.
+Use <a href="#SENTO.REMOTING:ENABLE-REMOTING%20FUNCTION" title="SENTO.REMOTING:ENABLE-REMOTING FUNCTION"><code>enable-remoting</code></a> to start a TCP listener, then <a href="#SENTO.REMOTING:MAKE-REMOTE-REF%20FUNCTION" title="SENTO.REMOTING:MAKE-REMOTE-REF FUNCTION"><code>make-remote-ref</code></a>
+to create proxies for actors on remote systems. Remote refs support
+<a href="#SENTO.ACTOR:TELL%20GENERIC-FUNCTION" title="SENTO.ACTOR:TELL GENERIC-FUNCTION"><code>tell</code></a>, <a href="#SENTO.ACTOR:ASK-S%20GENERIC-FUNCTION" title="SENTO.ACTOR:ASK-S GENERIC-FUNCTION"><code>ask-s</code></a>, and <code>ask</code> with the same interface as local actors.</p>
+<p><a id="x-28SENTO-2EREMOTING-3AENABLE-REMOTING-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING:ENABLE-REMOTING%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING:ENABLE-REMOTING%20FUNCTION" >ENABLE-REMOTING</a></span></span> <span class="locative-args">SYSTEM &amp;KEY (HOST &quot;0.0.0.0&quot;) (PORT 0) (HOSTNAME <code>NIL</code>) TLS-CONFIG MAX-MESSAGE-LENGTH SERIALIZER</span></span></p>
+
+<p>Enable remoting on an actor-system.
+Starts a TCP transport listener for inbound messages and allows creating remote-refs.</p>
+
+<p><code>HOST</code> is the interface to bind to (default &quot;0.0.0.0&quot;).
+<code>PORT</code> is the listen port (default 0 for auto-assign).
+<code>HOSTNAME</code> is the advertised hostname for response routing (defaults to <code>HOST</code>).
+<code>TLS-CONFIG</code> is an optional <a href="#SENTO.REMOTING.TLS:TLS-CONFIG%20CLASS" title="SENTO.REMOTING.TLS:TLS-CONFIG CLASS"><code>rtls:tls-config</code></a> for TLS encryption.
+<code>MAX-MESSAGE-LENGTH</code> limits the maximum message size in bytes (default 2MB).
+<code>SERIALIZER</code> is a custom serializer instance (default <a href="#SENTO.REMOTING.SERIALIZATION:SEXP-SERIALIZER%20CLASS" title="SENTO.REMOTING.SERIALIZATION:SEXP-SERIALIZER CLASS"><code>sexp-serializer</code></a>).
+Must implement <a href="#SENTO.REMOTING.SERIALIZATION:SERIALIZE%20GENERIC-FUNCTION" title="SENTO.REMOTING.SERIALIZATION:SERIALIZE GENERIC-FUNCTION"><code>rseri:serialize</code></a> and <a href="#SENTO.REMOTING.SERIALIZATION:DESERIALIZE%20GENERIC-FUNCTION" title="SENTO.REMOTING.SERIALIZATION:DESERIALIZE GENERIC-FUNCTION"><code>rseri:deserialize</code></a>.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-3ADISABLE-REMOTING-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING:DISABLE-REMOTING%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING:DISABLE-REMOTING%20FUNCTION" >DISABLE-REMOTING</a></span></span> <span class="locative-args">SYSTEM</span></span></p>
+
+<p>Disable remoting on an actor-system.
+Stops all sender actors, stops the transport, and cleans up.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-3AREMOTING-ENABLED-P-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING:REMOTING-ENABLED-P%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING:REMOTING-ENABLED-P%20FUNCTION" >REMOTING-ENABLED-P</a></span></span> <span class="locative-args">SYSTEM</span></span></p>
+
+<p>Returns <code>T</code> if remoting is enabled on the given actor-system.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-3AREMOTING-PORT-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING:REMOTING-PORT%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING:REMOTING-PORT%20FUNCTION" >REMOTING-PORT</a></span></span> <span class="locative-args">SYSTEM</span></span></p>
+
+<p>Returns the actual port the remoting transport is listening on, or <code>NIL</code>.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-3AMAKE-REMOTE-REF-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING:MAKE-REMOTE-REF%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING:MAKE-REMOTE-REF%20FUNCTION" >MAKE-REMOTE-REF</a></span></span> <span class="locative-args">SYSTEM URI &amp;KEY MAX-QUEUE-SIZE DISPATCHER</span></span></p>
+
+<p>Create a remote-actor-ref for the given sento:// <code>URI</code>.
+Requires remoting to be enabled on <code>SYSTEM</code> via <a href="#SENTO.REMOTING:ENABLE-REMOTING%20FUNCTION" title="SENTO.REMOTING:ENABLE-REMOTING FUNCTION"><code>enable-remoting</code></a>.
+The transport and serializer are provided by the remoting context.
+The sender-path for ask-s/ask is set to the local system's sento:// address.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-3AREMOTING-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING:REMOTING-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING:REMOTING-ERROR%20CONDITION" >REMOTING-ERROR</a></span></span> <span class="locative-args"><a href="http://www.lispworks.com/documentation/HyperSpec/Body/e_error.htm" title="ERROR (MGL-PAX:CLHS CONDITION)">ERROR</a></span></span></p>
+
+<p>Base condition for all remoting errors.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3A-40REMOTE-REF-20MGL-PAX-3ASECTION-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:@REMOTE-REF%20MGL-PAX:SECTION"></a></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION" title="Remoting">&#8592;</a> <a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION" title="Remoting">&#8593;</a> <a href="#SENTO.REMOTING.SERIALIZATION:@SERIALIZATION%20MGL-PAX:SECTION" title="Serialization">&#8594;</a> <a href="#SENTO.REMOTING.REMOTE-REF:@REMOTE-REF%20MGL-PAX:SECTION" title="Remote Actor Reference">&#8634;</a></span></span></p>
+<h4><a href="#SENTO.REMOTING.REMOTE-REF:@REMOTE-REF%20MGL-PAX:SECTION">2.12.1 Remote Actor Reference</a></h4>
+<h6>[in package SENTO.REMOTING.REMOTE-REF with nicknames RREF]</h6>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-ACTOR-REF-20CLASS-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20CLASS"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20CLASS" >REMOTE-ACTOR-REF</a></span></span></span></p>
+
+<p>Proxy for a remote actor. Implements tell/ask-s/ask but sends over the network.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3AMAKE-REMOTE-REF-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:MAKE-REMOTE-REF%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:MAKE-REMOTE-REF%20FUNCTION" >MAKE-REMOTE-REF</a></span></span> <span class="locative-args">SYSTEM URI TRANSPORT SERIALIZER &amp;KEY MAX-QUEUE-SIZE DISPATCHER LOCAL-SENDER-PATH</span></span></p>
+
+<p>Create a remote-actor-ref from a sento:// <code>URI</code>.
+<code>SYSTEM</code> is the local actor-system (required).
+<code>TRANSPORT</code> is the transport to use for sending.
+<code>SERIALIZER</code> is the serializer for message encoding.
+<code>MAX-QUEUE-SIZE</code> limits the sender actor's queue (nil or 0 = unbounded).
+<code>DISPATCHER</code> is the dispatcher identifier for the sender actor (default :shared).
+<code>LOCAL-SENDER-PATH</code> overrides the sender-path used in ask-s/ask envelopes.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-HOST-20-28MGL-PAX-3AREADER-20SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-ACTOR-REF-29-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:REMOTE-HOST%20%28MGL-PAX:READER%20SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%29"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:REMOTE-HOST%20%28MGL-PAX:READER%20SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%29" >REMOTE-HOST</a></span></span> <span class="locative-args">REMOTE-ACTOR-REF (:REMOTE-HOST)</span></span></p>
+
+<p>The remote host address.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-PORT-20-28MGL-PAX-3AREADER-20SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-ACTOR-REF-29-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:REMOTE-PORT%20%28MGL-PAX:READER%20SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%29"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:REMOTE-PORT%20%28MGL-PAX:READER%20SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%29" >REMOTE-PORT</a></span></span> <span class="locative-args">REMOTE-ACTOR-REF (:REMOTE-PORT)</span></span></p>
+
+<p>The remote port number.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3ATARGET-PATH-20-28MGL-PAX-3AREADER-20SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-ACTOR-REF-29-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:TARGET-PATH%20%28MGL-PAX:READER%20SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%29"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:TARGET-PATH%20%28MGL-PAX:READER%20SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%29" >TARGET-PATH</a></span></span> <span class="locative-args">REMOTE-ACTOR-REF (:TARGET-PATH)</span></span></p>
+
+<p>The actor path on the remote system.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3ALOCAL-SENDER-PATH-20-28MGL-PAX-3AREADER-20SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-ACTOR-REF-29-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:LOCAL-SENDER-PATH%20%28MGL-PAX:READER%20SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%29"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:LOCAL-SENDER-PATH%20%28MGL-PAX:READER%20SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%29" >LOCAL-SENDER-PATH</a></span></span> <span class="locative-args">REMOTE-ACTOR-REF (:LOCAL-SENDER-PATH = *LOCAL-SENDER-PATH*)</span></span></p>
+
+<p>The sender-path used for ask-s/ask envelopes.
+When remoting is enabled, this is set to the local system's sento:// address
+for response routing.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3APARSE-REMOTE-URI-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:PARSE-REMOTE-URI%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:PARSE-REMOTE-URI%20FUNCTION" >PARSE-REMOTE-URI</a></span></span> <span class="locative-args">URI</span></span></p>
+
+<p>Parse a sento://host:port/path <code>URI</code>.
+Returns (values host port path) or signals invalid-remote-uri-error.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3AHANDLE-RESPONSE-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:HANDLE-RESPONSE%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:HANDLE-RESPONSE%20FUNCTION" >HANDLE-RESPONSE</a></span></span> <span class="locative-args">REF ENVELOPE</span></span></p>
+
+<p>Called by inbound handler when a response envelope arrives.
+Match by correlation-id and resolve pending ask.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3ASTOP-SENDER-ACTOR-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:STOP-SENDER-ACTOR%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:STOP-SENDER-ACTOR%20FUNCTION" >STOP-SENDER-ACTOR</a></span></span> <span class="locative-args">REF</span></span></p>
+
+<p>Stop the internal sender actor.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EACTOR-3ATELL-20-28METHOD-20NIL-20-28SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-ACTOR-REF-20T-29-29-29"></a>
+<a id="SENTO.ACTOR:TELL%20%28METHOD%20NIL%20%28SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20T%29%29"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR:TELL%20%28METHOD%20NIL%20%28SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20T%29%29" >SENTO.ACTOR:TELL</a></span></span> <span class="locative-args">(REF <a href="#SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20CLASS" title="SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF CLASS"><code>REMOTE-ACTOR-REF</code></a>) MESSAGE</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EACTOR-3AASK-S-20-28METHOD-20NIL-20-28SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-ACTOR-REF-20T-29-29-29"></a>
+<a id="SENTO.ACTOR:ASK-S%20%28METHOD%20NIL%20%28SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20T%29%29"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR:ASK-S%20%28METHOD%20NIL%20%28SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20T%29%29" >SENTO.ACTOR:ASK-S</a></span></span> <span class="locative-args">(REF <a href="#SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20CLASS" title="SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF CLASS"><code>REMOTE-ACTOR-REF</code></a>) MESSAGE</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EACTOR-3AASK-20-28METHOD-20NIL-20-28SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-ACTOR-REF-20T-29-29-29"></a>
+<a id="SENTO.ACTOR:ASK%20%28METHOD%20NIL%20%28SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20T%29%29"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR:ASK%20%28METHOD%20NIL%20%28SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20T%29%29" >SENTO.ACTOR:ASK</a></span></span> <span class="locative-args">(REF <a href="#SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20CLASS" title="SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF CLASS"><code>REMOTE-ACTOR-REF</code></a>) MESSAGE</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EACTOR-3APATH-20-28METHOD-20NIL-20-28SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-ACTOR-REF-29-29-29"></a>
+<a id="SENTO.ACTOR:PATH%20%28METHOD%20NIL%20%28SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%29%29"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[method]</span> <span class="reference-object"><a href="#SENTO.ACTOR:PATH%20%28METHOD%20NIL%20%28SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%29%29" >SENTO.ACTOR:PATH</a></span></span> <span class="locative-args">(REF <a href="#SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF%20CLASS" title="SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-REF CLASS"><code>REMOTE-ACTOR-REF</code></a>)</span></span></p>
+
+<p>Returns the full sento:// <code>URI</code> of this remote actor.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3AREMOTE-ACTOR-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-ERROR%20CONDITION" >REMOTE-ACTOR-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING:REMOTING-ERROR%20CONDITION" title="SENTO.REMOTING:REMOTING-ERROR CONDITION">REMOTING-ERROR</a></span></span></p>
+
+<p>Base condition for remote actor reference errors.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EREMOTE-REF-3AINVALID-REMOTE-URI-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.REMOTE-REF:INVALID-REMOTE-URI-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.REMOTE-REF:INVALID-REMOTE-URI-ERROR%20CONDITION" >INVALID-REMOTE-URI-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-ERROR%20CONDITION" title="SENTO.REMOTING.REMOTE-REF:REMOTE-ACTOR-ERROR CONDITION">REMOTE-ACTOR-ERROR</a></span></span></p>
+
+<p>Signaled when a sento:// <code>URI</code> cannot be parsed.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ESERIALIZATION-3A-40SERIALIZATION-20MGL-PAX-3ASECTION-29"></a>
+<a id="SENTO.REMOTING.SERIALIZATION:@SERIALIZATION%20MGL-PAX:SECTION"></a></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.REMOTING.REMOTE-REF:@REMOTE-REF%20MGL-PAX:SECTION" title="Remote Actor Reference">&#8592;</a> <a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION" title="Remoting">&#8593;</a> <a href="#SENTO.REMOTING.ENVELOPE:@ENVELOPE%20MGL-PAX:SECTION" title="Envelope">&#8594;</a> <a href="#SENTO.REMOTING.SERIALIZATION:@SERIALIZATION%20MGL-PAX:SECTION" title="Serialization">&#8634;</a></span></span></p>
+<h4><a href="#SENTO.REMOTING.SERIALIZATION:@SERIALIZATION%20MGL-PAX:SECTION">2.12.2 Serialization</a></h4>
+<h6>[in package SENTO.REMOTING.SERIALIZATION with nicknames RSERI]</h6>
+<p><a id="x-28SENTO-2EREMOTING-2ESERIALIZATION-3ASERIALIZE-20GENERIC-FUNCTION-29"></a>
+<a id="SENTO.REMOTING.SERIALIZATION:SERIALIZE%20GENERIC-FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.SERIALIZATION:SERIALIZE%20GENERIC-FUNCTION" >SERIALIZE</a></span></span> <span class="locative-args">SERIALIZER OBJECT</span></span></p>
+
+<p>Serialize <code>OBJECT</code> using <code>SERIALIZER</code>. Returns a byte vector (unsigned-byte 8).</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ESERIALIZATION-3ADESERIALIZE-20GENERIC-FUNCTION-29"></a>
+<a id="SENTO.REMOTING.SERIALIZATION:DESERIALIZE%20GENERIC-FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.SERIALIZATION:DESERIALIZE%20GENERIC-FUNCTION" >DESERIALIZE</a></span></span> <span class="locative-args">SERIALIZER BYTES</span></span></p>
+
+<p>Deserialize <code>BYTES</code> using <code>SERIALIZER</code>. Returns the reconstructed object.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ESERIALIZATION-3ASEXP-SERIALIZER-20CLASS-29"></a>
+<a id="SENTO.REMOTING.SERIALIZATION:SEXP-SERIALIZER%20CLASS"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.REMOTING.SERIALIZATION:SEXP-SERIALIZER%20CLASS" >SEXP-SERIALIZER</a></span></span></span></p>
+
+<p>Default serializer using s-expression representation with UTF-8 encoding.
+Supported types: symbols, strings, numbers, lists, cons cells, keywords, characters, vectors, hash-tables (as alists).</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ESERIALIZATION-3ASERIALIZATION-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.SERIALIZATION:SERIALIZATION-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.SERIALIZATION:SERIALIZATION-ERROR%20CONDITION" >SERIALIZATION-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING:REMOTING-ERROR%20CONDITION" title="SENTO.REMOTING:REMOTING-ERROR CONDITION">SENTO.REMOTING:REMOTING-ERROR</a></span></span></p>
+
+<p>Signaled when an object cannot be serialized.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ESERIALIZATION-3ADESERIALIZATION-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.SERIALIZATION:DESERIALIZATION-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.SERIALIZATION:DESERIALIZATION-ERROR%20CONDITION" >DESERIALIZATION-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING:REMOTING-ERROR%20CONDITION" title="SENTO.REMOTING:REMOTING-ERROR CONDITION">SENTO.REMOTING:REMOTING-ERROR</a></span></span></p>
+
+<p>Signaled when received bytes cannot be deserialized.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3A-40ENVELOPE-20MGL-PAX-3ASECTION-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:@ENVELOPE%20MGL-PAX:SECTION"></a></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.REMOTING.SERIALIZATION:@SERIALIZATION%20MGL-PAX:SECTION" title="Serialization">&#8592;</a> <a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION" title="Remoting">&#8593;</a> <a href="#SENTO.REMOTING.TRANSPORT:@TRANSPORT%20MGL-PAX:SECTION" title="Transport">&#8594;</a> <a href="#SENTO.REMOTING.ENVELOPE:@ENVELOPE%20MGL-PAX:SECTION" title="Envelope">&#8634;</a></span></span></p>
+<h4><a href="#SENTO.REMOTING.ENVELOPE:@ENVELOPE%20MGL-PAX:SECTION">2.12.3 Envelope</a></h4>
+<h6>[in package SENTO.REMOTING.ENVELOPE with nicknames RENV]</h6>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-20CLASS-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:ENVELOPE%20CLASS"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.REMOTING.ENVELOPE:ENVELOPE%20CLASS" >ENVELOPE</a></span></span> <span class="locative-args"><a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_stu_ob.htm" title="STRUCTURE-OBJECT (MGL-PAX:CLHS CLASS)">STRUCTURE-OBJECT</a></span></span></p>
+
+<p>Network message envelope for remoting.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3AMAKE-ENVELOPE-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:MAKE-ENVELOPE%20FUNCTION"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.ENVELOPE:MAKE-ENVELOPE%20FUNCTION" >MAKE-ENVELOPE</a></span></span> <span class="locative-args">&amp;KEY ((:TARGET-PATH #:TARGET-PATH) (ERROR &quot;'target-path' is required!&quot;)) ((:SENDER-PATH #:SENDER-PATH) NIL) ((:MESSAGE #:MESSAGE) NIL) ((:MESSAGE-TYPE #:MESSAGE-TYPE) (ERROR &quot;'message-type' is required!&quot;)) ((:CORRELATION-ID #:CORRELATION-ID) NIL)</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-TARGET-PATH-20-28MGL-PAX-3ASTRUCTURE-ACCESSOR-20SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-29-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:ENVELOPE-TARGET-PATH%20%28MGL-PAX:STRUCTURE-ACCESSOR%20SENTO.REMOTING.ENVELOPE:ENVELOPE%29"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[structure-accessor]</span> <span class="reference-object"><a href="#SENTO.REMOTING.ENVELOPE:ENVELOPE-TARGET-PATH%20%28MGL-PAX:STRUCTURE-ACCESSOR%20SENTO.REMOTING.ENVELOPE:ENVELOPE%29" >ENVELOPE-TARGET-PATH</a></span></span> <span class="locative-args">ENVELOPE</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-SENDER-PATH-20-28MGL-PAX-3ASTRUCTURE-ACCESSOR-20SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-29-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:ENVELOPE-SENDER-PATH%20%28MGL-PAX:STRUCTURE-ACCESSOR%20SENTO.REMOTING.ENVELOPE:ENVELOPE%29"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[structure-accessor]</span> <span class="reference-object"><a href="#SENTO.REMOTING.ENVELOPE:ENVELOPE-SENDER-PATH%20%28MGL-PAX:STRUCTURE-ACCESSOR%20SENTO.REMOTING.ENVELOPE:ENVELOPE%29" >ENVELOPE-SENDER-PATH</a></span></span> <span class="locative-args">ENVELOPE</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-MESSAGE-20-28MGL-PAX-3ASTRUCTURE-ACCESSOR-20SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-29-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:ENVELOPE-MESSAGE%20%28MGL-PAX:STRUCTURE-ACCESSOR%20SENTO.REMOTING.ENVELOPE:ENVELOPE%29"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[structure-accessor]</span> <span class="reference-object"><a href="#SENTO.REMOTING.ENVELOPE:ENVELOPE-MESSAGE%20%28MGL-PAX:STRUCTURE-ACCESSOR%20SENTO.REMOTING.ENVELOPE:ENVELOPE%29" >ENVELOPE-MESSAGE</a></span></span> <span class="locative-args">ENVELOPE</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-MESSAGE-TYPE-20-28MGL-PAX-3ASTRUCTURE-ACCESSOR-20SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-29-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:ENVELOPE-MESSAGE-TYPE%20%28MGL-PAX:STRUCTURE-ACCESSOR%20SENTO.REMOTING.ENVELOPE:ENVELOPE%29"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[structure-accessor]</span> <span class="reference-object"><a href="#SENTO.REMOTING.ENVELOPE:ENVELOPE-MESSAGE-TYPE%20%28MGL-PAX:STRUCTURE-ACCESSOR%20SENTO.REMOTING.ENVELOPE:ENVELOPE%29" >ENVELOPE-MESSAGE-TYPE</a></span></span> <span class="locative-args">ENVELOPE</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-CORRELATION-ID-20-28MGL-PAX-3ASTRUCTURE-ACCESSOR-20SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-29-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:ENVELOPE-CORRELATION-ID%20%28MGL-PAX:STRUCTURE-ACCESSOR%20SENTO.REMOTING.ENVELOPE:ENVELOPE%29"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[structure-accessor]</span> <span class="reference-object"><a href="#SENTO.REMOTING.ENVELOPE:ENVELOPE-CORRELATION-ID%20%28MGL-PAX:STRUCTURE-ACCESSOR%20SENTO.REMOTING.ENVELOPE:ENVELOPE%29" >ENVELOPE-CORRELATION-ID</a></span></span> <span class="locative-args">ENVELOPE</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3AENVELOPE-FOR-REPLY-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:ENVELOPE-FOR-REPLY%20FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.ENVELOPE:ENVELOPE-FOR-REPLY%20FUNCTION" >ENVELOPE-FOR-REPLY</a></span></span> <span class="locative-args">ORIGINAL-ENVELOPE RESPONSE-MESSAGE</span></span></p>
+
+<p>Create a response envelope from <code>ORIGINAL-ENVELOPE</code>, swapping target/sender
+and carrying the correlation-id. <code>RESPONSE-MESSAGE</code> is the serialized payload.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3AERROR-ENVELOPE-20CLASS-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:ERROR-ENVELOPE%20CLASS"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.REMOTING.ENVELOPE:ERROR-ENVELOPE%20CLASS" >ERROR-ENVELOPE</a></span></span> <span class="locative-args"><a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_stu_ob.htm" title="STRUCTURE-OBJECT (MGL-PAX:CLHS CLASS)">STRUCTURE-OBJECT</a></span></span></p>
+
+<p>Error envelope for remote-side failures.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2EENVELOPE-3AMAKE-ERROR-ENVELOPE-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING.ENVELOPE:MAKE-ERROR-ENVELOPE%20FUNCTION"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.ENVELOPE:MAKE-ERROR-ENVELOPE%20FUNCTION" >MAKE-ERROR-ENVELOPE</a></span></span> <span class="locative-args">&amp;KEY ((:CORRELATION-ID #:CORRELATION-ID) (ERROR &quot;'correlation-id' is required!&quot;)) ((:ERROR-TYPE #:ERROR-TYPE) (ERROR &quot;'error-type' is required!&quot;)) ((:ERROR-MESSAGE #:ERROR-MESSAGE) &quot;&quot;)</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3A-40TRANSPORT-20MGL-PAX-3ASECTION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:@TRANSPORT%20MGL-PAX:SECTION"></a></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.REMOTING.ENVELOPE:@ENVELOPE%20MGL-PAX:SECTION" title="Envelope">&#8592;</a> <a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION" title="Remoting">&#8593;</a> <a href="#SENTO.REMOTING.TRANSPORT-TCP:@TRANSPORT-TCP%20MGL-PAX:SECTION" title="TCP Transport">&#8594;</a> <a href="#SENTO.REMOTING.TRANSPORT:@TRANSPORT%20MGL-PAX:SECTION" title="Transport">&#8634;</a></span></span></p>
+<h4><a href="#SENTO.REMOTING.TRANSPORT:@TRANSPORT%20MGL-PAX:SECTION">2.12.4 Transport</a></h4>
+<h6>[in package SENTO.REMOTING.TRANSPORT with nicknames RTRANS]</h6>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-20CLASS-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:TRANSPORT%20CLASS"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT%20CLASS" >TRANSPORT</a></span></span></span></p>
+
+<p>Abstract base class for remoting transports.
+Subclasses implement the actual connection and framing logic.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-HOST-20-28MGL-PAX-3AREADER-20SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-29-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:TRANSPORT-HOST%20%28MGL-PAX:READER%20SENTO.REMOTING.TRANSPORT:TRANSPORT%29"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-HOST%20%28MGL-PAX:READER%20SENTO.REMOTING.TRANSPORT:TRANSPORT%29" >TRANSPORT-HOST</a></span></span> <span class="locative-args">TRANSPORT (:HOST = &quot;0.0.0.0&quot;)</span></span></p>
+
+<p>Host/interface to bind the listener to.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-PORT-20-28MGL-PAX-3AREADER-20SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-29-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:TRANSPORT-PORT%20%28MGL-PAX:READER%20SENTO.REMOTING.TRANSPORT:TRANSPORT%29"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-PORT%20%28MGL-PAX:READER%20SENTO.REMOTING.TRANSPORT:TRANSPORT%29" >TRANSPORT-PORT</a></span></span> <span class="locative-args">TRANSPORT (:PORT = 0)</span></span></p>
+
+<p>Port to bind the listener to. 0 means auto-assign.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-MAX-MESSAGE-LENGTH-20-28MGL-PAX-3AREADER-20SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-29-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:TRANSPORT-MAX-MESSAGE-LENGTH%20%28MGL-PAX:READER%20SENTO.REMOTING.TRANSPORT:TRANSPORT%29"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[reader]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-MAX-MESSAGE-LENGTH%20%28MGL-PAX:READER%20SENTO.REMOTING.TRANSPORT:TRANSPORT%29" >TRANSPORT-MAX-MESSAGE-LENGTH</a></span></span> <span class="locative-args">TRANSPORT (:MAX-MESSAGE-LENGTH = (* 2 1024 1024))</span></span></p>
+
+<p>Maximum message size in bytes. Default 2MB.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-START-20GENERIC-FUNCTION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:TRANSPORT-START%20GENERIC-FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-START%20GENERIC-FUNCTION" >TRANSPORT-START</a></span></span> <span class="locative-args">TRANSPORT MESSAGE-HANDLER-FN</span></span></p>
+
+<p>Start listening for inbound connections.
+<code>MESSAGE-HANDLER-FN</code> is called with each received envelope.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-STOP-20GENERIC-FUNCTION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:TRANSPORT-STOP%20GENERIC-FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-STOP%20GENERIC-FUNCTION" >TRANSPORT-STOP</a></span></span> <span class="locative-args">TRANSPORT</span></span></p>
+
+<p>Stop listener and close all connections.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-SEND-20GENERIC-FUNCTION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:TRANSPORT-SEND%20GENERIC-FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-SEND%20GENERIC-FUNCTION" >TRANSPORT-SEND</a></span></span> <span class="locative-args">TRANSPORT TARGET-HOST TARGET-PORT ENVELOPE</span></span></p>
+
+<p>Send an envelope to a remote host. Manages connections internally.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ATRANSPORT-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR%20CONDITION" >TRANSPORT-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING:REMOTING-ERROR%20CONDITION" title="SENTO.REMOTING:REMOTING-ERROR CONDITION">REMOTING-ERROR</a></span></span></p>
+
+<p>Base condition for transport-related errors.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3AMESSAGE-TOO-LARGE-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:MESSAGE-TOO-LARGE-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:MESSAGE-TOO-LARGE-ERROR%20CONDITION" >MESSAGE-TOO-LARGE-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR%20CONDITION" title="SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR CONDITION">TRANSPORT-ERROR</a></span></span></p>
+
+<p>Signaled when a message exceeds the configured maximum size.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ACONNECTION-REFUSED-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:CONNECTION-REFUSED-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:CONNECTION-REFUSED-ERROR%20CONDITION" >CONNECTION-REFUSED-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR%20CONDITION" title="SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR CONDITION">TRANSPORT-ERROR</a></span></span></p>
+
+<p>Signaled when TCP connection to remote host is refused.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ACONNECTION-TIMEOUT-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:CONNECTION-TIMEOUT-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:CONNECTION-TIMEOUT-ERROR%20CONDITION" >CONNECTION-TIMEOUT-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR%20CONDITION" title="SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR CONDITION">TRANSPORT-ERROR</a></span></span></p>
+
+<p>Signaled when TCP connection attempt times out.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ACONNECTION-CLOSED-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:CONNECTION-CLOSED-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:CONNECTION-CLOSED-ERROR%20CONDITION" >CONNECTION-CLOSED-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR%20CONDITION" title="SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR CONDITION">TRANSPORT-ERROR</a></span></span></p>
+
+<p>Signaled when an established connection is unexpectedly closed by the remote side.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-3ASEND-FAILED-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT:SEND-FAILED-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT:SEND-FAILED-ERROR%20CONDITION" >SEND-FAILED-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR%20CONDITION" title="SENTO.REMOTING.TRANSPORT:TRANSPORT-ERROR CONDITION">TRANSPORT-ERROR</a></span></span></p>
+
+<p>Signaled when sending an envelope fails after connection was established.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-TCP-3A-40TRANSPORT-TCP-20MGL-PAX-3ASECTION-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT-TCP:@TRANSPORT-TCP%20MGL-PAX:SECTION"></a></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.REMOTING.TRANSPORT:@TRANSPORT%20MGL-PAX:SECTION" title="Transport">&#8592;</a> <a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION" title="Remoting">&#8593;</a> <a href="#SENTO.REMOTING.TLS:@TLS%20MGL-PAX:SECTION" title="TLS">&#8594;</a> <a href="#SENTO.REMOTING.TRANSPORT-TCP:@TRANSPORT-TCP%20MGL-PAX:SECTION" title="TCP Transport">&#8634;</a></span></span></p>
+<h4><a href="#SENTO.REMOTING.TRANSPORT-TCP:@TRANSPORT-TCP%20MGL-PAX:SECTION">2.12.5 TCP Transport</a></h4>
+<h6>[in package SENTO.REMOTING.TRANSPORT-TCP with nicknames RTRANS-TCP]</h6>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-TCP-3ATCP-TRANSPORT-20CLASS-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT-TCP:TCP-TRANSPORT%20CLASS"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT-TCP:TCP-TRANSPORT%20CLASS" >TCP-TRANSPORT</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING.TRANSPORT:TRANSPORT%20CLASS" title="SENTO.REMOTING.TRANSPORT:TRANSPORT CLASS">TRANSPORT</a></span></span></p>
+
+<p>TCP transport with TLS and length-prefixed framing.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETRANSPORT-TCP-3ATCP-TRANSPORT-ACTUAL-PORT-20-28MGL-PAX-3AACCESSOR-20SENTO-2EREMOTING-2ETRANSPORT-TCP-3ATCP-TRANSPORT-29-29"></a>
+<a id="SENTO.REMOTING.TRANSPORT-TCP:TCP-TRANSPORT-ACTUAL-PORT%20%28MGL-PAX:ACCESSOR%20SENTO.REMOTING.TRANSPORT-TCP:TCP-TRANSPORT%29"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[accessor]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TRANSPORT-TCP:TCP-TRANSPORT-ACTUAL-PORT%20%28MGL-PAX:ACCESSOR%20SENTO.REMOTING.TRANSPORT-TCP:TCP-TRANSPORT%29" >TCP-TRANSPORT-ACTUAL-PORT</a></span></span> <span class="locative-args">TCP-TRANSPORT (= NIL)</span></span></p>
+
+<p>Actual port after bind (useful when port=0).</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETLS-3A-40TLS-20MGL-PAX-3ASECTION-29"></a>
+<a id="SENTO.REMOTING.TLS:@TLS%20MGL-PAX:SECTION"></a></p>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.REMOTING.TRANSPORT-TCP:@TRANSPORT-TCP%20MGL-PAX:SECTION" title="TCP Transport">&#8592;</a> <a href="#SENTO.REMOTING:@REMOTING%20MGL-PAX:SECTION" title="Remoting">&#8593;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8594;</a> <a href="#SENTO.REMOTING.TLS:@TLS%20MGL-PAX:SECTION" title="TLS">&#8634;</a></span></span></p>
+<h4><a href="#SENTO.REMOTING.TLS:@TLS%20MGL-PAX:SECTION">2.12.6 TLS</a></h4>
+<h6>[in package SENTO.REMOTING.TLS with nicknames RTLS]</h6>
+<p><a id="x-28SENTO-2EREMOTING-2ETLS-3ATLS-CONFIG-20CLASS-29"></a>
+<a id="SENTO.REMOTING.TLS:TLS-CONFIG%20CLASS"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[class]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TLS:TLS-CONFIG%20CLASS" >TLS-CONFIG</a></span></span> <span class="locative-args"><a href="http://www.lispworks.com/documentation/HyperSpec/Body/t_stu_ob.htm" title="STRUCTURE-OBJECT (MGL-PAX:CLHS CLASS)">STRUCTURE-OBJECT</a></span></span></p>
+
+<p>TLS configuration for remoting connections.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETLS-3AMAKE-TLS-CONFIG-20FUNCTION-29"></a>
+<a id="SENTO.REMOTING.TLS:MAKE-TLS-CONFIG%20FUNCTION"></a></p>
+<ul>
+<li><span class=reference-bullet><span class=reference><span class="locative-type">[function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TLS:MAKE-TLS-CONFIG%20FUNCTION" >MAKE-TLS-CONFIG</a></span></span> <span class="locative-args">&amp;KEY ((:PROVIDER #:PROVIDER) :PURE-TLS) ((:CERTIFICATE #:CERTIFICATE) NIL) ((:PRIVATE-KEY #:PRIVATE-KEY) NIL) ((:CA-CERTIFICATE #:CA-CERTIFICATE) NIL) ((:PEER-VERIFY #:PEER-VERIFY) T)</span></span></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETLS-3ATLS-WRAP-20GENERIC-FUNCTION-29"></a>
+<a id="SENTO.REMOTING.TLS:TLS-WRAP%20GENERIC-FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TLS:TLS-WRAP%20GENERIC-FUNCTION" >TLS-WRAP</a></span></span> <span class="locative-args">PROVIDER STREAM &amp;KEY CERTIFICATE PRIVATE-KEY CA-CERTIFICATE HOSTNAME PEER-VERIFY ROLE</span></span></p>
+
+<p>Wrap a raw <code>STREAM</code> with TLS using <code>PROVIDER</code>.
+<code>ROLE</code> is :server or :client.
+Returns a TLS-wrapped stream.
+Signals tls-handshake-error, tls-certificate-error, or tls-peer-verify-error on failure.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETLS-3ATLS-UNWRAP-20GENERIC-FUNCTION-29"></a>
+<a id="SENTO.REMOTING.TLS:TLS-UNWRAP%20GENERIC-FUNCTION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[generic-function]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TLS:TLS-UNWRAP%20GENERIC-FUNCTION" >TLS-UNWRAP</a></span></span> <span class="locative-args">PROVIDER WRAPPED-STREAM</span></span></p>
+
+<p>Unwrap a TLS stream, performing graceful TLS shutdown.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETLS-3ATLS-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.TLS:TLS-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TLS:TLS-ERROR%20CONDITION" >TLS-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING:REMOTING-ERROR%20CONDITION" title="SENTO.REMOTING:REMOTING-ERROR CONDITION">SENTO.REMOTING:REMOTING-ERROR</a></span></span></p>
+
+<p>Base condition for TLS-related errors.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETLS-3ATLS-HANDSHAKE-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.TLS:TLS-HANDSHAKE-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TLS:TLS-HANDSHAKE-ERROR%20CONDITION" >TLS-HANDSHAKE-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING.TLS:TLS-ERROR%20CONDITION" title="SENTO.REMOTING.TLS:TLS-ERROR CONDITION">TLS-ERROR</a></span></span></p>
+
+<p>Signaled when TLS handshake fails.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETLS-3ATLS-CERTIFICATE-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.TLS:TLS-CERTIFICATE-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TLS:TLS-CERTIFICATE-ERROR%20CONDITION" >TLS-CERTIFICATE-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING.TLS:TLS-ERROR%20CONDITION" title="SENTO.REMOTING.TLS:TLS-ERROR CONDITION">TLS-ERROR</a></span></span></p>
+
+<p>Signaled on certificate validation failure.</p></li>
+</ul>
+<p><a id="x-28SENTO-2EREMOTING-2ETLS-3ATLS-PEER-VERIFY-ERROR-20CONDITION-29"></a>
+<a id="SENTO.REMOTING.TLS:TLS-PEER-VERIFY-ERROR%20CONDITION"></a></p>
+<ul>
+<li><p><span class=reference-bullet><span class=reference><span class="locative-type">[condition]</span> <span class="reference-object"><a href="#SENTO.REMOTING.TLS:TLS-PEER-VERIFY-ERROR%20CONDITION" >TLS-PEER-VERIFY-ERROR</a></span></span> <span class="locative-args"><a href="#SENTO.REMOTING.TLS:TLS-ERROR%20CONDITION" title="SENTO.REMOTING.TLS:TLS-ERROR CONDITION">TLS-ERROR</a></span></span></p>
+
+<p>Signaled when mutual TLS is required but peer did not present a client certificate.</p></li>
+</ul>
 <p><a id="x-28SENTO-2ECONFIG-3A-40CONFIG-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION"></a></p>
-<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.TASKS:@TASKS%20MGL-PAX:SECTION" title="Tasks">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">&#8594;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION">2.12 Config</a></h3>
+<p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.REMOTING.TLS:@TLS%20MGL-PAX:SECTION" title="TLS">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">&#8594;</a> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8634;</a></span></span></p>
+<h3><a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION">2.13 Config</a></h3>
 <h6>[in package SENTO.CONFIG with nicknames CONFIG]</h6>
 <p><a id="x-28SENTO-2ECONFIG-3ACONFIG-FROM-20FUNCTION-29"></a>
 <a id="SENTO.CONFIG:CONFIG-FROM%20FUNCTION"></a></p>
@@ -2638,7 +3316,7 @@ Both <code>config</code> and <code>fallback-config</code> must be plists, or a '
 <p><a id="x-28SENTO-2EWHEEL-TIMER-3A-40SCHEDULER-20MGL-PAX-3ASECTION-29"></a>
 <a id="SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION"></a></p>
 <p><span class="outer-navigation"><span class="navigation"> <a href="#SENTO.CONFIG:@CONFIG%20MGL-PAX:SECTION" title="Config">&#8592;</a> <a href="#SENTO.DOCS:@API%20MGL-PAX:SECTION" title="API documentation">&#8593;</a> <a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION" title="Scheduler">&#8634;</a></span></span></p>
-<h3><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION">2.13 Scheduler</a></h3>
+<h3><a href="#SENTO.WHEEL-TIMER:@SCHEDULER%20MGL-PAX:SECTION">2.14 Scheduler</a></h3>
 <h6>[in package SENTO.WHEEL-TIMER with nicknames WT]</h6>
 <p><a id="x-28SENTO-2EWHEEL-TIMER-3AWHEEL-TIMER-20CLASS-29"></a>
 <a id="SENTO.WHEEL-TIMER:WHEEL-TIMER%20CLASS"></a></p>

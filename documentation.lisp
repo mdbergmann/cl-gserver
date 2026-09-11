@@ -305,7 +305,7 @@ to create proxies for actors on remote systems. Remote refs support
 
 (in-package :renv)
 (pax:defsection @envelope (:title "Envelope")
-  (renv:envelope structure)
+  (renv:envelope class)
   (renv:make-envelope function)
   (renv:envelope-target-path function)
   (renv:envelope-sender-path function)
@@ -313,7 +313,7 @@ to create proxies for actors on remote systems. Remote refs support
   (renv:envelope-message-type function)
   (renv:envelope-correlation-id function)
   (renv:envelope-for-reply function)
-  (renv:error-envelope structure)
+  (renv:error-envelope class)
   (renv:make-error-envelope function))
 
 (in-package :rtrans)
@@ -339,7 +339,7 @@ to create proxies for actors on remote systems. Remote refs support
 
 (in-package :rtls)
 (pax:defsection @tls (:title "TLS")
-  (rtls:tls-config structure)
+  (rtls:tls-config class)
   (rtls:make-tls-config function)
   (rtls:tls-wrap generic-function)
   (rtls:tls-unwrap generic-function)

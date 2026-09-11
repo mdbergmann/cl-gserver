@@ -14,6 +14,7 @@
            #:inner-msg
            #:submit
            #:stop
+           #:*ask-s-spin-iterations*
            ;; conditions
            #:handler-unwound-error
            #:message))
@@ -92,69 +93,12 @@ Provide `wait` EQ `T` to wait until the actor cell is stopped."))
 non-local exit (for example an `abort' restart was invoked, or the processing thread was
 destroyed) so that no result exists."))
 
-(defun %check-handler-produced-result (msgbox push-item)
-  "Signals `handler-unwound-error' when `push-item's handler was invoked but
-produced no result, meaning it performed a non-local exit."
-  (with-slots (message handled-p handler-result) push-item
-    (when (and handled-p (eq handler-result 'no-result))
-      (log:warn "~a: handler unwound without a result for message: ~a"
-                (name msgbox) message)
-      (error 'handler-unwound-error :message message))))
-
-(defun %dispatched-handler-result (push-item)
-  "The result to hand back to a synchronous caller of the dispatcher message-box.
-An item that was never handled, because the message-box stopped or the item was
-cancelled, has no result; `nil' is returned rather than the internal sentinel."
-  (with-slots (handled-p handler-result) push-item
-    (if handled-p handler-result nil)))
-
-(defun wait-for-msg-handler-result (msgbox push-item)
-  "Blocks until `push-item' reached a terminal state or its `time-out' elapses.
-Waits on the item's own condition-variable, re-checking `done-p' on every wakeup
-because a wakeup may be spurious. With a `time-out' the wait is bounded by an
-absolute deadline so that spurious wakeups do not extend it. Without a `time-out'
-there is nothing to bound the wait.
-Signals `ask-timeout' when the deadline passes first, even if the handler completed
-while the lock was being re-acquired, and `handler-unwound-error' when the handler
-was invoked but produced no result."
-  (with-slots (lock cvar done-p cancelled-p time-out) push-item
-    (let ((deadline (when time-out
-                      (+ (get-internal-real-time)
-                         (* time-out internal-time-units-per-second)))))
-      (bt2:with-lock-held (lock)
-        (loop :until done-p
-              :do (if deadline
-                      (let ((remaining (/ (- deadline (get-internal-real-time))
-                                          internal-time-units-per-second)))
-                        (when (or (<= remaining 0)
-                                  (not (bt2:condition-wait cvar lock :timeout remaining)))
-                          (log:warn "~a: time-out elapsed but result not available yet!"
-                                    (name msgbox))
-                          (setf cancelled-p t)
-                          (error 'ask-timeout :wait-time time-out)))
-                      (bt2:condition-wait cvar lock))))))
-  (%check-handler-produced-result msgbox push-item))
-
-(defun %finalize-item (item)
-  "Marks ITEM as terminal and wakes a synchronous caller waiting on it.
-Called for every popped item, including one that is cancelled or arrives after
-the message-box stopped, so that a caller without a time-out never waits forever.
-Items submitted without a reply have no lock and simply get flagged."
-  (with-slots (lock cvar done-p) item
-    (if lock
-        (bt2:with-lock-held (lock)
-          (setf done-p t)
-          (bt2:condition-notify cvar))
-        (setf done-p t))))
-
 (defun call-handler-fun (handler-fun-args message)
   "`handler-fun-args' is a list with a function at `car' and args as `cdr'.
 `message' is prepended to args.
 This is used to break the environment possibly captured as closure at 'submit' stage."
   (when handler-fun-args
-    (let ((fun (car handler-fun-args))
-          (args (cdr handler-fun-args)))
-      (apply fun (cons message args)))))
+    (apply (car handler-fun-args) message (cdr handler-fun-args))))
 
 (defun %submit-stop-trigger (msgbox)
   "Submits the stop-trigger message that wakes the processing loop so it
@@ -168,6 +112,29 @@ therefore safely ignored so that stopping never fails because of a full queue."
       (log:debug "~a: queue full on stop-trigger; relying on queued items to drain"
                  (name msgbox)))))
 
+(defun %remaining-time (deadline)
+  "Seconds left until DEADLINE, an internal real time."
+  (/ (- deadline (get-internal-real-time))
+     internal-time-units-per-second))
+
+(defvar *ask-s-spin-iterations* 0
+  "How often a synchronous `submit', which is what `act:ask-s' does, re-reads
+the state of its queued item before it parks the calling thread on a
+condition-variable until the handler is done. 0, the default, parks right away.
+
+Parking and waking a thread costs several microseconds. When the handler
+usually finishes within that time, because it is short and the actor has no
+backlog, a spin of some thousand reads returns with the result before the
+thread is parked, which can double the `ask-s' throughput on a machine with
+idle cores. When the reply takes longer than the spin, the spin is wasted CPU
+on top of the park. Do not enable it on systems with more runnable threads
+than cores, where the spinning caller takes CPU from the worker producing its
+reply. Can be `let'-bound around a burst of `ask-s' calls.")
+
+(defmacro %spin-until (form)
+  "Evaluates FORM up to `*ask-s-spin-iterations*' times until it returns true."
+  `(loop :repeat *ask-s-spin-iterations* :until ,form))
+
 ;; ----------------------------------------
 ;; ------------- Bordeaux ----------------
 ;; ----------------------------------------
@@ -180,7 +147,8 @@ therefore safely ignored so that stopping never fails because of a full queue."
   (withreply-p nil :type boolean)
   (withreply-lock nil :type (or null bt2:lock))
   (withreply-cvar nil :type (or null bt2:condition-variable))
-  (time-out nil :type (or null number))
+  ;; set by a timed `submit/reply' whose time-out elapsed; an item found
+  ;; cancelled before its handler starts is not handled.
   (cancelled-p nil :type boolean)
   ;; set by the processing thread once the item is finished, whether or not
   ;; a result exists; `submit/reply' waits on this rather than on the bare
@@ -209,14 +177,24 @@ this kind of queue because each message-box (and with that each actor) requires 
                 start-thread))
 
 (defun start-thread (msgbox &key thread-name)
-  (with-slots (name queue-thread thread-is-running-p)
+  "Starts the processing thread of MSGBOX. When that thread is unwound by a
+non-local exit out of a handler, for example an `abort' restart, while the
+message-box should still run and items are queued, it starts its successor
+itself. Otherwise the queued items, and a run of a dispatcher message-box
+scheduled on this worker, would wait for an unrelated submit to restart the
+thread through `ensure-thread-is-running'."
+  (with-slots (name queue queue-thread thread-is-running-p should-run)
       msgbox
     (flet ((run-processing-loop ()
              (setf thread-is-running-p t)
              (unwind-protect
                   (message-processing-loop msgbox)
-               (setf thread-is-running-p
-                     nil))))
+               (setf thread-is-running-p nil)
+               (when (and should-run (not (emptyq-p queue)))
+                 (log:warn "~a: processing thread unwound with items queued, starting a new one"
+                           name)
+                 (start-thread msgbox
+                               :thread-name (bt2:thread-name (bt2:current-thread)))))))
       (setf queue-thread
             (bt2:make-thread #'run-processing-loop
                              :name (or thread-name
@@ -226,7 +204,7 @@ this kind of queue because each message-box (and with that each actor) requires 
 
 (defmethod initialize-instance :after ((self message-box/bt) &key)
   (start-thread self)
-  
+
   (when (next-method-p)
     (call-next-method)))
 
@@ -242,55 +220,51 @@ this kind of queue because each message-box (and with that each actor) requires 
   (declare (type message-box/bt msgbox))
   (log:trace "~a: trying to pop from queue..." (name msgbox))
   (with-slots (queue) msgbox
-    (let ((item (queue:popq queue)))
+    (let ((item (popq queue)))
       (declare (type message-item/bt item))
       (when item
         (log:trace "~a: got item: ~a" (name msgbox) item)
         (process-queue-item msgbox item)
         (incf (slot-value msgbox 'processed-messages))))))
 
+(defun %finalize-item/bt (item)
+  "Marks ITEM as terminal and wakes the `submit/reply' caller waiting on it.
+`done-p' is set under the item's lock so that the caller cannot miss it. The
+notify happens after the lock is released so that the woken caller does not
+immediately block on the lock this thread still holds."
+  (declare (type message-item/bt item))
+  (bt2:with-lock-held ((message-item/bt-withreply-lock item))
+    (setf (message-item/bt-done-p item) t))
+  (bt2:condition-notify (message-item/bt-withreply-cvar item)))
+
 (defun process-queue-item (msgbox item)
-  "The `time-out' handling in here is to make sure that handling of the
-message is 'interrupted' when the message was 'cancelled'.
-This should happen in conjunction with the outer time-out in `submit/reply'.
-This function sets the result as `handler-result' in `item'. The return of this function is not relevant."
+  "Applies the `handler-fun-args' of ITEM to its message and stores the result
+as its `handler-result'. The return of this function is not relevant.
+An item whose timed `submit/reply' caller already gave up, `cancelled-p', is
+not handled. The handler runs without the item's lock held, so a caller whose
+time-out elapses meanwhile is not delayed until the handler finishes; a
+cancellation that arrives while the handler is already running does not
+interrupt it, the handler completes and its result is discarded."
   (declare
    (type message-box/bt msgbox)
    (type message-item/bt item))
-  (with-slots (message
-               handler-fun-args
-               handler-result
-               withreply-p
-               withreply-lock
-               withreply-cvar
-               cancelled-p
-               done-p
-               time-out) item
-    (when cancelled-p
-      (log:warn "~a: item got cancelled: ~a" (name msgbox) item)
-      (when withreply-p
-        (bt2:with-lock-held (withreply-lock)
-          (setf done-p t)
-          (bt2:condition-notify withreply-cvar)))
-      (return-from process-queue-item :cancelled))
-
-    (flet ((handler-fun ()
-             (log:trace "~a: withreply: handler-fun-args..." (name msgbox))
-             (setf handler-result
-                   (call-handler-fun handler-fun-args message))
-             (log:trace "~a: withreply: handler-fun-args result: ~a"
-                        (name msgbox) handler-result)))
-      (if withreply-p
-          (bt2:with-lock-held (withreply-lock)
-            ;; `done-p' is set and the waiter notified even when the handler
-            ;; unwinds, so that `submit/reply' never waits forever.
-            (unwind-protect
-                 (if time-out
-                     (unless cancelled-p (handler-fun))
-                     (handler-fun))
-              (setf done-p t)
-              (bt2:condition-notify withreply-cvar)))
-          (handler-fun)))))
+  (flet ((handler-fun ()
+           (log:trace "~a: handler-fun-args..." (name msgbox))
+           (setf (message-item/bt-handler-result item)
+                 (call-handler-fun (message-item/bt-handler-fun-args item)
+                                   (message-item/bt-message item)))
+           (log:trace "~a: handler-fun-args result: ~a"
+                      (name msgbox) (message-item/bt-handler-result item))))
+    (if (message-item/bt-withreply-p item)
+        ;; `done-p' is set and the waiter notified even when the handler
+        ;; unwinds, so that `submit/reply' never waits forever.
+        (unwind-protect
+             (if (message-item/bt-cancelled-p item)
+                 (log:warn "~a: item got cancelled, not handling message: ~a"
+                           (name msgbox) (message-item/bt-message item))
+                 (handler-fun))
+          (%finalize-item/bt item))
+        (handler-fun))))
 
 
 (declaim (ftype (function (message-box/bt)
@@ -338,36 +312,32 @@ handler produced no result."
                      :withreply-p t
                      :withreply-lock withreply-lock
                      :withreply-cvar withreply-cvar
-                     :time-out time-out
                      :handler-fun-args handler-fun-args
                      :handler-result 'no-result))
          (deadline (when time-out
                      (+ (get-internal-real-time)
                         (* time-out internal-time-units-per-second)))))
     (declare (type message-item/bt push-item))
-    (with-slots (done-p cancelled-p handler-result) push-item
-      (bt2:with-lock-held (withreply-lock)
-        (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
-        (queue:pushq queue push-item)
-        (ensure-thread-is-running msgbox)
+    (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
+    (pushq queue push-item)
+    (ensure-thread-is-running msgbox)
 
-        (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
-        (loop :until done-p
-              :do (let ((remaining (when deadline
-                                     (/ (- deadline (get-internal-real-time))
-                                        internal-time-units-per-second))))
-                    (when (and remaining
-                               (or (<= remaining 0)
-                                   (not (bt2:condition-wait withreply-cvar withreply-lock
-                                                            :timeout remaining))))
-                      (log:warn "~a: time-out elapsed but result not available yet!"
-                                (name msgbox))
-                      (setf cancelled-p t)
-                      (error 'ask-timeout
-                             :wait-time time-out))
-                    (unless remaining
-                      (bt2:condition-wait withreply-cvar withreply-lock)))))
+    (log:trace "~a: withreply: waiting for arrival of result..." (name msgbox))
+    (%spin-until (message-item/bt-done-p push-item))
+    (bt2:with-lock-held (withreply-lock)
+      (loop :until (message-item/bt-done-p push-item)
+            :do (if deadline
+                    (let ((remaining (%remaining-time deadline)))
+                      (when (or (<= remaining 0)
+                                (not (bt2:condition-wait withreply-cvar withreply-lock
+                                                         :timeout remaining)))
+                        (log:warn "~a: time-out elapsed but result not available yet!"
+                                  (name msgbox))
+                        (setf (message-item/bt-cancelled-p push-item) t)
+                        (error 'ask-timeout :wait-time time-out)))
+                    (bt2:condition-wait withreply-cvar withreply-lock))))
 
+    (let ((handler-result (message-item/bt-handler-result push-item)))
       (log:trace "~a: withreply: result available: ~a" (name msgbox) handler-result)
       (when (eq handler-result 'no-result)
         (log:warn "~a: handler unwound without a result for message: ~a"
@@ -383,7 +353,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
                     :message message
                     :handler-fun-args handler-fun-args)))
     (log:trace "~a: pushing item to queue: ~a" (name msgbox) push-item)
-    (queue:pushq queue push-item)
+    (pushq queue push-item)
     (ensure-thread-is-running msgbox)
     t))
 
@@ -464,8 +434,9 @@ The `dispatcher` is kind of like a thread pool.
 
 Message processing is scheduled per message-box, not per message: the first
 submit on an idle message-box dispatches one run to a worker, further submits
-while that run is pending only enqueue. A run handles up to `throughput' queued
-items and reschedules the message-box only when items remain."))
+while that run is pending only enqueue. A run takes up to `throughput' queued
+items out of the queue at once, handles them, and reschedules the message-box
+only when items remain."))
 
 (defmethod initialize-instance :after ((self message-box/dp) &key)
   (with-slots (dispatcher throughput exec-fun-args) self
@@ -475,6 +446,58 @@ items and reschedules the message-box only when items remain."))
     (setf exec-fun-args (list 'dispatcher-exec-fun self)))
   (when (next-method-p)
     (call-next-method)))
+
+(defun %finalize-item (item)
+  "Marks ITEM as terminal and wakes a synchronous caller waiting on it.
+Called for every popped item, including one that is cancelled or arrives after
+the message-box stopped, so that a caller without a time-out never waits forever.
+Items submitted without a reply have no lock and simply get flagged. With a
+lock, `done-p' is set under it so that the caller cannot miss it, and the
+notify happens after the lock is released so that the woken caller does not
+immediately block on the lock this thread still holds."
+  (declare (type message-item/dp item))
+  (let ((lock (message-item/dp-lock item)))
+    (if lock
+        (progn
+          (bt2:with-lock-held (lock)
+            (setf (message-item/dp-done-p item) t))
+          (bt2:condition-notify (message-item/dp-cvar item)))
+        (setf (message-item/dp-done-p item) t))))
+
+(defun wait-for-msg-handler-result (msgbox item)
+  "Blocks until ITEM reached a terminal state or its `time-out' elapses.
+Waits on the item's own condition-variable, re-checking `done-p' on every wakeup
+because a wakeup may be spurious. With a `time-out' the wait is bounded by an
+absolute deadline so that spurious wakeups do not extend it. Without a `time-out'
+there is nothing to bound the wait.
+Signals `ask-timeout' when the deadline passes first, even if the handler completed
+while the lock was being re-acquired, and `handler-unwound-error' when the handler
+was invoked but produced no result."
+  (declare (type message-item/dp item))
+  (let* ((lock (message-item/dp-lock item))
+         (cvar (message-item/dp-cvar item))
+         (time-out (message-item/dp-time-out item))
+         (deadline (when time-out
+                     (+ (get-internal-real-time)
+                        (* time-out internal-time-units-per-second)))))
+    (%spin-until (message-item/dp-done-p item))
+    (bt2:with-lock-held (lock)
+      (loop :until (message-item/dp-done-p item)
+            :do (if deadline
+                    (let ((remaining (%remaining-time deadline)))
+                      (when (or (<= remaining 0)
+                                (not (bt2:condition-wait cvar lock :timeout remaining)))
+                        (log:warn "~a: time-out elapsed but result not available yet!"
+                                  (name msgbox))
+                        (setf (message-item/dp-cancelled-p item) t)
+                        (error 'ask-timeout :wait-time time-out)))
+                    (bt2:condition-wait cvar lock)))))
+  (when (and (message-item/dp-handled-p item)
+             (eq (message-item/dp-handler-result item) 'no-result))
+    (let ((message (message-item/dp-message item)))
+      (log:warn "~a: handler unwound without a result for message: ~a"
+                (name msgbox) message)
+      (error 'handler-unwound-error :message message))))
 
 (defvar *schedule-max-attempts* 3
   "How many consecutive scheduling attempts `%schedule' makes for one burst
@@ -519,48 +542,74 @@ which orders it after such a submit's push."
     (unless (emptyq-p queue)
       (%schedule msgbox))))
 
+(defun %requeue-unhandled (msgbox batch from below)
+  "Puts the items of BATCH from index FROM below index BELOW back into the
+queue of MSGBOX. Used when a run unwound out of a handler with items of its
+batch still unhandled, so that they are neither lost nor left with a waiting
+caller. They go behind items submitted since the batch was taken. An item
+that does not fit into a full bounded queue is finalized unhandled instead."
+  (with-slots (name queue) msgbox
+    (log:warn "~a: run unwound with ~a of ~a batched items unhandled, requeuing them"
+              name (- below from) below)
+    (loop :for i :from from :below below
+          :do (let ((item (shiftf (svref batch i) nil)))
+                (handler-case
+                    (pushq queue item)
+                  (queue-full-error ()
+                    (log:warn "~a: queue full, discarding unhandled message: ~a"
+                              name (message-item/dp-message item))
+                    (%finalize-item item)))))))
+
 (defun dispatcher-exec-fun (msgbox)
   "One run of MSGBOX, executed on a dispatcher worker.
-Pops and handles up to `throughput' queued items under the message-box lock,
-applying the `handler-fun-args' of each item to its message. Once the message-box
-is stopped, popped items are only finalized so that waiting callers are woken.
+Takes up to `throughput' queued items out of the queue under one acquisition
+of the queue lock and handles them under the message-box lock, applying the
+`handler-fun-args' of each item to its message. Once the message-box is
+stopped, the items are only finalized so that waiting callers are woken.
 Afterwards the message-box is marked idle and rescheduled when items remain,
-also when the run unwinds, so that the message-box never stays wedged."
+also when the run unwinds, so that the message-box never stays wedged; items
+of the batch not handled by then are put back into the queue."
   (with-slots (name lock queue should-run throughput) msgbox
-    (unwind-protect
-         (bt2:with-lock-held (lock)
-           (loop :repeat throughput
-                 :do (multiple-value-bind (popped-item presentp)
-                         (try-popq queue)
-                       (unless presentp
-                         (return))
-                       (if should-run
-                           (handle-popped-item popped-item msgbox)
-                           (progn
-                             (log:warn "~a: message-box stopped, not handling: ~a"
-                                       name popped-item)
-                             (%finalize-item popped-item))))))
-      (%reschedule-when-pending msgbox))))
+    (let ((batch (make-array throughput :initial-element nil))
+          (count 0)
+          (next 0))
+      (declare (dynamic-extent batch)
+               (type fixnum count next))
+      (unwind-protect
+           (bt2:with-lock-held (lock)
+             (setf count (try-popq-into queue batch))
+             (loop :while (< next count)
+                   :do (let ((item (shiftf (svref batch next) nil)))
+                         (incf next)
+                         (if should-run
+                             (handle-popped-item item msgbox)
+                             (progn
+                               (log:debug "~a: message-box stopped, discarding message: ~a"
+                                          name (message-item/dp-message item))
+                               (%finalize-item item))))))
+        (when (< next count)
+          (%requeue-unhandled msgbox batch next count))
+        (%reschedule-when-pending msgbox)))))
 
-(defun handle-popped-item (popped-item msgbox)
+(defun handle-popped-item (item msgbox)
   "Handles the popped message. Means: applies the function in `handler-fun-args` on the message.
 The item is finalized on every exit path, including a handler that unwinds, so
 that a synchronous caller waiting on it is always woken."
   (declare
-   (type message-item/dp popped-item)
+   (type message-item/dp item)
    (type message-box/dp msgbox))
   (with-slots (name should-run) msgbox
-    (with-slots (message cancelled-p handled-p handler-fun-args handler-result) popped-item
-      (log:trace "~a: popped message: ~a" name popped-item)
-      (unwind-protect
-           (progn
-             (unless (and should-run (not cancelled-p))
-               (log:warn "~a: item got cancelled or message-box stopped: ~a"
-                         name popped-item)
-               (return-from handle-popped-item))
-             (setf handled-p t)
-             (setf handler-result (call-handler-fun handler-fun-args message)))
-        (%finalize-item popped-item)))))
+    (log:trace "~a: popped message: ~a" name (message-item/dp-message item))
+    (unwind-protect
+         (if (and should-run (not (message-item/dp-cancelled-p item)))
+             (progn
+               (setf (message-item/dp-handled-p item) t)
+               (setf (message-item/dp-handler-result item)
+                     (call-handler-fun (message-item/dp-handler-fun-args item)
+                                       (message-item/dp-message item))))
+             (log:warn "~a: item got cancelled or message-box stopped, not handling message: ~a"
+                       name (message-item/dp-message item)))
+      (%finalize-item item))))
 
 (defmethod submit ((self message-box/dp) message withreply-p time-out handler-fun-args)
   "Submitting a message on a multi-threaded `dispatcher` is different as submitting on a single threaded message-box. On a single threaded message-box the order of message processing is guaranteed even when submitting from multiple threads. On the `dispatcher` this is not the case. The order cannot be guaranteed when messages are processed by different `dispatcher` threads. However, we still guarantee a 'single-threadedness' regarding the state of the actor. This is achieved here by protecting the `handler-fun-args` execution with a lock.
@@ -594,7 +643,12 @@ caller's item, so a run's return value could belong to a different caller."
       (if withreply-p
           (progn
             (wait-for-msg-handler-result self push-item)
-            (%dispatched-handler-result push-item))
+            ;; an item that was never handled, because the message-box stopped
+            ;; or the item was cancelled, has no result; `nil' is returned
+            ;; rather than the internal sentinel.
+            (if (message-item/dp-handled-p push-item)
+                (message-item/dp-handler-result push-item)
+                nil))
           t))))
 
 (defmethod stop ((self message-box/dp) &optional (wait nil))

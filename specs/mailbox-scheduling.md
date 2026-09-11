@@ -55,17 +55,28 @@ schedule():
     ; else retry: other submitters may have pushed while trusting this run
 
 run():                                   ; dispatcher-exec-fun, on a worker
+  batch := stack vector of throughput slots
   unwind-protect
     with lock held:
-      repeat throughput times:
-        (item, present) := try-popq(queue)
-        if not present: break
+      count := try-popq-into(queue, batch)   ; one queue lock round-trip
+      for item in batch[0 .. count):
         if should-run: handle item      ; unchanged handle-popped-item
         else:          finalize item    ; message-box stopped, wake any waiter
   cleanup:
+    requeue batch items not reached     ; only when a handler unwound the run
     set scheduled-p 0                    ; CAS 1 -> 0
     if not emptyq-p(queue): schedule()
 ```
+
+A run that unwinds out of a handler, by an `abort` restart or a destroyed
+worker thread, still holds the unhandled rest of its batch. Those items are
+pushed back onto the queue in the cleanup, behind whatever was submitted since
+the batch was taken, so that they are neither lost nor leave a synchronous
+caller waiting. An item that does not fit a full bounded queue is finalized
+unhandled. The same unwind also ends the worker's thread while the reschedule
+just landed on its queue; the `message-box/bt` thread therefore starts its own
+successor when it unwinds with items still queued, instead of waiting for an
+unrelated submit to restart it through `ensure-thread-is-running`.
 
 ### Lost-wakeup analysis
 
@@ -146,6 +157,29 @@ active run, where before up to eight workers overlapped their pops on one
 message-box. The default of 5 keeps the fairness of the previous behaviour
 close while already gaining most of the win; from 20 on the curve flattens.
 
+Second round, same setup, after the lock-traffic changes below. "batching" is
+the first-round result with the default throughput of 5, which stays the
+default. The `ask-s` columns are without and with `*ask-s-spin-iterations*`
+set to 10000.
+
+| case | batching | lock traffic | spin 10000 |
+|---|---|---|---|
+| shared `tell` | 680k/s | 1,120k/s | |
+| shared `ask-s` | 307k/s | 358k/s | 540k/s |
+| pinned `tell` | 1,090k/s | 2,440k/s | |
+| pinned `ask-s` | 390k/s | 510k/s | 980k/s |
+
+With two senders instead of eight, spinning lifts pinned `ask-s` from 280k/s to
+1.6M/s: the handler is done long before the caller would be parked. A spin of
+1000 is too short for eight senders on this machine and loses against no spin
+(298k/s shared), which is why the spin stays off by default: it only pays when
+the reply usually arrives within the spin, and it takes CPU from the worker
+producing the reply when cores are scarce.
+
+Pooling the per-`ask-s` lock and condition-variable was measured and rejected:
+allocating the pair costs about 70ns on SBCL, a lock-protected pool costs
+over 1µs per pair under eight-thread contention.
+
 Not included: a time-based deadline per run (Akka's `throughput-deadline-time`).
 Handlers that take long should not run on the shared dispatcher in the first
 place, and the item cap already bounds a run for short handlers.
@@ -195,6 +229,32 @@ discard needed its own dispatch.
 ### `src/actor-system-api.lisp`
 
 - `*default-config*` lists `:throughput` for the `:shared` dispatcher.
+
+### Lock traffic (second round)
+
+- Queues count the threads blocked in `popq` under the lock; `pushq` skips the
+  `condition-notify` when nobody waits, and notifies after releasing the lock
+  so the woken consumer does not block on it right away. Matters most for
+  pinned actors, where before every push notified.
+- New generic `try-popq-into`: pops up to `(length vector)` elements into a
+  vector under one lock acquisition, returns the count. `dispatcher-exec-fun`
+  takes its batch with it into a stack-allocated vector.
+- Item finalization on both message-box kinds sets `done-p` under the item
+  lock and notifies after releasing it. `message-box/bt` runs the handler
+  without the item lock held, so a timed `submit` is no longer delayed by its
+  own running handler before it can report the time-out; a cancellation that
+  arrives while the handler runs does not interrupt it.
+- Item structs are accessed through their accessors instead of `with-slots`,
+  which on structs goes through `slot-value` and is slow on most
+  implementations.
+- `actor-cell` builds the `handler-fun-args` lists for `call` and `cast`
+  without a sender once, and `submit-message` only establishes the
+  `handler-case` for the reply path. `call-handler-fun` applies without
+  consing the argument list.
+- The "message-box stopped, not handling" log in `dispatcher-exec-fun` is at
+  debug level and prints the message rather than the item struct.
+- `mesgb:*ask-s-spin-iterations*`, default 0: reads of the item's `done-p`
+  before a synchronous submit parks on its condition-variable.
 
 ## Test plan
 

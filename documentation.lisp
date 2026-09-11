@@ -61,6 +61,7 @@
   (mesgb::name (pax:reader mesgb::message-box-base))
   (mesgb::max-queue-size (pax:reader mesgb::message-box-base))
   (mesgb:submit generic-function)
+  (mesgb:*ask-s-spin-iterations* variable)
   (mesgb:stop generic-function)
   (mesgb:stop (method () (mesgb::message-box-base))))
 

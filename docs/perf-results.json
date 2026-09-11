@@ -1,0 +1,11 @@
+{"title": "Sento 3.5.0 message throughput on Apple M3 Ultra",
+ "subtitle": "8 sender threads, 1M messages to one actor, median of 3 rounds (docs/perf-bench.lisp)",
+ "groups": ["Pinned - tell", "Pinned - ask-s", "Pinned - ask", "Shared - tell", "Shared - ask-s", "Shared - ask"],
+ "series": [
+  {"name": "SBCL",      "version": "2.6.8",     "values": [2906732, 529678, 1124475, 1162266, 374970, 778947]},
+  {"name": "LispWorks", "version": "8.1.2",     "values": [561798, 203335, 392927, 348918, 153822, 277624]},
+  {"name": "Clamiga",   "version": "0.9.0",     "values": [494315, 143205, 140351, 216967, 129316, 110412]},
+  {"name": "ECL",       "version": "26.5.5",    "values": [366383, 117025, 127182, 271497, 140985, 115838]},
+  {"name": "ABCL",      "version": "1.9.3-dev", "values": [163800, 119632, 97551, 126518, 100949, 103552]}
+ ],
+ "footnote": "macOS 26.6.2, shared dispatcher with 8 workers, default throughput 5, no ask-s spinning"}

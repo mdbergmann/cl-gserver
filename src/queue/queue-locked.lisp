@@ -90,26 +90,37 @@ Copyright (c) 2011-2012, James M. Lawrence. All rights reserved.
   ((queue :initform (make-queue))
    (lock :initform (bt2:make-lock))
    (cvar :initform (bt2:make-condition-variable))
+   (waiters :initform 0
+            :documentation
+            "Number of threads blocked in `popq'. Maintained under the lock;
+a push only notifies the condition-variable when it is positive.")
    (fill-count :initform 0))
   (:documentation "Unbounded queue."))
 
 (defmethod pushq ((self queue-unbounded) element)
-  (with-slots (queue lock cvar fill-count) self
-    (bt2:with-lock-held (lock)
-      (enqueue element queue)
-      (incf fill-count)
-      (bt2:condition-notify cvar))))
+  (with-slots (queue lock cvar waiters fill-count) self
+    (let ((notify-p nil))
+      (bt2:with-lock-held (lock)
+        (enqueue element queue)
+        (incf fill-count)
+        (setf notify-p (plusp waiters)))
+      ;; notified after the lock is released so that the woken consumer does
+      ;; not immediately block on the lock this thread still holds.
+      (when notify-p
+        (bt2:condition-notify cvar)))))
 
 (defmethod popq ((self queue-unbounded))
-  (with-slots (queue lock cvar fill-count) self
+  (with-slots (queue lock cvar waiters fill-count) self
     (bt2:with-lock-held (lock)
       (loop (multiple-value-bind (value presentp)
                 (dequeue queue)
-              (if presentp
-                  (progn
-                    (decf fill-count)
-                    (return value))
-                  (bt2:condition-wait cvar lock)))))))
+              (when presentp
+                (decf fill-count)
+                (return value)))
+            (incf waiters)
+            (unwind-protect
+                 (bt2:condition-wait cvar lock)
+              (decf waiters))))))
 
 (defmethod try-popq ((self queue-unbounded))
   (with-slots (queue lock fill-count) self
@@ -119,6 +130,20 @@ Copyright (c) 2011-2012, James M. Lawrence. All rights reserved.
         (when presentp
           (decf fill-count))
         (values value presentp)))))
+
+(defmethod try-popq-into ((self queue-unbounded) vector)
+  (with-slots (queue lock fill-count) self
+    (bt2:with-lock-held (lock)
+      (let ((count 0))
+        (loop :while (< count (length vector))
+              :do (multiple-value-bind (value presentp)
+                      (dequeue queue)
+                    (unless presentp
+                      (return))
+                    (setf (aref vector count) value)
+                    (incf count)))
+        (decf fill-count count)
+        count))))
 
 (defmethod emptyq-p ((self queue-unbounded))
   (with-slots (queue lock) self

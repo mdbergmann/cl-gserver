@@ -1,522 +1,149 @@
-macOS Sonoma 14.3.1
+Sento 3.5.0 throughput, measured with docs/perf-bench.lisp on 11.09.2026
+Mac Studio, Apple M3 Ultra (28 cores), 96 GB RAM, macOS 26.6.2
+8 sender threads x 125k messages to one actor, shared dispatcher with 8 workers
+msg/s = 1M / elapsed until the actor processed all messages, 3 rounds per cell
 
 -----------------------------------------------
-SBCL 2.4.1 -- M1 Ultra 64 GB
+SBCL 2.6.8
 -----------------------------------------------
-
-* (runner-bt)
-=> shared workers 8, used only for async waiting actor
-=> pinned actor
-
-Times: 1000000
-Evaluation took:
-  0.551 seconds of real time
-  8.424514 seconds of total run time (8.417146 user, 0.007368 system)
-  [ Real times consist of 0.011 seconds GC time, and 0.540 seconds non-GC time. ]
-  [ Run times consist of 0.010 seconds GC time, and 8.415 seconds non-GC time. ]
-  1529.04% CPU
-  176,248,864 bytes consed
-  
-Counter: 1000000
-Elapsed: 1
-
-* (runner-bt t)
-Times: 1000000
-Evaluation took:
-  3.673 seconds of real time
-  39.371905 seconds of total run time (32.085699 user, 7.286206 system)
-  [ Real times consist of 0.001 seconds GC time, and 3.672 seconds non-GC time. ]
-  [ Run times consist of 0.001 seconds GC time, and 39.371 seconds non-GC time. ]
-  1071.93% CPU
-  256,183,248 bytes consed
-  
-Counter: 1000000
-Elapsed: 4
-
-* (runner-bt t t)
-Times: 1000000
-Evaluation took:
-  1.504 seconds of real time
-  9.408103 seconds of total run time (9.151678 user, 0.256425 system)
-  [ Real times consist of 0.966 seconds GC time, and 0.538 seconds non-GC time. ]
-  [ Run times consist of 0.942 seconds GC time, and 8.467 seconds non-GC time. ]
-  625.53% CPU
-  1,755,578,464 bytes consed
-  
-Counter: 1000000
-
---------------- shared ---------------
-
-* (runner-dp)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-Evaluation took:
-  1.085 seconds of real time
-  10.606020 seconds of total run time (6.498268 user, 4.107752 system)
-  [ Real times consist of 0.125 seconds GC time, and 0.960 seconds non-GC time. ]
-  [ Run times consist of 0.122 seconds GC time, and 10.485 seconds non-GC time. ]
-  977.51% CPU
-  382,767,872 bytes consed
-  
-Counter: 1000000
-Elapsed: 1
-
-* (runner-dp t)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-Evaluation took:
-  3.003 seconds of real time
-  35.598473 seconds of total run time (21.116686 user, 14.481787 system)
-  [ Real times consist of 0.004 seconds GC time, and 2.999 seconds non-GC time. ]
-  [ Run times consist of 0.004 seconds GC time, and 35.595 seconds non-GC time. ]
-  1185.41% CPU
-  462,156,336 bytes consed
-  
-Counter: 1000000
-Elapsed: 3
-
-* (runner-dp t t)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-Evaluation took:
-  2.961 seconds of real time
-  12.791957 seconds of total run time (8.335099 user, 4.456858 system)
-  [ Real times consist of 1.942 seconds GC time, and 1.019 seconds non-GC time. ]
-  [ Run times consist of 1.897 seconds GC time, and 10.895 seconds non-GC time. ]
-  432.02% CPU
-  1,962,820,864 bytes consed
-  
-Counter: 1000000
-Elapsed: 3
+8 x 125000 messages per cell, 8 shared workers, 3 rounds
+  PINNED TELL: 0.37s, 2,685,977 msg/s
+  PINNED TELL: 0.34s, 2,906,732 msg/s
+  PINNED TELL: 0.34s, 2,964,887 msg/s
+RESULT PINNED TELL 2,906,732 msg/s (median of 2,685,977, 2,906,732, 2,964,887)
+  PINNED ASK-S: 1.79s, 558,868 msg/s
+  PINNED ASK-S: 1.89s, 529,678 msg/s
+  PINNED ASK-S: 1.98s, 504,012 msg/s
+RESULT PINNED ASK-S 529,678 msg/s (median of 558,868, 529,678, 504,012)
+  PINNED ASK: 0.89s, 1,124,475 msg/s
+  PINNED ASK: 0.88s, 1,136,389 msg/s
+  PINNED ASK: 1.21s, 824,450 msg/s
+RESULT PINNED ASK 1,124,475 msg/s (median of 1,124,475, 1,136,389, 824,450)
+  SHARED TELL: 0.84s, 1,186,483 msg/s
+  SHARED TELL: 0.90s, 1,107,040 msg/s
+  SHARED TELL: 0.86s, 1,162,266 msg/s
+RESULT SHARED TELL 1,162,266 msg/s (median of 1,186,483, 1,107,040, 1,162,266)
+  SHARED ASK-S: 2.68s, 373,259 msg/s
+  SHARED ASK-S: 2.67s, 374,970 msg/s
+  SHARED ASK-S: 2.64s, 378,569 msg/s
+RESULT SHARED ASK-S 374,970 msg/s (median of 373,259, 374,970, 378,569)
+  SHARED ASK: 1.24s, 806,405 msg/s
+  SHARED ASK: 1.28s, 778,947 msg/s
+  SHARED ASK: 1.50s, 668,457 msg/s
+RESULT SHARED ASK 778,947 msg/s (median of 806,405, 778,947, 668,457)
 
 -----------------------------------------------
-SBCL 2.4.1 -- iMac Pro 32 GB
+LispWorks 8.1.2 (lw-console image)
 -----------------------------------------------
-
-* (runner-bt)
-=> shared workers 8
-=> pinned actor
-
-Times: 1000000
-Evaluation took:
-  0.567 seconds of real time
-  4.901028 seconds of total run time (4.838750 user, 0.062278 system)
-  [ Real times consist of 0.215 seconds GC time, and 0.352 seconds non-GC time. ]
-  [ Run times consist of 0.215 seconds GC time, and 4.687 seconds non-GC time. ]
-  864.37% CPU
-  1,812,455,642 processor cycles
-  183,374,000 bytes consed
-
-Counter: 1000000
-Elapsed: 1
-
-* (runner-bt t)
-Times: 1000000
-Evaluation took:
-  2.728 seconds of real time
-  36.064127 seconds of total run time (27.292594 user, 8.771533 system)
-  [ Real times consist of 0.012 seconds GC time, and 2.716 seconds non-GC time. ]
-  [ Run times consist of 0.012 seconds GC time, and 36.053 seconds non-GC time. ]
-  1321.99% CPU
-  8,710,369,829 processor cycles
-  271,096,352 bytes consed
-
-Counter: 1000000
-Elapsed: 2
-
-* (runner-bt t t)
-Times: 1000000
-Evaluation took:
-  1.339 seconds of real time
-  8.470251 seconds of total run time (8.014314 user, 0.455937 system)
-  [ Real times consist of 0.769 seconds GC time, and 0.570 seconds non-GC time. ]
-  [ Run times consist of 0.769 seconds GC time, and 7.702 seconds non-GC time. ]
-  632.56% CPU
-  4,275,732,982 processor cycles
-  1,343,667,136 bytes consed
-
-Counter: 1000000
-Elapsed: 2
-
---------------- shared ---------------
-
-* (runner-dp)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-Evaluation took:
-  1.871 seconds of real time
-  7.283084 seconds of total run time (7.031098 user, 0.251986 system)
-  [ Real times consist of 1.245 seconds GC time, and 0.626 seconds non-GC time. ]
-  [ Run times consist of 1.245 seconds GC time, and 6.039 seconds non-GC time. ]
-  389.26% CPU
-  5,974,839,985 processor cycles
-  365,682,864 bytes consed
-
-Counter: 1000000
-Elapsed: 2
-
-* (runner-dp t)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-Evaluation took:
-  2.720 seconds of real time
-  34.676543 seconds of total run time (25.833824 user, 8.842719 system)
-  [ Real times consist of 0.019 seconds GC time, and 2.701 seconds non-GC time. ]
-  [ Run times consist of 0.019 seconds GC time, and 34.658 seconds non-GC time. ]
-  1274.89% CPU
-  8,682,382,473 processor cycles
-  462,097,216 bytes consed
-
-Counter: 1000000
-Elapsed: 3
-
-* (runner-dp t t)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-Evaluation took:
-  3.987 seconds of real time
-  10.798652 seconds of total run time (9.702490 user, 1.096162 system)
-  [ Real times consist of 3.266 seconds GC time, and 0.721 seconds non-GC time. ]
-  [ Run times consist of 3.266 seconds GC time, and 7.533 seconds non-GC time. ]
-  270.86% CPU
-  12,727,849,434 processor cycles
-  1,520,687,760 bytes consed
-
-Counter: 1000000
-Elapsed: 4
+8 x 125000 messages per cell, 8 shared workers, 3 rounds
+  PINNED TELL: 1.81s, 552,181 msg/s
+  PINNED TELL: 1.75s, 572,738 msg/s
+  PINNED TELL: 1.78s, 561,798 msg/s
+RESULT PINNED TELL 561,798 msg/s (median of 552,181, 572,738, 561,798)
+  PINNED ASK-S: 4.86s, 205,719 msg/s
+  PINNED ASK-S: 4.92s, 203,335 msg/s
+  PINNED ASK-S: 4.99s, 200,321 msg/s
+RESULT PINNED ASK-S 203,335 msg/s (median of 205,719, 203,335, 200,321)
+  PINNED ASK: 2.92s, 342,583 msg/s
+  PINNED ASK: 2.48s, 403,388 msg/s
+  PINNED ASK: 2.54s, 392,927 msg/s
+RESULT PINNED ASK 392,927 msg/s (median of 342,583, 403,388, 392,927)
+  SHARED TELL: 2.84s, 352,609 msg/s
+  SHARED TELL: 2.87s, 348,918 msg/s
+  SHARED TELL: 2.94s, 340,368 msg/s
+RESULT SHARED TELL 348,918 msg/s (median of 352,609, 348,918, 340,368)
+  SHARED ASK-S: 6.51s, 153,516 msg/s
+  SHARED ASK-S: 6.50s, 153,822 msg/s
+  SHARED ASK-S: 6.50s, 153,870 msg/s
+RESULT SHARED ASK-S 153,822 msg/s (median of 153,516, 153,822, 153,870)
+  SHARED ASK: 3.60s, 277,624 msg/s
+  SHARED ASK: 3.64s, 274,650 msg/s
+  SHARED ASK: 3.50s, 285,307 msg/s
+RESULT SHARED ASK 277,624 msg/s (median of 277,624, 274,650, 285,307)
 
 -----------------------------------------------
-CCL 1.12 - iMac Pro x86_64
+Clamiga 0.9.0 (git v0.9-13-g4328edc9, host build, --heap 1024M, CLAMIGA_FORCE_SPEED=3)
 -----------------------------------------------
-
-? (runner-bt)
-=> shared workers 8, used only for async waiting actor
-=> pinned actor
-
-Times: 1000000
-took  3,735,285 microseconds ( 3.735285 seconds) to run.
-        892,462 microseconds ( 0.892462 seconds, 23.89%) of which was spent in GC.
-During that period, and with 16 available CPU cores,
-      6,321,762 microseconds ( 6.321762 seconds) were spent in user mode
-     11,134,786 microseconds (11.134786 seconds) were spent in system mode
- 23,520 bytes of memory allocated.
- 27,722 minor page faults, 0 major page faults, 0 swaps.
-Counter: 1000000
-Elapsed: 4
-
-? (runner-bt t)
-Times: 1000000
-took  7,832,212 microseconds ( 7.832212 seconds) to run.
-        251,903 microseconds ( 0.251903 seconds, 3.22%) of which was spent in GC.
-During that period, and with 16 available CPU cores,
-      9,236,672 microseconds ( 9.236672 seconds) were spent in user mode
-     12,266,076 microseconds (12.266076 seconds) were spent in system mode
- 23,520 bytes of memory allocated.
- 1,465 minor page faults, 0 major page faults, 0 swaps.
-Counter: 1000000
-Elapsed: 8
-
-? (runner-bt t t)
-took 11,870,205 microseconds (11.870205 seconds) to run.
-      1,459,052 microseconds ( 1.459052 seconds, 12.29%) of which was spent in GC.
-During that period, and with 16 available CPU cores,
-     24,410,590 microseconds (24.410590 seconds) were spent in user mode
-     19,746,769 microseconds (19.746769 seconds) were spent in system mode
- 23,520 bytes of memory allocated.
- 2,852 minor page faults, 0 major page faults, 0 swaps.
-Counter: 1000000
-Elapsed: 12
-
--------------------- shared --------------------
-
-? (runner-dp)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-took  3,852,890 microseconds ( 3.852890 seconds) to run.
-        105,558 microseconds ( 0.105558 seconds, 2.74%) of which was spent in GC.
-During that period, and with 16 available CPU cores,
-     14,460,898 microseconds (14.460898 seconds) were spent in user mode
-     29,358,306 microseconds (29.358307 seconds) were spent in system mode
- 23,520 bytes of memory allocated.
- 63 minor page faults, 0 major page faults, 0 swaps.
-Counter: 1000000
-Elapsed: 4
-
-? (runner-dp t)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-took  9,154,598 microseconds ( 9.154598 seconds) to run.
-        351,221 microseconds ( 0.351221 seconds, 3.84%) of which was spent in GC.
-During that period, and with 16 available CPU cores,
-     18,202,428 microseconds (18.202429 seconds) were spent in user mode
-     23,289,613 microseconds (23.289612 seconds) were spent in system mode
- 23,520 bytes of memory allocated.
- 68 minor page faults, 0 major page faults, 0 swaps.
-Counter: 1000000
-Elapsed: 9
-
-? (runner-dp t t)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-took 12,740,458 microseconds (12.740458 seconds) to run.
-      1,162,761 microseconds ( 1.162761 seconds, 9.13%) of which was spent in GC.
-During that period, and with 16 available CPU cores,
-     36,092,462 microseconds (36.092464 seconds) were spent in user mode
-     25,330,137 microseconds (25.330135 seconds) were spent in system mode
- 23,520 bytes of memory allocated.
- 72 minor page faults, 0 major page faults, 0 swaps.
-Counter: 1000000
-Elapsed: 13
+8 x 125000 messages per cell, 8 shared workers, 3 rounds
+  PINNED TELL: 1.97s, 507,872 msg/s
+  PINNED TELL: 2.02s, 494,315 msg/s
+  PINNED TELL: 2.15s, 465,549 msg/s
+RESULT PINNED TELL 494,315 msg/s (median of 507,872, 494,315, 465,549)
+  PINNED ASK-S: 6.98s, 143,205 msg/s
+  PINNED ASK-S: 6.91s, 144,781 msg/s
+  PINNED ASK-S: 7.02s, 142,511 msg/s
+RESULT PINNED ASK-S 143,205 msg/s (median of 143,205, 144,781, 142,511)
+  PINNED ASK: 7.30s, 136,986 msg/s
+  PINNED ASK: 7.12s, 140,351 msg/s
+  PINNED ASK: 7.11s, 140,627 msg/s
+RESULT PINNED ASK 140,351 msg/s (median of 136,986, 140,351, 140,627)
+  SHARED TELL: 4.61s, 216,967 msg/s
+  SHARED TELL: 4.71s, 212,495 msg/s
+  SHARED TELL: 4.61s, 216,967 msg/s
+RESULT SHARED TELL 216,967 msg/s (median of 216,967, 212,495, 216,967)
+  SHARED ASK-S: 7.73s, 129,316 msg/s
+  SHARED ASK-S: 7.70s, 129,887 msg/s
+  SHARED ASK-S: 7.89s, 126,823 msg/s
+RESULT SHARED ASK-S 129,316 msg/s (median of 129,316, 129,887, 126,823)
+  SHARED ASK: 9.01s, 111,037 msg/s
+  SHARED ASK: 9.12s, 109,625 msg/s
+  SHARED ASK: 9.06s, 110,412 msg/s
+RESULT SHARED ASK 110,412 msg/s (median of 111,037, 109,625, 110,412)
 
 -----------------------------------------------
-ABCL 1.9.2 -- M1 Ultra - 64GB
+ECL 26.5.5
 -----------------------------------------------
-
-CL-USER(2): (runner-bt)
-=> shared workers 8, used only for async waiting actor
-=> pinned actor
-
-Times: 1000000
-6.921 seconds real time
-32761756 cons cells
-Counter: 1000000
-Elapsed: 7
-
-CL-USER(4): (runner-bt t)
-Times: 1000000
-9.451 seconds real time
-31647910 cons cells
-Counter: 1000000
-Elapsed: 9
-
-Times: 1000000
-10.118 seconds real time
-109662158 cons cells
-Counter: 1000000
-Elapsed: 10
-
--------------------- shared --------------------
-
-CL-USER(9): (runner-dp)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-6.731 seconds real time
-60731252 cons cells
-Counter: 1000000
-Elapsed: 7
-
-CL-USER(11): (runner-dp t)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-8.915 seconds real time
-61829192 cons cells
-Counter: 1000000
-Elapsed: 9
-
-CL-USER(14): (runner-dp t t)
-=> shared workers 8
-=> shared actor
-Times: 1000000
-11.872 seconds real time
-116951862 cons cells
-Counter: 1000000
-Elapsed: 11
-
+8 x 125000 messages per cell, 8 shared workers, 3 rounds
+  PINNED TELL: 3.08s, 324,590 msg/s
+  PINNED TELL: 2.73s, 366,383 msg/s
+  PINNED TELL: 2.64s, 379,476 msg/s
+RESULT PINNED TELL 366,383 msg/s (median of 324,590, 366,383, 379,476)
+  PINNED ASK-S: 8.36s, 119,601 msg/s
+  PINNED ASK-S: 8.55s, 117,025 msg/s
+  PINNED ASK-S: 8.58s, 116,562 msg/s
+RESULT PINNED ASK-S 117,025 msg/s (median of 119,601, 117,025, 116,562)
+  PINNED ASK: 7.88s, 126,965 msg/s
+  PINNED ASK: 7.86s, 127,209 msg/s
+  PINNED ASK: 7.86s, 127,182 msg/s
+RESULT PINNED ASK 127,182 msg/s (median of 126,965, 127,209, 127,182)
+  SHARED TELL: 3.84s, 260,232 msg/s
+  SHARED TELL: 3.68s, 271,497 msg/s
+  SHARED TELL: 3.57s, 280,138 msg/s
+RESULT SHARED TELL 271,497 msg/s (median of 260,232, 271,497, 280,138)
+  SHARED ASK-S: 7.04s, 142,109 msg/s
+  SHARED ASK-S: 7.16s, 139,739 msg/s
+  SHARED ASK-S: 7.09s, 140,985 msg/s
+RESULT SHARED ASK-S 140,985 msg/s (median of 142,109, 139,739, 140,985)
+  SHARED ASK: 9.52s, 105,019 msg/s
+  SHARED ASK: 8.62s, 116,054 msg/s
+  SHARED ASK: 8.63s, 115,838 msg/s
+RESULT SHARED ASK 115,838 msg/s (median of 105,019, 116,054, 115,838)
 
 -----------------------------------------------
-LispWorks 8.0.1 -- M1 Ultra 64 GB
+ABCL 1.9.3-dev (git 05816e48, OpenJDK 21.0.5, -Xmx8g)
 -----------------------------------------------
-
-CL-USER 9 > (runner-bt)
-Times: 1000000
-User time    =        3.865
-System time  =        0.959
-Elapsed time =        2.599   <-
-Allocation   = 3016212048 bytes
-17707 Page faults
-Calls to %EVAL    447
-GC time      =        0.158Counter: 1000000
-Elapsed: 2
-
-CL-USER 10 > (runner-bt t)
-Times: 1000000
-User time    =       10.182
-System time  =       10.434
-Elapsed time =        5.898   <-
-Allocation   = 3465326544 bytes
-147 Page faults
-Calls to %EVAL    279
-GC time      =        0.039Counter: 1000000
-Elapsed: 6
-
-CL-USER 11 > (runner-bt t t)
-Times: 1000000
-User time    =       11.759
-System time  =        2.372
-Elapsed time =        4.162   <-
-Allocation   = 4681355176 bytes
-154043 Page faults
-Calls to %EVAL    405
-GC time      =        1.300Counter: 1000000
-Elapsed: 4
-
--------------------- shared --------------------
-
-CL-USER 12 > (runner-dp)
-Times: 1000000
-User time    =        9.813
-System time  =        5.437
-Elapsed time =        4.702   <-
-Allocation   = 3217429544 bytes
-23192 Page faults
-Calls to %EVAL    579
-GC time      =        0.284Counter: 1000000
-Elapsed: 4
-
-CL-USER 13 > (runner-dp t)
-Times: 1000000
-User time    =       21.889
-System time  =       35.083
-Elapsed time =        9.287   <-
-Allocation   = 3665359600 bytes
-293 Page faults
-Calls to %EVAL    279
-GC time      =        0.108Counter: 1000000
-Elapsed: 9
-
-CL-USER 14 > (runner-dp t t)
-Times: 1000000
-User time    =       16.998
-System time  =        5.861
-Elapsed time =        6.111   <-
-Allocation   = 4881427552 bytes
-173663 Page faults
-Calls to %EVAL    567
-GC time      =        1.588Counter: 1000000
-Elapsed: 6
-
------------------------------------------------
-LispWorks 8.0.1 -- iMap Pro - 32 GB
------------------------------------------------
-
-CL-USER 9 > (runner-bt)
-Times: 1000000
-User time    =        5.993
-System time  =        0.890
-Elapsed time =        3.545
-Allocation   = 3008533264 bytes
-83782 Page faults
-Calls to %EVAL    593
-GC time      =        0.390Counter: 1000000
-Elapsed: 4
-
-CL-USER 10 > (runner-bt t)
-Times: 1000000
-User time    =       14.092
-System time  =        4.956
-Elapsed time =        5.971
-Allocation   = 3289206616 bytes
-814 Page faults
-Calls to %EVAL    335
-GC time      =        0.069Counter: 1000000
-Elapsed: 6
-
-CL-USER 11 > (runner-bt t t)
-Times: 1000000
-User time    =       13.579
-System time  =        1.495
-Elapsed time =        7.897
-Allocation   = 4464237848 bytes
-768208 Page faults
-Calls to %EVAL    563
-GC time      =        3.1752Counter: 1000000
-Elapsed: 7
-
--------------------- shared --------------------
-
-CL-USER 12 > (runner-dp)
-Times: 1000000
-User time    =       14.098
-System time  =        5.889
-Elapsed time =        9.032
-Allocation   = 3217427760 bytes
-189097 Page faults
-Calls to %EVAL    1133
-GC time      =        0.1360Counter: 1000000
-Elapsed: 9
-
-CL-USER 13 > (runner-dp t)
-Times: 1000000
-User time    =       26.777
-System time  =       14.391
-Elapsed time =        6.974
-Allocation   = 3489248440 bytes
-749 Page faults
-Calls to %EVAL    335
-GC time      =        0.077Counter: 1000000
-Elapsed: 7
-
-CL-USER 14 > (runner-dp t t)
-Times: 1000000
-User time    =       20.791
-System time  =        5.581
-Elapsed time =       11.640
-Allocation   = 4665423376 bytes
-514606 Page faults
-Calls to %EVAL    1109
-GC time      =        3.769Counter: 1000000
-Elapsed: 12
-
------------------------------------------------
-Clasp 2.5.0 -- iMap Pro - 32 GB
------------------------------------------------
-
-COMMON-LISP-USER> (runner-bt)
-Times: 1000000
-Time real(15.108 secs) run(15.108 secs) consed(11144 bytes) unwinds(0)
-Counter: 1000000
-Elapsed: 15
-
-COMMON-LISP-USER> (runner-bt t)
-Times: 1000000
-Time real(21.667 secs) run(21.667 secs) consed(11144 bytes) unwinds(0)
-Counter: 1000000
-Elapsed: 22
-
-COMMON-LISP-USER> (runner-bt t t)
-Times: 1000000
-Time real(48.740 secs) run(48.740 secs) consed(11144 bytes) unwinds(0)
-Counter: 1000000
-Elapsed: 49
-
--------------------- shared --------------------
-
-COMMON-LISP-USER> (runner-dp)
-Times: 1000000
-Time real(40.290 secs) run(40.289 secs) consed(11144 bytes) unwinds(0)
-Counter: 1000000
-Elapsed: 40
-
-COMMON-LISP-USER> (runner-dp t)
-Times: 1000000
-Time real(35.641 secs) run(35.641 secs) consed(11144 bytes) unwinds(0)
-Counter: 1000000
-Elapsed: 35
-
-COMMON-LISP-USER> (runner-dp t t)
-Times: 1000000
-Time real(63.185 secs) run(63.185 secs) consed(11144 bytes) unwinds(0)
-Counter: 1000000
-Elapsed: 63
-
+8 x 125000 messages per cell, 8 shared workers, 3 rounds
+  PINNED TELL: 6.57s, 152,277 msg/s
+  PINNED TELL: 6.11s, 163,800 msg/s
+  PINNED TELL: 6.08s, 164,393 msg/s
+RESULT PINNED TELL 163,800 msg/s (median of 152,277, 163,800, 164,393)
+  PINNED ASK-S: 8.43s, 118,582 msg/s
+  PINNED ASK-S: 8.36s, 119,689 msg/s
+  PINNED ASK-S: 8.36s, 119,632 msg/s
+RESULT PINNED ASK-S 119,632 msg/s (median of 118,582, 119,689, 119,632)
+  PINNED ASK: 10.91s, 91,634 msg/s
+  PINNED ASK: 10.22s, 97,876 msg/s
+  PINNED ASK: 10.25s, 97,551 msg/s
+RESULT PINNED ASK 97,551 msg/s (median of 91,634, 97,876, 97,551)
+  SHARED TELL: 7.75s, 129,066 msg/s
+  SHARED TELL: 7.98s, 125,376 msg/s
+  SHARED TELL: 7.90s, 126,518 msg/s
+RESULT SHARED TELL 126,518 msg/s (median of 129,066, 125,376, 126,518)
+  SHARED ASK-S: 10.10s, 98,971 msg/s
+  SHARED ASK-S: 9.77s, 102,344 msg/s
+  SHARED ASK-S: 9.91s, 100,949 msg/s
+RESULT SHARED ASK-S 100,949 msg/s (median of 98,971, 102,344, 100,949)
+  SHARED ASK: 10.16s, 98,464 msg/s
+  SHARED ASK: 9.42s, 106,157 msg/s
+  SHARED ASK: 9.66s, 103,552 msg/s
+RESULT SHARED ASK 103,552 msg/s (median of 98,464, 106,157, 103,552)

@@ -338,6 +338,14 @@ If we store this to `*sleeper*` and do the following, the
 This works similar with the `ask` only that the future will
 be fulfilled with the `handler-error` `cons`.
 
+`ask-s` parks the calling thread until the reply is there. For very short handlers on a machine with idle cores, letting the caller spin on the reply for a moment before it parks can double the `ask-s` rate:
+
+```elisp
+(setf mesgb:*ask-s-spin-iterations* 10000)
+```
+
+The default is 0, no spinning. Leave it there when the system has more runnable threads than cores or when handlers take longer than a few microseconds, the spin is then wasted CPU. The variable can also be `let`-bound around a burst of `ask-s` calls.
+
 To get a readable error message of the condition we can do:
 
 ```
@@ -818,47 +826,38 @@ This will tell log4cl to do any logging for sento in warn level.
 
 ### Benchmarks
 
-Hardware specs (M1)):
+Hardware specs:
 
--   Mac M1 Ultra, 64 GB RAM
+-   Mac Studio, Apple M3 Ultra (28 cores), 96 GB RAM, macOS 26.6
 
-![](./docs/perf-M1Ultra.png)
-![](perf-M1Ultra.png)
-
-Hardware specs (x86-64):
-
--   iMac Pro (2017), 8 Core Xeon, 32 GB RAM
-
-![](./docs/perf-x86_64.png)
-![](perf-x86_64.png)
-
+![](./docs/perf-M3Ultra.png)
+![](perf-M3Ultra.png)
 
 **All**
 
-The benchmark was created by having 8 threads throwing each 125k (1M altogether) messages at 1 actor. The timing was taken for when the actor did finish processing those 1M messages. The messages were sent by either all `tell`, `ask-s`, or `ask` to an actor whose message-box worked using a single thread (`:pinned`) or a dispatched message queue (`:shared` / `dispatched`) with 8 workers.
+The benchmark was created by having 8 threads throwing each 125k (1M altogether) messages at 1 actor whose receive function only counts. The timing was taken for when the actor did finish processing those 1M messages. The messages were sent by either all `tell`, `ask-s`, or `ask` to an actor whose message-box worked using a single thread (`:pinned`) or a dispatched message queue (`:shared`) with 8 workers and the default throughput of 5. Every cell was run 3 times, the graph shows the median. The benchmark is `docs/perf-bench.lisp`, the raw output of every run is in `docs/perf.txt`, and the graph is generated from `docs/perf-results.json` with `docs/perf-chart.js`. Measured with Sento 3.5.0.
 
-Of course a `tell` is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow.
+Of course a `tell` is in most cases the fastest one, because it's the least resource intensive and there is no place that is blocking in this workflow. `ask-s` blocks each sender until the reply arrived, so it is bound by the round-trip latency of 8 senders. `ask` creates a future per message, so it is bound by allocation and GC.
 
-**SBCL (v2.4.9)**
+**SBCL (2.6.8)**
 
-SBCL is very fast, but problematic in the synchronous ask case using :shared dispatcher.
+SBCL is very fast in all cells and the only implementation that processes more than 1M `tell` messages per second, also on the shared dispatcher.
 
-**LispWorks (8.0.1)**
+**LispWorks (8.1.2)**
 
-LispWorks is fast overall. Not as fast as SBCL. But it seems the GC is more robust, in particular on the `dispatched - ask`.
+LispWorks is the second fastest overall, with a good `ask` throughput.
 
-**CCL (v1.13)**
+**Clamiga (0.9.0)**
 
-Unfortunately CCL doesn't work natively on M1 Apple CPU.
+[Clamiga](https://github.com/mdbergmann/cl-amiga) is a bytecode VM that primarily targets the Amiga, run here as a native macOS host build. It is the surprise of this round: on the `:pinned` cells it is ahead of ECL and on `ask-s` it is close to LispWorks.
 
-**ABCL (1.9)**
+**ECL (26.5.5)**
 
-The pleasant surprise was ABCL. While not being the fastest it is very robust.
+ECL is fast on the shared dispatcher relative to its `:pinned` results; its shared `ask-s` is the second best of all.
 
-**Clasp 2.6.0**
+**ABCL (1.9.3-dev)**
 
-Very slow. Used default settings, as also for the other tests.
-Maybe something can be tweaked?
+ABCL is the slowest on `tell`, but the most even: all six cells lie between 98k and 164k messages per second, and its `ask` is as fast as its `ask-s`.
 
 ### Migration guide for moving from Sento 2 to Sento 3
 
@@ -870,6 +869,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 - 'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.
 
 ### Version history
+
+**Version 3.5.0 (11.09.2026):** Less lock traffic on the message path. Queues only notify their condition-variable when a consumer is actually waiting, and notify after releasing the lock; a dispatcher run takes its whole batch out of the queue under one lock acquisition (new queue generic `try-popq-into`). The pinned message-box runs handlers without the reply lock held, so a timed `ask-s` is no longer delayed by its own running handler before it reports the timeout. Item finalization notifies after releasing the item lock on both message-box kinds. Message items are accessed through struct accessors, and `tell`/`ask-s` without a sender no longer cons their handler argument list. New `mesgb:*ask-s-spin-iterations*` (default 0) lets an `ask-s` caller spin on the reply before parking, which can double the `ask-s` rate for short handlers on machines with idle cores. Fixed: a message handler that unwound a dispatcher run, for example via an `abort` restart, left the actor wedged until an unrelated message restarted the worker thread; the worker now restarts itself and the unhandled rest of the batch is requeued. On SBCL, under load with 8 senders: `tell` throughput roughly 1.6x on shared and 2.2x on pinned actors, `ask-s` about 1.2x on shared and 1.3x on pinned, compared to 3.4.7.
 
 **Version 3.4.7 (10.09.2026):** Shared-dispatcher actors schedule their message-box per burst instead of dispatching every message: a worker handles up to `throughput` queued messages in one run (new dispatcher config key `:throughput`, default 5, see `disp:*default-throughput*`) and only one worker at a time works for one actor. Dispatched functions are submitted straight to the worker's message-box, bypassing the actor message handling layer on the worker. The router no longer copies its routee vector on every `tell`, `ask-s` and `ask`. On SBCL this gives roughly 1.8x `tell` and `ask-s` throughput on shared-dispatcher actors under load with the default, more with a larger `:throughput`.
 

@@ -25,6 +25,35 @@ without blocking when the queue is empty."
     (is (equal '(nil nil) (multiple-value-list (try-popq cut))))
     (is-true (emptyq-p cut))))
 
+(test unbounded-queue--try-popq-into
+  "`try-popq-into' pops up to the vector's length elements into the vector and
+returns how many, 0 on an empty queue, leaving the rest queued."
+  (let ((cut (make-instance 'queue-unbounded))
+        (batch (make-array 3 :initial-element nil)))
+    (is (= 0 (try-popq-into cut batch)))
+    (loop :for i :from 1 :to 5 :do (pushq cut i))
+    (is (= 3 (try-popq-into cut batch)))
+    (is (equalp #(1 2 3) batch))
+    (is (= 2 (queued-count cut)))
+    (is (= 2 (try-popq-into cut batch)))
+    (is (equalp #(4 5 3) batch))
+    (is (= 0 (queued-count cut)))
+    (is-true (emptyq-p cut))
+    (is (= 0 (try-popq-into cut batch)))))
+
+(test unbounded-queue--popq--blocks-until-push
+  "A `popq' on an empty queue blocks the calling thread and is woken by a
+`pushq'. The waiter count the push consults is back at 0 afterwards."
+  (let* ((cut (make-instance 'queue-unbounded))
+         (result :none)
+         (popper (bt2:make-thread (lambda () (setf result (popq cut))))))
+    (is-true (miscutils:await-cond 0.5 (= 1 (slot-value cut 'sento.queue::waiters))))
+    (is (eq :none result))
+    (pushq cut :woken)
+    (bt2:join-thread popper)
+    (is (eq :woken result))
+    (is (= 0 (slot-value cut 'sento.queue::waiters)))))
+
 (test unbounded-queue--push-pop
   "Pushes and pops an element and checks the count and emptiness on the way."
   (let ((cut (make-instance 'queue-unbounded)))

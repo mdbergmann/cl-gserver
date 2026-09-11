@@ -178,6 +178,95 @@ sentinel and the timeout must still be signaled before the busy handler ends."
                (is (< elapsed 0.8) "timeout took ~a seconds" elapsed))))
       (stop box t))))
 
+(test submit/reply--timeout--not-delayed-by-running-handler
+  "The message-box/bt runs the handler without the item's lock held, so a
+timed `submit' whose own handler is still running signals `ask-timeout' at
+the deadline instead of after the handler finished."
+  (let ((box (make-instance 'message-box/bt :name "slow-handler"))
+        (handled nil))
+    (unwind-protect
+         (let* ((start (get-internal-real-time))
+                (result (handler-case
+                            (submit box "The Message" t 0.2
+                                    (list (lambda (msg)
+                                            (sleep 1)
+                                            (setf handled msg))))
+                          (ask-timeout () :timeout)))
+                (elapsed (/ (- (get-internal-real-time) start)
+                            internal-time-units-per-second)))
+           (is (eq :timeout result))
+           (is (< elapsed 0.8) "timeout took ~a seconds" elapsed)
+           ;; the handler is not interrupted by the cancellation, it completes
+           (is-true (await-cond 1.5 (string= "The Message" handled))))
+      (stop box t))))
+
+(test submit/reply--cancelled-before-handled--not-handled
+  "An item whose timed `submit' gave up before the message-box thread got to
+it is skipped: its handler never runs."
+  (let ((box (make-instance 'message-box/bt :name "cancelled"))
+        (handled nil))
+    (unwind-protect
+         (flet ((record (msg) (push msg handled)))
+           (submit box "busy" nil nil (list (lambda (msg)
+                                             (declare (ignore msg))
+                                             (sleep 0.5))))
+           (is (eq :timeout
+                   (handler-case
+                       (submit box "The Message" t 0.1 (list #'record))
+                     (ask-timeout () :timeout))))
+           (submit box "after" nil nil (list #'record))
+           (is-true (await-cond 1.0 handled))
+           (is (equal '("after") handled)))
+      (stop box t))))
+
+(test message-box/bt--thread-unwinds-with-queued-items--restarts-itself
+  "When the processing thread is unwound by a handler, here through the
+`abort' restart, while items are still queued, the message-box starts a new
+processing thread right away so that the queued items are handled without
+waiting for a further submit."
+  (let ((box (make-instance 'message-box/bt :name "self-restart"))
+        (release nil)
+        (handled nil))
+    (unwind-protect
+         (progn
+           (submit box :abort nil nil (list (lambda (msg)
+                                             (declare (ignore msg))
+                                             (loop :until release :do (sleep 0.01))
+                                             (abort))))
+           (submit box 1 nil nil (list (lambda (msg) (push msg handled))))
+           (submit box 2 nil nil (list (lambda (msg) (push msg handled))))
+           (setf release t)
+           (is-true (await-cond 1.0 (= 2 (length handled))))
+           (is (equal '(1 2) (reverse handled))))
+      (stop box t))))
+
+(parametrized-test ask-s--spin-before-park
+    ((dispatcher)
+     (:pinned)
+     (:shared))
+  "With `*ask-s-spin-iterations*' set, `ask-s' returns the result on both
+message-box kinds, and a timed `ask-s' on a slow handler still times out at
+its deadline."
+  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 2)))))
+        (mesgb:*ask-s-spin-iterations* 10000))
+    (unwind-protect
+         (let ((actor (actor-of system
+                                :receive (lambda (msg)
+                                           (when (eq msg :slow) (sleep 1))
+                                           msg)
+                                :dispatcher dispatcher)))
+           (is (equal (loop :for i :from 0 :below 20 :collect i)
+                      (loop :for i :from 0 :below 20 :collect (ask-s actor i))))
+           (is (= 42 (ask-s actor 42 :time-out 1)))
+           (let* ((start (get-internal-real-time))
+                  (result (ask-s actor :slow :time-out 0.2))
+                  (elapsed (/ (- (get-internal-real-time) start)
+                              internal-time-units-per-second)))
+             (is (eq :handler-error (car result)))
+             (is (typep (cdr result) 'ask-timeout))
+             (is (< elapsed 0.8) "timeout took ~a seconds" elapsed)))
+      (ac:shutdown system))))
+
 (def-fixture dp-actor (receive)
   "An actor on a `:shared' dispatcher, so that `ask-s' goes through the
 dispatcher message-box, with the system shut down afterwards."
@@ -312,6 +401,51 @@ processed within the retry bound."
               (progn (decf fail-count) nil)
               (call-previous)))
         (is (= 42 (ask-s actor 42 :time-out 1)))))))
+
+(test dispatch--batch--handler-unwinds--requeues-remaining-items
+  "A run takes its batch out of the queue at once. When a handler unwinds the
+run, here by invoking the `abort' restart which also ends the worker thread,
+the items of the batch not handled yet are put back into the queue and
+handled by a later run instead of being lost."
+  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 1 :throughput 10))))))
+    (unwind-protect
+         (let* ((block-release nil)
+                (block-started nil)
+                (abort-release nil)
+                (abort-started nil)
+                (handled nil)
+                (actor (actor-of system
+                                 :receive (lambda (msg)
+                                            (cond
+                                              ((eq msg :block)
+                                               (setf block-started t)
+                                               (loop :until block-release :do (sleep 0.01)))
+                                              ((eq msg :abort)
+                                               (setf abort-started t)
+                                               (loop :until abort-release :do (sleep 0.01))
+                                               (abort))
+                                              (t (push msg handled)))
+                                            msg)))
+                (msgbox-queue (slot-value (act-cell:msgbox actor) 'mesgb::queue)))
+           ;; Occupy the sole worker with a run whose own batch is just
+           ;; `:block', so that `:abort' and 1/2/3, told while it is busy,
+           ;; accumulate in the queue and are taken as one batch by the next
+           ;; run's `try-popq-into' instead of being popped one at a time.
+           (tell actor :block)
+           (is-true (await-cond 0.5 block-started))
+           (tell actor :abort)
+           (loop :for i :from 1 :to 3 :do (tell actor i))
+           (is-true (await-cond 0.5 (= 4 (queued-count msgbox-queue))))
+           (setf block-release t)
+           (is-true (await-cond 0.5 abort-started))
+           ;; The next run already took `:abort' and 1/2/3 out of the queue
+           ;; together as its batch, ahead of unwinding on `:abort'.
+           (is (= 0 (queued-count msgbox-queue)))
+           (setf abort-release t)
+           (is-true (await-cond 2.0 (= 3 (length handled))))
+           (is (equal '(1 2 3) (reverse handled)))
+           (is (= 4 (ask-s actor 4 :time-out 1))))
+      (ac:shutdown system))))
 
 (test dispatch--stop-with-backlog--discards-items-and-wakes-ask-s-waiter
   "Stopping a message-box/dp while a batch is running discards the items still

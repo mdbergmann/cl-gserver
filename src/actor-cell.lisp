@@ -50,7 +50,15 @@
             :documentation
             "The `message-box`. By default the `actor`/`actor-cell` has no message-box.
 When the actor is created through the `actor-context` of an actor, or the `actor-system`
-then it will be populated with a message-box."))
+then it will be populated with a message-box.")
+    (call-handler-fun-args :initform nil
+                           :documentation
+                           "The `handler-fun-args' list submitted to the message-box
+for a `call' without a sender, built once so that a `call' does not cons it.")
+    (cast-handler-fun-args :initform nil
+                           :documentation
+                           "The `handler-fun-args' list submitted to the message-box
+for a `cast' without a sender, built once so that a `cast' does not cons it."))
   (:documentation
    "`actor-cell` is the base of the `actor`.
 It encapsulates state and can executes async operations.
@@ -82,9 +90,11 @@ Note: the `actor-cell` uses `call` and `cast` functions which translate to `ask-
               msgbox))))
 
 (defmethod initialize-instance :after ((obj actor-cell) &key)
-  (with-slots (name) obj
+  (with-slots (name call-handler-fun-args cast-handler-fun-args) obj
     (unless name
       (setf name (string (gensym "actor-"))))
+    (setf call-handler-fun-args (list #'handle-message obj nil t)
+          cast-handler-fun-args (list #'handle-message obj nil nil))
     (log:debug "~a initialized: ~a" name obj)))
 
 ;; -----------------------------------------------
@@ -186,19 +196,24 @@ In case no message-box is configured this function responds with `:no-message-ha
     (unless msgbox
       (return-from submit-message :no-message-handling)))
 
-  (handler-case
-      (mesgb:submit
-       (slot-value actor-cell 'msgbox)
-       message
-       withreply-p
-       time-out
-       (list #'act-cell::handle-message actor-cell sender withreply-p))
-    (timeutils:ask-timeout (c)
-      (log:warn "~a: ask-s timeout: ~a" (name actor-cell) c)
-      (cons :handler-error c))
-    (mesgb:handler-unwound-error (c)
-      (log:warn "~a: message handler unwound: ~a" (name actor-cell) c)
-      (cons :handler-error c))))
+  (with-slots (msgbox call-handler-fun-args cast-handler-fun-args) actor-cell
+    ;; the handler argument lists for the common case without a sender are
+    ;; built once per cell, so that a plain `tell' or `ask-s' does not cons them.
+    (let ((handler-fun-args
+            (cond
+              (sender (list #'handle-message actor-cell sender withreply-p))
+              (withreply-p call-handler-fun-args)
+              (t cast-handler-fun-args))))
+      (if withreply-p
+          (handler-case
+              (mesgb:submit msgbox message t time-out handler-fun-args)
+            (timeutils:ask-timeout (c)
+              (log:warn "~a: ask-s timeout: ~a" (name actor-cell) c)
+              (cons :handler-error c))
+            (mesgb:handler-unwound-error (c)
+              (log:warn "~a: message handler unwound: ~a" (name actor-cell) c)
+              (cons :handler-error c)))
+          (mesgb:submit msgbox message nil time-out handler-fun-args)))))
 
 ;; ------------------------------------------------
 ;; message handling ---------------------

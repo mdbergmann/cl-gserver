@@ -50,7 +50,7 @@ systems/               — vendored dependencies
 - Explicit `:use :cl` only. No `:use` of project packages — use `:import-from` or qualified names.
 - **Prefer `:import-from` over package-qualified names.** If a symbol is used in a file, import it in the `defpackage` and use it unqualified. Do not mix qualified (`pkg:sym`) and unqualified access to the same package.
 - Exports use `#:symbol` notation.
-- Use `eval-when (:compile-toplevel)` with `shadowing-import` to resolve symbol conflicts between packages.
+- Use `eval-when (:compile-toplevel :load-toplevel :execute)` with `shadowing-import` to resolve symbol conflicts between packages. Compile-time only is not enough: a fasl may store symbols relative to the current package (ABCL does), so the import must also run at load time.
 
 ### CLOS
 

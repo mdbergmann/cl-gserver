@@ -1,7 +1,7 @@
 
 (in-package :sento.actor-system)
 
-(eval-when (:compile-toplevel)
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (shadowing-import '(disp:make-dispatcher
                       disp:make-dispatcher-worker
                       ac:make-actor-context

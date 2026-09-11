@@ -1,6 +1,6 @@
 (in-package :sento.remoting)
 
-(eval-when (:compile-toplevel)
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (shadowing-import '(bt2:make-lock
                       bt2:with-lock-held
                       renv:envelope-target-path

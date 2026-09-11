@@ -1,7 +1,7 @@
 
 (in-package :sento.actor)
 
-(eval-when (:compile-toplevel)
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (shadowing-import '(act-cell:handle-call
                       act-cell:handle-cast
                       act-cell:stop

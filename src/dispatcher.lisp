@@ -1,7 +1,7 @@
 
 (in-package :sento.dispatcher)
 
-(eval-when (:compile-toplevel)
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (shadowing-import '(mesgb:message-box/bt
                       mesgb:submit
                       mesgb:handler-unwound-error

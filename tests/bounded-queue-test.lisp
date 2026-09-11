@@ -18,6 +18,21 @@
     (is (= 1 (popq cut)))
     (is-true (emptyq-p cut))))
 
+(test bounded-queue--try-popq
+  "`try-popq' returns the element and `T' when one is queued, `nil' and `nil'
+without blocking when the queue is empty, and frees a slot of the bound."
+  (let ((cut (make-instance 'queue-bounded :max-items 2)))
+    (is (equal '(nil nil) (multiple-value-list (try-popq cut))))
+    (pushq cut 1)
+    (pushq cut 2)
+    (is (equal '(1 t) (multiple-value-list (try-popq cut))))
+    (is (= 1 (queued-count cut)))
+    (pushq cut 3)
+    (is (equal '(2 t) (multiple-value-list (try-popq cut))))
+    (is (equal '(3 t) (multiple-value-list (try-popq cut))))
+    (is (equal '(nil nil) (multiple-value-list (try-popq cut))))
+    (is-true (emptyq-p cut))))
+
 (test bounded-queue--raise-condition-when-queue-full
   (let ((cut (make-instance 'queue-bounded :max-items 2)))
     (pushq cut 1)

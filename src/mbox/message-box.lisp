@@ -5,7 +5,8 @@
   (:import-from #:timeutils
                 #:ask-timeout)
   (:import-from #:disp
-                #:dispatch-async)
+                #:dispatch-async
+                #:throughput)
   (:nicknames :mesgb)
   (:export #:message-box/dp
            #:message-box/bt
@@ -433,36 +434,113 @@ The submitting code has to await the side-effect and possibly handle a timeout."
                :reader dispatcher
                :documentation
                "The dispatcher from the system.")
-   (lock :initform (bt2:make-lock)))
+   (throughput :initarg :throughput
+               :initform nil
+               :reader throughput
+               :documentation
+               "The number of queued items one run on a dispatcher worker handles
+before it yields the worker. Defaults to the dispatcher's `disp:throughput'.")
+   (scheduled-p :initform (atomic:make-atomic-integer)
+                :documentation
+                "1 while a run of this message-box is scheduled on, or active on,
+a dispatcher worker, 0 otherwise. A submit dispatches a run only when it
+flips this from 0 to 1, so a burst of submits costs one dispatch.")
+   (exec-fun-args :initform nil
+                  :documentation
+                  "The `dispatcher-exec-fun' call handed to `disp:dispatch-async',
+built once so that scheduling does not allocate.")
+   (lock :initform (bt2:make-lock)
+         :documentation
+         "Held for the whole run of a batch. The scheduling flag already
+keeps runs of one message-box from overlapping; the lock is what makes the
+actor state written by one run visible to the next run on another worker
+thread, and it keeps a custom dispatcher that runs the function inline from
+racing a scheduled run."))
   (:documentation
    "This message box is a message-box that uses the `system`s `dispatcher`.
 This has the advantage that an almost unlimited actors/agents can be created.
 This message-box doesn't 'own' a thread. It uses the `dispatcher` to handle the message processing.
-The `dispatcher` is kind of like a thread pool."))
+The `dispatcher` is kind of like a thread pool.
+
+Message processing is scheduled per message-box, not per message: the first
+submit on an idle message-box dispatches one run to a worker, further submits
+while that run is pending only enqueue. A run handles up to `throughput' queued
+items and reschedules the message-box only when items remain."))
 
 (defmethod initialize-instance :after ((self message-box/dp) &key)
+  (with-slots (dispatcher throughput exec-fun-args) self
+    (unless throughput
+      (setf throughput (throughput dispatcher)))
+    (check-type throughput (integer 1))
+    (setf exec-fun-args (list 'dispatcher-exec-fun self)))
   (when (next-method-p)
     (call-next-method)))
 
+(defvar *schedule-max-attempts* 3
+  "How many consecutive scheduling attempts `%schedule' makes for one burst
+while the dispatcher keeps rejecting the run and the queue stays non-empty.
+Bounds the retry that keeps a rejected dispatch from stranding items other
+submitters already pushed while trusting this run to process them, without
+spinning forever against a dispatcher that keeps rejecting.")
+
+(defun %schedule (msgbox)
+  "Dispatches a run of MSGBOX to a worker unless a run is already scheduled
+or active. Exactly one submitter wins the 0 to 1 flip of `scheduled-p'.
+When the dispatcher did not accept the run, the flag is cleared again and,
+as long as the queue is still non-empty, scheduling is retried immediately,
+up to `*schedule-max-attempts*' times: otherwise items other submitters
+already pushed while trusting this run to process them would be stranded
+until an unrelated future submit happens to retrigger scheduling. Once
+attempts are exhausted the message-box is left idle for such a future submit
+to try again."
+  (with-slots (name scheduled-p dispatcher exec-fun-args queue) msgbox
+    (loop :for attempt :from 1 :to *schedule-max-attempts*
+          :while (atomic:atomic-cas scheduled-p 0 1)
+          :do (let ((dispatched nil))
+                (unwind-protect
+                     (setf dispatched (eq t (dispatch-async dispatcher exec-fun-args)))
+                  (unless dispatched
+                    (atomic:atomic-cas scheduled-p 1 0)))
+                (when dispatched
+                  (return))
+                (log:debug "~a: run not accepted by dispatcher ~a on attempt ~a/~a"
+                           name dispatcher attempt *schedule-max-attempts*)
+                (when (emptyq-p queue)
+                  (return))))))
+
+(defun %reschedule-when-pending (msgbox)
+  "Marks MSGBOX idle after a run and schedules it again when items were
+queued meanwhile. The flag is cleared before the queue is checked, so a
+submit racing with the end of the run either sees the flag cleared and
+dispatches itself, or its item is seen here. `emptyq-p' takes the queue lock,
+which orders it after such a submit's push."
+  (with-slots (scheduled-p queue) msgbox
+    (atomic:atomic-cas scheduled-p 1 0)
+    (unless (emptyq-p queue)
+      (%schedule msgbox))))
+
 (defun dispatcher-exec-fun (msgbox)
-  "This function is effectively executed on a dispatcher actor.
-It knows the message-box of the origin actor and acts on it.
-It pops the message from the message-boxes queue and applies the function in `handler-fun-args` on it.
-The `handler-fun-args' is part of the message item."
-  (with-slots (name lock queue should-run) msgbox
-    (bt2:acquire-lock lock :wait t)
+  "One run of MSGBOX, executed on a dispatcher worker.
+Pops and handles up to `throughput' queued items under the message-box lock,
+applying the `handler-fun-args' of each item to its message. Once the message-box
+is stopped, popped items are only finalized so that waiting callers are woken.
+Afterwards the message-box is marked idle and rescheduled when items remain,
+also when the run unwinds, so that the message-box never stays wedged."
+  (with-slots (name lock queue should-run throughput) msgbox
     (unwind-protect
-         (progn
-           (log:trace "~a: popping message..." name)
-           (let ((popped-item (popq queue)))
-             (when popped-item
-               (if should-run
-                   (handle-popped-item popped-item msgbox)
-                   (progn
-                     (log:warn "~a: message-box stopped, not handling: ~a"
-                               name popped-item)
-                     (%finalize-item popped-item))))))
-      (bt2:release-lock lock))))
+         (bt2:with-lock-held (lock)
+           (loop :repeat throughput
+                 :do (multiple-value-bind (popped-item presentp)
+                         (try-popq queue)
+                       (unless presentp
+                         (return))
+                       (if should-run
+                           (handle-popped-item popped-item msgbox)
+                           (progn
+                             (log:warn "~a: message-box stopped, not handling: ~a"
+                                       name popped-item)
+                             (%finalize-item popped-item))))))
+      (%reschedule-when-pending msgbox))))
 
 (defun handle-popped-item (popped-item msgbox)
   "Handles the popped message. Means: applies the function in `handler-fun-args` on the message.
@@ -491,45 +569,33 @@ The `time-out` with the 'dispatcher mailbox' assumes that the message received t
 and the handler in a reasonable amount of time, so that the effective time-out applies on the actual
 handling of the message on the dispatcher queue thread.
 
-Returns the handler-result if `withreply-p' is eq to `T', otherwise the return is just `T' and is usually ignored."
+Returns the handler-result if `withreply-p' is eq to `T', otherwise the return is just `T' and is usually ignored.
+
+With `withreply-p' the caller waits on the item's own state after scheduling.
+A synchronous `dispatch' cannot be used here: under concurrent `ask-s' submits
+a run handles whatever items head the queue, which is not necessarily this
+caller's item, so a run's return value could belong to a different caller."
   (with-slots (name
                queue
-               processed-messages
-               dispatcher) self
+               processed-messages) self
     (incf processed-messages)
-    
+
     (let ((push-item (make-message-item/dp
                       :message message
                       :handler-fun-args handler-fun-args
                       :time-out time-out
                       :lock (when withreply-p (bt2:make-lock))
-                      :cvar (when withreply-p (bt2:make-condition-variable))))
-          (dispatcher-fun-args (list #'dispatcher-exec-fun self)))
-
+                      :cvar (when withreply-p (bt2:make-condition-variable)))))
       (log:debug "~a: enqueuing... withreply-p: ~a, time-out: ~a, message: ~a"
-                 (name self) withreply-p time-out message)
+                 name withreply-p time-out message)
       (pushq queue push-item)
+      (%schedule self)
 
       (if withreply-p
-          (dispatch/reply self push-item dispatcher dispatcher-fun-args)
-          (dispatch/noreply self dispatcher dispatcher-fun-args)))))
-
-(defun dispatch/reply (msgbox push-item dispatcher dispatcher-fun-args)
-  "Used by `ask-s'. Waits for `handler-result', or the item's `time-out', and returns it.
-Dispatches asynchronously and then waits on `push-item's own state. A synchronous
-`dispatch' cannot be used here: under concurrent `ask-s' submits on a `:shared'
-dispatcher, `dispatch' pops whatever item is at the head of the queue, which is not
-necessarily `push-item', so its return value could belong to a different caller's
-message entirely."
-  (dispatch-async dispatcher dispatcher-fun-args)
-  (wait-for-msg-handler-result msgbox push-item)
-  (%dispatched-handler-result push-item))
-
-(defun dispatch/noreply (msgbox dispatcher dispatcher-fun-args)
-  "Used by `ask'.
-Returns just `T'. Return is actually ignore."
-  (declare (ignore msgbox))
-  (dispatch-async dispatcher dispatcher-fun-args))
+          (progn
+            (wait-for-msg-handler-result self push-item)
+            (%dispatched-handler-result push-item))
+          t))))
 
 (defmethod stop ((self message-box/dp) &optional (wait nil))
   "Stop the message processing.

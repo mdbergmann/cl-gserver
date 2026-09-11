@@ -111,9 +111,19 @@ Copyright (c) 2011-2012, James M. Lawrence. All rights reserved.
                     (return value))
                   (bt2:condition-wait cvar lock)))))))
 
+(defmethod try-popq ((self queue-unbounded))
+  (with-slots (queue lock fill-count) self
+    (bt2:with-lock-held (lock)
+      (multiple-value-bind (value presentp)
+          (dequeue queue)
+        (when presentp
+          (decf fill-count))
+        (values value presentp)))))
+
 (defmethod emptyq-p ((self queue-unbounded))
-  (with-slots (queue) self
-    (emptyp queue)))
+  (with-slots (queue lock) self
+    (bt2:with-lock-held (lock)
+      (emptyp queue))))
 
 (defmethod queued-count ((self queue-unbounded))
   (slot-value self 'fill-count))

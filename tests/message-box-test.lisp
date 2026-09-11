@@ -13,6 +13,8 @@
                 #:handler-unwound-error
                 #:queue-thread
                 #:stop)
+  (:import-from #:sento.queue
+                #:queued-count)
   (:import-from #:sento.test-utils
                 #:parametrized-test)
   (:import-from #:ac
@@ -208,6 +210,170 @@ dispatcher message-box beyond its deadline."
         (is (typep (cdr result) 'ask-timeout))
         (is (= 0 spurious-left))
         (is (< elapsed 0.8) "timeout took ~a seconds" elapsed)))))
+
+(def-fixture dispatch-counter ()
+  "Counts the calls to `disp:dispatch-async' made while the body runs, from any
+thread, in `dispatches'. The calls are passed on to the real dispatcher."
+  (let ((dispatches 0)
+        (count-lock (bt2:make-lock)))
+    (with-mocks (:recordp nil)
+      (answer disp:dispatch-async
+        (progn
+          (bt2:with-lock-held (count-lock)
+            (incf dispatches))
+          (call-previous)))
+      (&body))))
+
+(test dispatch--batch--one-dispatch-per-burst
+  "Submits on a message-box whose run is already scheduled only enqueue. The
+run drains up to `throughput' items and reschedules the message-box only while
+items remain: 21 messages with a throughput of 5 take 5 runs, not 21."
+  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 2 :throughput 5))))))
+    (unwind-protect
+         (let* ((release nil)
+                (processed 0)
+                (actor (actor-of system
+                                 :receive (lambda (msg)
+                                            (when (eq msg :block)
+                                              (loop :until release :do (sleep 0.01)))
+                                            (incf processed)))))
+           (with-fixture dispatch-counter ()
+             (tell actor :block)
+             (is-true (await-cond 0.5 (= 1 dispatches)))
+             (loop :repeat 20 :do (tell actor :go))
+             (is (= 1 dispatches))
+             (setf release t)
+             (is-true (await-cond 1.0 (= 21 processed)))
+             (is (= 5 dispatches))))
+      (ac:shutdown system))))
+
+(test dispatch--batch--preserves-order
+  "Batched runs keep the order in which one sender submitted its messages."
+  (let ((received nil))
+    (with-fixture dp-actor ((lambda (msg) (push msg received)))
+      (loop :for i :from 0 :below 100 :do (tell actor i))
+      (is-true (await-cond 1.0 (= 100 (length received))))
+      (is (equal (loop :for i :from 0 :below 100 :collect i)
+                 (reverse received))))))
+
+(test dispatch--batch--yields-worker-after-throughput
+  "With one worker and a throughput of 2, a second actor's message is handled
+between two batches of the first actor's backlog, not after the whole backlog."
+  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 1 :throughput 2))))))
+    (unwind-protect
+         (let* ((release nil)
+                (order nil)
+                (order-lock (bt2:make-lock))
+                (a (actor-of system
+                             :receive (lambda (msg)
+                                        (when (eq msg :block)
+                                          (loop :until release :do (sleep 0.01)))
+                                        (bt2:with-lock-held (order-lock)
+                                          (push (cons :a msg) order)))))
+                (b (actor-of system
+                             :receive (lambda (msg)
+                                        (bt2:with-lock-held (order-lock)
+                                          (push (cons :b msg) order))))))
+           (tell a :block)
+           (tell b :x)
+           (loop :for i :from 1 :to 4 :do (tell a i))
+           (setf release t)
+           (is-true (await-cond 1.0 (= 6 (length order))))
+           (is (equal '((:a . :block) (:a . 1) (:b . :x) (:a . 2) (:a . 3) (:a . 4))
+                      (reverse order))))
+      (ac:shutdown system))))
+
+(test dispatch--failed-dispatch--does-not-wedge-mailbox
+  "A dispatch the dispatcher did not accept clears the scheduled flag again,
+so the next submit schedules the message-box and both items are handled."
+  (with-fixture dp-actor (#'identity)
+    (let ((fail-once t))
+      (with-mocks (:recordp nil)
+        (answer disp:dispatch-async
+          (if fail-once
+              (progn
+                (setf fail-once nil)
+                nil)
+              (call-previous)))
+        (tell actor 1)
+        (is (= 2 (ask-s actor 2 :time-out 1)))))))
+
+(test dispatch--failed-dispatch--retries-without-next-submit
+  "When the dispatcher rejects a run while the queue stays non-empty,
+`%schedule' retries immediately instead of depending on some future,
+unrelated submit to retrigger scheduling. Here only one submit happens: with
+two transient rejections followed by success, the item must still be
+processed within the retry bound."
+  (with-fixture dp-actor (#'identity)
+    (let ((fail-count 2))
+      (with-mocks (:recordp nil)
+        (answer disp:dispatch-async
+          (if (plusp fail-count)
+              (progn (decf fail-count) nil)
+              (call-previous)))
+        (is (= 42 (ask-s actor 42 :time-out 1)))))))
+
+(test dispatch--stop-with-backlog--discards-items-and-wakes-ask-s-waiter
+  "Stopping a message-box/dp while a batch is running discards the items still
+queued behind the one being processed instead of handling them, and wakes an
+`ask-s' caller waiting on one of those discarded items rather than leaving it
+hanging."
+  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 1 :throughput 10))))))
+    (unwind-protect
+         (let* ((release nil)
+                (started nil)
+                (processed 0)
+                (actor (actor-of system
+                                 :receive (lambda (msg)
+                                            (when (eq msg :block)
+                                              (setf started t)
+                                              (loop :until release :do (sleep 0.01)))
+                                            (incf processed))))
+                (msgbox-queue (slot-value (act-cell:msgbox actor) 'mesgb::queue))
+                (ask-result :not-set))
+           (tell actor :block)
+           (is-true (await-cond 0.5 started))
+           (loop :repeat 3 :do (tell actor :go))
+           (let ((ask-thread (bt2:make-thread
+                              (lambda ()
+                                (setf ask-result
+                                      (handler-case
+                                          (ask-s actor :go :time-out 2)
+                                        (ask-timeout () :timeout)))))))
+             ;; Wait until the ask-s item itself is queued behind the three
+             ;; :go items before stopping, so the item under test is part of
+             ;; the discarded backlog rather than raced against it.
+             (is-true (await-cond 0.5 (= 4 (queued-count msgbox-queue))))
+             (ac:stop system actor)
+             (setf release t)
+             (is-true (await-cond 1.0 (not (eq ask-result :not-set))))
+             (bt2:join-thread ask-thread))
+           (is (eql nil ask-result))
+           (is (= 1 processed)))
+      (ac:shutdown system))))
+
+(test dispatch--throughput--from-dispatcher-config
+  "The message-box takes its throughput from the dispatcher config."
+  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 1 :throughput 3))))))
+    (unwind-protect
+         (let ((actor (actor-of system :receive #'identity)))
+           (is (= 3 (disp:throughput (act-cell:msgbox actor)))))
+      (ac:shutdown system))))
+
+(test dispatch--throughput--explicit-on-message-box
+  "A message-box created with an explicit `:throughput' keeps it over the
+dispatcher's, and a throughput below 1 is rejected."
+  (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 1))))))
+    (unwind-protect
+         (let* ((dispatcher (getf (asys:dispatchers system) :shared))
+                (msgbox (make-instance 'mesgb:message-box/dp
+                                       :dispatcher dispatcher
+                                       :throughput 7)))
+           (is (= 7 (disp:throughput msgbox)))
+           (signals error (make-instance 'mesgb:message-box/dp
+                                         :dispatcher dispatcher
+                                         :throughput 0)))
+      (ac:shutdown system))))
 
 (test dispatch/reply--with-timeout--no-poll-latency
   "A timed `ask-s' on the dispatcher message-box must return as soon as the

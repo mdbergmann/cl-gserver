@@ -174,6 +174,8 @@
 (pax:defsection @dispatcher (:title "Dispatcher")
   (disp:dispatcher-base class)
   (disp:identifier (pax:reader disp:dispatcher-base))
+  (disp:throughput generic-function)
+  (disp:*default-throughput* variable)
   (disp:make-dispatcher function)
   (disp:dispatch generic-function)
   (disp:dispatch-async generic-function)

@@ -79,7 +79,7 @@
     (unwind-protect
          (progn
            (is (equal (asys::%get-dispatcher-config (asys::config system))
-                      '(:shared (:workers 4 :strategy :random :mbox-type mesgb:message-box/dp))))
+                      '(:shared (:workers 4 :strategy :random :throughput 5 :mbox-type mesgb:message-box/dp))))
            (is (equal (asys::%get-timeout-timer-config (asys::config system))
                       '(:resolution 100
                         :max-size 500)))

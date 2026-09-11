@@ -621,6 +621,14 @@ A `:shared` dispatcher is a facility that is set up in the `actor-system`. It co
 
 Using this dispatcher allows to create a large number of actors. The actors as such are generally very cheap.
 
+Message processing is scheduled per actor, not per message. The first message sent to an idle actor hands the actor's message-box to a worker; messages that arrive while that is pending are only queued. The worker then handles up to `throughput` queued messages in one run and hands the message-box back to the dispatcher only if messages remain, so a burst of messages costs one dispatch instead of one per message and only one worker at a time works for one actor. `throughput` is configured per dispatcher, the default is 5:
+
+```elisp
+(asys:make-actor-system '(:dispatchers (:shared (:workers 4 :throughput 50))))
+```
+
+A larger value amortizes the dispatch over more messages of a busy actor. A smaller value gives other actors on the same dispatcher a turn sooner, because a busy actor holds a worker for at most `throughput` messages per run.
+
 <img alt="" src="./docs/disp_shared.png" width="700"/>
 <img alt="" src="disp_shared.png" width="700"/>
 
@@ -862,6 +870,8 @@ Previous 'self' and 'state' parameters are now accessible via `*self*` and `*sta
 - 'utils' package has been split to 'timeutils' for i.e. ask-timeout condition, and 'miscutils' for i.e. filter function.
 
 ### Version history
+
+**Version 3.4.7 (10.09.2026):** Shared-dispatcher actors schedule their message-box per burst instead of dispatching every message: a worker handles up to `throughput` queued messages in one run (new dispatcher config key `:throughput`, default 5, see `disp:*default-throughput*`) and only one worker at a time works for one actor. Dispatched functions are submitted straight to the worker's message-box, bypassing the actor message handling layer on the worker. The router no longer copies its routee vector on every `tell`, `ask-s` and `ask`. On SBCL this gives roughly 1.8x `tell` and `ask-s` throughput on shared-dispatcher actors under load with the default, more with a larger `:throughput`.
 
 **Version 3.4.6 (10.09.2026):** `ask-s` with a timeout on a shared-dispatcher actor no longer polls for the result in 50ms steps but waits on a condition-variable with an absolute deadline, returning as soon as the handler is done.
 

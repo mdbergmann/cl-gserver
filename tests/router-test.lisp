@@ -59,6 +59,41 @@
         (is (equalp '(t t) (stop cut)))
         (is (= 2 (length (invocations 'act-cell:stop))))))))
 
+(test router--routees--returns-fresh-list
+  "The routee list handed out is a copy: changing it does not touch the router."
+  (with-fixture system-fixture ()
+    (let ((cut (make-router :routees (list (make-actor system) (make-actor system)))))
+      (setf (cdr (routees cut)) nil)
+      (is (= 2 (length (routees cut)))))))
+
+(test router--no-routees
+  "`tell', `ask-s' and `ask' return `nil' when the router has no routees."
+  (with-fixture system-fixture ()
+    (let ((cut (make-router)))
+      (is-false (tell cut "Foo"))
+      (is-false (ask-s cut "Foo"))
+      (is-false (ask cut "Foo")))))
+
+(test router--strategy-index--used-for-every-message
+  "The strategy chooses the routee per message: a strategy that always picks the
+second routee makes every message land there."
+  (with-fixture system-fixture ()
+    (let* ((first-count 0)
+           (second-count 0)
+           (cut (make-router :strategy (lambda (len) (declare (ignore len)) 1)
+                             :routees (list
+                                       (ac:actor-of system
+                                                    :receive (lambda (msg)
+                                                               (declare (ignore msg))
+                                                               (incf first-count)))
+                                       (ac:actor-of system
+                                                    :receive (lambda (msg)
+                                                               (declare (ignore msg))
+                                                               (incf second-count)))))))
+      (loop :repeat 5 :do (ask-s cut "Foo"))
+      (is (= 0 first-count))
+      (is (= 5 second-count)))))
+
 (test router--tell
   "Tests 'tell' on the router which forwards to an actor chosen by the strategy."
   (with-fixture system-fixture ()

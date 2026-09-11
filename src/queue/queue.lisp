@@ -5,6 +5,7 @@
            #:queue-bounded
            #:pushq
            #:popq
+           #:try-popq
            #:emptyq-p
            #:queued-count
            ;; conditions
@@ -22,8 +23,15 @@
 (defgeneric popq (queue-base)
   (:documentation "Pops the first element. Blocks until an element arrives."))
 
+(defgeneric try-popq (queue-base)
+  (:documentation "Pops the first element without blocking.
+Returns `(values element t)' when an element was available and
+`(values nil nil)' when the queue is empty."))
+
 (defgeneric emptyq-p (queue-base)
-  (:documentation "Returns `T' if there is no element in the queue."))
+  (:documentation "Returns `T' if there is no element in the queue.
+Takes the queue lock, so an element pushed by another thread before the call
+is accounted for."))
 
 (defgeneric queued-count (queue-base)
   (:documentation "Returns the number of elements in the queue."))
@@ -73,9 +81,19 @@
                          (decf (slot-value self 'fill-count))
                          (cl-speedy-queue:dequeue queue)))))))
 
+(defmethod try-popq ((self queue-bounded))
+  (with-slots (queue lock fill-count) self
+    (bt2:with-lock-held (lock)
+      (if (cl-speedy-queue:queue-empty-p queue)
+          (values nil nil)
+          (progn
+            (decf fill-count)
+            (values (cl-speedy-queue:dequeue queue) t))))))
+
 (defmethod emptyq-p ((self queue-bounded))
-  (with-slots (queue) self
-    (cl-speedy-queue:queue-empty-p queue)))
+  (with-slots (queue lock) self
+    (bt2:with-lock-held (lock)
+      (cl-speedy-queue:queue-empty-p queue))))
 
 (defmethod queued-count ((self queue-bounded))
   (slot-value self 'fill-count))

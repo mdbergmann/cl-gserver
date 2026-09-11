@@ -15,7 +15,7 @@
 
 (defparameter *default-config*
   '(:dispatchers
-    (:shared (:workers 4 :strategy :random :mbox-type mesgb:message-box/dp))
+    (:shared (:workers 4 :strategy :random :throughput 5 :mbox-type mesgb:message-box/dp))
     :timeout-timer
     (:resolution 100 :max-size 500)
     :eventstream
@@ -38,7 +38,11 @@ For all other parameters the defaults will be used, even `:workers` does not nee
 The defaults, when omitted, are:  
 - workers = 2
 - strategy = :random
+- throughput = 5 (see `disp:*default-throughput*`)
 - mbox-type = 'mesgb:message-box/dp'
+
+`throughput` is the number of queued messages a worker handles for one actor in one
+run before it yields the worker to other actors of the same dispatcher.
 
 If you want to just modify parts of the config, i.e. the strategy, then one can do:
 

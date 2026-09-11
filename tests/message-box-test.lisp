@@ -300,17 +300,22 @@ dispatcher message-box beyond its deadline."
         (is (= 0 spurious-left))
         (is (< elapsed 0.8) "timeout took ~a seconds" elapsed)))))
 
-(def-fixture dispatch-counter ()
-  "Counts the calls to `disp:dispatch-async' made while the body runs, from any
-thread, in `dispatches'. The calls are passed on to the real dispatcher."
+(def-fixture dispatch-counter (dispatcher)
+  "Counts the calls to `disp:dispatch-async' on DISPATCHER made while the body
+runs, from any thread, in `dispatches'. The calls are passed on to the real
+dispatcher. The mock is global, so calls on other dispatchers are not counted:
+an actor of an earlier test whose handler outlives its system's shutdown
+reschedules itself against the stopped workers when the handler finally
+returns, and those attempts would otherwise be attributed to this test."
   (let ((dispatches 0)
         (count-lock (bt2:make-lock)))
     (with-mocks (:recordp nil)
-      (answer disp:dispatch-async
+      (answer (disp:dispatch-async disp args)
         (progn
-          (bt2:with-lock-held (count-lock)
-            (incf dispatches))
-          (call-previous)))
+          (when (eq disp dispatcher)
+            (bt2:with-lock-held (count-lock)
+              (incf dispatches)))
+          (call-previous disp args)))
       (&body))))
 
 (test dispatch--batch--one-dispatch-per-burst
@@ -326,7 +331,7 @@ items remain: 21 messages with a throughput of 5 take 5 runs, not 21."
                                             (when (eq msg :block)
                                               (loop :until release :do (sleep 0.01)))
                                             (incf processed)))))
-           (with-fixture dispatch-counter ()
+           (with-fixture dispatch-counter ((getf (asys:dispatchers system) :shared))
              (tell actor :block)
              (is-true (await-cond 0.5 (= 1 dispatches)))
              (loop :repeat 20 :do (tell actor :go))

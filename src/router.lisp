@@ -83,7 +83,7 @@ A router `strategy` defines how one of the actors is determined as the forwardin
 (defun %select-routee (router)
   "Picks the routee for the next message by applying the strategy to the
 number of routees. Reads the routee vector in place: this runs once per
-message on every shared dispatcher and must not allocate. Returns `nil'
+message on every shared dispatcher and must not allocate. Returns `nil`
 when the router has no routees."
   (let* ((routees (slot-value router 'routees))
          (len (length routees)))
@@ -95,21 +95,21 @@ when the router has no routees."
 
 (defmethod tell ((self router) message &optional sender)
   "Posts the message to one routee. The routee is chosen from the router `strategy`.
-Returns `nil' when the router has no routees. Otherwise see: `act:tell`."
+Returns `nil` when the router has no routees. Otherwise see: `act:tell`."
   (let ((routee (%select-routee self)))
     (when routee
       (tell routee message sender))))
 
 (defmethod ask-s ((self router) message &key time-out)
   "Posts the message to one routee. The routee is chosen from the router `strategy`.
-Returns `nil' when the router has no routees. Otherwise see: `act:ask-s`."
+Returns `nil` when the router has no routees. Otherwise see: `act:ask-s`."
   (let ((routee (%select-routee self)))
     (when routee
       (ask-s routee message :time-out time-out))))
 
 (defmethod ask ((self router) message &key time-out)
   "Posts the message to one routee. The routee is chosen from the router `strategy`.
-Returns `nil' when the router has no routees. Otherwise see: `act:ask`."
+Returns `nil` when the router has no routees. Otherwise see: `act:ask`."
   (let ((routee (%select-routee self)))
     (when routee
       (ask routee message :time-out time-out))))

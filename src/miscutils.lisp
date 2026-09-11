@@ -23,7 +23,7 @@
     (get-output-stream-string backtrace)))
 
 (defun assert-cond (assert-fun max-time &optional (sleep-time 0.05))
-  "Obsolete, use `await-cond' instead."
+  "Obsolete, use `await-cond` instead."
   (do ((wait-time sleep-time (+ wait-time sleep-time))
        (fun-result nil (funcall assert-fun)))
       ((not (null fun-result)) (return t))
@@ -32,7 +32,7 @@
 
 (defmacro await-cond (max-time &body body)
   "Awaits condition. Probes repeatedly.
-If after `max-time' condition is not `t' it is considered failed."
+If after `max-time` condition is not `t` it is considered failed."
   `(assert-cond (lambda ()
                   ,@body)
                 ,max-time))

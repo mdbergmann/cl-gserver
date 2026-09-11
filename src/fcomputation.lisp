@@ -247,10 +247,10 @@ Example:
   `(%fcompleted ,future (lambda (,result) ,@body)))
 
 (defun fawait (fut &key timeout (sleep-time 0.1))
-  "Wait for the future `FUT` to be completed. Returns `VALUES` with `result' of the future and `FUT'.
-If the future is not completed after `TIMEOUT` seconds the `result' is `NIL'.
-Note that a future completed with a `NIL' result also returns `NIL' (immediately) -
-use `complete-p' to distinguish the two cases.
+  "Wait for the future `FUT` to be completed. Returns `VALUES` with `result` of the future and `FUT`.
+If the future is not completed after `TIMEOUT` seconds the `result` is `NIL`.
+Note that a future completed with a `NIL` result also returns `NIL` (immediately) -
+use `complete-p` to distinguish the two cases.
 The `SLEEP-TIME` parameter specifies the time to sleep between checks of the future completion.
 The wait is based on attempts. To be accurate in terms of `TIMEOUT` the `SLEEP-TIME` should be a divisor of `TIMEOUT`.
 Disclaimer: naive implementation. There may be better solutions."
@@ -265,7 +265,7 @@ Disclaimer: naive implementation. There may be better solutions."
 
 (defun fresult (future)
   "Get the computation result. If not yet available `:not-ready` is returned.
-A future completed with `NIL' returns `NIL' (check for completion with `complete-p').
+A future completed with `NIL` returns `NIL` (check for completion with `complete-p`).
 If the future errored, the condition is returned."
   (with-slots (lock state result) future
     (bt2:with-lock-held (lock)

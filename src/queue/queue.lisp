@@ -26,16 +26,16 @@
 
 (defgeneric try-popq (queue-base)
   (:documentation "Pops the first element without blocking.
-Returns `(values element t)' when an element was available and
-`(values nil nil)' when the queue is empty."))
+Returns `(values element t)` when an element was available and
+`(values nil nil)` when the queue is empty."))
 
 (defgeneric try-popq-into (queue-base vector)
-  (:documentation "Pops up to `(length vector)' elements into `vector', starting
+  (:documentation "Pops up to `(length vector)` elements into `vector`, starting
 at index 0, without blocking and under one acquisition of the queue lock.
 Returns the number of elements popped, 0 when the queue is empty."))
 
 (defgeneric emptyq-p (queue-base)
-  (:documentation "Returns `T' if there is no element in the queue.
+  (:documentation "Returns `T` if there is no element in the queue.
 Takes the queue lock, so an element pushed by another thread before the call
 is accounted for."))
 
@@ -61,7 +61,7 @@ is accounted for."))
    (cvar :initform (bt2:make-condition-variable))
    (waiters :initform 0
             :documentation
-            "Number of threads blocked in `popq'. Maintained under the lock;
+            "Number of threads blocked in `popq`. Maintained under the lock;
 a push only notifies the condition-variable when it is positive.")
    (max-items :initform 1000 :initarg :max-items)
    (fill-count :initform 0)) ; cl-speedy-queue has issues with queued items count

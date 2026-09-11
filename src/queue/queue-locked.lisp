@@ -92,7 +92,7 @@ Copyright (c) 2011-2012, James M. Lawrence. All rights reserved.
    (cvar :initform (bt2:make-condition-variable))
    (waiters :initform 0
             :documentation
-            "Number of threads blocked in `popq'. Maintained under the lock;
+            "Number of threads blocked in `popq`. Maintained under the lock;
 a push only notifies the condition-variable when it is positive.")
    (fill-count :initform 0))
   (:documentation "Unbounded queue."))

@@ -53,12 +53,12 @@ When the actor is created through the `actor-context` of an actor, or the `actor
 then it will be populated with a message-box.")
     (call-handler-fun-args :initform nil
                            :documentation
-                           "The `handler-fun-args' list submitted to the message-box
-for a `call' without a sender, built once so that a `call' does not cons it.")
+                           "The `handler-fun-args` list submitted to the message-box
+for a `call` without a sender, built once so that a `call` does not cons it.")
     (cast-handler-fun-args :initform nil
                            :documentation
-                           "The `handler-fun-args' list submitted to the message-box
-for a `cast' without a sender, built once so that a `cast' does not cons it."))
+                           "The `handler-fun-args` list submitted to the message-box
+for a `cast` without a sender, built once so that a `cast` does not cons it."))
   (:documentation
    "`actor-cell` is the base of the `actor`.
 It encapsulates state and can executes async operations.
@@ -140,18 +140,18 @@ Specify a timeout in seconds if you require a result within a certain period of 
 Be aware though that this is a resource intensive wait based on a waiting thread.
 The result can be of different types.
 Normal result: the last expression of `handle-call` (or `receive` in `act:actor`) implementation.
-Error result: `(cons :handler-error <condition>)'
-In case of time-out the error condition is a `timeutils:ask-timeout'.
-If the handler unwound without producing a result it is a `mesgb:handler-unwound-error'.
-`message' can be any object, including `nil'."
+Error result: `(cons :handler-error <condition>)`
+In case of time-out the error condition is a `timeutils:ask-timeout`.
+If the handler unwound without producing a result it is a `mesgb:handler-unwound-error`.
+`message` can be any object, including `nil`."
   (let ((result (submit-message actor-cell message t nil time-out)))
     (log:debug "~a: message process result: ~a" (name actor-cell) result)
     result))
 
 (defun cast (actor-cell message &optional sender)
   "Sends a message to a actor-cell asynchronously. There is no result.
-If a `sender' is specified the result will be sent to the sender.
-`message' can be any object, including `nil'."
+If a `sender` is specified the result will be sent to the sender.
+`message` can be any object, including `nil`."
   (let ((result (submit-message actor-cell message nil sender nil)))
     (log:debug "~a: message process result: ~a" (name actor-cell) result)
     result))
@@ -198,7 +198,7 @@ In case no message-box is configured this function responds with `:no-message-ha
 
   (with-slots (msgbox call-handler-fun-args cast-handler-fun-args) actor-cell
     ;; the handler argument lists for the common case without a sender are
-    ;; built once per cell, so that a plain `tell' or `ask-s' does not cons them.
+    ;; built once per cell, so that a plain `tell` or `ask-s` does not cons them.
     (let ((handler-fun-args
             (cond
               (sender (list #'handle-message actor-cell sender withreply-p))

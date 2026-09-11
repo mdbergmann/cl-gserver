@@ -13,7 +13,7 @@
 (in-package :sento.timeutils)
 
 (defun wait-cond (cond-fun &optional (sleep-time 0.05) (max-time 12))
-  "Waits until `cond-fun' is not `nil' or `max-time' elapsed.
+  "Waits until `cond-fun` is not `nil` or `max-time` elapsed.
 This blocks the calling thread."
   (loop
     :for fun-result := (funcall cond-fun)

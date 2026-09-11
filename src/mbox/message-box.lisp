@@ -62,8 +62,8 @@ Don't make it too small. A queue size of 1000 might be a good choice."))
 (defgeneric submit (message-box-base message withreply-p time-out handler-fun-args)
   (:documentation "Submit a message to the mailbox to be queued and handled.
 `handler-fun-args`: list with first element the function designator and rest arguments.
-With `withreply-p' the call blocks until the message was handled and returns the handler result.
-Signals `ask-timeout' when `time-out' (seconds) elapses first, and `handler-unwound-error'
+With `withreply-p` the call blocks until the message was handled and returns the handler result.
+Signals `ask-timeout` when `time-out` (seconds) elapses first, and `handler-unwound-error`
 when the handler exited without producing a result."))
 
 (defgeneric stop (message-box-base &optional wait)
@@ -89,22 +89,22 @@ Provide `wait` EQ `T` to wait until the actor cell is stopped."))
   (:report (lambda (condition stream)
              (format stream "The handler for message '~a' unwound without producing a result!"
                      (message condition))))
-  (:documentation "Signaled by a synchronous `submit' when the message handler performed a
-non-local exit (for example an `abort' restart was invoked, or the processing thread was
+  (:documentation "Signaled by a synchronous `submit` when the message handler performed a
+non-local exit (for example an `abort` restart was invoked, or the processing thread was
 destroyed) so that no result exists."))
 
 (defun call-handler-fun (handler-fun-args message)
-  "`handler-fun-args' is a list with a function at `car' and args as `cdr'.
-`message' is prepended to args.
+  "`handler-fun-args` is a list with a function at `car` and args as `cdr`.
+`message` is prepended to args.
 This is used to break the environment possibly captured as closure at 'submit' stage."
   (when handler-fun-args
     (apply (car handler-fun-args) message (cdr handler-fun-args))))
 
 (defun %submit-stop-trigger (msgbox)
   "Submits the stop-trigger message that wakes the processing loop so it
-notices `should-run' has been cleared. With a bounded queue the queue may
+notices `should-run` has been cleared. With a bounded queue the queue may
 already be full, in which case the trigger is unnecessary: the queued items
-will be popped and drive the same re-check. A `queue-full-error' here is
+will be popped and drive the same re-check. A `queue-full-error` here is
 therefore safely ignored so that stopping never fails because of a full queue."
   (handler-case
       (submit msgbox :trigger-ending-the-processing-loop nil nil nil)
@@ -118,21 +118,21 @@ therefore safely ignored so that stopping never fails because of a full queue."
      internal-time-units-per-second))
 
 (defvar *ask-s-spin-iterations* 0
-  "How often a synchronous `submit', which is what `act:ask-s' does, re-reads
+  "How often a synchronous `submit`, which is what `act:ask-s` does, re-reads
 the state of its queued item before it parks the calling thread on a
 condition-variable until the handler is done. 0, the default, parks right away.
 
 Parking and waking a thread costs several microseconds. When the handler
 usually finishes within that time, because it is short and the actor has no
 backlog, a spin of some thousand reads returns with the result before the
-thread is parked, which can double the `ask-s' throughput on a machine with
+thread is parked, which can double the `ask-s` throughput on a machine with
 idle cores. When the reply takes longer than the spin, the spin is wasted CPU
 on top of the park. Do not enable it on systems with more runnable threads
 than cores, where the spinning caller takes CPU from the worker producing its
-reply. Can be `let'-bound around a burst of `ask-s' calls.")
+reply. Can be `let`-bound around a burst of `ask-s` calls.")
 
 (defmacro %spin-until (form)
-  "Evaluates FORM up to `*ask-s-spin-iterations*' times until it returns true."
+  "Evaluates FORM up to `*ask-s-spin-iterations*` times until it returns true."
   `(loop :repeat *ask-s-spin-iterations* :until ,form))
 
 ;; ----------------------------------------
@@ -147,11 +147,11 @@ reply. Can be `let'-bound around a burst of `ask-s' calls.")
   (withreply-p nil :type boolean)
   (withreply-lock nil :type (or null bt2:lock))
   (withreply-cvar nil :type (or null bt2:condition-variable))
-  ;; set by a timed `submit/reply' whose time-out elapsed; an item found
+  ;; set by a timed `submit/reply` whose time-out elapsed; an item found
   ;; cancelled before its handler starts is not handled.
   (cancelled-p nil :type boolean)
   ;; set by the processing thread once the item is finished, whether or not
-  ;; a result exists; `submit/reply' waits on this rather than on the bare
+  ;; a result exists; `submit/reply` waits on this rather than on the bare
   ;; condition-variable wakeup, which may be spurious.
   (done-p nil :type boolean)
   (handler-fun-args nil :type list)
@@ -178,11 +178,11 @@ this kind of queue because each message-box (and with that each actor) requires 
 
 (defun start-thread (msgbox &key thread-name)
   "Starts the processing thread of MSGBOX. When that thread is unwound by a
-non-local exit out of a handler, for example an `abort' restart, while the
+non-local exit out of a handler, for example an `abort` restart, while the
 message-box should still run and items are queued, it starts its successor
 itself. Otherwise the queued items, and a run of a dispatcher message-box
 scheduled on this worker, would wait for an unrelated submit to restart the
-thread through `ensure-thread-is-running'."
+thread through `ensure-thread-is-running`."
   (with-slots (name queue queue-thread thread-is-running-p should-run)
       msgbox
     (flet ((run-processing-loop ()
@@ -228,8 +228,8 @@ thread through `ensure-thread-is-running'."
         (incf (slot-value msgbox 'processed-messages))))))
 
 (defun %finalize-item/bt (item)
-  "Marks ITEM as terminal and wakes the `submit/reply' caller waiting on it.
-`done-p' is set under the item's lock so that the caller cannot miss it. The
+  "Marks ITEM as terminal and wakes the `submit/reply` caller waiting on it.
+`done-p` is set under the item's lock so that the caller cannot miss it. The
 notify happens after the lock is released so that the woken caller does not
 immediately block on the lock this thread still holds."
   (declare (type message-item/bt item))
@@ -238,9 +238,9 @@ immediately block on the lock this thread still holds."
   (bt2:condition-notify (message-item/bt-withreply-cvar item)))
 
 (defun process-queue-item (msgbox item)
-  "Applies the `handler-fun-args' of ITEM to its message and stores the result
-as its `handler-result'. The return of this function is not relevant.
-An item whose timed `submit/reply' caller already gave up, `cancelled-p', is
+  "Applies the `handler-fun-args` of ITEM to its message and stores the result
+as its `handler-result`. The return of this function is not relevant.
+An item whose timed `submit/reply` caller already gave up, `cancelled-p`, is
 not handled. The handler runs without the item's lock held, so a caller whose
 time-out elapses meanwhile is not delayed until the handler finishes; a
 cancellation that arrives while the handler is already running does not
@@ -256,8 +256,8 @@ interrupt it, the handler completes and its result is discarded."
            (log:trace "~a: handler-fun-args result: ~a"
                       (name msgbox) (message-item/bt-handler-result item))))
     (if (message-item/bt-withreply-p item)
-        ;; `done-p' is set and the waiter notified even when the handler
-        ;; unwinds, so that `submit/reply' never waits forever.
+        ;; `done-p` is set and the waiter notified even when the handler
+        ;; unwinds, so that `submit/reply` never waits forever.
         (unwind-protect
              (if (message-item/bt-cancelled-p item)
                  (log:warn "~a: item got cancelled, not handling message: ~a"
@@ -294,12 +294,12 @@ It will be apply'ed with the rest of the args when the message was 'popped' from
         (submit/no-reply self queue message handler-fun-args))))
 
 (defun submit/reply (msgbox queue message time-out handler-fun-args)
-  "This function has to provide a result and so it has to wait until the queue thread has processed the message. Processing of the queue item is done in `process-queue-item'.
-`bt2:condition-wait' may return without a notification (spurious wakeup), so the wait is
-repeated until the item's `done-p' is set. With a `time-out' the wait is bounded by an
+  "This function has to provide a result and so it has to wait until the queue thread has processed the message. Processing of the queue item is done in `process-queue-item`.
+`bt2:condition-wait` may return without a notification (spurious wakeup), so the wait is
+repeated until the item's `done-p` is set. With a `time-out` the wait is bounded by an
 absolute deadline so that spurious wakeups neither leak an unfinished result nor extend the timeout.
-Signals `ask-timeout' when a timed wait expires, even if the handler completed while the lock
-was being re-acquired, and `handler-unwound-error' when the item was processed but the
+Signals `ask-timeout` when a timed wait expires, even if the handler completed while the lock
+was being re-acquired, and `handler-unwound-error` when the item was processed but the
 handler produced no result."
   (declare
    (type message-box/bt msgbox)
@@ -391,7 +391,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
   ;; set when the handler was actually invoked, which separates 'the handler
   ;; produced no result' from 'the item was never handled'.
   (handled-p nil :type boolean)
-  ;; only present for a submit with reply, so that `tell' does not pay for a
+  ;; only present for a submit with reply, so that `tell` does not pay for a
   ;; lock and a condition-variable per message.
   (lock nil :type (or null bt2:lock))
   (cvar nil :type (or null bt2:condition-variable))
@@ -409,7 +409,7 @@ The submitting code has to await the side-effect and possibly handle a timeout."
                :reader throughput
                :documentation
                "The number of queued items one run on a dispatcher worker handles
-before it yields the worker. Defaults to the dispatcher's `disp:throughput'.")
+before it yields the worker. Defaults to the dispatcher's `disp:throughput`.")
    (scheduled-p :initform (atomic:make-atomic-integer)
                 :documentation
                 "1 while a run of this message-box is scheduled on, or active on,
@@ -417,7 +417,7 @@ a dispatcher worker, 0 otherwise. A submit dispatches a run only when it
 flips this from 0 to 1, so a burst of submits costs one dispatch.")
    (exec-fun-args :initform nil
                   :documentation
-                  "The `dispatcher-exec-fun' call handed to `disp:dispatch-async',
+                  "The `dispatcher-exec-fun` call handed to `disp:dispatch-async`,
 built once so that scheduling does not allocate.")
    (lock :initform (bt2:make-lock)
          :documentation
@@ -434,7 +434,7 @@ The `dispatcher` is kind of like a thread pool.
 
 Message processing is scheduled per message-box, not per message: the first
 submit on an idle message-box dispatches one run to a worker, further submits
-while that run is pending only enqueue. A run takes up to `throughput' queued
+while that run is pending only enqueue. A run takes up to `throughput` queued
 items out of the queue at once, handles them, and reschedules the message-box
 only when items remain."))
 
@@ -452,7 +452,7 @@ only when items remain."))
 Called for every popped item, including one that is cancelled or arrives after
 the message-box stopped, so that a caller without a time-out never waits forever.
 Items submitted without a reply have no lock and simply get flagged. With a
-lock, `done-p' is set under it so that the caller cannot miss it, and the
+lock, `done-p` is set under it so that the caller cannot miss it, and the
 notify happens after the lock is released so that the woken caller does not
 immediately block on the lock this thread still holds."
   (declare (type message-item/dp item))
@@ -465,13 +465,13 @@ immediately block on the lock this thread still holds."
         (setf (message-item/dp-done-p item) t))))
 
 (defun wait-for-msg-handler-result (msgbox item)
-  "Blocks until ITEM reached a terminal state or its `time-out' elapses.
-Waits on the item's own condition-variable, re-checking `done-p' on every wakeup
-because a wakeup may be spurious. With a `time-out' the wait is bounded by an
-absolute deadline so that spurious wakeups do not extend it. Without a `time-out'
+  "Blocks until ITEM reached a terminal state or its `time-out` elapses.
+Waits on the item's own condition-variable, re-checking `done-p` on every wakeup
+because a wakeup may be spurious. With a `time-out` the wait is bounded by an
+absolute deadline so that spurious wakeups do not extend it. Without a `time-out`
 there is nothing to bound the wait.
-Signals `ask-timeout' when the deadline passes first, even if the handler completed
-while the lock was being re-acquired, and `handler-unwound-error' when the handler
+Signals `ask-timeout` when the deadline passes first, even if the handler completed
+while the lock was being re-acquired, and `handler-unwound-error` when the handler
 was invoked but produced no result."
   (declare (type message-item/dp item))
   (let* ((lock (message-item/dp-lock item))
@@ -500,7 +500,7 @@ was invoked but produced no result."
       (error 'handler-unwound-error :message message))))
 
 (defvar *schedule-max-attempts* 3
-  "How many consecutive scheduling attempts `%schedule' makes for one burst
+  "How many consecutive scheduling attempts `%schedule` makes for one burst
 while the dispatcher keeps rejecting the run and the queue stays non-empty.
 Bounds the retry that keeps a rejected dispatch from stranding items other
 submitters already pushed while trusting this run to process them, without
@@ -508,10 +508,10 @@ spinning forever against a dispatcher that keeps rejecting.")
 
 (defun %schedule (msgbox)
   "Dispatches a run of MSGBOX to a worker unless a run is already scheduled
-or active. Exactly one submitter wins the 0 to 1 flip of `scheduled-p'.
+or active. Exactly one submitter wins the 0 to 1 flip of `scheduled-p`.
 When the dispatcher did not accept the run, the flag is cleared again and,
 as long as the queue is still non-empty, scheduling is retried immediately,
-up to `*schedule-max-attempts*' times: otherwise items other submitters
+up to `*schedule-max-attempts*` times: otherwise items other submitters
 already pushed while trusting this run to process them would be stranded
 until an unrelated future submit happens to retrigger scheduling. Once
 attempts are exhausted the message-box is left idle for such a future submit
@@ -535,7 +535,7 @@ to try again."
   "Marks MSGBOX idle after a run and schedules it again when items were
 queued meanwhile. The flag is cleared before the queue is checked, so a
 submit racing with the end of the run either sees the flag cleared and
-dispatches itself, or its item is seen here. `emptyq-p' takes the queue lock,
+dispatches itself, or its item is seen here. `emptyq-p` takes the queue lock,
 which orders it after such a submit's push."
   (with-slots (scheduled-p queue) msgbox
     (atomic:atomic-cas scheduled-p 1 0)
@@ -562,9 +562,9 @@ that does not fit into a full bounded queue is finalized unhandled instead."
 
 (defun dispatcher-exec-fun (msgbox)
   "One run of MSGBOX, executed on a dispatcher worker.
-Takes up to `throughput' queued items out of the queue under one acquisition
+Takes up to `throughput` queued items out of the queue under one acquisition
 of the queue lock and handles them under the message-box lock, applying the
-`handler-fun-args' of each item to its message. Once the message-box is
+`handler-fun-args` of each item to its message. Once the message-box is
 stopped, the items are only finalized so that waiting callers are woken.
 Afterwards the message-box is marked idle and rescheduled when items remain,
 also when the run unwinds, so that the message-box never stays wedged; items
@@ -618,10 +618,10 @@ The `time-out` with the 'dispatcher mailbox' assumes that the message received t
 and the handler in a reasonable amount of time, so that the effective time-out applies on the actual
 handling of the message on the dispatcher queue thread.
 
-Returns the handler-result if `withreply-p' is eq to `T', otherwise the return is just `T' and is usually ignored.
+Returns the handler-result if `withreply-p` is eq to `T`, otherwise the return is just `T` and is usually ignored.
 
-With `withreply-p' the caller waits on the item's own state after scheduling.
-A synchronous `dispatch' cannot be used here: under concurrent `ask-s' submits
+With `withreply-p` the caller waits on the item's own state after scheduling.
+A synchronous `dispatch` cannot be used here: under concurrent `ask-s` submits
 a run handles whatever items head the queue, which is not necessarily this
 caller's item, so a run's return value could belong to a different caller."
   (with-slots (name
@@ -644,7 +644,7 @@ caller's item, so a run's return value could belong to a different caller."
           (progn
             (wait-for-msg-handler-result self push-item)
             ;; an item that was never handled, because the message-box stopped
-            ;; or the item was cancelled, has no result; `nil' is returned
+            ;; or the item was cancelled, has no result; `nil` is returned
             ;; rather than the internal sentinel.
             (if (message-item/dp-handled-p push-item)
                 (message-item/dp-handler-result push-item)

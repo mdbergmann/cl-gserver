@@ -17,7 +17,7 @@
   ((stashed-messages :initform '()
                      :reader stashed-messages
                      :documentation "Stash is an unbounded list.
-Stash items are a tuple (alist) of `msg' and `sender'."))
+Stash items are a tuple (alist) of `msg` and `sender`."))
   (:documentation "`stashing` is a mixin class to `act:actor`.
 It can 'stash' away arriving messages which should not be handled now, but later, after the actor is 'able' to handle them. Create an actor class that can stash like this:
 
@@ -69,7 +69,7 @@ This function is expected to be run from within 'receive' function."
           :for msg = (car amsg)
           :for sender = (cdr amsg)
           :do
-             ;; `submit-message' is internal API but can be used here
+             ;; `submit-message` is internal API but can be used here
              ;; to implement this functionality
              (submit-message *self* msg nil sender nil))
     (setf stashed-messages '()))

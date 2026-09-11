@@ -152,9 +152,9 @@ In any case stop the actor-cell. See `actor-cell:stop` for more info on stopping
 (defclass async-waitor-actor (actor)
   ()
   (:documentation
-   "The reply target of an `ask'. It is the `*sender*' the asked actor sees.
-It has no message-box and is never dispatched: a `tell' to it calls its `receive'
-function, which resolves the `ask' future, right on the replying thread."))
+   "The reply target of an `ask`. It is the `*sender*` the asked actor sees.
+It has no message-box and is never dispatched: a `tell` to it calls its `receive`
+function, which resolves the `ask` future, right on the replying thread."))
 
 (defmethod tell ((self async-waitor-actor) message &optional sender)
   (declare (ignore sender))

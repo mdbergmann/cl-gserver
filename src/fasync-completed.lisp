@@ -7,7 +7,7 @@
 
 #|
 
-UNUSED/EXPERIMENT: See notes on `fcompleted'.
+UNUSED/EXPERIMENT: See notes on `fcompleted`.
 
 |#
 

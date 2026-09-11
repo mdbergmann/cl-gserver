@@ -96,8 +96,8 @@ A `shared-dispatcher` is automatically setup by an `asys:actor-system`."))
    "Specialized `actor` used as `worker` in the message `dispatcher`.
 The message a worker receives is the dispatched function call as a list:
 the function followed by its arguments.
-`tell' and `ask-s' on a worker submit that list straight to the worker's
-message-box instead of going through the `act-cell' message handling.
+`tell` and `ask-s` on a worker submit that list straight to the worker's
+message-box instead of going through the `act-cell` message handling.
 A worker has no state, no behavior and no sender to bind, so that layer
 would only add per-message overhead on every message of every actor that
 runs on the dispatcher."))
@@ -113,11 +113,11 @@ runs on the dispatcher."))
     :dispatcher :pinned))
 
 (defun execute-dispatched (message)
-  "Applies the dispatched function, the `car' of `message', to the rest of
-`message'. A condition signaled by the function is logged and returned as
-`(cons :handler-error condition)', as an actor message handler would, so that
-a synchronous `dispatch' gets a result instead of unwinding the worker thread.
-Runs without the `act-cell' dynamic bindings, so it must not rely on `*self*'."
+  "Applies the dispatched function, the `car` of `message`, to the rest of
+`message`. A condition signaled by the function is logged and returned as
+`(cons :handler-error condition)`, as an actor message handler would, so that
+a synchronous `dispatch` gets a result instead of unwinding the worker thread.
+Runs without the `act-cell` dynamic bindings, so it must not rely on `*self*`."
   (handler-case
       (apply (car message) (cdr message))
     (serious-condition (c)
@@ -125,18 +125,18 @@ Runs without the `act-cell' dynamic bindings, so it must not rely on `*self*'."
       (cons :handler-error c))))
 
 (defmethod tell ((self dispatch-worker) message &optional sender)
-  "Submits the dispatched function call `message' to the worker's message-box.
-Returns `T' when submitted, `:stopped' when the worker is stopped."
+  "Submits the dispatched function call `message` to the worker's message-box.
+Returns `T` when submitted, `:stopped` when the worker is stopped."
   (declare (ignore sender))
   (if (running-p self)
       (submit (msgbox self) message nil nil '(execute-dispatched))
       :stopped))
 
 (defmethod ask-s ((self dispatch-worker) message &key time-out)
-  "Submits the dispatched function call `message' to the worker's message-box
-and waits for its result. Returns `:stopped' when the worker is stopped and
-`(cons :handler-error condition)' on a time-out or when the function unwound
-without a result, as `act-cell:call' does."
+  "Submits the dispatched function call `message` to the worker's message-box
+and waits for its result. Returns `:stopped` when the worker is stopped and
+`(cons :handler-error condition)` on a time-out or when the function unwound
+without a result, as `act-cell:call` does."
   (if (running-p self)
       (handler-case
           (submit (msgbox self) message t time-out '(execute-dispatched))

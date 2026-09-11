@@ -258,8 +258,8 @@ LOCAL-SENDER-PATH overrides the sender-path used in ask-s/ask envelopes."
         (with-lock-held ((pending-asks-lock ref))
           (remhash corr-id (pending-asks ref)))
         (error c)))
-    ;; Block until the response is stored in `entry' or the deadline passes.
-    ;; The result is checked under `lock' before every wait, so a response
+    ;; Block until the response is stored in `entry` or the deadline passes.
+    ;; The result is checked under `lock` before every wait, so a response
     ;; that arrived before the wait started is not missed, and a wait that
     ;; returned without a response (spurious wakeup) is simply repeated.
     (with-lock-held (lock)

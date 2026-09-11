@@ -32,11 +32,11 @@ The FSM class represents a Finite State Machine, a mathematical model of computa
 
 ;; public vars
 (defvar *received-event* nil "Dynamically binds the received event (message).")
-(defvar *event-data* nil "Dynamically binds event data when msg/event was sent with data (`cons')")
+(defvar *event-data* nil "Dynamically binds event data when msg/event was sent with data (as a cons)")
 (defvar *state-data* nil "Dynamically binds the current state data.")
 (defvar *next-state-data* nil
-  "Dynamically binds the next state data (`on-transition').
-Effectively same as `*event-data*' but should be used in different context.")
+  "Dynamically binds the next state data (`on-transition`).
+Effectively same as `*event-data*` but should be used in different context.")
 
 ;; private vars
 (defvar *current-state* nil "dynamically binds the current state")

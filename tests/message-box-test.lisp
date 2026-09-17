@@ -352,28 +352,34 @@ items remain: 21 messages with a throughput of 5 take 5 runs, not 21."
 
 (test dispatch--batch--yields-worker-after-throughput
   "With one worker and a throughput of 2, a second actor's message is handled
-between two batches of the first actor's backlog, not after the whole backlog."
+between two batches of the first actor's backlog, not after the whole backlog.
+A run takes its batch out of the queue at once, so the backlog has to be
+complete before the first run of `a' starts: a gate actor holds the only
+worker until all messages are queued."
   (let ((system (asys:make-actor-system '(:dispatchers (:shared (:workers 1 :throughput 2))))))
     (unwind-protect
          (let* ((release nil)
                 (order nil)
                 (order-lock (bt2:make-lock))
+                (gate (actor-of system
+                                :receive (lambda (msg)
+                                           (declare (ignore msg))
+                                           (loop :until release :do (sleep 0.01)))))
                 (a (actor-of system
                              :receive (lambda (msg)
-                                        (when (eq msg :block)
-                                          (loop :until release :do (sleep 0.01)))
                                         (bt2:with-lock-held (order-lock)
                                           (push (cons :a msg) order)))))
                 (b (actor-of system
                              :receive (lambda (msg)
                                         (bt2:with-lock-held (order-lock)
                                           (push (cons :b msg) order))))))
-           (tell a :block)
+           (tell gate :block)
+           (tell a 1)
            (tell b :x)
-           (loop :for i :from 1 :to 4 :do (tell a i))
+           (loop :for i :from 2 :to 4 :do (tell a i))
            (setf release t)
-           (is-true (await-cond 1.0 (= 6 (length order))))
-           (is (equal '((:a . :block) (:a . 1) (:b . :x) (:a . 2) (:a . 3) (:a . 4))
+           (is-true (await-cond 1.0 (= 5 (length order))))
+           (is (equal '((:a . 1) (:a . 2) (:b . :x) (:a . 3) (:a . 4))
                       (reverse order))))
       (ac:shutdown system))))
 
